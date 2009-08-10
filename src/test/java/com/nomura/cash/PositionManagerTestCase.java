@@ -13,6 +13,12 @@ public class PositionManagerTestCase extends TestCase {
 	protected int account2Id = 2;
 	protected Position account2 = new PositionImpl(account2Id, 0);
 	protected PositionManager<Position, Position> account2Manager  = new PositionManagerImpl<Position, Position>(account2);
+	protected int trade1Id = 3;
+	protected int trade1Amount = 30;
+	protected Position trade1 = new PositionImpl(trade1Id, trade1Amount);
+	protected int trade2Id = 4;
+	protected int trade2Amount = 40;
+	protected Position trade2 = new PositionImpl(trade2Id, trade2Amount);
 	
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -23,19 +29,16 @@ public class PositionManagerTestCase extends TestCase {
 	}
 	
 	public void testAddTrade() {
-		int trade1Id = 0;
-		int trade1Amount = 10;
-		Trade trade1 = new TradeImpl(trade1Id, account1Id, currencyId, trade1Amount);
 		currencyManager.update(trade1);
 		account1Manager.update(trade1);
-
-		int trade2Id = 0;
-		int trade2Amount = 10;
-		Trade trade2 = new TradeImpl(trade2Id, account2Id, currencyId, trade2Amount);
+		currencyManager.update(trade2);
+		account2Manager.update(trade2);
 
 		assertTrue(currencyManager.getPosition() == trade1Amount+trade2Amount);
 		assertTrue(account1Manager.getPosition() == trade1Amount);
 		assertTrue(account2Manager.getPosition() == trade2Amount);
+		
+		
 	}
 	
 
