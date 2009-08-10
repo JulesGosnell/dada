@@ -1,0 +1,14 @@
+<!DOCTYPE aspectj PUBLIC
+        "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+
+  <weaver>
+    <include within="com.nomura.ltw.*"/><!-- only weave classes in our application-specific packages -->
+  </weaver>
+
+  <aspects>
+    <!-- <aspect name="com.nomura.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
+    <aspect name="com.nomura.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
+  </aspects>
+
+  </aspectj>

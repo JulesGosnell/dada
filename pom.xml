@@ -1,0 +1,292 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.nomura</groupId>
+  <artifactId>cash</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <name>cash</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <cobertura.datafile>target/cobertura.ser</cobertura.datafile><!-- tmp hack -->
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.cobertura</groupId>
+      <artifactId>cobertura</artifactId>
+      <version>1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-all</artifactId>
+      <version>5.2.0</version>
+      <scope>compile</scope>
+      <exclusions>
+	<exclusion>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging-api</artifactId>
+	</exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.1.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>2.5.6.SEC01</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>2.5.6.SEC01</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>2.5.6.SEC01</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+      <version>2.5.6.SEC01</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-agent</artifactId>
+      <version>2.5.6.SEC01</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjrt</artifactId>
+      <version>1.6.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>1.6.4</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+	  <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cobertura-instrument</id>
+            <phase>process-test-classes</phase>
+            <configuration>
+              <tasks name="cobertura-instrument">
+                <java classname="net.sourceforge.cobertura.instrument.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="target/cobertura-classes"/>
+                  <arg value="--ignore"/>
+                  <arg value="com.nomura.foo.*"/>
+                  <arg value="target/classes"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>cobertura-check</id>
+            <phase>test</phase>
+            <configuration>
+              <tasks name="cobertura-check">
+                <java classname="net.sourceforge.cobertura.check.Main" fork="yes" failonerror="true">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--branch"/>
+                  <arg value="0"/>
+                  <arg value="--line"/>
+                  <arg value="0"/>
+                  <arg value="--totalbranch"/>
+                  <arg value="20"/>
+                  <arg value="--totalline"/>
+                  <arg value="20"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>cobertura-report</id>
+            <phase>site</phase>
+            <configuration>
+              <tasks name="cobertura-report">
+                <java classname="net.sourceforge.cobertura.reporting.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="target/site/cobertura"/>
+                  <arg value="src/main/java"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>javadoc-report</id>
+            <phase>site</phase>
+            <configuration>
+              <tasks name="javadoc-report">
+                <javadoc
+                  destdir="target/site/api"
+                  author="true"
+                  version="true"
+                  use="true"
+                  windowtitle="Paxos Prototype API"
+                  >
+                  <fileset dir="src/main/java" defaultexcludes="yes"/>
+                  <fileset dir="src/test/java" defaultexcludes="yes"/>
+                  <classpath refid="maven.compile.classpath"/>
+                  <classpath refid="maven.test.classpath"/>
+                  <doctitle><![CDATA[<h1>Paxos Prototype</h1>]]></doctitle>
+                  <bottom><![CDATA[<i>Copyright &#169; 2009 Julian Gosnell. All Rights Reserved.</i>]]></bottom>
+                  <tag name="todo" scope="all" description="To do:"/>
+		  <!--
+                  <link offline="true" href="http://java.sun.com/j2se/1.5.0/docs/api/" packagelistLoc="C:\tmp"/>
+                  <link href="http://developer.java.sun.com/developer/products/xml/docs/api/"/>
+		  -->
+                </javadoc>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>net.sourceforge.cobertura</groupId>
+            <artifactId>cobertura</artifactId>
+            <version>1.9</version>
+            <scope>compile</scope>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <classesDirectory>target/cobertura-classes</classesDirectory>
+          <additionalClasspathElements>
+            <additionalClasspathElement>target/classes</additionalClasspathElement>
+          </additionalClasspathElements>
+          <forkMode>once</forkMode>
+          <testClassesDirectory>target/test-classes</testClassesDirectory>
+          <excludes>
+            <exclude>**/Abstract*TestCase.java</exclude>
+          </excludes>
+          <systemProperties>
+            <property>
+              <name>net.sourceforge.cobertura.datafile</name>
+              <value>${cobertura.datafile}</value>
+            </property>
+            <property>
+              <name>org.apache.commons.logging.Log</name>
+              <value>org.apache.commons.logging.impl.SimpleLog</value>
+            </property>
+            <property>
+              <name>org.apache.commons.logging.simplelog.showShortLogname</name>
+              <value>true</value>
+            </property>
+            <property>
+              <name>org.apache.commons.logging.simplelog.showdatetime</name>
+              <value>false</value>
+            </property>
+            <property>
+              <name>org.apache.commons.logging.simplelog.defaultlog</name>
+              <value>info</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>App</Main-Class>
+                    <Project-Version>${project.version}</Project-Version>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <reporting>
+<!--
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+      </plugin>
+    </plugins>
+-->
+  </reporting>
+
+</project>
