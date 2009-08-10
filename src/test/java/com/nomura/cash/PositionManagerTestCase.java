@@ -1,15 +1,22 @@
 package com.nomura.cash;
 
+import java.util.List;
+
 import junit.framework.TestCase;
 
 public class PositionManagerTestCase extends TestCase {
 
+	// aggregate Trades by Currency
 	protected int currencyId = 0;
 	protected Position currency = new PositionImpl(currencyId, 0);
 	protected PositionManager<Position, Position> currencyManager = new PositionManagerImpl<Position, Position>(currency);
+	// aggregate Accounts by Currency
+	protected PositionManager<Position, Position> currencyByAccount = new PositionManagerImpl<Position, Position>(currency);
+	// aggregate Trades by Account
 	protected int account1Id = 1;
 	protected Position account1 = new PositionImpl(account1Id, 0);
 	protected PositionManager<Position, Position> account1Manager  = new PositionManagerImpl<Position, Position>(account1);
+	// aggregate Trades by Account
 	protected int account2Id = 2;
 	protected Position account2 = new PositionImpl(account2Id, 0);
 	protected PositionManager<Position, Position> account2Manager  = new PositionManagerImpl<Position, Position>(account2);
@@ -33,10 +40,22 @@ public class PositionManagerTestCase extends TestCase {
 		account1Manager.update(trade1);
 		currencyManager.update(trade2);
 		account2Manager.update(trade2);
-
-		assertTrue(currencyManager.getPosition() == trade1Amount+trade2Amount);
+		
+		int tradeTotal = trade1Amount+trade2Amount;
+		assertTrue(currencyManager.getPosition() == tradeTotal);
 		assertTrue(account1Manager.getPosition() == trade1Amount);
 		assertTrue(account2Manager.getPosition() == trade2Amount);
+		
+		currencyByAccount.update(account1);
+		currencyByAccount.update(account2);
+		// TODO - doesn't work..
+		// assertTrue(currencyByAccount.getPosition() == tradeTotal);
+		
+		// what should currencyByAccount be aggregating - accounts or accountmanagers...
+		// accounts are small but not live
+		// accountManagers are live but to big to refresh with idempotent events
+		
+		// needs a rethink...
 		
 		
 	}
