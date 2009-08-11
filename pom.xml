@@ -11,6 +11,7 @@
   <properties>
     <cobertura.datafile>target/cobertura.ser</cobertura.datafile>
     <cobertura.version>1.9.2</cobertura.version>
+    <spring.version>2.5.6.SEC01</spring.version>
   </properties>
 
   <dependencies>
@@ -63,7 +64,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>2.5.6.SEC01</version>
+      <version>${spring.version}</version>
       <scope>compile</scope>
       <exclusions>
 	<exclusion>
@@ -75,7 +76,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
-      <version>2.5.6.SEC01</version>
+      <version>${spring.version}</version>
       <scope>compile</scope>
       <exclusions>
 	<exclusion>
@@ -87,7 +88,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context-support</artifactId>
-      <version>2.5.6.SEC01</version>
+      <version>${spring.version}</version>
       <scope>compile</scope>
       <exclusions>
 	<exclusion>
@@ -99,7 +100,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-agent</artifactId>
-      <version>2.5.6.SEC01</version>
+      <version>${spring.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -236,15 +237,12 @@
             <additionalClasspathElement>target/classes</additionalClasspathElement>
           </additionalClasspathElements>
           <forkMode>once</forkMode>
+	  <argLine>-javaagent:/home/jules/.m2/repository/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/Abstract*TestCase.java</exclude>
-            <exclude>**/LTWTestCase.java</exclude>  <!-- TODO: needs -javaagent param -->
-            <exclude>**/LoadTimeWeavingTestCase.java</exclude>  <!-- TODO: needs -javaagent param -->
             <exclude>**/ORMTestCase.java</exclude>  <!-- TODO: broken -->
-
-            <exclude>**/RemotingTestCase.java</exclude>  <!-- TODO: breaks cobertura -->
-            <exclude>**/PositionManagerTestCase.java</exclude>  <!-- TODO: breaks cobertura -->
+            <exclude>**/LoadTimeWeavingTestCase.java</exclude>  <!-- TODO: broken -->
           </excludes>
           <systemProperties>
             <property>
