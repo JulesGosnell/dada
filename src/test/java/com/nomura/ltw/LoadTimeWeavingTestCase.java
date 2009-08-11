@@ -5,10 +5,10 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import junit.framework.TestCase;
 
-public class LTWTestCase extends TestCase {
+public class LoadTimeWeavingTestCase extends TestCase {
 
 	public void testLTW() {
-		ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml", LTWTestCase.class);
+		ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml", LoadTimeWeavingTestCase.class);
 
 //		{
 //			Person person = (Person) ctx.getBean("person");
