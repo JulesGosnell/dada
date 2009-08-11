@@ -251,22 +251,6 @@
               <name>net.sourceforge.cobertura.datafile</name>
               <value>${cobertura.datafile}</value>
             </property>
-            <property>
-              <name>org.apache.commons.logging.Log</name>
-              <value>org.apache.commons.logging.impl.SimpleLog</value>
-            </property>
-            <property>
-              <name>org.apache.commons.logging.simplelog.showShortLogname</name>
-              <value>true</value>
-            </property>
-            <property>
-              <name>org.apache.commons.logging.simplelog.showdatetime</name>
-              <value>false</value>
-            </property>
-            <property>
-              <name>org.apache.commons.logging.simplelog.defaultlog</name>
-              <value>info</value>
-            </property>
           </systemProperties>
         </configuration>
       </plugin>
