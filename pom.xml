@@ -155,13 +155,13 @@
                   <arg value="--datafile"/>
                   <arg value="${cobertura.datafile}"/>
                   <arg value="--branch"/>
-                  <arg value="0"/>
+                  <arg value="60"/>
                   <arg value="--line"/>
-                  <arg value="0"/>
+                  <arg value="60"/>
                   <arg value="--totalbranch"/>
-                  <arg value="0"/>
+                  <arg value="60"/>
                   <arg value="--totalline"/>
-                  <arg value="0"/>
+                  <arg value="60"/>
                 </java>
               </tasks>
             </configuration>
