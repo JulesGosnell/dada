@@ -65,4 +65,7 @@ public class ORMTestCase extends TestCase {
 	// we could restrict writing to the OO layer aswell - but it might slow down loading to much - consider... - it would solve our invalidation issues though...
 	// could we spike the oo layer with aspects to keep the relational layer up to date ? and do all all rw access via the object layer ?
 	
+	public void testORM() {
+		assertTrue(true); // TODO - empty test
+	}
 }
