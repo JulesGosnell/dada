@@ -10,8 +10,6 @@ public class PositionManagerTestCase extends TestCase {
 	protected int currencyId = 0;
 	protected Position currency = new PositionImpl(currencyId, 0);
 	protected PositionManager<Position, Position> currencyManager = new PositionManagerImpl<Position, Position>(currency);
-	// aggregate Accounts by Currency
-	protected PositionManager<Position, Position> currencyByAccount = new PositionManagerImpl<Position, Position>(currency);
 	// aggregate Trades by Account
 	protected int account1Id = 1;
 	protected Position account1 = new PositionImpl(account1Id, 0);
@@ -46,8 +44,6 @@ public class PositionManagerTestCase extends TestCase {
 		assertTrue(account1Manager.getPosition() == trade1Amount);
 		assertTrue(account2Manager.getPosition() == trade2Amount);
 		
-		currencyByAccount.update(account1);
-		currencyByAccount.update(account2);
 		// TODO - doesn't work..
 		// assertTrue(currencyByAccount.getPosition() == tradeTotal);
 		
