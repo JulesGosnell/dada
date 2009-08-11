@@ -242,7 +242,6 @@
           <excludes>
             <exclude>**/Abstract*TestCase.java</exclude>
             <exclude>**/ORMTestCase.java</exclude>  <!-- TODO: broken -->
-            <exclude>**/LoadTimeWeavingTestCase.java</exclude>  <!-- TODO: broken -->
           </excludes>
           <systemProperties>
             <property>
