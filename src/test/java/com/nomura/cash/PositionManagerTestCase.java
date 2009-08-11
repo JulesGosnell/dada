@@ -1,7 +1,5 @@
 package com.nomura.cash;
 
-import java.util.List;
-
 import junit.framework.TestCase;
 
 public class PositionManagerTestCase extends TestCase {
