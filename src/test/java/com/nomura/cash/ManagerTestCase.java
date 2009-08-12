@@ -1,39 +1,73 @@
 package com.nomura.cash;
+import java.util.ArrayList;
+import java.util.List;
+
 import junit.framework.TestCase;
-
-
-// TODO - push Aggregator back into Manager ?
 
 public class ManagerTestCase extends TestCase {
 
+	protected int managerId;
 	protected Identifiable identity;
-	protected Manager<Identifiable, Position> manager;
+	protected Manager<Identifiable, Identifiable> manager;
 
 	public void setUp() throws Exception {
-		identity = new IdentifiableImpl(0);
-		manager = new ManagerImpl<Identifiable, Position>(identity);
+		managerId = 1;
+		identity = new IdentifiableImpl(managerId);
+		manager = new ManagerImpl<Identifiable, Identifiable>(identity);
 	}
 
 	public void tearDown() throws Exception {
 		manager = null;
 	}
 
-	public void testAggregator() {
+	public void testId() {
+		assertTrue(manager.getId() == managerId);
+	}
+	
+	public void testSimpleUpdateAdd() {
+		final int id1=0;
+		assertTrue(manager.size()==0);
+		Identifiable identifiable1 = new IdentifiableImpl(id1);
+		manager.update(identifiable1);
+		assertTrue(manager.size()==1);
+		assertTrue(manager.fetch(id1)==identifiable1);
+		// same id replaces
+		final int id2=1;
+		Identifiable identifiable2 = new IdentifiableImpl(id2);
+		manager.update(identifiable2);
+		assertTrue(manager.size()==2);
+		assertTrue(manager.fetch(id1)==identifiable1);
+		assertTrue(manager.fetch(id2)==identifiable2);
+	}
+
+	public void testMultipleUpdateAdd() {
+		assertTrue(manager.size()==0);
+		List<Identifiable> identifiables = new ArrayList<Identifiable>();
+		final int id1=0;
+		Identifiable identifiable1 = new IdentifiableImpl(id1);
+		identifiables.add(identifiable1);
+		final int id2=1;
+		Identifiable identifiable2 = new IdentifiableImpl(id2);
+		identifiables.add(identifiable2);
+		manager.update(identifiables);
+		assertTrue(manager.size()==2);
+		List<Integer> ids = new ArrayList<Integer>();
+		ids.add(id1);
+		ids.add(id2);
+		assertEquals(identifiables, manager.fetch(ids));
+		// TODO: should be Sets ?
+	}
+
+	public void testSimpleUpdateReplace() {
 		final int id=0;
 		assertTrue(manager.size()==0);
-		PositionImpl position = new PositionImpl(id, 10);
-		PositionAggregator aggregator = new PositionAggregator();
-
-		manager.register(aggregator);
-		assertTrue(aggregator.getAggregate()==0);
-		manager.update(position);
+		Identifiable identifiable = new IdentifiableImpl(id);
+		manager.update(identifiable);
 		assertTrue(manager.size()==1);
-		assertTrue(manager.fetch(id)==position);
-		assertTrue(aggregator.getAggregate()==10);
-		position = new PositionImpl(id, 10); // amount is irrelevant
-		position.setExcluded(true);
-		manager.update(position);
+		assertTrue(manager.fetch(id)==identifiable);
+		// same id replaces
+		identifiable = new IdentifiableImpl(id);
+		manager.update(identifiable);
 		assertTrue(manager.size()==1);
-		assertTrue(aggregator.getAggregate()==0);
 	}
 }
