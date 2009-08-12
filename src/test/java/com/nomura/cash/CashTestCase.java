@@ -64,15 +64,10 @@ public class CashTestCase extends TestCase {
 			public int getId() {
 				return 0;
 			}
-			
-			@Override
-			public boolean getExcluded() {
-				return false;
-			}
 		});
 		int accountId = 0;
 		int currencyId = 0;
-		Account account = new AccountImpl(accountId, currencyId);
+		Account account = new AccountImpl(accountId);
 		accountManager = new AccountManagerImpl(account);
 		latch = new CountDownLatch(2);
 		tradeManagerTradeConsumer = session.createConsumer(tradeTopic);
@@ -132,7 +127,7 @@ public class CashTestCase extends TestCase {
 		int currencyId = 0;
 		int tradeId = 0;
 		int amount = 100;
-		Trade trade = new TradeImpl(tradeId, accountId, currencyId, amount);
+		Trade trade = new TradeImpl(tradeId, amount);
 
 		assertTrue(tradeManager.fetch(tradeId) == null);
 		assertTrue(accountManager.fetch(accountId) == null);

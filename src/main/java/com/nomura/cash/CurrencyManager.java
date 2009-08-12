@@ -1,7 +1,4 @@
 package com.nomura.cash;
 
-public interface CurrencyManager {
-
-	int getTotal(int currencyId);
-	
+public interface CurrencyManager extends PositionManager<Currency, Trade> {
 }

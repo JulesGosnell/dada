@@ -8,10 +8,9 @@ public class PositionManagerImpl<I extends Identifiable, T extends Position> ext
 		super(identity);
 		register(aggregator);
 	}
-	
+
 	@Override
 	public int getPosition() {
 		return aggregator.getAggregate();
 	}
-
 }

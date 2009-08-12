@@ -29,11 +29,6 @@ public class ManagerImpl<I extends Identifiable, T extends Identifiable> impleme
 	}
 	
 	@Override
-	public boolean getExcluded() {
-		return identity.getExcluded();
-	}
-	
-	@Override
 	public List<T> fetch(List<Integer> ids) {
 		List<T> ts = new ArrayList<T>();
 		for (int id : ids)

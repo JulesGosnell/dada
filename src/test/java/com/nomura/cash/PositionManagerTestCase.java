@@ -6,22 +6,22 @@ public class PositionManagerTestCase extends TestCase {
 
 	// aggregate Trades by Currency
 	protected int currencyId = 0;
-	protected Position currency = new PositionImpl(currencyId, 0);
-	protected PositionManager<Position, Position> currencyManager = new PositionManagerImpl<Position, Position>(currency);
+	protected Currency currency = new CurrencyImpl(currencyId);
+	protected CurrencyManager currencyManager = new CurrencyManagerImpl(currency);
 	// aggregate Trades by Account
 	protected int account1Id = 1;
-	protected Position account1 = new PositionImpl(account1Id, 0);
-	protected PositionManager<Position, Position> account1Manager  = new PositionManagerImpl<Position, Position>(account1);
+	protected Account account1 = new AccountImpl(account1Id);
+	protected AccountManager account1Manager  = new AccountManagerImpl(account1);
 	// aggregate Trades by Account
 	protected int account2Id = 2;
-	protected Position account2 = new PositionImpl(account2Id, 0);
-	protected PositionManager<Position, Position> account2Manager  = new PositionManagerImpl<Position, Position>(account2);
+	protected Account account2 = new AccountImpl(account2Id);
+	protected AccountManager account2Manager  = new AccountManagerImpl(account2);
 	protected int trade1Id = 3;
 	protected int trade1Amount = 30;
-	protected Position trade1 = new PositionImpl(trade1Id, trade1Amount);
+	protected Trade trade1 = new TradeImpl(trade1Id, trade1Amount);
 	protected int trade2Id = 4;
 	protected int trade2Amount = 40;
-	protected Position trade2 = new PositionImpl(trade2Id, trade2Amount);
+	protected Trade trade2 = new TradeImpl(trade2Id, trade2Amount);
 	
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -41,17 +41,6 @@ public class PositionManagerTestCase extends TestCase {
 		assertTrue(currencyManager.getPosition() == tradeTotal);
 		assertTrue(account1Manager.getPosition() == trade1Amount);
 		assertTrue(account2Manager.getPosition() == trade2Amount);
-		
-		// TODO - doesn't work..
-		// assertTrue(currencyByAccount.getPosition() == tradeTotal);
-		
-		// what should currencyByAccount be aggregating - accounts or accountmanagers...
-		// accounts are small but not live
-		// accountManagers are live but to big to refresh with idempotent events
-		
-		// needs a rethink...
-		
-		
 	}
 	
 
