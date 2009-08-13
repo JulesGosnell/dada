@@ -136,7 +136,7 @@
                   <arg value="--destination"/>
                   <arg value="target/cobertura-classes"/>
                   <arg value="--ignore"/>
-                  <arg value="com.nomura.foo.*"/>
+                  <arg value="com.nomura.ltw.*Aspect*"/>
                   <arg value="target/classes"/>
                 </java>
               </tasks>

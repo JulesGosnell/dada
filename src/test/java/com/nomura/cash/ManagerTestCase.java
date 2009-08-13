@@ -1,5 +1,6 @@
 package com.nomura.cash;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import junit.framework.TestCase;
@@ -69,5 +70,13 @@ public class ManagerTestCase extends TestCase {
 		identifiable = new IdentifiableImpl(id);
 		manager.update(identifiable);
 		assertTrue(manager.size()==1);
+	}
+	
+	public void testMultipleEmpty() {
+		assertTrue(manager.size()==0);
+		List<Identifiable> identifiables = Collections.emptyList();
+		manager.update(identifiables);
+		assertTrue(manager.size()==0);
+		assertTrue(manager.fetch(0)==null); // what if we look for something that doesn't exist...
 	}
 }

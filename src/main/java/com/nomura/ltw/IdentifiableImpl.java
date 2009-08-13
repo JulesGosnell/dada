@@ -13,7 +13,4 @@ public class IdentifiableImpl implements Identifiable {
 		return id;
 	}
 
-	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + id + ">"; 
-	}
 }

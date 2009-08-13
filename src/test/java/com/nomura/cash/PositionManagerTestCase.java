@@ -43,5 +43,16 @@ public class PositionManagerTestCase extends TestCase {
 		assertTrue(account2Manager.getPosition() == trade2Amount);
 	}
 	
-
+	public void testExcludeTrade() {
+		currencyManager.update(trade1);
+		currencyManager.update(trade2);
+		assertTrue(currencyManager.getPosition() == trade1Amount+trade2Amount);
+		TradeImpl trade3 = new TradeImpl(trade2Id, trade2Amount);
+		trade3.setExcluded(true);
+		currencyManager.update(trade3);
+		assertTrue(currencyManager.getPosition() == trade1Amount);
+		TradeImpl trade4 = new TradeImpl(trade2Id, trade2Amount);
+		currencyManager.update(trade4);
+		assertTrue(currencyManager.getPosition() == trade1Amount+trade2Amount);
+	}
 }
