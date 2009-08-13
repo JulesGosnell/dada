@@ -1,0 +1,20 @@
+
+Arch:
+local - sync
+local - async
+local - async - throttle
+local - async - throttled - partitioned
+local - async - throttles - partitioned - replicated
+remote - async - throttles - partitioned - replicated
+
+Components:
+TradeManager - holds all Trades
+AccountManager - holds and manages Trades for one Account
+AccountService - holds and manages Trades for all Accounts
+CurrencyManager - holds and manages Trades for one Currency
+CurrencyService - holds and manages Trades for all Currencies
+
+N.B. Position should really be Projection - crack this first
+
+Next:
+Try writing Service<T> and extending Position into Projection
