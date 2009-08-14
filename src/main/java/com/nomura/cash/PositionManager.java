@@ -7,8 +7,5 @@ package com.nomura.cash;
  *
  * @param <T>
  */
-public interface PositionManager<I extends Identifiable, T extends Position> extends Manager<I, T> {
-	
-	int getPosition();
-	
+public interface PositionManager<I extends Identifiable, T extends Position> extends Manager<I, T>, Position {
 }

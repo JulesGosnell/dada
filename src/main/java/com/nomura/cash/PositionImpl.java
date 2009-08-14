@@ -23,6 +23,7 @@ public class PositionImpl extends IdentifiableImpl implements Position {
 		return excluded;
 	}
 	
+	@Override
 	public void setExcluded(boolean excluded) {
 		this.excluded = excluded;
 	}

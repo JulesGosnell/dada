@@ -47,7 +47,7 @@ public class PositionManagerTestCase extends TestCase {
 		currencyManager.update(trade1);
 		currencyManager.update(trade2);
 		assertTrue(currencyManager.getPosition() == trade1Amount+trade2Amount);
-		TradeImpl trade3 = new TradeImpl(trade2Id, trade2Amount);
+		Trade trade3 = new TradeImpl(trade2Id, trade2Amount);
 		trade3.setExcluded(true);
 		currencyManager.update(trade3);
 		assertTrue(currencyManager.getPosition() == trade1Amount);

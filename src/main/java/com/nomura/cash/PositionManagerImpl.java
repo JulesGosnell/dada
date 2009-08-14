@@ -4,6 +4,8 @@ public class PositionManagerImpl<I extends Identifiable, T extends Position> ext
 
 	protected final PositionAggregator<T> aggregator = new PositionAggregator<T>();
 	
+	protected boolean excluded;
+	
 	public PositionManagerImpl(I identity) {
 		super(identity);
 		register(aggregator);
@@ -12,5 +14,15 @@ public class PositionManagerImpl<I extends Identifiable, T extends Position> ext
 	@Override
 	public int getPosition() {
 		return aggregator.getAggregate();
+	}
+	
+	@Override
+	public boolean getExcluded() {
+		return excluded;
+	}
+
+	@Override
+	public void setExcluded(boolean excluded) {
+		this.excluded = excluded;
 	}
 }
