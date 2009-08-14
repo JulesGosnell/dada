@@ -16,3 +16,5 @@ public interface Manager<I extends Identifiable, T extends Identifiable> extends
 	void update(T update);
 
 }
+
+// TODO: need a Map and a List based Manager or PositionManager - ListM for use inside a MapM to handle Projection Buckets - days...
