@@ -14,8 +14,6 @@ import com.nomura.consensus.jms.AsyncInvocationListener;
 import com.nomura.consensus.jms.DestinationFactory;
 import com.nomura.consensus.jms.RemotingFactory;
 import com.nomura.consensus.jms.TopicFactory;
-import com.nomura.consensus.jms.RemotingFactory.AsynchronousClient;
-
 
 public class ConsensusTestCase extends TestCase {
 
