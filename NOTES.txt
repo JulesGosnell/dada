@@ -5,7 +5,7 @@ local - async
 local - async - throttle
 local - async - throttled - partitioned
 local - async - throttles - partitioned - replicated
-remote - async - throttles - partitioned - replicated
+remote - async - throttles - partitioned - replicated   
 
 Components:
 TradeManager - holds all Trades
@@ -18,3 +18,19 @@ N.B. Position should really be Projection - crack this first
 
 Next:
 Try writing Service<T> and extending Position into Projection
+
+
+YYY ------------------
+        |      |     |  
+       XXX    XXX   XXX
+        |      |     |
+       Trade Trade Trade
+       Trade Trade Trade
+       Trade       Trade
+                   Trade 
+                   Trade
+
+
+YYY = PositionManager<?, Position>
+XXX = Position[Manager<?, Trade> ]
+

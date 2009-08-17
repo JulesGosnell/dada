@@ -13,8 +13,7 @@ public class ProjectionManagerTestCase extends TestCase {
 	protected Date start;
 	protected int granularity;
 	protected PartitioningStrategy<Date> strategy;
-	protected List<PositionManager<Account, Trade>> managers;
-	protected ProjectionManager<Account, Trade> manager;
+	protected ProjectionManager<Account, Trade, PositionManager<Account, Trade>> manager;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -23,8 +22,14 @@ public class ProjectionManagerTestCase extends TestCase {
 		start = new Date(); //now
 		granularity = 1000; // one second
 		strategy = new DatePartitioningStrategy(start, granularity);
-		managers = new ArrayList<PositionManager<Account,Trade>>();
-		manager = new ProjectionManagerImpl<Account, Trade>(account, strategy, managers);
+		int numPartitions = 3;
+		manager = new ProjectionManagerImpl<Account, Trade, PositionManager<Account, Trade>>(account, strategy);
+		for (int i=0; i<3 ; i++) {
+			Date date = new Date(start.getTime()+(granularity*i)); // TODO - use
+			PartitionManager<Account, Trade> partition = new PartitionManagerImpl<Account, Trade>(account);
+			manager.update(partition);
+		}
+
 	}
 
 	protected void tearDown() throws Exception {
