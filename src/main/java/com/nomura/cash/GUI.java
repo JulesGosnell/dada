@@ -1,63 +1,71 @@
 package com.nomura.cash;
 
-import java.awt.GridBagLayout;
+import java.awt.Dimension;
 import java.awt.LayoutManager;
 
 import javax.swing.BoxLayout;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 public class GUI implements Runnable {
 
-	protected final JFrame frame = new JFrame("Cash Sheet");
-	protected final JPanel panel = new JPanel();
-	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
-	protected final JTable currencyTable = new JTable();
-	protected final JScrollPane currencyScrollPane = new JScrollPane(currencyTable);
-	protected final JTable accountTable = new JTable();
-	protected final JScrollPane accountScrollPane = new JScrollPane(accountTable);
-	protected final JTable tradeTable = new JTable();
-	protected final JScrollPane tradeScrollPane = new JScrollPane(tradeTable);
-	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, accountScrollPane, tradeScrollPane);
-	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, currencyScrollPane, splitPane2);
-	
-	protected TableModel tableModel = new AbstractTableModel() {
-		
+	protected class CashTableModel extends AbstractTableModel {
+
+		@Override
+		public int getColumnCount() {
+			// TODO Auto-generated method stub
+			return 10;
+		}
+
+		@Override
+		public int getRowCount() {
+			// TODO Auto-generated method stub
+			return 5;
+		}
+
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			// TODO Auto-generated method stub
 			return null;
 		}
 		
-		@Override
-		public int getRowCount() {
-			// TODO Auto-generated method stub
-			return 10;
-		}
-		
-		@Override
-		public int getColumnCount() {
-			// TODO Auto-generated method stub
-			return 10;
-		}
 	};
 
+	protected class JSection extends JScrollPane {
+		protected final JTable table; 
+		protected final TableModel model;
+
+		public JSection() {
+			super(new JTable(new CashTableModel()));
+			table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?   
+			table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+			model = table.getModel();
+			Dimension oldSize = table.getPreferredScrollableViewportSize();
+			Dimension preferredSize = table.getPreferredSize();
+			int width = Math.min(preferredSize.width, oldSize.width);
+			int height= Math.min(preferredSize.height, oldSize.height);
+			Dimension newSize = new Dimension(width, height);
+			table.setPreferredScrollableViewportSize(newSize);
+		}
+	}
+	
+	protected final JSection currencySection = new JSection();
+	protected final JSection accountSection = new JSection();
+	protected final JSection tradeSection = new JSection();
+	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, accountSection, tradeSection);
+	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, currencySection, splitPane2);
+	protected final JPanel panel = new JPanel();
+	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+	protected final JFrame frame = new JFrame("Cash Sheet");
+	
 	public void run() {
-		currencyTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		currencyTable.setModel(tableModel);
-		accountTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		accountTable.setModel(tableModel);
-		tradeTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		tradeTable.setModel(tableModel);
-		panel.setLayout(layout);
 		panel.add(splitPane1);
 		panel.setOpaque(true);
 		frame.setContentPane(panel);
