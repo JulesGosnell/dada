@@ -48,13 +48,13 @@ public class PositionManagerImpl<I extends Identifiable, T extends Position> ext
 	}
 
 	@Override
-	public void deregisterPositionListener(Listener<Integer> listener) {
+	public void registerPositionListener(Listener<Integer> listener) {
 		positionListeners.add(listener);
 		
 	}
 
 	@Override
-	public void registerPositionListener(Listener<Integer> listener) {
+	public void deregisterPositionListener(Listener<Integer> listener) {
 		positionListeners.remove(listener);
 		
 	}
