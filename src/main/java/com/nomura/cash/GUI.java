@@ -1,5 +1,9 @@
 package com.nomura.cash;
 
+// TODO:
+// what should we do about id2Index ?
+// 
+
 import java.awt.Dimension;
 import java.awt.LayoutManager;
 
@@ -81,10 +85,6 @@ public class GUI implements Runnable {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		
-		// run some trades into accountManager...
-		for (int id=0; id<100; id++)
-			accountManager.update(new TradeImpl(id, 100));
-		
 		// plug accountManager into tradeSection...
 		final AbstractTableModel tradeModel = new AbstractTableModel() {
 
@@ -126,10 +126,13 @@ public class GUI implements Runnable {
 			
 			@Override
 			public void update(Trade oldValue, Trade newValue) {
-				tradeModel.fireTableRowsUpdated(newValue.getId(), newValue.getId());
+				if (oldValue==null)
+					tradeModel.fireTableRowsInserted(newValue.getId(), newValue.getId());
+				else
+					tradeModel.fireTableRowsUpdated(newValue.getId(), newValue.getId());
 			}
 		});
-
+		
 		final AbstractTableModel accountModel = new AbstractTableModel() {
 			
 			protected String columnNames[] = new String[]{"id", "amount", "excluded"};
@@ -173,19 +176,25 @@ public class GUI implements Runnable {
 				accountModel.fireTableRowsUpdated(0, 0);
 			}
 		});
-		
+
 		new Thread(new Runnable() {
 			public void run() {
-				while (true) {
-					int id = (int)(Math.random()*100);
-					int amount = (int)(Math.random()*100);
-					accountManager.update(new TradeImpl(id, amount));
-					try {
-						Thread.sleep(50);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+				try {
+					// run some trades into accountManager...
+					for (int id=0; id<100; id++) {
+						accountManager.update(new TradeImpl(id, 100));
+						Thread.sleep(100);
 					}
+					// keep them updating...
+					while (true) {
+						int id = (int)(Math.random()*100);
+						int amount = (int)(Math.random()*100);
+						accountManager.update(new TradeImpl(id, amount));
+						Thread.sleep(50);
+					}
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}).start();
