@@ -1,8 +1,10 @@
-package com.nomura.cash;
+package com.nomura.cash.demo;
 
 // TODO:
 // what should we do about id2Index ?
-// 
+// should separate Server and Client to understand issues ?
+// make Demo main class
+
 
 import java.awt.Dimension;
 import java.awt.LayoutManager;
@@ -18,25 +20,30 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
-public class GUI implements Runnable {
+import com.nomura.cash.Account;
+import com.nomura.cash.AccountImpl;
+import com.nomura.cash.AccountManager;
+import com.nomura.cash.AccountManagerImpl;
+import com.nomura.cash.Listener;
+import com.nomura.cash.Trade;
+import com.nomura.cash.TradeImpl;
 
-	protected class CashTableModel extends AbstractTableModel {
+public class Main implements Runnable {
+
+	protected class InitialTableModel extends AbstractTableModel {
 
 		@Override
 		public int getColumnCount() {
-			// TODO Auto-generated method stub
 			return 10;
 		}
 
 		@Override
 		public int getRowCount() {
-			// TODO Auto-generated method stub
 			return 10;
 		}
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 		
@@ -47,7 +54,7 @@ public class GUI implements Runnable {
 		protected TableModel model;
 
 		public JSection() {
-			super(new JTable(new CashTableModel()));
+			super(new JTable(new InitialTableModel()));
 			table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?   
 			table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 			model = table.getModel();
@@ -201,6 +208,6 @@ public class GUI implements Runnable {
 	}
 	
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new GUI());
+		SwingUtilities.invokeLater(new Main());
 	}
 }
