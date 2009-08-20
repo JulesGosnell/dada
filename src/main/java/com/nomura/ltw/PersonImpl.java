@@ -1,11 +1,7 @@
 package com.nomura.ltw;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public class PersonImpl extends IdentifiableImpl implements Person{
-
-	private static final Log LOG = LogFactory.getLog(PersonImpl.class);
 
 	private Person father;
 	private Person mother;

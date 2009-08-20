@@ -11,11 +11,6 @@ import junit.framework.TestCase;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-import com.nomura.consensus.jms.AsyncInvocationListener;
-import com.nomura.consensus.jms.QueueFactory;
-import com.nomura.consensus.jms.RemotingFactory;
-import com.nomura.consensus.jms.RemotingFactory.AsynchronousClient;
-
 
 public class RemotingTestCase extends TestCase {
 
@@ -52,7 +47,7 @@ public class RemotingTestCase extends TestCase {
 
 		final Server server = factory.createServer(new ServerImpl());
 		final Server client = factory.createSynchronousClient();
-		AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
+		RemotingFactory<Server>.AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
 		
 		{
 			final String string = "test";
