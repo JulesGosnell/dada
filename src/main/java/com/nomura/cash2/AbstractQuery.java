@@ -6,7 +6,7 @@ package com.nomura.cash2;
 import java.util.LinkedList;
 import java.util.List;
 
-abstract class AbstractQuery<T> implements Query<T> {
+public abstract class AbstractQuery<T> implements Query<T> {
 	
 	@Override
 	public LinkedList<T> apply(List<T> elements) {

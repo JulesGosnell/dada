@@ -1,9 +1,8 @@
 package com.nomura.cash2;
 
-interface View<T> extends Listener <T> {
+public interface View<T> extends Listener <T> {
 
-	public void addElementListener(Listener<T> listener);
-
-	public void removeElementListener(Listener<T> listener);
+	void addElementListener(Listener<T> listener);
+	void removeElementListener(Listener<T> listener);
 
 }

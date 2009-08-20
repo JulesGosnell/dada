@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-class FilterView<T> implements View<T> {
+public class FilterView<T> implements View<T> {
 
-	final Query<T> query;
-	final LinkedList<T> results;
-	final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
+	protected final Query<T> query;
+	protected final LinkedList<T> results;
+	protected final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
 	
 	public FilterView(Query<T> query) {
 		this.query = query;

@@ -6,7 +6,7 @@ package com.nomura.cash2;
 import java.util.LinkedList;
 import java.util.List;
 
-class AndQuery<T> implements Query<T> {
+public class AndQuery<T> implements Query<T> {
 	
 	Query<T> lhs;
 	Query<T> rhs;
