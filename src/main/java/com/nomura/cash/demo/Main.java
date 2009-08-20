@@ -25,6 +25,7 @@ import com.nomura.cash.TradeImpl;
 
 public class Main implements Runnable {
 
+	// Client
 	protected final JView currencyView = new JView();
 	protected final JView accountView = new JView();
 	protected final JView tradeView = new JView();
@@ -33,7 +34,8 @@ public class Main implements Runnable {
 	protected final JPanel panel = new JPanel();
 	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
 	protected final JFrame frame = new JFrame("Cash Sheet");
-
+	
+	// Server
 	protected final Account account = new AccountImpl(0);
 	protected final AccountManager accountManager = new AccountManagerImpl(account);
 	
