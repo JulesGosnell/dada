@@ -1,5 +1,7 @@
 package com.nomura.consensus.jms;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,6 +27,8 @@ import javax.jms.Session;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.nomura.cash2.View;
+
 // TODO: reuse more code between these classes...
 // TODO: support topic/multi-shot result aggregation
 // TODO: server should probably support a lifecycle ?
@@ -40,13 +44,17 @@ public class RemotingFactory<T> {
 	private final long timeout;
 	
 	public RemotingFactory(Session session, Class<?> interfaze, DestinationFactory factory, long timeout) throws JMSException {
+		this(session, interfaze, factory.create(session, interfaze.getCanonicalName()), timeout);
+	}
+	
+	public RemotingFactory(Session session, Class<?> interfaze, Destination invocationDestination, long timeout) throws JMSException {
 		this.session = session;
 		this.interfaze = interfaze;
 		this.indexToMethod = this.interfaze.getMethods();
 		int index = 0;
 		for (Method method : this.indexToMethod)
 			methodToIndex.put(method, index++);
-		this.invocationDestination = factory.create(session, this.interfaze.getCanonicalName());
+		this.invocationDestination = invocationDestination;
 		this.timeout = timeout;
 	}
 	
@@ -54,7 +62,7 @@ public class RemotingFactory<T> {
 	
 	public class Server implements MessageListener {
 
-		private final Log log = LogFactory.getLog(Server.class);
+		private final Log log;
 
 		private final T target;
 		private final MessageProducer producer;
@@ -62,13 +70,16 @@ public class RemotingFactory<T> {
 
 		public Server(T target) throws JMSException {
 			this.target = target;
-			this.producer = session.createProducer(null);
-			this.consumer = session.createConsumer(invocationDestination);
-			this.consumer.setMessageListener(this);
+			log = LogFactory.getLog(Server.class+"#"+target);
+			producer = session.createProducer(null);
+			consumer = session.createConsumer(invocationDestination);
+			log.info("consuming messages on: " + invocationDestination);
+			consumer.setMessageListener(this);
 		}
 
 		@Override
 		public void onMessage(Message message) {
+			try{log.info("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 			String correlationId = null;
 			Destination replyTo = null;
 			boolean isException = false;
@@ -78,6 +89,7 @@ public class RemotingFactory<T> {
 				correlationId = message.getJMSCorrelationID();
 				replyTo = message.getJMSReplyTo();
 				ObjectMessage request = (ObjectMessage)message;
+				LocalProxy.setCurrentSession(session);
 				Invocation invocation = (Invocation)request.getObject();
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();
@@ -100,6 +112,7 @@ public class RemotingFactory<T> {
 					response = session.createObjectMessage();
 					response.setJMSCorrelationID(correlationId);
 					response.setObject(new Results(isException, result));
+					log.warn("SENDING: " + response + " -> " + replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
 					log.warn("problem replying to message: " + response, e);
@@ -112,13 +125,15 @@ public class RemotingFactory<T> {
 	
 	public T createServer(T target) throws JMSException {
 		new Server(target);
-		return target;
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new LocalProxy<T>(target, interfaze));
 	}
 	
 	//-----------------------------------------------------------------------------
 	
 	public abstract class Client implements MessageListener {
 
+		protected final Log log;
 		protected final UUID uuid = UUID.randomUUID();
 		protected final MessageProducer producer;
 		protected final Queue resultsQueue;
@@ -127,6 +142,7 @@ public class RemotingFactory<T> {
 		protected int count;
 		
 		public Client() throws JMSException {
+			log = LogFactory.getLog(Client.class);
 			this.producer = session.createProducer(invocationDestination);
 			this.resultsQueue = session.createQueue(interfaze.getCanonicalName() + "." + uuid);
 			this.consumer = session.createConsumer(resultsQueue);
@@ -139,7 +155,7 @@ public class RemotingFactory<T> {
 
 	//-----------------------------------------------------------------------------
 
-	public class SynchronousClient extends Client implements InvocationHandler {
+	public class SynchronousClient extends Client implements InvocationHandler, Serializable {
 
 		private final Log log = LogFactory.getLog(SynchronousClient.class);
 		private final Map<String, Exchanger<Results>> correlationIdToResults = new ConcurrentHashMap<String, Exchanger<Results>>();
@@ -149,6 +165,7 @@ public class RemotingFactory<T> {
 		}
 
 		public void onMessage(Message message) {
+			try{log.warn("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 			try {
 				String correlationID = message.getJMSCorrelationID();
 				Exchanger<Results> exchanger = correlationIdToResults.remove(correlationID);
@@ -178,6 +195,7 @@ public class RemotingFactory<T> {
 			message.setJMSReplyTo(resultsQueue);
 			Exchanger<Results> exchanger = new Exchanger<Results>();
 			correlationIdToResults.put(correlationId, exchanger);
+			log.warn("SENDING: " + message + " -> " + invocationDestination);
 			producer.send(invocationDestination, message);
 			try {
 				Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
@@ -193,8 +211,79 @@ public class RemotingFactory<T> {
 			}
 			
 		}
+		
+	}
+	
+	public abstract static class AbstractProxy<T> implements InvocationHandler, Serializable {
+		
+		protected final Class interfaze;
+		
+		public AbstractProxy(Class interfaze) {
+			this.interfaze = interfaze;
+		}
+
 	}
 
+	public static class LocalProxy<T> extends AbstractProxy {
+		
+		private final Log log = LogFactory.getLog(getClass());
+
+		protected final T target;
+		
+		public LocalProxy(T target, Class interfaze) {
+			super(interfaze);
+			this.target = target;
+		}
+		
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			return method.invoke(target, args);
+		}
+		
+//		private Object writeReplace() throws ObjectStreamException {
+//			RemoteProxy remoteProxy = new RemoteProxy(interfaze, null);
+//			log.info("WRITING: "+remoteProxy);
+//			return remoteProxy;
+//		}
+
+		private Object readResolve() throws ObjectStreamException {
+			// needs to get hold of a remoting factory and create a proxy to remote client[-server]...
+			log.info("READING: "+this);
+			Session session = getCurrentSession();
+			Destination destination;
+			try {
+				destination = session.createQueue("Client"); // TODO - should not be hardwired...
+				int timeout = 5000; // TODO: should not be hardwired...
+				RemotingFactory<T> clientFactory = new RemotingFactory<T>(session, interfaze, destination, timeout);
+				T client = clientFactory.createSynchronousClient();
+				return client;
+			} catch (JMSException e) {
+				throw new RuntimeException("problem building server-side proxy for client" ,e);
+			}
+		}
+
+		protected final static ThreadLocal<Session> currentSession = new ThreadLocal<Session>(); // TODO: encapsulate
+
+		public static void setCurrentSession(Session session) {
+			currentSession.set(session);
+		}
+
+		public static Session getCurrentSession() {
+			return currentSession.get();
+		}
+		
+	}
+	
+//	public static class RemoteProxy<T> extends AbstractProxy {
+//
+//		private final Log log = LogFactory.getLog(getClass());
+//		
+//		public RemoteProxy(Class interfaze, Destination destination) {
+//			super(interfaze, destination);
+//		}
+//		
+//	}
+	
 	//-------------------------------------------------------------------------------------
 	
 	public T createSynchronousClient() throws IllegalArgumentException, JMSException {
@@ -220,11 +309,13 @@ public class RemotingFactory<T> {
 			message.setJMSReplyTo(resultsQueue);
 
 			correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
+			log.warn("SENDING: " + message + " -> " + invocationDestination);
 			producer.send(invocationDestination, message);			
 		}
 
 		@Override
 		public void onMessage(Message message) {
+			try{log.warn("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 			try {
 				String correlationID = message.getJMSCorrelationID();
 				AsyncInvocationListener listener = correlationIdToListener.remove(correlationID); // one-shot - parameterize 

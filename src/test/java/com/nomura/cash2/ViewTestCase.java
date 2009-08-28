@@ -131,5 +131,8 @@ public class ViewTestCase extends TestCase {
 	}
 
 	// TODO: split Query into Filter/Transformer/Aggregator...
+	// TODO: how do we support modification/removal using this architecture ?
+	// TODO: modification will require exlusion/versioning
+	// TODO: removal will require a deleted flag/status
 	
 }

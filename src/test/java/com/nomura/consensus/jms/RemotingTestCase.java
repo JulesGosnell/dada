@@ -1,5 +1,9 @@
 package com.nomura.consensus.jms;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -14,6 +18,31 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 
 public class RemotingTestCase extends TestCase {
 
+	protected ConnectionFactory connectionFactory;
+	protected Connection connection;
+	protected Session session;
+	protected int timeout;
+	
+	@Override
+	protected void setUp() throws Exception {
+		connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
+		connection = connectionFactory.createConnection();
+		connection.start();
+		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		timeout = 5000;
+	}
+
+	@Override
+	protected void tearDown() throws Exception {
+		timeout = 0;
+		session.close();
+		session = null;
+		connection.stop();
+		connection.close();
+		connection = null;
+		connectionFactory = null;
+	}
+	
 	static class ServerException extends Exception{};
 
 	static interface Server {
@@ -35,14 +64,24 @@ public class RemotingTestCase extends TestCase {
 		}
 	}
 
-	public void testInvocation() throws Exception {
-		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
-		Connection connection = connectionFactory.createConnection();
-		connection.start();
-		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+	public void doNottestProxyRemotability() throws Exception {
+		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, session.createTemporaryQueue(), timeout);
+		Server server = new ServerImpl();
 		
+		Server localClient = factory.createServer(server);
+		assertTrue(localClient.hashCode() == server.hashCode());
+		
+		ByteArrayOutputStream baos =  new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		oos.writeObject(localClient);
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+		ObjectInputStream ois = new ObjectInputStream(bais);
+		Server remoteClient = (Server)ois.readObject();
+		assertTrue(remoteClient.hashCode() == server.hashCode());
+	}
+	
+	public void testRemoteInvocation() throws Exception {
 		QueueFactory queueFactory = new QueueFactory();
-		int timeout = 5000;
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, queueFactory, timeout);
 
 		final Server server = factory.createServer(new ServerImpl());
@@ -112,7 +151,5 @@ public class RemotingTestCase extends TestCase {
 			latch.await(5, TimeUnit.SECONDS);
 		}
 		
-		connection.stop();
-		connection.close();
 	}
 }
