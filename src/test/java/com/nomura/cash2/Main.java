@@ -1,7 +1,5 @@
 package com.nomura.cash2;
 
-import java.util.List;
-
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -13,7 +11,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.nomura.consensus.jms.QueueFactory;
 import com.nomura.consensus.jms.RemotingFactory;
 
 public class Main {
@@ -28,11 +25,11 @@ public class Main {
 			Connection connection = connectionFactory.createConnection();
 			connection.start();
 			Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-			Destination destination = session.createQueue("Server");
+			Destination destination = session.createQueue("Server.View");
  
-			RemotingFactory<Listener> serverFactory = new RemotingFactory<Listener>(session, Listener.class, destination, timeout);
+			RemotingFactory<View> serverFactory = new RemotingFactory<View>(session, View.class, destination, timeout);
 			serverFactory.createServer(new Server(new IdentityFilter<Listener>()));
-			LOG.info("Server ready...");
+			LOG.info("Server ready: "+destination);
 		}
 		// Client
 		{
@@ -43,7 +40,7 @@ public class Main {
 			// need an object that is a Listener and a TableModel - then
 
 			// create a client-side proxy for the Server
-			Destination serverDestination = session.createQueue("Server");
+			Destination serverDestination = session.createQueue("Server.View");
 			RemotingFactory<View> clientFactory = new RemotingFactory<View>(session, View.class, serverDestination, timeout);
 			View serverProxy = clientFactory.createSynchronousClient();
 
@@ -51,13 +48,14 @@ public class Main {
 			Listener client = new TestListener();
 			
 			// create a client-side server to support callbacks on client
-			Destination clientDestination = session.createQueue("Client");
+			Destination clientDestination = session.createQueue("Client.Listener");
 			RemotingFactory<Listener> serverFactory = new RemotingFactory<Listener>(session, Listener.class, clientDestination, timeout);
-			Listener clientServer = serverFactory.createServer(client);
+			serverFactory.createServer(client);
+			Listener clientServer = serverFactory.createSynchronousClient();
 
 			// pass the client over to the server to attach as a listener..
 			serverProxy.addElementListener(clientServer);
-			LOG.info("Client ready...");
+			LOG.info("Client ready: "+clientDestination);
 		}
 
 		// TODO: need to hook ClientListener to Swing Client

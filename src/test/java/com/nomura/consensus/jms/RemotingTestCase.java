@@ -14,10 +14,14 @@ import javax.jms.Session;
 import junit.framework.TestCase;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 public class RemotingTestCase extends TestCase {
 
+	private final Log log = LogFactory.getLog(getClass());
+	
 	protected ConnectionFactory connectionFactory;
 	protected Connection connection;
 	protected Session session;
@@ -64,20 +68,25 @@ public class RemotingTestCase extends TestCase {
 		}
 	}
 
-	public void doNottestProxyRemotability() throws Exception {
+	public void testProxyRemotability() throws Exception {
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, session.createTemporaryQueue(), timeout);
-		Server server = new ServerImpl();
+		Server server = factory.createServer(new ServerImpl());
+		Server localClient = factory.createSynchronousClient();
+		String foo = "foo";
+		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
 		
-		Server localClient = factory.createServer(server);
-		assertTrue(localClient.hashCode() == server.hashCode());
-		
+		log.info("MARSHALLING PROXY...");
 		ByteArrayOutputStream baos =  new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		oos.writeObject(localClient);
+		log.info("UNMARSHALLING PROXY...");
+		Client.setCurrentSession(session);
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		ObjectInputStream ois = new ObjectInputStream(bais);
 		Server remoteClient = (Server)ois.readObject();
-		assertTrue(remoteClient.hashCode() == server.hashCode());
+		log.info("REUSING PROXY...");
+		assertTrue(remoteClient.hashcode(foo) == server.hashcode(foo));
+		log.info("...DONE");
 	}
 	
 	public void testRemoteInvocation() throws Exception {
@@ -86,11 +95,11 @@ public class RemotingTestCase extends TestCase {
 
 		final Server server = factory.createServer(new ServerImpl());
 		final Server client = factory.createSynchronousClient();
-		RemotingFactory<Server>.AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
+		AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
 		
 		{
 			final String string = "test";
-			assertEquals(server.hashcode(string), client.hashcode(string));
+				assertEquals(server.hashcode(string), client.hashcode(string));
 			
 			final CountDownLatch latch = new CountDownLatch(1);
 			asynchronousClient.invoke(Server.class.getMethod("hashcode", new Class[]{String.class}), new Object[]{string}, new AsyncInvocationListener(){

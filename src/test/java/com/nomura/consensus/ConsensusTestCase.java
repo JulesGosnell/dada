@@ -11,6 +11,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.nomura.consensus.jms.AsyncInvocationListener;
+import com.nomura.consensus.jms.AsynchronousClient;
 import com.nomura.consensus.jms.DestinationFactory;
 import com.nomura.consensus.jms.RemotingFactory;
 import com.nomura.consensus.jms.TopicFactory;
@@ -58,7 +59,7 @@ public class ConsensusTestCase extends TestCase {
 		Paxos server2 = remotingFactory.createServer(new PaxosImpl());
 		Paxos server3 = remotingFactory.createServer(new PaxosImpl());
 		Paxos server4 = remotingFactory.createServer(new PaxosImpl());
-		RemotingFactory<Paxos>.AsynchronousClient client = remotingFactory.createAsynchronousClient();
+		AsynchronousClient client = remotingFactory.createAsynchronousClient();
 		
 		client.invoke(Paxos.class.getMethod("foo", null), null, new AsyncInvocationListener(){
 
