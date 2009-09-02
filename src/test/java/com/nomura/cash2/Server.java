@@ -25,9 +25,8 @@ public class Server extends FilterView<Listener> {
 	@Override
 	public void addElementListener(Listener listener) {
 		LOG.info("new Listener: " + listener);
-		listener.update(results);
+		update(listener); // add listener to model...
 		super.addElementListener(listener);
-		update(listener);
 	}
 
 	public static void main(String[] args) throws JMSException {

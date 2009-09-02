@@ -20,4 +20,8 @@ public class Results implements Serializable {
 		return exception;
 	}
 	
+	public String toString() {
+		return "<"+getClass().getSimpleName()+": "+value+">";
+	}
+	
 }

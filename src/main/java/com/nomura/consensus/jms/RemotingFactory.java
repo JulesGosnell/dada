@@ -61,7 +61,17 @@ public class RemotingFactory<T> {
 		}
 
 		@Override
-		public void onMessage(Message message) {
+		public void onMessage(final Message message) {
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					process(message);
+				}
+			}).start(); // TODO: use ThreadPool
+		}
+		
+		public void process(Message message) {
 			String correlationId = null;
 			Destination replyTo = null;
 			boolean isException = false;
@@ -76,7 +86,7 @@ public class RemotingFactory<T> {
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
-				log.warn("RECEIVING: " + method + " <- " + message.getJMSDestination());
+				log.info("RECEIVING: " + method + " <- " + message.getJMSDestination());
 				result = method.invoke(Server.this.target, args);
 			} catch (JMSException e) {
 				isException = true;
@@ -94,8 +104,9 @@ public class RemotingFactory<T> {
 				try {
 					response = session.createObjectMessage();
 					response.setJMSCorrelationID(correlationId);
-					response.setObject(new Results(isException, result));
-					log.warn("SENDING: " + response + " -> " + replyTo);
+					Results results = new Results(isException, result);
+					response.setObject(results);
+					log.info("SENDING: " + results + " -> " + replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
 					log.warn("problem replying to message: " + response, e);

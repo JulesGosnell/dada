@@ -18,7 +18,7 @@ public class Main {
 	private static final Log LOG = LogFactory.getLog(Server.class);
 
 	public static void main(String[] args) throws JMSException {
-		int timeout = 5000;
+		int timeout = 60000;
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
 		// Server
 		{

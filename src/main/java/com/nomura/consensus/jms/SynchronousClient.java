@@ -40,7 +40,6 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 	}
 
 	public void onMessage(Message message) {
-		try{log.warn("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 		try {
 			String correlationID = message.getJMSCorrelationID();
 			Exchanger<Results> exchanger = correlationIdToResults.remove(correlationID);
@@ -49,6 +48,7 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
+				log.info("RECEIVING: " + results + " <- " + message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
 		} catch(JMSException e) {
@@ -65,8 +65,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 		ObjectMessage message = session.createObjectMessage();
 		Integer methodIndex = mapper.getKey(method);
 		if (methodIndex == null) {
-			log.warn("unproxied method invoked: " + method);
-			return null;
+			// log.warn("unproxied method invoked: " + method);
+			return method.invoke(this, args);
 		}
 		message.setObject(new Invocation(methodIndex, args));
 		String correlationId = "" + count++;
@@ -89,6 +89,10 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 			return null;
 		}
 		
+	}
+	
+	public String toString() {
+		return "<"+getClass().getSimpleName()+": "+invocationDestination+">";
 	}
 	
 }
