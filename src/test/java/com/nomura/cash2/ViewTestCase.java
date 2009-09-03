@@ -62,12 +62,12 @@ public class ViewTestCase extends TestCase {
 		}
 		
 		@Override
-		public void delete(List<com.nomura.cash2.Listener.Key> deletions) {
+		public void delete(List<Integer> deletions) {
 			throw new UnsupportedOperationException("NYI");
 		}
 
 		@Override
-		public void delete(com.nomura.cash2.Listener.Key deletion) {
+		public void delete(int deletion) {
 			throw new UnsupportedOperationException("NYI");
 		}
 
