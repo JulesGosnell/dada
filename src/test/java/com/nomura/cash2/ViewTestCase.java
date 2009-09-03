@@ -1,6 +1,7 @@
 package com.nomura.cash2;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -52,7 +53,7 @@ public class ViewTestCase extends TestCase {
 		int count;
 		
 		@Override
-		public void upsert(List<T> upsertions) {
+		public void upsert(Collection<T> upsertions) {
 			count += upsertions.size();
 		}
 
@@ -62,7 +63,7 @@ public class ViewTestCase extends TestCase {
 		}
 		
 		@Override
-		public void delete(List<Integer> deletions) {
+		public void delete(Collection<Integer> deletions) {
 			throw new UnsupportedOperationException("NYI");
 		}
 

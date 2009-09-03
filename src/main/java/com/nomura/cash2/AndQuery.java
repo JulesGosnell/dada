@@ -3,8 +3,8 @@
  */
 package com.nomura.cash2;
 
+import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 
 public class AndQuery<T> implements Query<T> {
 	
@@ -22,7 +22,7 @@ public class AndQuery<T> implements Query<T> {
 	}
 
 	@Override
-	public LinkedList<T> apply(List<T> elements) {
+	public LinkedList<T> apply(Collection<T> elements) {
 		return rhs.apply(lhs.apply(elements));
 	}
 

@@ -3,6 +3,7 @@
  */
 package com.nomura.cash2;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class FilterView<T> extends AbstractModel<T> implements ModelView<T, T> {
 	}
 
 	@Override
-	public void upsert(List<T> upsertions) {
+	public void upsert(Collection<T> upsertions) {
 		List<T> relevantUpdates = query.apply(upsertions);
 		if (!relevantUpdates.isEmpty())
 			for (View<T> view : views)
@@ -48,7 +49,7 @@ public class FilterView<T> extends AbstractModel<T> implements ModelView<T, T> {
 	}
 
 	@Override
-	public void delete(List<Integer> deletions) {
+	public void delete(Collection<Integer> deletions) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

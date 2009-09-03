@@ -5,20 +5,13 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class TradeGenerator implements Model<Trade> {
+public class TradeGenerator extends AbstractModel<Trade> {
 
 	// Model
 	
 	@Override
 	public void registerView(View<Trade> view) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void deregisterView(View<Trade> view) {
-		// TODO Auto-generated method stub
-
+		view.upsert(trades.values());
 	}
 
 	// TradeGenerator

@@ -2,6 +2,7 @@ package com.nomura.cash2;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
@@ -18,7 +19,7 @@ public class TestListener<T> extends AbstractTableModel implements View<T>, Seri
 	// Listener
 	
 	@Override
-	public void upsert(List<T> upsertions) {
+	public void upsert(Collection<T> upsertions) {
 		log.info("TEST LISTENER: UPDATE("+upsertions+")");
 		elements.addAll(upsertions);
 	}
@@ -30,7 +31,7 @@ public class TestListener<T> extends AbstractTableModel implements View<T>, Seri
 	}
 	
 	@Override
-	public void delete(List<Integer> deletions) {
+	public void delete(Collection<Integer> deletions) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
