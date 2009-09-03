@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FilterView<T> implements ModelView<T> {
+public class FilterView<T> implements ModelView<T, T> {
 
 	protected final Query<T> query;
 	protected final LinkedList<T> results;
