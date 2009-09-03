@@ -9,7 +9,7 @@ import javax.swing.table.AbstractTableModel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class TestListener<T> extends AbstractTableModel implements Listener<T>, Serializable {
+public class TestListener<T> extends AbstractTableModel implements View<T>, Serializable {
 
 	private final Log log = LogFactory.getLog(getClass());
 	

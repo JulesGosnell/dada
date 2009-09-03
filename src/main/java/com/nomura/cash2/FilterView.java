@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FilterView<T> implements View<T> {
+public class FilterView<T> implements ModelView<T> {
 
 	protected final Query<T> query;
 	protected final LinkedList<T> results;
-	protected final List<Listener<T>> listeners = new ArrayList<Listener<T>>();
+	protected final List<View<T>> views = new ArrayList<View<T>>();
 	
 	public FilterView(Query<T> query) {
 		this.query = query;
@@ -19,18 +19,18 @@ public class FilterView<T> implements View<T> {
 	}
 	
 	@Override
-	public void addElementListener(Listener<T> listener) {
+	public void registerView(View<T> view) {
 		// call this listener back with full resultset
-		listener.upsert(results);
+		view.upsert(results);
 		// TODO: collapse remote listeners on same topic into a single ref-counted listener
-		listeners.add(listener);
+		views.add(view);
 	}
 	
 	@Override
-	public void removeElementListener(Listener<T> listener) {
+	public void deregisterView(View<T> view) {
 		// TODO: if collapsed, dec ref-count and possible remove ref-counted listener
 		// else
-		listeners.remove(listener);
+		views.remove(view);
 	}
 	
 	// TODO: is there a difference between insertions and updates ?
@@ -42,7 +42,7 @@ public class FilterView<T> implements View<T> {
 	public void upsert(T upsertion) {
 		if (query.apply(upsertion)) {
 			results.addFirst(upsertion);
-			for (Listener<T> listener : listeners)
+			for (View<T> listener : views)
 				listener.upsert(upsertion);
 		}
 	}
@@ -51,7 +51,7 @@ public class FilterView<T> implements View<T> {
 	public void upsert(List<T> upsertions) {
 		List<T> relevantUpdates = query.apply(upsertions);
 		if (!relevantUpdates.isEmpty())
-			for (Listener<T> listener : listeners)
+			for (View<T> listener : views)
 				listener.upsert(relevantUpdates);
 	}
 

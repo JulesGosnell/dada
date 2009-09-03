@@ -1,8 +1,16 @@
+/**
+ * 
+ */
 package com.nomura.cash2;
 
-public interface View<T> extends Listener <T> {
+import java.util.List;
 
-	void addElementListener(Listener<T> listener);
-	void removeElementListener(Listener<T> listener);
-
+public interface View<Input> {
+	
+	void upsert(List<Input> upsertions);
+	void upsert(Input upsertion);
+	
+	void delete(List<Integer> deletions);
+	void delete(int deletion);
+	
 }

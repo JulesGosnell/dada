@@ -64,19 +64,19 @@ public class Client implements Runnable {
 		try	{
 			// create a client-side proxy for the Server
 			Destination serverDestination = session.createQueue("Server.View");
-			RemotingFactory<View> clientFactory = new RemotingFactory<View>(session, View.class, serverDestination, timeout);
-			View serverProxy = clientFactory.createSynchronousClient();
+			RemotingFactory<ModelView> clientFactory = new RemotingFactory<ModelView>(session, ModelView.class, serverDestination, timeout);
+			Model serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 
 			// create a client-side server to support callbacks on client
 			Destination clientDestination = session.createQueue("Client.Listener");
-			RemotingFactory<Listener> serverFactory = new RemotingFactory<Listener>(session, Listener.class, clientDestination, timeout);
+			RemotingFactory<View> serverFactory = new RemotingFactory<View>(session, View.class, clientDestination, timeout);
 			serverFactory.createServer(guiModel);
-			Listener clientServer = serverFactory.createSynchronousClient();
+			View clientServer = serverFactory.createSynchronousClient();
 
 			// pass the client over to the server to attach as a listener..
-			serverProxy.addElementListener(clientServer);
+			serverProxy.registerView(clientServer);
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
