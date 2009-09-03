@@ -60,18 +60,18 @@ public class Client implements Runnable {
 		frame.setVisible(true);
 		
 		// Client
-		TestListener guiModel = new TestListener();
+		TestView<Trade> guiModel = new TestView<Trade>();
 		try	{
 			// create a client-side proxy for the Server
 			Destination serverDestination = session.createQueue("Server.View");
-			RemotingFactory<ModelView> clientFactory = new RemotingFactory<ModelView>(session, ModelView.class, serverDestination, timeout);
+			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory(session, Model.class, serverDestination, timeout);
 			Model serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 
 			// create a client-side server to support callbacks on client
 			Destination clientDestination = session.createQueue("Client.Listener");
-			RemotingFactory<View> serverFactory = new RemotingFactory<View>(session, View.class, clientDestination, timeout);
+			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory(session, View.class, clientDestination, timeout);
 			serverFactory.createServer(guiModel);
 			View clientServer = serverFactory.createSynchronousClient();
 

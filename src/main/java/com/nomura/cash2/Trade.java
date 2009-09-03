@@ -20,5 +20,9 @@ public class Trade implements Datum {
 	public int getVersion() {
 		return version;
 	}
+	
+	public String toString() {
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]>";
+	}
 
 }

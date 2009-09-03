@@ -4,30 +4,37 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.TreeMap;
 
 import javax.swing.table.AbstractTableModel;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class TestListener<T> extends AbstractTableModel implements View<T>, Serializable {
+public class TestView<Input> extends AbstractTableModel implements View<Input>, Serializable {
 
 	private final Log log = LogFactory.getLog(getClass());
 	
-	private List<T> elements = new ArrayList<T>();
+	private TreeMap<Integer, Input> trades = new TreeMap<Integer, Input>();
 	
 	// Listener
 	
 	@Override
-	public void upsert(Collection<T> upsertions) {
+	public void upsert(Collection<Input> upsertions) {
 		log.info("TEST LISTENER: UPDATE("+upsertions+")");
-		elements.addAll(upsertions);
+		for (Input upsertion : upsertions) {
+			int id = ((Trade)upsertion).getId();
+			trades.put(id, upsertion);
+			fireTableRowsUpdated(id, id);
+		}
 	}
 
 	@Override
-	public void upsert(T upsertion) {
+	public void upsert(Input upsertion) {
 		log.info("TEST LISTENER: UPDATE("+upsertion+")");
-		elements.add(upsertion);
+		int id = ((Trade)upsertion).getId();
+		trades.put(id, upsertion);
+		fireTableRowsUpdated(id, id);
 	}
 	
 	@Override
@@ -49,12 +56,12 @@ public class TestListener<T> extends AbstractTableModel implements View<T>, Seri
 
 	@Override
 	public int getRowCount() {
-		return elements.size();
+		return trades.size();
 	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		return elements.get(rowIndex);
+		return trades.get(rowIndex);
 	}
 
 }

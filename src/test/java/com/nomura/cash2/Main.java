@@ -29,8 +29,11 @@ public class Main {
 		{
 			Destination destination = session.createQueue("Server.View");
  
-			RemotingFactory<ModelView> serverFactory = new RemotingFactory<ModelView>(session, ModelView.class, destination, timeout);
-			serverFactory.createServer(new Server(new IdentityFilter<View>()));
+			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory(session, Model.class, destination, timeout);
+			//Server server = new Server(new IdentityFilter<View>());
+			TradeGenerator server = new TradeGenerator(10,100L);
+			serverFactory.createServer(server);
+			server.start();
 			LOG.info("Server ready: "+destination);
 		}
 

@@ -1,5 +1,6 @@
 package com.nomura.cash2;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -11,7 +12,7 @@ public class TradeGenerator extends AbstractModel<Trade> {
 	
 	@Override
 	public void registerView(View<Trade> view) {
-		view.upsert(trades.values());
+		view.upsert(new ArrayList<Trade>(trades.values()));
 		super.registerView(view);
 	}
 
@@ -25,12 +26,11 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		
 		@Override
 		public void run() {
-			int id = (int)Math.random()*numTrades;
+			int id = (int)(Math.random()*numTrades);
 			Trade oldTrade = trades.get(id);
 			Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
 			trades.put(id, newTrade);
 			notifyUpsertion(newTrade);
-			timer.schedule(task, delay);
 		}
 	};
 	
@@ -43,7 +43,7 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		for (int i=0 ;i<numTrades; i++)
 			trades.put(i, new Trade(i, 0));
 		notifyUpsertion(trades.values());
-		timer.schedule(task, delay);
+		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
 	public void stop() {

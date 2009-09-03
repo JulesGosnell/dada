@@ -1,6 +1,8 @@
 package com.nomura.cash2;
 
-public interface Datum {
+import java.io.Serializable;
+
+public interface Datum extends Serializable {
 
 	int getId();
 	int getVersion();
