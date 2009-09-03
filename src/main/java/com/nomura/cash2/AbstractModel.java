@@ -5,16 +5,16 @@ import java.util.List;
 
 public class AbstractModel<Output> implements Model<Output> {
 
-	protected List<View<Output>> views = new ArrayList<View<Output>>();
+	protected final List<View<Output>> views = new ArrayList<View<Output>>();
 	
 	@Override
 	public void registerView(View<Output> view) {
 		views.add(view);
 	}
-
+	
 	@Override
 	public void deregisterView(View<Output> view) {
 		views.remove(view);
 	}
-
+	
 }

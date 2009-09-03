@@ -3,15 +3,13 @@
  */
 package com.nomura.cash2;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FilterView<T> implements ModelView<T, T> {
+public class FilterView<T> extends AbstractModel<T> implements ModelView<T, T> {
 
 	protected final Query<T> query;
 	protected final LinkedList<T> results;
-	protected final List<View<T>> views = new ArrayList<View<T>>();
 	
 	public FilterView(Query<T> query) {
 		this.query = query;
@@ -23,15 +21,9 @@ public class FilterView<T> implements ModelView<T, T> {
 		// call this listener back with full resultset
 		view.upsert(results);
 		// TODO: collapse remote listeners on same topic into a single ref-counted listener
-		views.add(view);
+		super.registerView(view);
 	}
-	
-	@Override
-	public void deregisterView(View<T> view) {
-		// TODO: if collapsed, dec ref-count and possible remove ref-counted listener
-		// else
-		views.remove(view);
-	}
+
 	
 	// TODO: is there a difference between insertions and updates ?
 	// TODO: how can we handle them efficiently in a concurrent environment
@@ -51,8 +43,8 @@ public class FilterView<T> implements ModelView<T, T> {
 	public void upsert(List<T> upsertions) {
 		List<T> relevantUpdates = query.apply(upsertions);
 		if (!relevantUpdates.isEmpty())
-			for (View<T> listener : views)
-				listener.upsert(relevantUpdates);
+			for (View<T> view : views)
+				view.upsert(relevantUpdates);
 	}
 
 	@Override
