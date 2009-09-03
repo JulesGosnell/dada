@@ -1,10 +1,10 @@
 package com.nomura.cash2;
 
 import java.awt.LayoutManager;
-import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.swing.BoxLayout;
@@ -12,14 +12,18 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
+import javax.swing.table.TableModel;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.nomura.cash.demo.JView;
-import com.nomura.consensus.jms.QueueFactory;
 import com.nomura.consensus.jms.RemotingFactory;
 
-public class Client implements Runnable, Listener {
+public class Client implements Runnable {
+
+	private static final Log LOG = LogFactory.getLog(Client.class);
 
 	protected final JView currencyView = new JView();
 	protected final JView accountView = new JView();
@@ -29,6 +33,23 @@ public class Client implements Runnable, Listener {
 	protected final JPanel panel = new JPanel();
 	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
 	protected final JFrame frame = new JFrame("Cash Sheet");
+
+	private Session session;
+	private int timeout;
+	
+	public void setModel(TableModel model) {
+		currencyView.setModel(model);
+		accountView.setModel(model);
+		tradeView.setModel(model);
+	}
+
+	public void setSession(Session session) {
+		this.session = session;
+	}
+
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
+	}
 	
 	public void run() {
 		panel.add(splitPane2);
@@ -38,24 +59,30 @@ public class Client implements Runnable, Listener {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		
-		
-		
-		// plug accountManager into tradeView...
-//		final AbstractTableModel tradeModel = new TradeModel(accountManager);
-//		tradeView.setModel(tradeModel);
+		// Client
+		TestListener guiModel = new TestListener();
+		try	{
+			// create a client-side proxy for the Server
+			Destination serverDestination = session.createQueue("Server.View");
+			RemotingFactory<View> clientFactory = new RemotingFactory<View>(session, View.class, serverDestination, timeout);
+			View serverProxy = clientFactory.createSynchronousClient();
 
-//		accountManager.register(new Listener<Trade>() {
-//			
-//			@Override
-//			public void update(Trade oldValue, Trade newValue) {
-//				if (oldValue==null)
-//					tradeModel.fireTableRowsInserted(newValue.getId(), newValue.getId());
-//				else
-//					tradeModel.fireTableRowsUpdated(newValue.getId(), newValue.getId());
-//			}
-//		});
+			// create a Client
 
+			// create a client-side server to support callbacks on client
+			Destination clientDestination = session.createQueue("Client.Listener");
+			RemotingFactory<Listener> serverFactory = new RemotingFactory<Listener>(session, Listener.class, clientDestination, timeout);
+			serverFactory.createServer(guiModel);
+			Listener clientServer = serverFactory.createSynchronousClient();
 
+			// pass the client over to the server to attach as a listener..
+			serverProxy.addElementListener(clientServer);
+			LOG.info("Client ready: "+clientDestination);
+		} catch (JMSException e) {
+			LOG.fatal(e);
+		}
+
+		setModel(guiModel);
 	}
 	
 	public static void main(String[] args) throws JMSException {
@@ -64,27 +91,9 @@ public class Client implements Runnable, Listener {
 		connection.start();
 		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		
-		QueueFactory queueFactory = new QueueFactory();
-		int timeout = 5000;
-		RemotingFactory<View> factory = new RemotingFactory<View>(session, View.class, queueFactory, timeout);
-		View view = factory.createSynchronousClient();
-		view.addElementListener(null);
-		
-		SwingUtilities.invokeLater(new Client());
+		Client client = new Client();
+		client.setSession(session);
+		SwingUtilities.invokeLater(client);
 	}
 
-	// Listener...
-	
-	@Override
-	public void update(List updates) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void update(Object update) {
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

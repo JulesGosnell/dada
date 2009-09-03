@@ -19,48 +19,40 @@ public class Main {
 
 	public static void main(String[] args) throws JMSException {
 		int timeout = 60000;
+		//ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("peer://groupa/broker2?broker.persistent=false&broker.useJmx=false");
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
+		Connection connection = connectionFactory.createConnection();
+		connection.start();
+		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
 		// Server
 		{
-			Connection connection = connectionFactory.createConnection();
-			connection.start();
-			Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 			Destination destination = session.createQueue("Server.View");
  
 			RemotingFactory<View> serverFactory = new RemotingFactory<View>(session, View.class, destination, timeout);
 			serverFactory.createServer(new Server(new IdentityFilter<Listener>()));
 			LOG.info("Server ready: "+destination);
 		}
-		// Client
+
 		{
-			Connection connection = connectionFactory.createConnection();
-			connection.start();
-			Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-			// need an object that is a Listener and a TableModel - then
-
-			// create a client-side proxy for the Server
-			Destination serverDestination = session.createQueue("Server.View");
-			RemotingFactory<View> clientFactory = new RemotingFactory<View>(session, View.class, serverDestination, timeout);
-			View serverProxy = clientFactory.createSynchronousClient();
-
-			// create a Client
-			Listener client = new TestListener();
-			
-			// create a client-side server to support callbacks on client
-			Destination clientDestination = session.createQueue("Client.Listener");
-			RemotingFactory<Listener> serverFactory = new RemotingFactory<Listener>(session, Listener.class, clientDestination, timeout);
-			serverFactory.createServer(client);
-			Listener clientServer = serverFactory.createSynchronousClient();
-
-			// pass the client over to the server to attach as a listener..
-			serverProxy.addElementListener(clientServer);
-			LOG.info("Client ready: "+clientDestination);
+			Client client = new Client();
+			client.setTimeout(timeout);
+			client.setSession(session);
+			SwingUtilities.invokeLater(client);
 		}
-
-		// TODO: need to hook ClientListener to Swing Client
-		SwingUtilities.invokeLater(new Client());
-
+//		try {
+//			Thread.sleep(3000);
+//		} catch (InterruptedException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+//		{
+//			Client client = new Client();
+//			client.setTimeout(timeout);
+//			client.setSession(session);
+//			SwingUtilities.invokeLater(client);
+//		}
+		
 		// keep going...
 		while (true)
 			try {
