@@ -12,6 +12,7 @@ public class TradeGenerator extends AbstractModel<Trade> {
 	@Override
 	public void registerView(View<Trade> view) {
 		view.upsert(trades.values());
+		super.registerView(view);
 	}
 
 	// TradeGenerator
@@ -25,10 +26,14 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		@Override
 		public void run() {
 			int id = (int)Math.random()*numTrades;
-			Trade trade = trades.get(id);
-			trades.put(id, new  Trade(id, trade.getVersion()+1));
+			Trade oldTrade = trades.get(id);
+			Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
+			trades.put(id, newTrade);
+			notifyUpsertion(newTrade);
+			timer.schedule(task, delay);
 		}
 	};
+	
 	public TradeGenerator(int numTrades, long delay) {
 		this.numTrades = numTrades;
 		this.delay = delay;
@@ -37,6 +42,13 @@ public class TradeGenerator extends AbstractModel<Trade> {
 	public void start() {
 		for (int i=0 ;i<numTrades; i++)
 			trades.put(i, new Trade(i, 0));
-		//timer.schedule(task, delay)
+		notifyUpsertion(trades.values());
+		timer.schedule(task, delay);
 	}
+	
+	public void stop() {
+		timer.cancel();
+	}
+	
 }
+
