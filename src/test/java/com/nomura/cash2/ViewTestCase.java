@@ -52,14 +52,25 @@ public class ViewTestCase extends TestCase {
 		int count;
 		
 		@Override
-		public void update(List<T> updates) {
-			count += updates.size();
+		public void upsert(List<T> upsertions) {
+			count += upsertions.size();
 		}
 
 		@Override
-		public void update(T update) {
+		public void upsert(T upsertion) {
 			count++;
 		}
+		
+		@Override
+		public void delete(List<com.nomura.cash2.Listener.Key> deletions) {
+			throw new UnsupportedOperationException("NYI");
+		}
+
+		@Override
+		public void delete(com.nomura.cash2.Listener.Key deletion) {
+			throw new UnsupportedOperationException("NYI");
+		}
+
 		
 	};
 
@@ -67,9 +78,9 @@ public class ViewTestCase extends TestCase {
 		FilterView<Datum> view = new FilterView<Datum>(new DatumIsTrueQuery());
 		Counter<Datum> counter = new Counter<Datum>();
 		view.addElementListener(counter);
-		view.update(new Datum(false));
-		view.update(new Datum(true));
-		view.update(new Datum(false));
+		view.upsert(new Datum(false));
+		view.upsert(new Datum(true));
+		view.upsert(new Datum(false));
 		assertTrue(counter.count==1);
 	}
 
@@ -112,13 +123,13 @@ public class ViewTestCase extends TestCase {
 		FilterView<StringDatum> isNull = new FilterView<StringDatum>(new IsNullQuery());
 		isTrue.addElementListener(isNull);
 		isNull.addElementListener(counter);
-		isTrue.update(new StringDatum(false, ""));
+		isTrue.upsert(new StringDatum(false, ""));
 		assertTrue(counter.count==0);
-		isTrue.update(new StringDatum(true, ""));
+		isTrue.upsert(new StringDatum(true, ""));
 		assertTrue(counter.count==0);
-		isTrue.update(new StringDatum(false, null));
+		isTrue.upsert(new StringDatum(false, null));
 		assertTrue(counter.count==0);
-		isTrue.update(new StringDatum(true, null));
+		isTrue.upsert(new StringDatum(true, null));
 		assertTrue(counter.count==1);
 		
 		List<StringDatum> elements = new ArrayList<StringDatum>(4);
@@ -126,7 +137,7 @@ public class ViewTestCase extends TestCase {
 		elements.add(new StringDatum(true, ""));
 		elements.add(new StringDatum(false, null));
 		elements.add(new StringDatum(true, null));
-		isTrue.update(elements);
+		isTrue.upsert(elements);
 		assertTrue(counter.count==2);
 	}
 

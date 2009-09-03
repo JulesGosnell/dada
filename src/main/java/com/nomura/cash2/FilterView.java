@@ -21,7 +21,7 @@ public class FilterView<T> implements View<T> {
 	@Override
 	public void addElementListener(Listener<T> listener) {
 		// call this listener back with full resultset
-		listener.update(results);
+		listener.upsert(results);
 		// TODO: collapse remote listeners on same topic into a single ref-counted listener
 		listeners.add(listener);
 	}
@@ -39,20 +39,29 @@ public class FilterView<T> implements View<T> {
 	// Listener
 	
 	@Override
-	public void update(T update) {
-		if (query.apply(update)) {
-			results.addFirst(update);
+	public void upsert(T upsertion) {
+		if (query.apply(upsertion)) {
+			results.addFirst(upsertion);
 			for (Listener<T> listener : listeners)
-				listener.update(update);
+				listener.upsert(upsertion);
 		}
-		
 	}
 
 	@Override
-	public void update(List<T> updates) {
-		List<T> relevantUpdates = query.apply(updates);
+	public void upsert(List<T> upsertions) {
+		List<T> relevantUpdates = query.apply(upsertions);
 		if (!relevantUpdates.isEmpty())
 			for (Listener<T> listener : listeners)
-				listener.update(relevantUpdates);
+				listener.upsert(relevantUpdates);
+	}
+
+	@Override
+	public void delete(List<com.nomura.cash2.Listener.Key> deletions) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
+	@Override
+	public void delete(com.nomura.cash2.Listener.Key deletion) {
+		throw new UnsupportedOperationException("NYI");
 	}
 }

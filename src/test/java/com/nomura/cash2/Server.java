@@ -25,7 +25,7 @@ public class Server extends FilterView<Listener> {
 	@Override
 	public void addElementListener(Listener listener) {
 		LOG.info("new Listener: " + listener);
-		update(listener); // add listener to model...
+		upsert(listener); // add listener to model...
 		super.addElementListener(listener);
 	}
 

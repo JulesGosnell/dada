@@ -18,17 +18,27 @@ public class TestListener<T> extends AbstractTableModel implements Listener<T>, 
 	// Listener
 	
 	@Override
-	public void update(List<T> updates) {
-		log.info("TEST LISTENER: UPDATE("+updates+")");
-		elements.addAll(updates);
+	public void upsert(List<T> upsertions) {
+		log.info("TEST LISTENER: UPDATE("+upsertions+")");
+		elements.addAll(upsertions);
 	}
 
 	@Override
-	public void update(T update) {
-		log.info("TEST LISTENER: UPDATE("+update+")");
-		elements.add(update);
+	public void upsert(T upsertion) {
+		log.info("TEST LISTENER: UPDATE("+upsertion+")");
+		elements.add(upsertion);
 	}
 	
+	@Override
+	public void delete(List<com.nomura.cash2.Listener.Key> deletions) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
+	@Override
+	public void delete(com.nomura.cash2.Listener.Key deletion) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
 	// TableModel
 
 	@Override

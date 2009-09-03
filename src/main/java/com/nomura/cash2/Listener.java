@@ -7,7 +7,12 @@ import java.util.List;
 
 public interface Listener<T> {
 	
-	void update(List<T> updates);
-	void update(T update);
+	interface Key{};
+	
+	void upsert(List<T> upsertions);
+	void upsert(T upsertion);
+	
+	void delete(List<Key> deletions);
+	void delete(Key deletion);
 	
 }
