@@ -15,7 +15,7 @@ import com.nomura.consensus.jms.RemotingFactory;
 
 public class Main {
 
-	private static final Log LOG = LogFactory.getLog(Server.class);
+	private static final Log LOG = LogFactory.getLog(Main.class);
 
 	public static void main(String[] args) throws JMSException {
 		int timeout = 60000;
@@ -30,7 +30,6 @@ public class Main {
 			Destination destination = session.createQueue("Server.View");
  
 			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);
-			//Server server = new Server(new IdentityFilter<View>());
 			Model<Trade> server = new TradeGenerator(10,100L);
 			serverFactory.createServer(server);
 			server.start();
