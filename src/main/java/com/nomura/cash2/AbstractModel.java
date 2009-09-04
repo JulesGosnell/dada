@@ -6,7 +6,7 @@ import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class AbstractModel<Output> implements Model<Output> {
+public abstract class AbstractModel<Output> implements Model<Output> {
 
 	protected final Log log = LogFactory.getLog(getClass());
 

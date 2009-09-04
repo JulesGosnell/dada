@@ -9,6 +9,14 @@ import java.util.List;
 
 public class FilterView<T> extends AbstractModel<T> implements ModelView<T, T> {
 
+	// Lifecycle
+	
+	public void start() {
+	}
+
+	public void stop() {
+	}
+	
 	protected final Query<T> query;
 	protected final LinkedList<T> results;
 	

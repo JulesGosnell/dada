@@ -65,7 +65,7 @@ public class Client implements Runnable {
 			// create a client-side proxy for the Server
 			Destination serverDestination = session.createQueue("Server.View");
 			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory(session, Model.class, serverDestination, timeout);
-			Model serverProxy = clientFactory.createSynchronousClient();
+			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 

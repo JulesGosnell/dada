@@ -38,7 +38,8 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		this.numTrades = numTrades;
 		this.delay = delay;
 	}
-	
+
+	@Override
 	public void start() {
 		for (int i=0 ;i<numTrades; i++)
 			trades.put(i, new Trade(i, 0));
@@ -46,6 +47,7 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
+	@Override
 	public void stop() {
 		timer.cancel();
 	}

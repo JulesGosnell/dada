@@ -1,8 +1,8 @@
 package com.nomura.cash2;
 
-public interface Model<Output> {
+public interface Model<Output> extends Lifecycle {
 
-	public void registerView(View<Output> view);
-	public void deregisterView(View<Output> view);
-
+	void registerView(View<Output> view);
+	void deregisterView(View<Output> view);
+	
 }

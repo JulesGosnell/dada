@@ -31,7 +31,7 @@ public class Main {
  
 			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory(session, Model.class, destination, timeout);
 			//Server server = new Server(new IdentityFilter<View>());
-			TradeGenerator server = new TradeGenerator(10,100L);
+			Model<Trade> server = new TradeGenerator(10,100L);
 			serverFactory.createServer(server);
 			server.start();
 			LOG.info("Server ready: "+destination);
