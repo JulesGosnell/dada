@@ -24,16 +24,16 @@ import org.apache.commons.logging.LogFactory;
 public class RemotingFactory<T> {
 
 	private final Session session;
-	private final Class<T> interfaze;
+	private final Class<?> interfaze;
 	private final SimpleMethodMapper mapper;
 	private final Destination invocationDestination;
 	private final long timeout;
 	
-	public RemotingFactory(Session session, Class<T> interfaze, DestinationFactory factory, long timeout) throws JMSException {
+	public RemotingFactory(Session session, Class<?> interfaze, DestinationFactory factory, long timeout) throws JMSException {
 		this(session, interfaze, factory.create(session, interfaze.getCanonicalName()), timeout);
 	}
 	
-	public RemotingFactory(Session session, Class<T> interfaze, Destination invocationDestination, long timeout) throws JMSException {
+	public RemotingFactory(Session session, Class<?> interfaze, Destination invocationDestination, long timeout) throws JMSException {
 		this.session = session;
 		this.interfaze = interfaze;
 		this.mapper = new SimpleMethodMapper(interfaze);
@@ -119,7 +119,6 @@ public class RemotingFactory<T> {
 	
 	public T createServer(T target) throws JMSException {
 		new Server(target);
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		return target;
 	}
 	

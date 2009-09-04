@@ -127,7 +127,7 @@ public class RemotingTestCase extends TestCase {
 			}
 			
 			final CountDownLatch latch = new CountDownLatch(1);
-			asynchronousClient.invoke(Server.class.getMethod("throwException", null), null, new AsyncInvocationListener(){
+			asynchronousClient.invoke(Server.class.getMethod("throwException", (Class<?>[])null), null, new AsyncInvocationListener(){
 
 				@Override
 				public void onError(Exception exception) {
@@ -145,7 +145,7 @@ public class RemotingTestCase extends TestCase {
 		{
 			assertTrue(client.returnException() instanceof ServerException);
 			final CountDownLatch latch = new CountDownLatch(1);
-			asynchronousClient.invoke(Server.class.getMethod("returnException", null), null, new AsyncInvocationListener(){
+			asynchronousClient.invoke(Server.class.getMethod("returnException", (Class<?>[])null), null, new AsyncInvocationListener(){
 
 				@Override
 				public void onError(Exception exception) {

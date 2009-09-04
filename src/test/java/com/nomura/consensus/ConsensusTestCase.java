@@ -61,7 +61,7 @@ public class ConsensusTestCase extends TestCase {
 		Paxos server4 = remotingFactory.createServer(new PaxosImpl());
 		AsynchronousClient client = remotingFactory.createAsynchronousClient();
 		
-		client.invoke(Paxos.class.getMethod("foo", null), null, new AsyncInvocationListener(){
+		client.invoke(Paxos.class.getMethod("foo", (Class<?>[])null), null, new AsyncInvocationListener(){
 
 			@Override
 			public void onError(Exception exception) {
@@ -74,7 +74,7 @@ public class ConsensusTestCase extends TestCase {
 				LOG.info("foo = " + value);
 			}});
 
-		Thread.currentThread().sleep(5000);
+		Thread.sleep(5000);
 	}
 
 }

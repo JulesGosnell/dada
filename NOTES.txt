@@ -34,3 +34,6 @@ YYY ------------------
 YYY = PositionManager<?, Position>
 XXX = Position[Manager<?, Trade> ]
 
+
+
+WHY DOES MAVEN REFUSE TO ADD ASPECTJ JARS TO ECLIPSE CLASSPATH - I HAVE TO PATCH IT UP BY HAND !
