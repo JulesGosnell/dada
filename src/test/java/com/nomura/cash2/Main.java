@@ -1,5 +1,8 @@
 package com.nomura.cash2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -31,7 +34,12 @@ public class Main {
  
 			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);
 			Model<Trade> server = new TradeGenerator(10,100L);
-			serverFactory.createServer(server);
+			List<TradePartition> tradePartitions = new ArrayList<TradePartition>();
+			TradePartition partition0 = new TradePartition(0);
+			tradePartitions.add(partition0);
+			TradePartitioner partitioner = new TradePartitioner(tradePartitions);
+			server.registerView(partitioner);
+			serverFactory.createServer(partition0);
 			server.start();
 			LOG.info("Server ready: "+destination);
 		}
