@@ -56,11 +56,11 @@ public class RelationalAspect {
         }
     }
 
-    @Pointcut("execution(public com.nomura.ltw.Identifiable+ com.nomura.ltw.Identifiable+.get*())")
+    @Pointcut("execution(public org.omo.ltw.Identifiable+ org.omo.ltw.Identifiable+.get*())")
     public void getters(){
     }
 
-    @Pointcut("execution(public void com.nomura.ltw.Identifiable+.set*(com.nomura.ltw.Identifiable+))")
+    @Pointcut("execution(public void org.omo.ltw.Identifiable+.set*(org.omo.ltw.Identifiable+))")
     public void setters(){
     }
 }

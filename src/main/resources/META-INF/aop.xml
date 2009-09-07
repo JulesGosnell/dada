@@ -3,12 +3,12 @@
 <aspectj>
 
   <weaver>
-    <include within="com.nomura.ltw.*"/><!-- only weave classes in our application-specific packages -->
+    <include within="org.omo.ltw.*"/><!-- only weave classes in our application-specific packages -->
   </weaver>
 
   <aspects>
-    <!-- <aspect name="com.nomura.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
-    <aspect name="com.nomura.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
+    <!-- <aspect name="org.omo.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
+    <aspect name="org.omo.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
   </aspects>
 
   </aspectj>

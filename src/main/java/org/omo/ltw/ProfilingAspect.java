@@ -25,6 +25,6 @@ public class ProfilingAspect {
         }
     }
 
-    @Pointcut("execution(public * com.nomura.ltw..*.*(..))")
+    @Pointcut("execution(public * org.omo.ltw..*.*(..))")
     public void methodsToBeProfiled(){}
 }
