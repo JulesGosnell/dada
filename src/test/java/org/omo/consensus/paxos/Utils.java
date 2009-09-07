@@ -1,4 +1,4 @@
-package org.omo;
+package org.omo.consensus.paxos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

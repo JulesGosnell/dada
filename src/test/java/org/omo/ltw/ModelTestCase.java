@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 
 import junit.framework.TestCase;
 
-public class TestModel extends TestCase {
+public class ModelTestCase extends TestCase {
 
 	static class ChangedEvent {
 		Field field;
