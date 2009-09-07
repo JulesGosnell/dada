@@ -23,7 +23,8 @@ public class TradeTableModel extends AbstractTableModel implements View<Trade>, 
 		for (Trade upsertion : upsertions) {
 			int id = upsertion.getId();
 			trades.put(id, upsertion);
-			fireTableRowsUpdated(id, id);
+			int index = trades.headMap(id).size();
+			fireTableRowsUpdated(index, index);
 		}
 	}
 
@@ -32,7 +33,8 @@ public class TradeTableModel extends AbstractTableModel implements View<Trade>, 
 		log.info("UPDATE("+upsertion+")");
 		int id = upsertion.getId();
 		trades.put(id, upsertion);
-		fireTableRowsUpdated(id, id);
+		int index = trades.headMap(id).size();
+		fireTableRowsUpdated(index, index);
 	}
 	
 	@Override
@@ -67,7 +69,7 @@ public class TradeTableModel extends AbstractTableModel implements View<Trade>, 
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		Trade trade = trades.get(rowIndex);
+		Trade trade = (Trade)trades.values().toArray()[rowIndex]; // yikes !!
 		
 		switch (columnIndex) {
 

@@ -37,10 +37,14 @@ public class Client implements Runnable {
 	private Session session;
 	private int timeout;
 	
-	public void setModel(TableModel model) {
-		currencyView.setModel(model);
+	public void setModel1(TableModel model) {
 		accountView.setModel(model);
+	}
+	public void setModel2(TableModel model) {
 		tradeView.setModel(model);
+	}
+	public void setModel3(TableModel model) {
+		currencyView.setModel(model);
 	}
 
 	public void setSession(Session session) {
@@ -60,20 +64,43 @@ public class Client implements Runnable {
 		frame.setVisible(true);
 		
 		// Client
-		TradeTableModel guiModel = new TradeTableModel();
+		TradeTableModel guiModel1 = new TradeTableModel();
 		try	{
 			// create a client-side proxy for the Server
-			Destination serverDestination = session.createQueue("Server.View");
+			Destination serverDestination = session.createQueue("Server.0.View");
 			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
 			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 
 			// create a client-side server to support callbacks on client
-			Destination clientDestination = session.createQueue("Client.Listener");
+			Destination clientDestination = session.createQueue("Client.0.Listener");
 			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
-			serverFactory.createServer(guiModel);
+			serverFactory.createServer(guiModel1);
 			View<Trade> clientServer = serverFactory.createSynchronousClient();
+			setModel1(guiModel1);
+			
+			// pass the client over to the server to attach as a listener..
+			serverProxy.registerView(clientServer);
+			LOG.info("Client ready: "+clientDestination);
+		} catch (JMSException e) {
+			LOG.fatal(e);
+		}
+		TradeTableModel guiModel2 = new TradeTableModel();
+		try	{
+			// create a client-side proxy for the Server
+			Destination serverDestination = session.createQueue("Server.1.View");
+			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
+			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
+
+			// create a Client
+
+			// create a client-side server to support callbacks on client
+			Destination clientDestination = session.createQueue("Client.1.Listener");
+			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
+			serverFactory.createServer(guiModel2);
+			View<Trade> clientServer = serverFactory.createSynchronousClient();
+			setModel2(guiModel2);
 
 			// pass the client over to the server to attach as a listener..
 			serverProxy.registerView(clientServer);
@@ -81,8 +108,6 @@ public class Client implements Runnable {
 		} catch (JMSException e) {
 			LOG.fatal(e);
 		}
-
-		setModel(guiModel);
 	}
 	
 	public static void main(String[] args) throws JMSException {

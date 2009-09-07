@@ -30,18 +30,26 @@ public class Main {
 
 		// Server
 		{
-			Destination destination = session.createQueue("Server.View");
- 
-			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);
 			Model<Trade> server = new TradeGenerator(10,100L);
 			List<TradePartition> tradePartitions = new ArrayList<TradePartition>();
 			TradePartition partition0 = new TradePartition(0);
 			tradePartitions.add(partition0);
+			TradePartition partition1 = new TradePartition(1);
+			tradePartitions.add(partition1);
 			TradePartitioner partitioner = new TradePartitioner(tradePartitions);
 			server.registerView(partitioner);
-			serverFactory.createServer(partition0);
+			{
+				Destination destination = session.createQueue("Server.0.View");
+				RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);
+				serverFactory.createServer(partition0);
+			}
+			{
+				Destination destination = session.createQueue("Server.1.View");
+				RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);
+				serverFactory.createServer(partition1);
+			}
 			server.start();
-			LOG.info("Server ready: "+destination);
+			LOG.info("Server ready: Server.<partition>.View");
 		}
 
 		{
