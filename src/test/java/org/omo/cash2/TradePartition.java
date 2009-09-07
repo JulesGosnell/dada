@@ -1,12 +1,8 @@
 package org.omo.cash2;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.omo.cash2.AbstractModel;
-import org.omo.cash2.View;
 
 public class TradePartition extends AbstractModel<Trade> implements View<Trade> {
 
@@ -15,12 +11,8 @@ public class TradePartition extends AbstractModel<Trade> implements View<Trade> 
 	TradePartition(int partitionNumber) {
 		this.partitionNumber = partitionNumber; 
 	}
-	
-	@Override
-	public void registerView(View<Trade> view) {
-		view.upsert(new ArrayList<Trade>(trades.values()));
-		super.registerView(view);
-	}
+
+	// Lifecycle
 	
 	@Override
 	public void start() {
@@ -30,6 +22,12 @@ public class TradePartition extends AbstractModel<Trade> implements View<Trade> 
 	public void stop() {
 	}
 
+	// Model
+	
+	protected Collection<Trade> getData() {
+		return trades.values();
+	}
+	
 	@Override
 	public void delete(Collection<Integer> deletions) {
 		throw new UnsupportedOperationException("NYI");

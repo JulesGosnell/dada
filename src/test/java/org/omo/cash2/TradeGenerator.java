@@ -1,23 +1,12 @@
 package org.omo.cash2;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.omo.cash2.AbstractModel;
-import org.omo.cash2.View;
-
 public class TradeGenerator extends AbstractModel<Trade> {
-
-	// Model
-	
-	@Override
-	public void registerView(View<Trade> view) {
-		view.upsert(new ArrayList<Trade>(trades.values()));
-		super.registerView(view);
-	}
 
 	// TradeGenerator
 	
@@ -42,6 +31,8 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		this.delay = delay;
 	}
 
+	// Lifecycle
+	
 	@Override
 	public void start() {
 		for (int i=0 ;i<numTrades; i++)
@@ -53,6 +44,12 @@ public class TradeGenerator extends AbstractModel<Trade> {
 	@Override
 	public void stop() {
 		timer.cancel();
+	}
+	
+	// Model
+	
+	protected Collection<Trade> getData() {
+		return trades.values();
 	}
 	
 }

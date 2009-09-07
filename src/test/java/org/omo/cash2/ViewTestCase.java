@@ -84,7 +84,8 @@ public class ViewTestCase extends TestCase {
 	public void testSimpleView() {
 		FilterView<Datum> view = new FilterView<Datum>(new DatumIsTrueQuery());
 		Counter<Datum> counter = new Counter<Datum>();
-		view.registerView(counter);
+		Collection<Datum> data = view.registerView(counter);
+		counter.upsert(data);
 		view.upsert(new Datum(false));
 		view.upsert(new Datum(true));
 		view.upsert(new Datum(false));
@@ -128,8 +129,10 @@ public class ViewTestCase extends TestCase {
 		Counter<StringDatum> counter = new Counter<StringDatum>();
 		FilterView<StringDatum> isTrue = new FilterView<StringDatum>(new IsTrueQuery());
 		FilterView<StringDatum> isNull = new FilterView<StringDatum>(new IsNullQuery());
-		isTrue.registerView(isNull);
-		isNull.registerView(counter);
+		Collection<StringDatum> isNullData = isTrue.registerView(isNull);
+		isNull.upsert(isNullData);
+		Collection<StringDatum> counterData = isNull.registerView(counter);
+		counter.upsert(counterData);
 		isTrue.upsert(new StringDatum(false, ""));
 		assertTrue(counter.count==0);
 		isTrue.upsert(new StringDatum(true, ""));

@@ -12,9 +12,12 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 
 	protected final Collection<View<Output>> views = new ArrayList<View<Output>>();
 	
+	protected abstract Collection<Output> getData();
+	
 	@Override
-	public void registerView(View<Output> view) {
+	public Collection<Output> registerView(View<Output> view) {
 		views.add(view);
+		return getData();
 	}
 	
 	@Override

@@ -25,14 +25,11 @@ public class FilterView<T> extends AbstractModel<T> implements ModelView<T, T> {
 		this.results = new LinkedList<T>();
 	}
 	
-	@Override
-	public void registerView(View<T> view) {
-		// call this listener back with full resultset
-		view.upsert(results);
-		// TODO: collapse remote listeners on same topic into a single ref-counted listener
-		super.registerView(view);
+	// Model
+	
+	protected Collection<T> getData() {
+		return results;
 	}
-
 	
 	// TODO: is there a difference between insertions and updates ?
 	// TODO: how can we handle them efficiently in a concurrent environment

@@ -1,6 +1,7 @@
 package org.omo.cash2;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.jms.Connection;
@@ -38,7 +39,8 @@ public class Main {
 			TradePartition partition1 = new TradePartition(1);
 			tradePartitions.add(partition1);
 			TradePartitioner partitioner = new TradePartitioner(tradePartitions);
-			server.registerView(partitioner);
+			Collection<Trade> trades = server.registerView(partitioner);
+			partitioner.upsert(trades);
 			{
 				Destination destination = session.createQueue("Server.0.View");
 				RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, destination, timeout);

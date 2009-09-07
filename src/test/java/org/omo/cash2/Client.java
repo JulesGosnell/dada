@@ -1,6 +1,7 @@
 package org.omo.cash2;
 
 import java.awt.LayoutManager;
+import java.util.Collection;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -83,7 +84,8 @@ public class Client implements Runnable {
 			setModel1(guiModel1);
 			
 			// pass the client over to the server to attach as a listener..
-			serverProxy.registerView(clientServer);
+			Collection<Trade> trades = serverProxy.registerView(clientServer);
+			clientServer.upsert(trades);
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
@@ -105,7 +107,8 @@ public class Client implements Runnable {
 			setModel2(guiModel2);
 
 			// pass the client over to the server to attach as a listener..
-			serverProxy.registerView(clientServer);
+			Collection<Trade> trades = serverProxy.registerView(clientServer);
+			clientServer.upsert(trades);
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
