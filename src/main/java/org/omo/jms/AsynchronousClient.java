@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.omo.consensus.jms;
+package org.omo.jms;
 
 import java.lang.reflect.Method;
 import java.util.Map;

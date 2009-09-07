@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.omo.consensus.jms;
+package org.omo.jms;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

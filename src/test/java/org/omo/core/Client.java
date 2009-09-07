@@ -18,9 +18,9 @@ import javax.swing.table.TableModel;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.consensus.jms.RemotingFactory;
 import org.omo.core.Model;
 import org.omo.core.View;
+import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
 
 

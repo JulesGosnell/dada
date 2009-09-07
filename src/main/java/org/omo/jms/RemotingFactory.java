@@ -1,4 +1,4 @@
-package org.omo.consensus.jms;
+package org.omo.jms;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

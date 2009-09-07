@@ -1,4 +1,4 @@
-package org.omo.consensus.jms;
+package org.omo.jms;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,11 +16,11 @@ import junit.framework.TestCase;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.consensus.jms.AsyncInvocationListener;
-import org.omo.consensus.jms.AsynchronousClient;
-import org.omo.consensus.jms.Client;
-import org.omo.consensus.jms.QueueFactory;
-import org.omo.consensus.jms.RemotingFactory;
+import org.omo.jms.AsyncInvocationListener;
+import org.omo.jms.AsynchronousClient;
+import org.omo.jms.Client;
+import org.omo.jms.QueueFactory;
+import org.omo.jms.RemotingFactory;
 
 
 public class RemotingTestCase extends TestCase {

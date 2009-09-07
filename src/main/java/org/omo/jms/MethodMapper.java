@@ -1,4 +1,4 @@
-package org.omo.consensus.jms;
+package org.omo.jms;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
