@@ -17,7 +17,7 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 	@Override
 	public Collection<Output> registerView(View<Output> view) {
 		views.add(view);
-		return getData();
+		return new ArrayList<Output>(getData()); // HashMap.values() is not serializable !
 	}
 	
 	@Override

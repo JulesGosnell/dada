@@ -28,28 +28,18 @@ public class Client implements Runnable {
 
 	private static final Log LOG = LogFactory.getLog(Client.class);
 
-	protected final JView currencyView = new JView();
-	protected final JView accountView = new JView();
-	protected final JView tradeView = new JView();
-	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, accountView, tradeView);
-	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, currencyView, splitPane2);
+	protected final JView all = new JView();
+	protected final JView partition0 = new JView();
+	protected final JView partition1 = new JView();
+	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, partition0, partition1);
+	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, all, splitPane2);
 	protected final JPanel panel = new JPanel();
 	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
-	protected final JFrame frame = new JFrame("Cash Sheet");
+	protected final JFrame frame = new JFrame("Demo");
 
 	private Session session;
 	private int timeout;
 	
-	public void setModel1(TableModel model) {
-		accountView.setModel(model);
-	}
-	public void setModel2(TableModel model) {
-		tradeView.setModel(model);
-	}
-	public void setModel3(TableModel model) {
-		currencyView.setModel(model);
-	}
-
 	public void setSession(Session session) {
 		this.session = session;
 	}
@@ -59,13 +49,6 @@ public class Client implements Runnable {
 	}
 	
 	public void run() {
-		panel.add(splitPane2);
-		panel.setOpaque(true);
-		frame.setContentPane(panel);
-		frame.pack();
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setVisible(true);
-		
 		// Client
 		TradeTableModel guiModel1 = new TradeTableModel();
 		try	{
@@ -81,11 +64,11 @@ public class Client implements Runnable {
 			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
 			serverFactory.createServer(guiModel1);
 			View<Trade> clientServer = serverFactory.createSynchronousClient();
-			setModel1(guiModel1);
+			partition0.setModel(guiModel1);
 			
 			// pass the client over to the server to attach as a listener..
 			Collection<Trade> trades = serverProxy.registerView(clientServer);
-			clientServer.upsert(trades);
+			guiModel1.upsert(trades);
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
@@ -104,15 +87,25 @@ public class Client implements Runnable {
 			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
 			serverFactory.createServer(guiModel2);
 			View<Trade> clientServer = serverFactory.createSynchronousClient();
-			setModel2(guiModel2);
+			partition1.setModel(guiModel2);
 
 			// pass the client over to the server to attach as a listener..
 			Collection<Trade> trades = serverProxy.registerView(clientServer);
-			clientServer.upsert(trades);
+			guiModel2.upsert(trades);
+
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
 		}
+
+		panel.add(splitPane2);
+		panel.setOpaque(true);
+		frame.setContentPane(panel);
+		frame.pack();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
+		
+		SwingUtilities.invokeLater(this);
 	}
 	
 	public static void main(String[] args) throws JMSException {
@@ -120,10 +113,12 @@ public class Client implements Runnable {
 		Connection connection = connectionFactory.createConnection();
 		connection.start();
 		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		
+		int timeout = 60000;
+
 		Client client = new Client();
 		client.setSession(session);
-		SwingUtilities.invokeLater(client);
+		client.setTimeout(timeout);
+		client.run();
 	}
 
 }
