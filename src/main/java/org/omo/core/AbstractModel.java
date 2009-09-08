@@ -16,22 +16,28 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 	
 	@Override
 	public Collection<Output> registerView(View<Output> view) {
-		views.add(view);
-		return new ArrayList<Output>(getData()); // HashMap.values() is not serializable !
+		synchronized (views) {
+			views.add(view);
+		}
+		return getData();
 	}
 	
 	@Override
 	public void deregisterView(View<Output> view) {
-		views.remove(view);
+		synchronized (views) {
+			views.remove(view);
+		}
 	}
 	
 	protected void notifyUpsertion(Output upsertion) {
-		for (View<Output> view : views)
-			try {
-				view.upsert(upsertion);
-			} catch (RuntimeException e) {
-				log.error("view notification failed: " + view + " <- " + upsertion, e);
-			}
+		synchronized (views) {
+			for (View<Output> view : views)
+				try {
+					view.upsert(upsertion);
+				} catch (RuntimeException e) {
+					log.error("view notification failed: " + view + " <- " + upsertion, e);
+				}
+		}
 	}
 
 	protected void notifyUpsertion(Collection<Output> upsertions) {

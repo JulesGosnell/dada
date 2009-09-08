@@ -1,5 +1,6 @@
 package org.omo.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,9 @@ public class TradePartition extends AbstractModel<Trade> implements View<Trade> 
 	// Model
 	
 	protected Collection<Trade> getData() {
-		return trades.values();
+		synchronized (trades) {
+			return new ArrayList<Trade>(trades.values());
+		}
 	}
 	
 	@Override
@@ -45,14 +48,18 @@ public class TradePartition extends AbstractModel<Trade> implements View<Trade> 
 	
 	@Override
 	public void upsert(Collection<Trade> upsertions) {
-		for (Trade upsertion : upsertions)
-			trades.put(upsertion.getId(), upsertion);
+		synchronized (trades) {
+			for (Trade upsertion : upsertions)
+				trades.put(upsertion.getId(), upsertion);
+		}
 		notifyUpsertion(upsertions);
 	}
 
 	@Override
 	public void upsert(Trade upsertion) {
-		trades.put(upsertion.getId(), upsertion);
+		synchronized (trades) {
+			trades.put(upsertion.getId(), upsertion);
+		}
 		notifyUpsertion(upsertion);
 	}
 
