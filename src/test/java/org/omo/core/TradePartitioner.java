@@ -8,7 +8,7 @@ import org.omo.core.View;
 
 // should just be an IdentityView
 
-public class TradePartitioner implements View<Trade> {
+public class TradePartitioner implements View<Integer, Trade> {
 
 	private final List<TradePartition> tradePartitions;
 	private final int numPartitions;

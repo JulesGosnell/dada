@@ -5,12 +5,12 @@ package org.omo.core;
 
 import java.util.Collection;
 
-public interface View<Input> {
+public interface View<InputKey, InputValue> {
 	
-	void upsert(Collection<Input> upsertions);
-	void upsert(Input upsertion);
+	void upsert(Collection<InputValue> upsertions);
+	void upsert(InputValue upsertion);
 	
-	void delete(Collection<Integer> deletions);
+	void delete(Collection<InputKey> deletions);
 	void delete(int deletion);
 	
 }

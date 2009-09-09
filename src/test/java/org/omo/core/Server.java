@@ -29,9 +29,9 @@ public class Server implements Runnable {
 	public void run() {
 		try {
 			Session session = configuration.getSession();
-			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, (Destination)null, configuration.getTimeout());
+			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, configuration.getTimeout());
 
-			Model<Trade> universal = new TradeGenerator("TradeGenerator", 10,100L);
+			Model<Integer, Trade> universal = new TradeGenerator("TradeGenerator", 10,100L);
 			serverFactory.createServer(universal, session.createQueue(configuration.getUniversalModelName()));
 			universal.start();
 

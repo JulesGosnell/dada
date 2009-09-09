@@ -3,11 +3,11 @@ package org.omo.core;
 import java.util.Collection;
 import java.util.Map;
 
-public class AbstractMapView<Input> extends AbstractView<Input> {
+public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey, InputValue> {
 
-	protected final Map<Integer, Input> map;
+	protected final Map<InputKey, InputValue> map;
 	
-	public AbstractMapView(Map map) {
+	public AbstractMapView(Map<InputKey, InputValue> map) {
 		this.map = map;
 	}
 	
@@ -17,9 +17,9 @@ public class AbstractMapView<Input> extends AbstractView<Input> {
 	}
 
 	@Override
-	public void delete(Collection<Integer> deletions) {
+	public void delete(Collection<InputKey> deletions) {
 		synchronized (map) {
-			for (Integer deletion : deletions)
+			for (InputKey deletion : deletions)
 			map.remove(deletion);
 		}
 	}
@@ -32,13 +32,13 @@ public class AbstractMapView<Input> extends AbstractView<Input> {
 	}
 
 	@Override
-	public void upsert(Collection<Input> upsertions) {
+	public void upsert(Collection<InputValue> upsertions) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void upsert(Input upsertion) {
+	public void upsert(InputValue upsertion) {
 		// TODO Auto-generated method stub
 
 	}

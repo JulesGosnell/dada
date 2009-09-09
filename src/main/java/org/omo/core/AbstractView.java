@@ -1,9 +1,9 @@
 package org.omo.core;
 
 
-public abstract class AbstractView<Input> implements View<Input> {
+public abstract class AbstractView<InputKey, InputValue> implements View<InputKey, InputValue> {
 
-	public void connect(Model<Input> model) {
+	public void connect(Model<InputKey, InputValue> model) {
 		synchronized (getLock()) {
 			upsert(model.registerView(this));
 		}

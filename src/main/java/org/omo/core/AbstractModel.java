@@ -6,15 +6,15 @@ import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class AbstractModel<Output> implements Model<Output> {
+public abstract class AbstractModel<OutputKey, OutputValue> implements Model<OutputKey, OutputValue> {
 
 	protected final Log log = LogFactory.getLog(getClass());
 
 	protected final String name;
 	
-	protected final Collection<View<Output>> views = new ArrayList<View<Output>>();
+	protected final Collection<View<OutputKey, OutputValue>> views = new ArrayList<View<OutputKey, OutputValue>>();
 	
-	protected abstract Collection<Output> getData();
+	protected abstract Collection<OutputValue> getData();
 	
 	public AbstractModel(String name) {
 		this.name = name;
@@ -26,7 +26,7 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 	}
 	
 	@Override
-	public Collection<Output> registerView(View<Output> view) {
+	public Collection<OutputValue> registerView(View<OutputKey, OutputValue> view) {
 		synchronized (views) {
 			views.add(view);
 		}
@@ -34,15 +34,15 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 	}
 	
 	@Override
-	public void deregisterView(View<Output> view) {
+	public void deregisterView(View<OutputKey, OutputValue> view) {
 		synchronized (views) {
 			views.remove(view);
 		}
 	}
 	
-	protected void notifyUpsertion(Output upsertion) {
+	protected void notifyUpsertion(OutputValue upsertion) {
 		synchronized (views) {
-			for (View<Output> view : views)
+			for (View<OutputKey, OutputValue> view : views)
 				try {
 					view.upsert(upsertion);
 				} catch (RuntimeException e) {
@@ -51,8 +51,8 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 		}
 	}
 
-	protected void notifyUpsertion(Collection<Output> upsertions) {
-		for (View<Output> view : views)
+	protected void notifyUpsertion(Collection<OutputValue> upsertions) {
+		for (View<OutputKey, OutputValue> view : views)
 			try {
 				view.upsert(upsertions);
 			} catch (RuntimeException e) {

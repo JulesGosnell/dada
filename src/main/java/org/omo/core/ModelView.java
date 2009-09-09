@@ -1,5 +1,5 @@
 package org.omo.core;
 
-public interface ModelView<Input, Output> extends View <Input>, Model<Output> {
+public interface ModelView<InputKey, InputValue, OutputKey, OutputValue> extends View <InputKey, InputValue>, Model<OutputKey, OutputValue> {
 
 }

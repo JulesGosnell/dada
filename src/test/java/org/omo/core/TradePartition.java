@@ -8,7 +8,7 @@ import java.util.Map;
 import org.omo.core.AbstractModel;
 import org.omo.core.View;
 
-public class TradePartition extends AbstractModel<Trade> implements View<Trade> {
+public class TradePartition extends AbstractModel<Integer, Trade> implements View<Integer, Trade> {
 
 	private final int partitionNumber;
 	

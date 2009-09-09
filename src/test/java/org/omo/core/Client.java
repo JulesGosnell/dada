@@ -52,16 +52,16 @@ public class Client implements Runnable {
 		try	{
 			// create a client-side proxy for the Server
 			Destination serverDestination = session.createQueue(configuration.getUniversalModelName());
-			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
-			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
+			RemotingFactory<Model<Integer, Trade>> clientFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, serverDestination, timeout);
+			Model<Integer, Trade> serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 
 			// create a client-side server to support callbacks on client
 			Destination clientDestination = session.createQueue("Client.all.Listener");
-			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
+			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, clientDestination, timeout);
 			serverFactory.createServer(guiModel0);
-			View<Trade> clientServer = serverFactory.createSynchronousClient();
+			View<Integer, Trade> clientServer = serverFactory.createSynchronousClient();
 			
 			// pass the client over to the server to attach as a listener..
 			Collection<Trade> trades = serverProxy.registerView(clientServer);
@@ -78,16 +78,16 @@ public class Client implements Runnable {
 			try	{
 				// create a client-side proxy for the Server
 				Destination serverDestination = session.createQueue(name);
-				RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
-				Model<Trade> serverProxy = clientFactory.createSynchronousClient();
+				RemotingFactory<Model<Integer, Trade>> clientFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, serverDestination, timeout);
+				Model<Integer, Trade> serverProxy = clientFactory.createSynchronousClient();
 
 				// create a Client
 
 				// create a client-side server to support callbacks on client
 				Destination clientDestination = session.createQueue("Client."+i+".Listener");
-				RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
+				RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, clientDestination, timeout);
 				serverFactory.createServer(guiModel);
-				View<Trade> clientServer = serverFactory.createSynchronousClient();
+				View<Integer, Trade> clientServer = serverFactory.createSynchronousClient();
 
 				// pass the client over to the server to attach as a listener..
 				Collection<Trade> trades = serverProxy.registerView(clientServer);

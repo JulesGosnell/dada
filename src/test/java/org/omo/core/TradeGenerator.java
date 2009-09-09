@@ -9,7 +9,7 @@ import java.util.TimerTask;
 
 import org.omo.core.AbstractModel;
 
-public class TradeGenerator extends AbstractModel<Trade> {
+public class TradeGenerator extends AbstractModel<Integer, Trade> {
 
 	// TradeGenerator
 	

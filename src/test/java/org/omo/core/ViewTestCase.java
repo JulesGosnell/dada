@@ -25,9 +25,11 @@ public class ViewTestCase extends TestCase {
 	
 	static class Datum {
 		
+		final int id;
 		final boolean flag;
 
-		Datum(boolean flag) {
+		Datum(int id, boolean flag) {
+			this.id = id;
 			this.flag = flag;
 		}
 		
@@ -45,31 +47,31 @@ public class ViewTestCase extends TestCase {
 	public void testSimpleQuery() {
 
 		LinkedList<Datum> data = new LinkedList<Datum>();
-		Datum d1=new Datum(false);
+		Datum d1=new Datum(0, false);
 		data.addFirst(d1);
-		Datum d2=new Datum(true);
+		Datum d2=new Datum(1, true);
 		data.add(d2);
 		List<Datum> results = new DatumIsTrueQuery().apply(data);
 		assertTrue(results.size()==1);
 		assertTrue(results.get(0)==d2);
 	}
 	
-	static class Counter<T> implements View<T> {
+	static class Counter<K, V> implements View<K, V> {
 
 		int count;
 		
 		@Override
-		public void upsert(Collection<T> upsertions) {
+		public void upsert(Collection<V> upsertions) {
 			count += upsertions.size();
 		}
 
 		@Override
-		public void upsert(T upsertion) {
+		public void upsert(V upsertion) {
 			count++;
 		}
 		
 		@Override
-		public void delete(Collection<Integer> deletions) {
+		public void delete(Collection<K> deletions) {
 			throw new UnsupportedOperationException("NYI");
 		}
 
@@ -82,21 +84,21 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilterView<Datum> view = new FilterView<Datum>("IsTrue", new DatumIsTrueQuery());
-		Counter<Datum> counter = new Counter<Datum>();
+		FilterView<Integer, Datum> view = new FilterView<Integer, Datum>("IsTrue", new DatumIsTrueQuery());
+		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
 		Collection<Datum> data = view.registerView(counter);
 		counter.upsert(data);
-		view.upsert(new Datum(false));
-		view.upsert(new Datum(true));
-		view.upsert(new Datum(false));
+		view.upsert(new Datum(0, false));
+		view.upsert(new Datum(1, true));
+		view.upsert(new Datum(2, false));
 		assertTrue(counter.count==1);
 	}
 
 	class StringDatum extends Datum {
 		String string;
 		
-		StringDatum(boolean flag, String string) {
-			super(flag);
+		StringDatum(int id, boolean flag, String string) {
+			super(id, flag);
 			this.string = string;
 		}
 	}
@@ -119,34 +121,34 @@ public class ViewTestCase extends TestCase {
 		IsTrueQuery isTrue = new IsTrueQuery();
 		IsNullQuery isNull = new IsNullQuery();
 		Query<StringDatum> isTrueAndIsNull = new AndQuery<StringDatum>(isTrue, isNull);
-		assertTrue(!isTrueAndIsNull.apply(new StringDatum(false, "")));
-		assertTrue(!isTrueAndIsNull.apply(new StringDatum(true, "")));
-		assertTrue(!isTrueAndIsNull.apply(new StringDatum(false, null)));
-		assertTrue(isTrueAndIsNull.apply(new StringDatum(true, null)));
+		assertTrue(!isTrueAndIsNull.apply(new StringDatum(0, false, "")));
+		assertTrue(!isTrueAndIsNull.apply(new StringDatum(1, true, "")));
+		assertTrue(!isTrueAndIsNull.apply(new StringDatum(2, false, null)));
+		assertTrue(isTrueAndIsNull.apply(new StringDatum(3, true, null)));
 	}
 
 	public void testCompoundView() {
-		Counter<StringDatum> counter = new Counter<StringDatum>();
-		FilterView<StringDatum> isTrue = new FilterView<StringDatum>("IsTrue", new IsTrueQuery());
-		FilterView<StringDatum> isNull = new FilterView<StringDatum>("IsNull", new IsNullQuery());
+		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
+		FilterView<Integer, StringDatum> isTrue = new FilterView<Integer, StringDatum>("IsTrue", new IsTrueQuery());
+		FilterView<Integer, StringDatum> isNull = new FilterView<Integer, StringDatum>("IsNull", new IsNullQuery());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull);
 		isNull.upsert(isNullData);
 		Collection<StringDatum> counterData = isNull.registerView(counter);
 		counter.upsert(counterData);
-		isTrue.upsert(new StringDatum(false, ""));
+		isTrue.upsert(new StringDatum(0, false, ""));
 		assertTrue(counter.count==0);
-		isTrue.upsert(new StringDatum(true, ""));
+		isTrue.upsert(new StringDatum(1, true, ""));
 		assertTrue(counter.count==0);
-		isTrue.upsert(new StringDatum(false, null));
+		isTrue.upsert(new StringDatum(2, false, null));
 		assertTrue(counter.count==0);
-		isTrue.upsert(new StringDatum(true, null));
+		isTrue.upsert(new StringDatum(3, true, null));
 		assertTrue(counter.count==1);
 		
 		List<StringDatum> elements = new ArrayList<StringDatum>(4);
-		elements.add(new StringDatum(false, ""));
-		elements.add(new StringDatum(true, ""));
-		elements.add(new StringDatum(false, null));
-		elements.add(new StringDatum(true, null));
+		elements.add(new StringDatum(4, false, ""));
+		elements.add(new StringDatum(5, true, ""));
+		elements.add(new StringDatum(6, false, null));
+		elements.add(new StringDatum(7, true, null));
 		isTrue.upsert(elements);
 		assertTrue(counter.count==2);
 	}
