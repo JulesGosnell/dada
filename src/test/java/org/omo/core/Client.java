@@ -1,7 +1,11 @@
 package org.omo.core;
 
 import java.awt.LayoutManager;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -9,17 +13,15 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.swing.BoxLayout;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
-import javax.swing.table.TableModel;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.core.Model;
-import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
 
@@ -28,97 +30,147 @@ public class Client implements Runnable {
 
 	private static final Log LOG = LogFactory.getLog(Client.class);
 
-	protected final JView all = new JView();
-	protected final JView partition0 = new JView();
-	protected final JView partition1 = new JView();
-	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, partition0, partition1);
-	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, all, splitPane2);
-	protected final JPanel panel = new JPanel();
-	protected final LayoutManager layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+	protected JView universal;
+	protected List<JView> partitions = new ArrayList<JView>();
+	protected JView aggregate;
+	protected JPanel panel;
+	protected LayoutManager layout;
 	protected final JFrame frame = new JFrame("Demo");
 
-	private Session session;
-	private int timeout;
-	
-	public void setSession(Session session) {
-		this.session = session;
-	}
+	private Configuration configuration;
 
-	public void setTimeout(int timeout) {
-		this.timeout = timeout;
+	public Client(Configuration configuration) {
+		this.configuration = configuration;
 	}
 	
 	public void run() {
 		// Client
-		TradeTableModel guiModel1 = new TradeTableModel();
+		TradeTableModel guiModel0 = new TradeTableModel();
+		Session session = configuration.getSession();
+		int timeout = configuration.getTimeout();
+		
 		try	{
 			// create a client-side proxy for the Server
-			Destination serverDestination = session.createQueue("Server.0.View");
+			Destination serverDestination = session.createQueue(configuration.getUniversalModelName());
 			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
 			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
 
 			// create a Client
 
 			// create a client-side server to support callbacks on client
-			Destination clientDestination = session.createQueue("Client.0.Listener");
+			Destination clientDestination = session.createQueue("Client.all.Listener");
 			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
-			serverFactory.createServer(guiModel1);
+			serverFactory.createServer(guiModel0);
 			View<Trade> clientServer = serverFactory.createSynchronousClient();
-			partition0.setModel(guiModel1);
 			
 			// pass the client over to the server to attach as a listener..
 			Collection<Trade> trades = serverProxy.registerView(clientServer);
-			guiModel1.upsert(trades);
+			guiModel0.upsert(trades);
 			LOG.info("Client ready: "+clientDestination);
 		} catch (JMSException e) {
 			LOG.fatal(e);
 		}
-		TradeTableModel guiModel2 = new TradeTableModel();
-		try	{
-			// create a client-side proxy for the Server
-			Destination serverDestination = session.createQueue("Server.1.View");
-			RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
-			Model<Trade> serverProxy = clientFactory.createSynchronousClient();
+		universal = new JView(guiModel0);
+		
+		int i = 0;
+		for (String name : configuration.getPartitionModelNames()) {
+			TradeTableModel guiModel = new TradeTableModel();
+			try	{
+				// create a client-side proxy for the Server
+				Destination serverDestination = session.createQueue(name);
+				RemotingFactory<Model<Trade>> clientFactory = new RemotingFactory<Model<Trade>>(session, Model.class, serverDestination, timeout);
+				Model<Trade> serverProxy = clientFactory.createSynchronousClient();
 
-			// create a Client
+				// create a Client
 
-			// create a client-side server to support callbacks on client
-			Destination clientDestination = session.createQueue("Client.1.Listener");
-			RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
-			serverFactory.createServer(guiModel2);
-			View<Trade> clientServer = serverFactory.createSynchronousClient();
-			partition1.setModel(guiModel2);
+				// create a client-side server to support callbacks on client
+				Destination clientDestination = session.createQueue("Client."+i+".Listener");
+				RemotingFactory<View<Trade>> serverFactory = new RemotingFactory<View<Trade>>(session, View.class, clientDestination, timeout);
+				serverFactory.createServer(guiModel);
+				View<Trade> clientServer = serverFactory.createSynchronousClient();
 
-			// pass the client over to the server to attach as a listener..
-			Collection<Trade> trades = serverProxy.registerView(clientServer);
-			guiModel2.upsert(trades);
-
-			LOG.info("Client ready: "+clientDestination);
-		} catch (JMSException e) {
-			LOG.fatal(e);
+				// pass the client over to the server to attach as a listener..
+				Collection<Trade> trades = serverProxy.registerView(clientServer);
+				guiModel.upsert(trades);
+				partitions.add(new JView(guiModel));
+				LOG.info("Client ready: "+clientDestination);
+			} catch (JMSException e) {
+				LOG.fatal(e);
+			}
 		}
 
-		panel.add(splitPane2);
+		Iterator<JView> it = partitions.iterator();
+		JComponent top;
+		JComponent bot;
+		top = it.next();
+		while (it.hasNext()) {
+			bot = it.next();
+			top = new JSplitPane(JSplitPane.VERTICAL_SPLIT, top, bot);
+		}
+
+		aggregate = new JView(guiModel0);
+
+		JComponent left = universal;
+		JComponent right = top;
+		left = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right);
+		right = aggregate; 
+		left = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right);
+		
+		panel = new JPanel();
+		layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
+		panel.add(left);
 		panel.setOpaque(true);
 		frame.setContentPane(panel);
 		frame.pack();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		
-		SwingUtilities.invokeLater(this);
+		try {
+			SwingUtilities.invokeAndWait(this);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public static void main(String[] args) throws JMSException {
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("peer://groupa/broker2?persistent=false&broker.useJmx=false");
 		Connection connection = connectionFactory.createConnection();
 		connection.start();
-		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		int timeout = 60000;
-
-		Client client = new Client();
-		client.setSession(session);
-		client.setTimeout(timeout);
+		final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		Configuration configuration = new Configuration() {
+			
+			@Override
+			public String getUniversalModelName() {
+				return "Server.all.View";
+			}
+			
+			@Override
+			public int getTimeout() {
+				return 60000;
+			}
+			
+			@Override
+			public Session getSession() {
+				return session;
+			}
+			
+			@Override
+			public List<String> getPartitionModelNames() {
+				List<String> names = new ArrayList<String>();
+				names.add("Server.0.View");
+				names.add("Server.1.View");
+				return names;
+			}
+		};
+		
+		Client client = new Client(configuration);
 		client.run();
+
+		// tidy up..
 	}
 
 }

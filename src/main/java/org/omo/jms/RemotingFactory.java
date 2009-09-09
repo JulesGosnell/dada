@@ -51,7 +51,7 @@ public class RemotingFactory<T> {
 		private final MessageProducer producer;
 		private final MessageConsumer consumer;
 
-		public Server(T target) throws JMSException {
+		public Server(T target, Destination invocationDestination) throws JMSException {
 			this.target = target;
 			log = LogFactory.getLog(Server.class+"#"+target);
 			producer = session.createProducer(null);
@@ -118,11 +118,21 @@ public class RemotingFactory<T> {
 	//----------------------------------------------------------------------------
 	
 	public T createServer(T target) throws JMSException {
-		new Server(target);
+		new Server(target, invocationDestination);
+		return target;
+	}
+
+	public T createServer(T target, Destination invocationDestination) throws JMSException {
+		new Server(target, invocationDestination);
 		return target;
 	}
 	
 	public T createSynchronousClient() throws IllegalArgumentException, JMSException {
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
+	}
+	
+	public T createSynchronousClient(Destination invocationDestination) throws IllegalArgumentException, JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
 	}

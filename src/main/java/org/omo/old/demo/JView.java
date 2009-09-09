@@ -14,8 +14,8 @@ public class JView extends JScrollPane {
 	protected final JTable table; 
 	protected TableModel model;
 
-	public JView() {
-		super(new JTable(new InitialTableModel()));
+	public JView(TableModel model) {
+		super(new JTable(model));
 		table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?   
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		model = table.getModel();

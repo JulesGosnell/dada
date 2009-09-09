@@ -27,9 +27,9 @@ import org.omo.old.TradeImpl;
 public class Main implements Runnable {
 
 	// Client
-	protected final JView currencyView = new JView();
-	protected final JView accountView = new JView();
-	protected final JView tradeView = new JView();
+	protected final JView currencyView = new JView(null);
+	protected final JView accountView = new JView(null);
+	protected final JView tradeView = new JView(null);
 	protected final JSplitPane splitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, accountView, tradeView);
 	protected final JSplitPane splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, currencyView, splitPane2);
 	protected final JPanel panel = new JPanel();

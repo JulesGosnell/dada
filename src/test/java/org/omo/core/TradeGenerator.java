@@ -1,5 +1,6 @@
 package org.omo.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class TradeGenerator extends AbstractModel<Trade> {
 	// Model
 	
 	protected Collection<Trade> getData() {
-		return trades.values();
+		return new ArrayList<Trade>(trades.values());
 	}
 	
 }
