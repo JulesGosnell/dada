@@ -13,7 +13,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 public class Main {
 
 	public static void main(String[] args) throws JMSException {
-		int timeout = 60000;
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
 		Connection connection = connectionFactory.createConnection();
 		connection.start();

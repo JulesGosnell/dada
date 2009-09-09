@@ -31,14 +31,14 @@ public class Server implements Runnable {
 			Session session = configuration.getSession();
 			RemotingFactory<Model<Trade>> serverFactory = new RemotingFactory<Model<Trade>>(session, Model.class, (Destination)null, configuration.getTimeout());
 
-			Model<Trade> universal = new TradeGenerator(10,100L);
+			Model<Trade> universal = new TradeGenerator("TradeGenerator", 10,100L);
 			serverFactory.createServer(universal, session.createQueue(configuration.getUniversalModelName()));
 			universal.start();
 
 			List<TradePartition> tradePartitions = new ArrayList<TradePartition>();
 			int i = 0;
 			for (String name : configuration.getPartitionModelNames()) {
-				TradePartition partition = new TradePartition(i++);
+				TradePartition partition = new TradePartition("TradePartition."+i, i++);
 				tradePartitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue(name));
 				partition.start();

@@ -10,9 +10,20 @@ public abstract class AbstractModel<Output> implements Model<Output> {
 
 	protected final Log log = LogFactory.getLog(getClass());
 
+	protected final String name;
+	
 	protected final Collection<View<Output>> views = new ArrayList<View<Output>>();
 	
 	protected abstract Collection<Output> getData();
+	
+	public AbstractModel(String name) {
+		this.name = name;
+	}
+	
+	@Override
+	public String getName() {
+		return name;
+	}
 	
 	@Override
 	public Collection<Output> registerView(View<Output> view) {

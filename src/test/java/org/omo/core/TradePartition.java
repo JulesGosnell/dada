@@ -12,7 +12,8 @@ public class TradePartition extends AbstractModel<Trade> implements View<Trade> 
 
 	private final int partitionNumber;
 	
-	TradePartition(int partitionNumber) {
+	TradePartition(String name, int partitionNumber) {
+		super(name);
 		this.partitionNumber = partitionNumber; 
 	}
 

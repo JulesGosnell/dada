@@ -29,7 +29,8 @@ public class TradeGenerator extends AbstractModel<Trade> {
 		}
 	};
 	
-	public TradeGenerator(int numTrades, long delay) {
+	public TradeGenerator(String name, int numTrades, long delay) {
+		super(name);
 		this.numTrades = numTrades;
 		this.delay = delay;
 	}
