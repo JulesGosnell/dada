@@ -58,34 +58,48 @@ public class Client {
 		}
 	};
 	
-	protected int selected  = -1;
-	
-	public Client(String serverName, ConnectionFactory connectionFactory, int timeout) throws JMSException {
-		Connection connection = connectionFactory.createConnection();
-		connection.start();
-		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		TableModelView<String, String> guiModel = new TableModelView<String, String>(mapper);
+	private final boolean topLevel;
+	private final Connection connection;
+	private final Session session;
+	private final TableModelView<String, String> guiModel;
+	private final Destination serverDestination;
+	private final RemotingFactory<Model<String, String>> clientFactory;
+	private final Model<String, String> serverProxy;
+	private final Destination clientDestination;
+	private final RemotingFactory<View<String, String>> serverFactory;
+	private final View<String, String> clientServer;
+	private final JView jview;
+	private final JTable table;
+	private final JFrame frame;
+	private final JPanel panel;
 
-		// create a client-side proxy for the Server
-		Destination serverDestination = session.createQueue(serverName + "." + "MetaModel");
-		RemotingFactory<Model<String, String>> clientFactory = new RemotingFactory<Model<String, String>>(session, Model.class, serverDestination, timeout);
-		final Model<String, String> serverProxy = clientFactory.createSynchronousClient();
+	private int selected  = -1;
+
+	public Client(String serverName, ConnectionFactory connectionFactory, int timeout, boolean topLevel) throws JMSException {
+		connection = connectionFactory.createConnection();
+		connection.start();
+		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		guiModel = new TableModelView<String, String>(mapper);
+		this.topLevel = topLevel;
+
+		serverDestination = session.createQueue(serverName + "." + "MetaModel");
+		clientFactory = new RemotingFactory<Model<String, String>>(session, Model.class, serverDestination, timeout);
+		serverProxy = clientFactory.createSynchronousClient();
 
 		// create a Client
 
-		// create a client-side server to support callbacks on client
-		Destination clientDestination = session.createQueue("Client.all.Listener");
-		RemotingFactory<View<String, String>> serverFactory = new RemotingFactory<View<String, String>>(session, View.class, clientDestination, timeout);
+		clientDestination = session.createQueue("Client.all.Listener");
+		serverFactory = new RemotingFactory<View<String, String>>(session, View.class, clientDestination, timeout);
 		serverFactory.createServer(guiModel);
-		final View<String, String> clientServer = serverFactory.createSynchronousClient();
+		clientServer = serverFactory.createSynchronousClient();
 
 		// pass the client over to the server to attach as a listener..
 		Collection<String> models = serverProxy.registerView(clientServer);
 		if (models != null) guiModel.upsert(models);
 		LOG.info("Client ready: "+clientDestination);
 
-		JView jview = new JView(guiModel);
-		final JTable table = jview.getTable();
+		jview = new JView(guiModel);
+		table = jview.getTable();
 		
 		ListSelectionModel selectionModel = table.getSelectionModel();
 		selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -108,8 +122,10 @@ public class Client {
 			
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (e.getClickCount() == 2)
+				if (e.getClickCount() == 2) {
+					
 					LOG.info("DOUBLE CLICK: "+selected);
+				}
 			}
 			
 			@Override
@@ -129,8 +145,8 @@ public class Client {
 			}
 		});
 		
-		JFrame frame = new JFrame("Client");
-		JPanel panel = new JPanel();
+		frame = new JFrame("Client");
+		panel = new JPanel();
 		panel.add(jview);
 		panel.setOpaque(true);
 		frame.setContentPane(panel);
@@ -138,7 +154,9 @@ public class Client {
 		//frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent event) {
-				serverProxy.deregisterView(clientServer);				
+				serverProxy.deregisterView(clientServer);
+				if (Client.this.topLevel)
+					System.exit(0);
 			}
 		});
 		frame.setVisible(true);
@@ -159,7 +177,7 @@ public class Client {
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, connectionFactory, 60000);
+					new Client(serverName, connectionFactory, 60000, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
