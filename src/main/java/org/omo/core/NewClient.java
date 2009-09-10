@@ -1,5 +1,9 @@
 package org.omo.core;
 
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,7 +15,11 @@ import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
@@ -56,7 +64,7 @@ public class NewClient {
 		// create a client-side proxy for the Server
 		Destination serverDestination = session.createQueue(serverName + "." + "MetaModel");
 		RemotingFactory<Model<String, String>> clientFactory = new RemotingFactory<Model<String, String>>(session, Model.class, serverDestination, timeout);
-		Model<String, String> serverProxy = clientFactory.createSynchronousClient();
+		final Model<String, String> serverProxy = clientFactory.createSynchronousClient();
 
 		// create a Client
 
@@ -64,21 +72,66 @@ public class NewClient {
 		Destination clientDestination = session.createQueue("Client.all.Listener");
 		RemotingFactory<View<String, String>> serverFactory = new RemotingFactory<View<String, String>>(session, View.class, clientDestination, timeout);
 		serverFactory.createServer(guiModel);
-		View<String, String> clientServer = serverFactory.createSynchronousClient();
+		final View<String, String> clientServer = serverFactory.createSynchronousClient();
 
 		// pass the client over to the server to attach as a listener..
 		Collection<String> models = serverProxy.registerView(clientServer);
-		guiModel.upsert(models);
+		if (models != null) guiModel.upsert(models);
 		LOG.info("Client ready: "+clientDestination);
 
 		JView jview = new JView(guiModel);
+		JTable table = jview.getTable();
+		
+		ListSelectionModel selectionModel = table.getSelectionModel();
+		selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		selectionModel.addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				LOG.info("SELECTION CHANGED");
+			}
+		});
+		table.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				
+			}
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (e.getClickCount() == 2)
+					LOG.info("DOUBLE CLICK");
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+			}
+			
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
 		JFrame frame = new JFrame("Client");
 		JPanel panel = new JPanel();
 		panel.add(jview);
 		panel.setOpaque(true);
 		frame.setContentPane(panel);
 		frame.pack();
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent event) {
+				serverProxy.deregisterView(clientServer);				
+			}
+		});
 		frame.setVisible(true);
 	}
 	

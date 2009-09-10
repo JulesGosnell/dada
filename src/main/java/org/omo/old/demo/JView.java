@@ -31,4 +31,8 @@ public class JView extends JScrollPane {
 		this.model = model;
 		table.setModel(model);
 	}
+	
+	public JTable getTable() {
+		return table;
+	}
 }
