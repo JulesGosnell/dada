@@ -53,7 +53,7 @@ public class RemotingFactory<T> {
 
 		public Server(T target, Destination invocationDestination) throws JMSException {
 			this.target = target;
-			log = LogFactory.getLog(Server.class+"#"+target);
+			log = LogFactory.getLog(Server.class);
 			producer = session.createProducer(null);
 			consumer = session.createConsumer(invocationDestination);
 			log.info("consuming messages on: " + invocationDestination);

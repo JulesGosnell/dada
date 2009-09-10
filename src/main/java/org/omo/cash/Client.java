@@ -58,6 +58,8 @@ public class Client {
 		}
 	};
 	
+	protected int selected  = -1;
+	
 	public Client(String serverName, ConnectionFactory connectionFactory, int timeout) throws JMSException {
 		Connection connection = connectionFactory.createConnection();
 		connection.start();
@@ -83,14 +85,18 @@ public class Client {
 		LOG.info("Client ready: "+clientDestination);
 
 		JView jview = new JView(guiModel);
-		JTable table = jview.getTable();
+		final JTable table = jview.getTable();
 		
 		ListSelectionModel selectionModel = table.getSelectionModel();
 		selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
-				LOG.info("SELECTION CHANGED");
+				if (!e.getValueIsAdjusting()) {
+					int row = table.getSelectedRow();
+					LOG.trace("SELECTION CHANGED: "+row);
+					selected = row;
+				}
 			}
 		});
 		table.addMouseListener(new MouseListener() {
@@ -103,7 +109,7 @@ public class Client {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (e.getClickCount() == 2)
-					LOG.info("DOUBLE CLICK");
+					LOG.info("DOUBLE CLICK: "+selected);
 			}
 			
 			@Override
