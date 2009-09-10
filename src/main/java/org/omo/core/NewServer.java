@@ -35,6 +35,14 @@ public class NewServer {
 		factory.createServer(metaModel, queue);
 		metaModel.upsert(metaModel.getName()); // The metaModel is a Model !
 		LOG.info("Listening on: " + queue);
+		
+//		// adding TradeFeed
+//		String tradeFeedName = name + "." + "TradeFeed";
+//		RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+//		Model<Integer, Trade> tradeFeed= new TradeFeed(tradeFeedName, 10,100L);
+//		serverFactory.createServer(tradeFeed, session.createQueue(tradeFeedName));
+//		tradeFeed.start();
+//		metaModel.upsert(tradeFeedName);
 	}
 	
 	/**

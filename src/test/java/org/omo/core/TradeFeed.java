@@ -9,9 +9,9 @@ import java.util.TimerTask;
 
 import org.omo.core.AbstractModel;
 
-public class TradeGenerator extends AbstractModel<Integer, Trade> {
+public class TradeFeed extends AbstractModel<Integer, Trade> {
 
-	// TradeGenerator
+	// TradeFeed
 	
 	protected Map<Integer, Trade> trades = new HashMap<Integer, Trade>();
 	protected int numTrades;
@@ -29,7 +29,7 @@ public class TradeGenerator extends AbstractModel<Integer, Trade> {
 		}
 	};
 	
-	public TradeGenerator(String name, int numTrades, long delay) {
+	public TradeFeed(String name, int numTrades, long delay) {
 		super(name);
 		this.numTrades = numTrades;
 		this.delay = delay;
