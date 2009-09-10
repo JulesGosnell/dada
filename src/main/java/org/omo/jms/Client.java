@@ -63,7 +63,7 @@ public abstract class Client implements MessageListener, Serializable {
 	
 	//@Override
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-		Session session = getCurrentSession(); 
+		Session session = getCurrentSession();
 		Destination invocationDestination = (Destination)ois.readObject();
 		Class<?> interfaze= (Class<?>)ois.readObject();
 		long timeout = ois.readLong();

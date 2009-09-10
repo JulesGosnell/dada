@@ -34,13 +34,13 @@ public class AsynchronousClient extends Client {
 		message.setJMSReplyTo(resultsQueue);
 
 		correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
-		log.warn("SENDING: " + message + " -> " + invocationDestination);
+		log.info("SENDING: " + message + " -> " + invocationDestination);
 		producer.send(invocationDestination, message);			
 	}
 
 	@Override
 	public void onMessage(Message message) {
-		try{log.warn("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
+		try{log.info("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 		try {
 			String correlationID = message.getJMSCorrelationID();
 			AsyncInvocationListener listener = correlationIdToListener.remove(correlationID); // one-shot - parameterize 

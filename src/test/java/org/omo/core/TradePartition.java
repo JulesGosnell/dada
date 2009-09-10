@@ -41,7 +41,7 @@ public class TradePartition extends AbstractModel<Integer, Trade> implements Vie
 	}
 
 	@Override
-	public void delete(int deletion) {
+	public void delete(Integer deletion) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

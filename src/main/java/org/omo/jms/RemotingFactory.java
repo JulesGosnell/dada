@@ -62,8 +62,7 @@ public class RemotingFactory<T> {
 
 		@Override
 		public void onMessage(final Message message) {
-			new Thread(new Runnable() {
-				
+			new Thread(new Runnable() { // TODO: use a thread pool
 				@Override
 				public void run() {
 					process(message);

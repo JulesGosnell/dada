@@ -24,7 +24,7 @@ public class TradePartitioner implements View<Integer, Trade> {
 	}
 
 	@Override
-	public void delete(int deletion) {
+	public void delete(Integer deletion) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

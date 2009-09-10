@@ -60,7 +60,7 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	}
 
 	@Override
-	public void delete(int deletion) {
+	public void delete(Key deletion) {
 		throw new UnsupportedOperationException("NYI");
 	}
 }

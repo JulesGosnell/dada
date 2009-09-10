@@ -44,7 +44,7 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	}
 
 	@Override
-	public void delete(int deletion) {
+	public void delete(Integer deletion) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

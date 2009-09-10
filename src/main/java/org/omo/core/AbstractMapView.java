@@ -25,7 +25,7 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 	}
 
 	@Override
-	public void delete(int deletion) {
+	public void delete(InputKey deletion) {
 		synchronized (map) {
 			map.remove(deletion);
 		}

@@ -11,6 +11,6 @@ public interface View<InputKey, InputValue> {
 	void upsert(InputValue upsertion);
 	
 	void delete(Collection<InputKey> deletions);
-	void delete(int deletion);
+	void delete(InputKey deletion);
 	
 }

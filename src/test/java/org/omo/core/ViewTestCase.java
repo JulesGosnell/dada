@@ -76,7 +76,7 @@ public class ViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void delete(int deletion) {
+		public void delete(K deletion) {
 			throw new UnsupportedOperationException("NYI");
 		}
 
