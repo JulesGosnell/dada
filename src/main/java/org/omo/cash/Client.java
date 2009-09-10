@@ -151,7 +151,7 @@ public class Client {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 		final String serverName = (args.length == 0 ? "Server" : args[0]);
-		String url = "peer://" + serverName + "/broker0?broker.persistent=false&broker.useJmx=false";
+		String url = "peer://" + serverName + "/broker0?broker.persistent=false&useJmx=false";
 		LOG.info("Broker URL: " +url);
 		final ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		SwingUtilities.invokeAndWait(new Runnable() {

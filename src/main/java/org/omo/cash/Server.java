@@ -53,7 +53,7 @@ public class Server {
 	 */
 	public static void main(String[] args) throws Exception {
 		String name = (args.length == 0 ? "Server" : args[0]);
-		String url = "peer://" + name + "/broker0?broker.persistent=false&broker.useJmx=false";
+		String url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		LOG.info("Broker URL: " +url);
 		new Server(name, connectionFactory);
