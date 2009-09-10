@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.omo.cash.Trade;
 import org.omo.core.AbstractModel;
 import org.omo.core.View;
 

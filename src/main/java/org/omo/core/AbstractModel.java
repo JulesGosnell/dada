@@ -27,6 +27,7 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	
 	@Override
 	public Collection<OutputValue> registerView(View<OutputKey, OutputValue> view) {
+		log.debug("registering view: " + view);
 		synchronized (views) {
 			views.add(view);
 		}
@@ -35,10 +36,15 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	
 	@Override
 	public void deregisterView(View<OutputKey, OutputValue> view) {
+		boolean success;
 		synchronized (views) {
-			views.remove(view);
+			success = views.remove(view);
 		}
-	}
+		if (success)
+			log.debug("deregistered view: " + view);
+		else
+			log.warn("failed to deregister view: " + view);
+	}	
 	
 	protected void notifyUpsertion(OutputValue upsertion) {
 		synchronized (views) {

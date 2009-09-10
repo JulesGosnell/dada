@@ -1,4 +1,4 @@
-package org.omo.core;
+package org.omo.cash;
 
 import java.util.ArrayList;
 import java.util.Collection;

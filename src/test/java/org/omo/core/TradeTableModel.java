@@ -8,6 +8,7 @@ import javax.swing.table.AbstractTableModel;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.cash.Trade;
 import org.omo.core.View;
 
 public class TradeTableModel extends AbstractTableModel implements View<Integer, Trade>, Serializable {

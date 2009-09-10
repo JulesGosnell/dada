@@ -1,9 +1,9 @@
-package org.omo.core;
+package org.omo.cash;
 
 import org.omo.core.Datum;
 
 
-public class Trade implements Datum {
+public class Trade implements Datum, Comparable<Trade> {
 
 	protected int id;
 	protected int version;
@@ -25,6 +25,11 @@ public class Trade implements Datum {
 	
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]>";
+	}
+
+	@Override
+	public int compareTo(Trade trade) {
+		return id - trade.id;
 	}
 
 }

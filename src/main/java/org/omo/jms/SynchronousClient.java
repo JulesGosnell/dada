@@ -95,4 +95,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 		return "<"+getClass().getSimpleName()+": "+invocationDestination+">";
 	}
 	
+	public boolean equals(Object object) {
+		log.debug("EQUALS");
+		return (object instanceof SynchronousClient && ((SynchronousClient)object).invocationDestination.toString().equals(invocationDestination.toString()));
+	}
 }

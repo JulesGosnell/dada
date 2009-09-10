@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.omo.cash.Trade;
 import org.omo.core.View;
 
 // should just be an IdentityView

@@ -13,6 +13,8 @@ import javax.jms.Session;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.cash.Trade;
+import org.omo.cash.TradeFeed;
 import org.omo.jms.RemotingFactory;
 
 public class Server implements Runnable {

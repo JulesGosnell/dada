@@ -22,6 +22,7 @@ import javax.swing.SwingUtilities;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.cash.Trade;
 import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
 
