@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements View<Key, Value> {
 
-	interface Adaptor<Key, Value> {
+	public interface Adaptor<Key, Value> {
 		public Key getKey(Value value);
 	}
 	

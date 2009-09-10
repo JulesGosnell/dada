@@ -13,7 +13,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 
 	private final Log log = LogFactory.getLog(getClass());
 	
-	interface Mapper<InputKey, InputValue> {
+	public interface Mapper<InputKey, InputValue> {
 		InputKey getKey(InputValue value);
 		Object getField(InputValue value, int index);
 		List<String> getFieldNames();

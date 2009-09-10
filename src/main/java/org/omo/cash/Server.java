@@ -1,4 +1,4 @@
-package org.omo.core;
+package org.omo.cash;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -10,12 +10,14 @@ import javax.jms.Session;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.core.MapModel;
+import org.omo.core.Model;
 import org.omo.core.MapModel.Adaptor;
 import org.omo.jms.RemotingFactory;
 
-public class NewServer {
+public class Server {
 
-	private final static Log LOG = LogFactory.getLog(NewServer.class);
+	private final static Log LOG = LogFactory.getLog(Server.class);
 
 	private static final String META_MODEL = "MetaModel";
 	private final int timeout=60000;
@@ -25,7 +27,7 @@ public class NewServer {
 	private final MapModel<String, String> metaModel;
 	private final Adaptor<String, String> adaptor = new  Adaptor<String, String>() {@Override public String getKey(String value) {return value;}};
 
-	public NewServer(String name, ConnectionFactory connectionFactory) throws JMSException {
+	public Server(String name, ConnectionFactory connectionFactory) throws JMSException {
 		connection = connectionFactory.createConnection();
 		connection.start();
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -54,7 +56,7 @@ public class NewServer {
 		String url = "peer://" + name + "/broker0?broker.persistent=false&broker.useJmx=false";
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		LOG.info("Broker URL: " +url);
-		new NewServer(name, connectionFactory);
+		new Server(name, connectionFactory);
 		
 		// keep going...
 		while (true)

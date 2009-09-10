@@ -1,4 +1,4 @@
-package org.omo.core;
+package org.omo.cash;
 
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -24,13 +24,16 @@ import javax.swing.event.ListSelectionListener;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.core.Model;
+import org.omo.core.TableModelView;
+import org.omo.core.View;
 import org.omo.core.TableModelView.Mapper;
 import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
 
-public class NewClient {
+public class Client {
 	
-	private final static Log LOG = LogFactory.getLog(NewClient.class);
+	private final static Log LOG = LogFactory.getLog(Client.class);
 
 	private final Mapper<String, String> mapper = new Mapper<String, String>() {
 
@@ -55,7 +58,7 @@ public class NewClient {
 		}
 	};
 	
-	public NewClient(String serverName, ConnectionFactory connectionFactory, int timeout) throws JMSException {
+	public Client(String serverName, ConnectionFactory connectionFactory, int timeout) throws JMSException {
 		Connection connection = connectionFactory.createConnection();
 		connection.start();
 		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -150,7 +153,7 @@ public class NewClient {
 			@Override
 			public void run() {
 				try {
-					new NewClient(serverName, connectionFactory, 60000);
+					new Client(serverName, connectionFactory, 60000);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
