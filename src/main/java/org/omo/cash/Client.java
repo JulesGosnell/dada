@@ -101,7 +101,10 @@ public class Client<K, V> {
 
 		// pass the client over to the server to attach as a listener..
 		Collection<V> models = serverProxy.registerView(clientServer);
-		if (models != null) guiModel.upsert(models);
+		if (models != null)
+			guiModel.upsert(models);
+		else
+			LOG.warn("null model content returned");
 		LOG.info("Client ready: "+clientDestination);
 
 		jview = new JView(guiModel);

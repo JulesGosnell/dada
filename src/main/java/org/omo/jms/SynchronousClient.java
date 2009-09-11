@@ -49,7 +49,7 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
-				log.info("RECEIVING: " + results + " <- " + message.getJMSDestination());
+				log.trace("RECEIVING: " + results + " <- " + message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
 		} catch(JMSException e) {
@@ -75,7 +75,7 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 		message.setJMSReplyTo(resultsQueue);
 		Exchanger<Results> exchanger = new Exchanger<Results>();
 		correlationIdToResults.put(correlationId, exchanger);
-		log.info("SENDING: " + method + " -> " + invocationDestination);
+		log.trace("SENDING: " + method + " -> " + invocationDestination);
 		producer.send(invocationDestination, message);
 		try {
 			Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);

@@ -30,7 +30,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	
 	@Override
 	public void upsert(Collection<InputValue> upsertions) {
-		log.info("UPDATE("+upsertions+")");
+		log.trace("UPDATE("+upsertions+")");
 		for (InputValue upsertion : upsertions) {
 			InputKey key = mapper.getKey(upsertion);
 			map.put(key, upsertion);
@@ -41,7 +41,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 
 	@Override
 	public void upsert(InputValue upsertion) {
-		log.info("UPDATE("+upsertion+")");
+		log.trace("UPDATE("+upsertion+")");
 		InputKey key = mapper.getKey(upsertion);
 		map.put(key, upsertion);
 		int index = map.headMap(key).size();

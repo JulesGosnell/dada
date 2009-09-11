@@ -34,7 +34,7 @@ public class AsynchronousClient extends Client {
 		message.setJMSReplyTo(resultsQueue);
 
 		correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
-		log.info("SENDING: " + message + " -> " + invocationDestination);
+		log.trace("SENDING: " + message + " -> " + invocationDestination);
 		producer.send(invocationDestination, message);			
 	}
 

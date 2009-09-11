@@ -16,15 +16,15 @@ public class JView extends JScrollPane {
 
 	public JView(TableModel model) {
 		super(new JTable(model));
-		table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?   
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		model = table.getModel();
-		Dimension oldSize = table.getPreferredScrollableViewportSize();
-		Dimension preferredSize = table.getPreferredSize();
-		int width = Math.min(preferredSize.width, oldSize.width);
-		int height= Math.min(preferredSize.height, oldSize.height);
-		Dimension newSize = new Dimension(width, height);
-		table.setPreferredScrollableViewportSize(newSize);
+		this.model = model;
+		table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?
+		//table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		//Dimension oldSize = table.getPreferredScrollableViewportSize();
+		//Dimension preferredSize = table.getPreferredSize();
+		//int width = Math.min(preferredSize.width, oldSize.width);
+		//int height= Math.min(preferredSize.height, oldSize.height);
+		//Dimension newSize = new Dimension(width, height);
+		//table.setPreferredScrollableViewportSize(newSize);
 	}
 
 	public void setModel(TableModel model) {

@@ -85,7 +85,7 @@ public class RemotingFactory<T> {
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
-				log.info("RECEIVING: " + method + " <- " + message.getJMSDestination());
+				log.trace("RECEIVING: " + method + " <- " + message.getJMSDestination());
 				result = method.invoke(Server.this.target, args);
 			} catch (JMSException e) {
 				isException = true;
@@ -105,7 +105,7 @@ public class RemotingFactory<T> {
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
 					response.setObject(results);
-					log.info("SENDING: " + results + " -> " + replyTo);
+					log.trace("SENDING: " + results + " -> " + replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
 					log.warn("problem replying to message: " + response, e);
