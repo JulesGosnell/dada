@@ -8,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Exchanger;
@@ -96,7 +97,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 	}
 	
 	public boolean equals(Object object) {
-		log.debug("EQUALS");
-		return (object instanceof SynchronousClient && ((SynchronousClient)object).invocationDestination.toString().equals(invocationDestination.toString()));
+		// strip off proxy if necessary
+		Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;
+		return (that instanceof SynchronousClient && this.invocationDestination.equals(((SynchronousClient)that).invocationDestination));
 	}
 }

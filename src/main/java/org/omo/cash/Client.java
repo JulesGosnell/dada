@@ -94,7 +94,7 @@ public class Client<K, V> {
 
 		// create a Client
 
-		clientDestination = session.createQueue("Client."+ new UID().toString());
+		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<K, V>>(session, View.class, clientDestination, timeout);
 		serverFactory.createServer(guiModel);
 		clientServer = serverFactory.createSynchronousClient();
