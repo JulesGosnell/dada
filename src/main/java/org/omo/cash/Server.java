@@ -42,7 +42,7 @@ public class Server {
 		{
 			String tradeFeedName = "TradeFeed";
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(tradeFeedName, 10,100L);
+			Model<Integer, Trade> tradeFeed= new TradeFeed(tradeFeedName, 10000,100L);
 			serverFactory.createServer(tradeFeed, session.createQueue("Server."+tradeFeedName));
 			tradeFeed.start();
 			metaModel.upsert(tradeFeedName);
@@ -51,7 +51,7 @@ public class Server {
 		{
 			String accountFeedName = "AccountFeed";
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(accountFeedName, 10,100L);
+			Model<Integer, Trade> tradeFeed= new TradeFeed(accountFeedName, 1000,100L);
 			serverFactory.createServer(tradeFeed, session.createQueue("Server."+accountFeedName));
 			tradeFeed.start();
 			metaModel.upsert(accountFeedName);
@@ -60,7 +60,7 @@ public class Server {
 		{
 			String currencyFeedName = "CurrencyFeed";
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 10,100L);
+			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 100,100L);
 			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
 			tradeFeed.start();
 			metaModel.upsert(currencyFeedName);

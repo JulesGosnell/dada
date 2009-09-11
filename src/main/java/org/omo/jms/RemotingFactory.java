@@ -3,6 +3,10 @@ package org.omo.jms;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -60,6 +64,8 @@ public class RemotingFactory<T> {
 			consumer.setMessageListener(this);
 		}
 
+		protected Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+		
 		@Override
 		public void onMessage(final Message message) {
 			new Thread(new Runnable() { // TODO: use a thread pool

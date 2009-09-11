@@ -2,7 +2,7 @@ package org.omo.core;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.swing.table.AbstractTableModel;
 
@@ -20,7 +20,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	}
 
 	private final Mapper<InputKey, InputValue> mapper;
-	private final TreeMap<InputKey, InputValue> map = new TreeMap<InputKey, InputValue>();
+	private final ConcurrentSkipListMap<InputKey, InputValue> map = new ConcurrentSkipListMap<InputKey, InputValue>();
 	
 	public TableModelView(Mapper<InputKey, InputValue> mapper) {
 		this.mapper = mapper;
