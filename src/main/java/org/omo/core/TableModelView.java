@@ -30,7 +30,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	
 	@Override
 	public void upsert(Collection<InputValue> upsertions) {
-		log.trace("UPDATE("+upsertions+")");
+		//log.trace("UPDATE("+upsertions+")");
 		for (InputValue upsertion : upsertions) {
 			InputKey key = mapper.getKey(upsertion);
 			map.put(key, upsertion);

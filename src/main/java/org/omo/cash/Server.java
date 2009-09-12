@@ -65,6 +65,24 @@ public class Server {
 			tradeFeed.start();
 			metaModel.upsert(currencyFeedName);
 		}
+		// adding BalanceFeed
+		{
+			String currencyFeedName = "BalanceFeed";
+			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 1000,100L);
+			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
+			tradeFeed.start();
+			metaModel.upsert(currencyFeedName);
+		}
+		// adding CompanyFeed
+		{
+			String currencyFeedName = "CompanyFeed";
+			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 10,100L);
+			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
+			tradeFeed.start();
+			metaModel.upsert(currencyFeedName);
+		}
 	}
 	
 	/**

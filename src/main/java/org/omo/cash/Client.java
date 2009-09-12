@@ -88,7 +88,7 @@ public class Client<K, V> {
 
 		guiModel = new TableModelView<K, V>(mapper);
 
-		serverDestination = session.createQueue(serverName + "." + modelName);
+		serverDestination = session.createQueue(serverName + "." + this.modelName);
 		clientFactory = new RemotingFactory<Model<K, V>>(session, Model.class, serverDestination, timeout);
 		serverProxy = clientFactory.createSynchronousClient();
 
@@ -132,10 +132,10 @@ public class Client<K, V> {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					String modelName = (String)guiModel.getValueAt(selected, 0);
-					LOG.info("DOUBLE CLICK: "+modelName);
+					String targetModelName = (String)guiModel.getValueAt(selected, 0);
+					LOG.info("Opening: "+targetModelName);
 					try {
-						new Client<String, String>(Client.this.serverName, modelName, Client.this.session, Client.this.timeout, false);
+						new Client<String, String>(Client.this.serverName, targetModelName, Client.this.session, Client.this.timeout, false);
 					} catch (JMSException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -160,7 +160,7 @@ public class Client<K, V> {
 			}
 		});
 		
-		frame = new JFrame(modelName);
+		frame = new JFrame(this.modelName);
 		panel = new JPanel();
 		new BoxLayout(panel, BoxLayout.Y_AXIS);
 		panel.add(jview);
@@ -170,6 +170,7 @@ public class Client<K, V> {
 		//frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent event) {
+				LOG.info("Closing: "+Client.this.modelName);
 				serverProxy.deregisterView(clientServer);
 				if (Client.this.topLevel)
 					System.exit(0);
