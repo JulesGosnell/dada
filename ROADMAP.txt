@@ -12,3 +12,7 @@ concurrency/persistent containers
 
 models should carry metadata about themselves and publish it - i.e. size, update frequency
 GraphView
+
+Historic Queries - maintenance of multiple versions
+Logical and actual COB / EOD
+
