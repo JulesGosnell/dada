@@ -68,39 +68,99 @@ public class Server {
 		}
 		// adding AccountFeed
 		{
-			String accountFeedName = "AccountFeed";
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(accountFeedName, 1000,100L);
-			serverFactory.createServer(tradeFeed, session.createQueue("Server."+accountFeedName));
-			tradeFeed.start();
-			metaModel.upsert(accountFeedName);
+			String feedName = "AccountFeed";
+			Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, 1000, 100L, new Feed.Strategy<Integer, Account>(){
+
+				@Override
+				public Account createNewItem(int counter) {
+					return new Account(counter, 0);
+				}
+
+				@Override
+				public Account createNewVersion(Account original) {
+					return new Account(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Account item) {
+					return item.getId();
+				}});
+			RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
+			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
+			feed.start();
+			metaModel.upsert(feedName);
 		}
-		// adding AccountFeed
+		// adding CurrencyFeed
 		{
-			String currencyFeedName = "CurrencyFeed";
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 100,100L);
-			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
-			tradeFeed.start();
-			metaModel.upsert(currencyFeedName);
+			String feedName = "CurrencyFeed";
+			Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, 1000, 100L, new Feed.Strategy<Integer, Currency>(){
+
+				@Override
+				public Currency createNewItem(int counter) {
+					return new Currency(counter, 0);
+				}
+
+				@Override
+				public Currency createNewVersion(Currency original) {
+					return new Currency(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Currency item) {
+					return item.getId();
+				}});
+			RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
+			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
+			feed.start();
+			metaModel.upsert(feedName);
 		}
 		// adding BalanceFeed
 		{
-			String currencyFeedName = "BalanceFeed";
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 1000,100L);
-			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
-			tradeFeed.start();
-			metaModel.upsert(currencyFeedName);
+			String feedName = "BalanceFeed";
+			Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, 1000, 100L, new Feed.Strategy<Integer, Balance>(){
+
+				@Override
+				public Balance createNewItem(int counter) {
+					return new Balance(counter, 0);
+				}
+
+				@Override
+				public Balance createNewVersion(Balance original) {
+					return new Balance(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Balance item) {
+					return item.getId();
+				}});
+			RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
+			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
+			feed.start();
+			metaModel.upsert(feedName);
 		}
 		// adding CompanyFeed
 		{
-			String currencyFeedName = "CompanyFeed";
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(currencyFeedName, 10,100L);
-			serverFactory.createServer(tradeFeed, session.createQueue("Server."+currencyFeedName));
-			tradeFeed.start();
-			metaModel.upsert(currencyFeedName);
+			String feedName = "CompanyFeed";
+			Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, 1000, 100L, new Feed.Strategy<Integer, Company>(){
+
+				@Override
+				public Company createNewItem(int counter) {
+					return new Company(counter, 0);
+				}
+
+				@Override
+				public Company createNewVersion(Company original) {
+					return new Company(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Company item) {
+					return item.getId();
+				}});
+			RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
+			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
+			feed.start();
+			metaModel.upsert(feedName);
 		}
 	}
 	

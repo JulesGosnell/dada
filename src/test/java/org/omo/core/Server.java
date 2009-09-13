@@ -1,21 +1,16 @@
 package org.omo.core;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.cash.Trade;
-import org.omo.cash.TradeFeed;
-import org.omo.jms.RemotingFactory;
 
 public class Server implements Runnable {
 
@@ -29,32 +24,32 @@ public class Server implements Runnable {
 
 	@Override
 	public void run() {
-		try {
-			Session session = configuration.getSession();
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, configuration.getTimeout());
-
-			Model<Integer, Trade> universal = new TradeFeed("TradeFeed", 10,100L);
-			serverFactory.createServer(universal, session.createQueue(configuration.getUniversalModelName()));
-			universal.start();
-
-			List<TradePartition> tradePartitions = new ArrayList<TradePartition>();
-			int i = 0;
-			for (String name : configuration.getPartitionModelNames()) {
-				TradePartition partition = new TradePartition("TradePartition."+i, i++);
-				tradePartitions.add(partition);
-				serverFactory.createServer(partition, session.createQueue(name));
-				partition.start();
-			}
-
-			TradePartitioner partitioner = new TradePartitioner(tradePartitions);
-			// partitioner.start();
-
-			Collection<Trade> trades = universal.registerView(partitioner);
-			partitioner.upsert(trades);
-			LOG.info("Models ready");
-		} catch (JMSException e) {
-			LOG.fatal("something went wrong");
-		}
+//		try {
+//			Session session = configuration.getSession();
+//			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, configuration.getTimeout());
+//
+//			Model<Integer, Trade> universal = new TradeFeed("TradeFeed", 10,100L);
+//			serverFactory.createServer(universal, session.createQueue(configuration.getUniversalModelName()));
+//			universal.start();
+//
+//			List<TradePartition> tradePartitions = new ArrayList<TradePartition>();
+//			int i = 0;
+//			for (String name : configuration.getPartitionModelNames()) {
+//				TradePartition partition = new TradePartition("TradePartition."+i, i++);
+//				tradePartitions.add(partition);
+//				serverFactory.createServer(partition, session.createQueue(name));
+//				partition.start();
+//			}
+//
+//			TradePartitioner partitioner = new TradePartitioner(tradePartitions);
+//			// partitioner.start();
+//
+//			Collection<Trade> trades = universal.registerView(partitioner);
+//			partitioner.upsert(trades);
+//			LOG.info("Models ready");
+//		} catch (JMSException e) {
+//			LOG.fatal("something went wrong");
+//		}
 	}
 
 	public static void main(String[] args) throws JMSException {
