@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class SimpleMethodMapper implements MethodMapper<Integer> {
 
@@ -24,14 +25,14 @@ public class SimpleMethodMapper implements MethodMapper<Integer> {
 	}
 	
 	public void initialise() {
-//		Map<String, Method> order = new TreeMap<String, Method>();
-//		for (Method method : interfaze.getMethods()) {
-//			order.put(makeKey(method), method);
-//		}
+		Map<String, Method> order = new TreeMap<String, Method>();
+		for (Method method : interfaze.getMethods()) {
+			order.put(makeKey(method), method);
+		}
 
 		indexToMethod = new ArrayList<Method>();
 		methodToIndex = new HashMap<Method, Integer>();
-		for (Method method : interfaze.getMethods()) {
+		for (Method method : order.values()) {
 			methodToIndex.put(method, indexToMethod.size());
 			indexToMethod.add(method);
 		}

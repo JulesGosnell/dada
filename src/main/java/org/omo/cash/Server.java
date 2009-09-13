@@ -1,5 +1,8 @@
 package org.omo.cash;
 
+import java.math.BigDecimal;
+import java.util.Date;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -10,6 +13,7 @@ import javax.jms.Session;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.core.Feed;
 import org.omo.core.MapModel;
 import org.omo.core.Model;
 import org.omo.core.MapModel.Adaptor;
@@ -40,12 +44,27 @@ public class Server {
 		
 		// adding TradeFeed
 		{
-			String tradeFeedName = "TradeFeed";
+			String feedName = "TradeFeed";
+			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, 10000, 100L, new Feed.Strategy<Integer, Trade>(){
+
+				@Override
+				public Trade createNewItem(int counter) {
+					return new Trade(counter, 0, new Date(), new BigDecimal(100));
+				}
+
+				@Override
+				public Trade createNewVersion(Trade original) {
+					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount());
+				}
+
+				@Override
+				public Integer getKey(Trade item) {
+					return item.getId();
+				}});
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Model<Integer, Trade> tradeFeed= new TradeFeed(tradeFeedName, 10000,100L);
-			serverFactory.createServer(tradeFeed, session.createQueue("Server."+tradeFeedName));
-			tradeFeed.start();
-			metaModel.upsert(tradeFeedName);
+			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
+			feed.start();
+			metaModel.upsert(feedName);
 		}
 		// adding AccountFeed
 		{
