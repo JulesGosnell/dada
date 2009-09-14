@@ -46,6 +46,9 @@ public class Server {
 		metaModel.upsert(metaModel.getName()); // The metaModel is a Model !
 		LOG.info("Listening on: " + queue);
 		
+		// we'' randomize trade dates out over the next week...
+		final long now = new Date().getTime();
+		
 		// adding TradeFeed
 		Model<Integer, Trade> tradeFeed;
 		{
@@ -54,7 +57,7 @@ public class Server {
 
 				@Override
 				public Trade createNewItem(int counter) {
-					return new Trade(counter, 0, new Date(), new BigDecimal(100));
+					return new Trade(counter, 0, new Date(now + (long)(1000L*60*60*24 * Math.random()*7)), new BigDecimal(100));
 				}
 
 				@Override

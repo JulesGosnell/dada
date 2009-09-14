@@ -31,4 +31,9 @@ public class Trade extends DatumImpl {
 		return amount;
 	}
 
+	// Object
+	@Override
+	public String toString() {
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + "," + valueDate + "]>";
+	}
 }
