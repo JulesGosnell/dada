@@ -1,7 +1,9 @@
 package org.omo.cash;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -16,6 +18,8 @@ import org.apache.commons.logging.LogFactory;
 import org.omo.core.Feed;
 import org.omo.core.MapModel;
 import org.omo.core.Model;
+import org.omo.core.Partitioner;
+import org.omo.core.View;
 import org.omo.core.MapModel.Adaptor;
 import org.omo.jms.RemotingFactory;
 
@@ -43,9 +47,10 @@ public class Server {
 		LOG.info("Listening on: " + queue);
 		
 		// adding TradeFeed
+		Model<Integer, Trade> tradeFeed;
 		{
 			String feedName = "TradeFeed";
-			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, 10000, 100L, new Feed.Strategy<Integer, Trade>(){
+			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, 100, 100L, new Feed.Strategy<Integer, Trade>(){
 
 				@Override
 				public Trade createNewItem(int counter) {
@@ -65,6 +70,27 @@ public class Server {
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
 			metaModel.upsert(feedName);
+			tradeFeed = feed;
+		}
+		{
+			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
+			MapModel.Adaptor<Integer, Trade> adaptor = new MapModel.Adaptor<Integer, Trade>() {
+				@Override
+				public Integer getKey(Trade value) {
+					return value.getId();
+				}};
+			int numPartitions = 2;
+			for (int i=0; i<numPartitions; i++) {
+				String partitionName = "Trades."+i;
+				MapModel<Integer, Trade> partition = new MapModel<Integer, Trade>(partitionName, adaptor);
+				partitions.add(partition);
+				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
+				partition.start();
+				metaModel.upsert(partitionName);
+			}
+			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions);
+			tradeFeed.registerView(partitioner);
 		}
 		// adding AccountFeed
 		{
@@ -141,7 +167,7 @@ public class Server {
 		// adding CompanyFeed
 		{
 			String feedName = "CompanyFeed";
-			Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, 1000, 100L, new Feed.Strategy<Integer, Company>(){
+			Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, 10, 100L, new Feed.Strategy<Integer, Company>(){
 
 				@Override
 				public Company createNewItem(int counter) {
