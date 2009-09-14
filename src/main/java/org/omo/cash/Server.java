@@ -52,6 +52,7 @@ public class Server {
 		final int numTrades = 100;
 		final int numPartitions = 2;
 		final int numDays = 7;
+		final int numAccounts = 25;
 		
 		// adding TradeFeed
 		Model<Integer, Trade> tradeFeed;
@@ -61,12 +62,12 @@ public class Server {
 
 				@Override
 				public Trade createNewItem(int counter) {
-					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100));
+					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100), (int)(Math.random()*numAccounts));
 				}
 
 				@Override
 				public Trade createNewVersion(Trade original) {
-					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount());
+					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount());
 				}
 
 				@Override
@@ -103,6 +104,28 @@ public class Server {
 					serverFactory.createServer(day, session.createQueue("Server."+dayName));
 					day.start();
 					metaModel.upsert(dayName);
+
+					List<View<Integer, Trade>> accounts= new ArrayList<View<Integer, Trade>>();
+					for (int a=0; a<numAccounts; a++) {
+						String accountName = dayName+".Account."+a;
+						MapModel<Integer, Trade> account= new MapModel<Integer, Trade>(accountName, adaptor);
+						accounts.add(account);
+						serverFactory.createServer(account, session.createQueue("Server."+accountName));
+						account.start();
+						metaModel.upsert(accountName);
+					}
+					Partitioner<Integer, Trade> partitionerByAccount= new Partitioner<Integer, Trade>(accounts, new Partitioner.Strategy<Trade>() {
+
+						@Override
+						public int getNumberOfPartitions() {
+							return numAccounts;
+						}
+
+						@Override
+						public int partition(Trade value) {
+							return value.getAccount();
+						}});
+					day.registerView(partitionerByAccount);
 				}
 				Partitioner<Integer, Trade> partitionerByDay = new Partitioner<Integer, Trade>(days, new Partitioner.Strategy<Trade>() {
 
@@ -116,7 +139,7 @@ public class Server {
 						return (int)((value.getValueDate().getTime() - now) / DAY) ;
 					}});
 				partition.registerView(partitionerByDay);
-
+				
 			}
 			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
 
@@ -135,7 +158,7 @@ public class Server {
 		// adding AccountFeed
 		{
 			String feedName = "AccountFeed";
-			Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, 1000, 100L, new Feed.Strategy<Integer, Account>(){
+			Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, numAccounts, 100L, new Feed.Strategy<Integer, Account>(){
 
 				@Override
 				public Account createNewItem(int counter) {

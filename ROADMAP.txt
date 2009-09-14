@@ -1,8 +1,14 @@
-
-void fns should only be acked if required
+DONE
 refactor Feed type
-partitioning/reaggregation
+partitioning
 more types - BalanceFeed, LimitFeed
+partition by Account
+
+NOT DONE
+void fns should only be acked if required
+reaggregation of partitions
+total a Model (Account)
+partition by Currency and Total
 aggregate views/models
 demo views/apps: cash sheet / traffic lights
 server should use topics, not queues / multiple listeners on same topic should be collapsed and ref-counted

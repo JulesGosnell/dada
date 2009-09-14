@@ -8,18 +8,15 @@ import org.omo.core.DatumImpl;
 
 public class Trade extends DatumImpl {
 
-	private Date valueDate;
-	private BigDecimal amount;
+	private final Date valueDate;
+	private final BigDecimal amount;
+	private final int account;
 
-	// TODO - lose this ctor
-	public Trade(int id, int version) {
-		super(id, version);
-	}
-	
-	public Trade(int id, int version, Date valueDate, BigDecimal amount) {
+	public Trade(int id, int version, Date valueDate, BigDecimal amount, int account) {
 		super(id, version);
 		this.valueDate = valueDate;
 		this.amount = amount;
+		this.account = account;
 	}	
 
 
@@ -31,9 +28,13 @@ public class Trade extends DatumImpl {
 		return amount;
 	}
 
+	public int getAccount() {
+		return account;
+	}
+	
 	// Object
 	@Override
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + "," + valueDate + "]>";
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + " valueDate=" + valueDate + ", account=" + account +"]>";
 	}
 }
