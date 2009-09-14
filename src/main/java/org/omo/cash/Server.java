@@ -47,17 +47,21 @@ public class Server {
 		LOG.info("Listening on: " + queue);
 		
 		// we'' randomize trade dates out over the next week...
+		final int DAY = 1000*60*60*24;
 		final long now = new Date().getTime();
+		final int numTrades = 100;
+		final int numPartitions = 2;
+		final int numDays = 7;
 		
 		// adding TradeFeed
 		Model<Integer, Trade> tradeFeed;
 		{
 			String feedName = "TradeFeed";
-			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, 100, 100L, new Feed.Strategy<Integer, Trade>(){
+			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, numTrades, 100L, new Feed.Strategy<Integer, Trade>(){
 
 				@Override
 				public Trade createNewItem(int counter) {
-					return new Trade(counter, 0, new Date(now + (long)(1000L*60*60*24 * Math.random()*7)), new BigDecimal(100));
+					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100));
 				}
 
 				@Override
@@ -83,14 +87,36 @@ public class Server {
 				public Integer getKey(Trade value) {
 					return value.getId();
 				}};
-			final int numPartitions = 2;
-			for (int i=0; i<numPartitions; i++) {
-				String partitionName = "Trades."+i;
+			for (int p=0; p<numPartitions; p++) {
+				String partitionName = "Trades."+p;
 				MapModel<Integer, Trade> partition = new MapModel<Integer, Trade>(partitionName, adaptor);
 				partitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
 				partition.start();
 				metaModel.upsert(partitionName);
+				
+				List<View<Integer, Trade>> days= new ArrayList<View<Integer, Trade>>();
+				for (int d=0; d<numDays; d++) {
+					String dayName = partitionName+".Date."+d;
+					MapModel<Integer, Trade> day = new MapModel<Integer, Trade>(dayName, adaptor);
+					days.add(day);
+					serverFactory.createServer(day, session.createQueue("Server."+dayName));
+					day.start();
+					metaModel.upsert(dayName);
+				}
+				Partitioner<Integer, Trade> partitionerByDay = new Partitioner<Integer, Trade>(days, new Partitioner.Strategy<Trade>() {
+
+					@Override
+					public int getNumberOfPartitions() {
+						return numDays;
+					}
+
+					@Override
+					public int partition(Trade value) {
+						return (int)((value.getValueDate().getTime() - now) / DAY) ;
+					}});
+				partition.registerView(partitionerByDay);
+
 			}
 			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
 
