@@ -80,7 +80,7 @@ public class Server {
 				public Integer getKey(Trade value) {
 					return value.getId();
 				}};
-			int numPartitions = 2;
+			final int numPartitions = 2;
 			for (int i=0; i<numPartitions; i++) {
 				String partitionName = "Trades."+i;
 				MapModel<Integer, Trade> partition = new MapModel<Integer, Trade>(partitionName, adaptor);
@@ -89,7 +89,18 @@ public class Server {
 				partition.start();
 				metaModel.upsert(partitionName);
 			}
-			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions);
+			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
+
+				@Override
+				public int getNumberOfPartitions() {
+					return numPartitions;
+				}
+
+				@Override
+				public int partition(Trade value) {
+					return value.getId() % numPartitions;
+				}
+			});
 			tradeFeed.registerView(partitioner);
 		}
 		// adding AccountFeed

@@ -6,12 +6,19 @@ import java.util.List;
 
 public class Partitioner<K, V extends Datum> implements View<K, V> {
 
-	private final List<View<K, V>> partitions;
-	private final int numPartitions;
+	public interface Strategy<V> {
+		
+		int getNumberOfPartitions();
+		int partition(V value);
+		
+	}
 	
-	public Partitioner(List<View<K, V>> partitions) {
+	private final List<View<K, V>> partitions;
+	private final Strategy<V> strategy;
+	
+	public Partitioner(List<View<K, V>> partitions, Strategy<V> strategy) {
 		this.partitions = partitions;
-		numPartitions = this.partitions.size();
+		this.strategy = strategy;
 	}
 	
 	@Override
@@ -26,12 +33,13 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 
 	@Override
 	public void upsert(Collection<V> upsertions) {
-		List<V>[] tmp = new List[numPartitions];
-		for (int p=0; p<numPartitions; p++)
+		int numberofPartitions = strategy.getNumberOfPartitions();
+		List<V>[] tmp = new List[numberofPartitions];
+		for (int p=0; p<numberofPartitions; p++)
 			tmp[p] = new ArrayList<V>();
 		for (V upsertion : upsertions)
-			tmp[upsertion.getId()%numPartitions].add(upsertion);
-		for (int p=0; p<numPartitions; p++) {
+			tmp[strategy.partition(upsertion)].add(upsertion);
+		for (int p=0; p<numberofPartitions; p++) {
 			View<K, V> partition = partitions.get(p);
 			List<V> upsertions2 = tmp[p];
 			if (upsertions2.size()>0)
@@ -41,8 +49,7 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 
 	@Override
 	public void upsert(V upsertion) {
-		int partition = upsertion.getId()%numPartitions;
-		partitions.get(partition).upsert(upsertion);
+		partitions.get(strategy.partition(upsertion)).upsert(upsertion);
 	}
 
 }
