@@ -45,15 +45,16 @@ public class Server {
 		factory.createServer(metaModel, queue);
 		metaModel.upsert(metaModel.getName()); // The metaModel is a Model !
 		LOG.info("Listening on: " + queue);
-		
+
 		// we'' randomize trade dates out over the next week...
 		final int DAY = 1000*60*60*24;
 		final long now = new Date().getTime();
-		final int numTrades = 100;
+		final int numTrades = 100000;
 		final int numPartitions = 2;
 		final int numDays = 7;
 		final int numAccounts = 25;
-		
+		final int numCurrencies = 10;
+
 		// adding TradeFeed
 		Model<Integer, Trade> tradeFeed;
 		{
@@ -62,12 +63,12 @@ public class Server {
 
 				@Override
 				public Trade createNewItem(int counter) {
-					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100), (int)(Math.random()*numAccounts));
+					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100), (int)(Math.random()*numAccounts), (int)(Math.random()*numCurrencies));
 				}
 
 				@Override
 				public Trade createNewVersion(Trade original) {
-					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount());
+					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount(), original.getCurrency());
 				}
 
 				@Override
@@ -95,7 +96,7 @@ public class Server {
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
 				partition.start();
 				metaModel.upsert(partitionName);
-				
+
 				List<View<Integer, Trade>> days= new ArrayList<View<Integer, Trade>>();
 				for (int d=0; d<numDays; d++) {
 					String dayName = partitionName+".Date."+d;
@@ -126,6 +127,31 @@ public class Server {
 							return value.getAccount();
 						}});
 					day.registerView(partitionerByAccount);
+
+					List<View<Integer, Trade>> currencys= new ArrayList<View<Integer, Trade>>();
+					for (int a=0; a<numCurrencies; a++) {
+						String currencyName = dayName+".Currency."+a;
+						MapModel<Integer, Trade> currency= new MapModel<Integer, Trade>(currencyName, adaptor);
+						currencys.add(currency);
+						serverFactory.createServer(currency, session.createQueue("Server."+currencyName));
+						currency.start();
+						metaModel.upsert(currencyName);
+					}
+					Partitioner<Integer, Trade> partitionerByCurrency= new Partitioner<Integer, Trade>(currencys, new Partitioner.Strategy<Trade>() {
+
+						@Override
+						public int getNumberOfPartitions() {
+							return numCurrencies;
+						}
+
+						@Override
+						public int partition(Trade value) {
+							return value.getCurrency();
+						}});
+					day.registerView(partitionerByCurrency);
+
+					{
+					}
 				}
 				Partitioner<Integer, Trade> partitionerByDay = new Partitioner<Integer, Trade>(days, new Partitioner.Strategy<Trade>() {
 
@@ -139,7 +165,7 @@ public class Server {
 						return (int)((value.getValueDate().getTime() - now) / DAY) ;
 					}});
 				partition.registerView(partitionerByDay);
-				
+
 			}
 			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
 
@@ -182,7 +208,7 @@ public class Server {
 		// adding CurrencyFeed
 		{
 			String feedName = "CurrencyFeed";
-			Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, 1000, 100L, new Feed.Strategy<Integer, Currency>(){
+			Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, numCurrencies, 100L, new Feed.Strategy<Integer, Currency>(){
 
 				@Override
 				public Currency createNewItem(int counter) {
@@ -252,10 +278,10 @@ public class Server {
 			metaModel.upsert(feedName);
 		}
 	}
-	
+
 	/**
 	 * @param args
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
 		String name = (args.length == 0 ? "Server" : args[0]);
@@ -263,7 +289,7 @@ public class Server {
 		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		LOG.info("Broker URL: " +url);
 		new Server(name, connectionFactory);
-		
+
 		// keep going...
 		while (true)
 			try {
