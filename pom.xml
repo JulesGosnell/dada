@@ -126,6 +126,13 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+	  <ajdtVersion>none</ajdtVersion>  <!-- prevent aspectj jars from being stripped out of Eclipse classpath -->
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
