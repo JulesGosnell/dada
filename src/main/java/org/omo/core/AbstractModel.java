@@ -48,17 +48,28 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		return success;
 	}	
 	
-	protected void notifyInsertion(OutputValue insertion) {
+	protected void notifyInsertion(OutputValue update) {
 		synchronized (views) {
 			for (View<OutputKey, OutputValue> view : views)
 				try {
-					view.update(insertion);
+					view.insert(update);
 				} catch (RuntimeException e) {
-					log.error("view notification failed: " + view + " <- " + insertion, e);
+					log.error("view insertion failed: " + view + " <- " + update, e);
 				}
 		}
 	}
-	
+
+	protected void notifyUpdate(OutputValue value) {
+		synchronized (views) {
+			for (View<OutputKey, OutputValue> view : views)
+				try {
+					view.update(value);
+				} catch (RuntimeException e) {
+					log.error("view update failed: " + view + " <- " + value, e);
+				}
+		}
+	}
+
 	// TODO: notifications for update/delete
 
 	protected void notifyBatch(Collection<OutputValue> insertions, Collection<OutputValue> updates, Collection<OutputKey> deletions) {

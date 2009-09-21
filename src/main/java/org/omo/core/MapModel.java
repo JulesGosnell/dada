@@ -45,7 +45,10 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 
 	@Override
 	public void update(Value value) {
-		throw new UnsupportedOperationException("NYI");
+		synchronized (map.values()) {
+			map.put(adaptor.getKey(value), value);
+		}
+		notifyUpdate(value);
 	}
 
 	// View

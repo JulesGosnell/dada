@@ -23,12 +23,12 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 	
 	@Override
 	public void insert(V value) {
-		partitions.get(strategy.partition(value)).update(value);
+		partitions.get(strategy.partition(value)).insert(value);
 	}
 
 	@Override
 	public void update(V value) {
-		throw new UnsupportedOperationException("NYI");
+		partitions.get(strategy.partition(value)).update(value);
 	}
 
 	@Override

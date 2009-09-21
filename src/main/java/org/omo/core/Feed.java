@@ -33,7 +33,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			// Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
 			V newTrade = strategy.createNewVersion(oldTrade);
 			vs.put(strategy.getKey(newTrade), newTrade);
-			notifyInsertion(newTrade);
+			notifyUpdate(newTrade);
 		}
 	};
 	
