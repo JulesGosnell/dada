@@ -20,15 +20,12 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	// Listener
 	
 	@Override
-	public void batch(Collection<Trade> insertions, Collection<Trade> updates, Collection<Integer> deletions) {
-		log.info("UPDATE("+updates+")");
-		for (Trade upsertion : updates) {
-			int id = upsertion.getId();
-			trades.put(id, upsertion);
-			int index = trades.headMap(id).size();
-			fireTableRowsUpdated(index, index);
-		}
-		// TODO: extend
+	public void insert(Trade value) {
+		log.info("INSERT("+value+")");
+		int id = value.getId();
+		trades.put(id, value);
+		int index = trades.headMap(id).size();
+		fireTableRowsInserted(index, index);
 	}
 
 	@Override
@@ -42,12 +39,29 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	
 	@Override
 	public void delete(Integer key) {
-		throw new UnsupportedOperationException("NYI");
+		log.info("DELETE("+key+")");
+		trades.remove(key);
+		int index = trades.headMap(key).size();
+		fireTableRowsDeleted(index, index);
 	}
 
 	// TableModel
 
 	
+	// Listener
+	
+	@Override
+	public void batch(Collection<Trade> insertions, Collection<Trade> updates, Collection<Integer> deletions) {
+		log.info("UPDATE("+updates+")");
+		for (Trade upsertion : updates) {
+			int id = upsertion.getId();
+			trades.put(id, upsertion);
+			int index = trades.headMap(id).size();
+			fireTableRowsUpdated(index, index);
+		}
+		// TODO: extend
+	}
+
 	protected String columnNames[] = new String[]{"id", "version"};
 
 	@Override
@@ -77,12 +91,6 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 		}
 		
 		throw new IllegalArgumentException("columnIndex out of bounds: " + columnIndex);
-	}
-
-	@Override
-	public void insert(Trade value) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

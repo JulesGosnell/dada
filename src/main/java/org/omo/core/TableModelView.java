@@ -29,14 +29,8 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	// Listener
 	
 	@Override
-	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
-		//log.trace("UPDATE("+upsertions+")");
-		for (InputValue upsertion : updates) {
-			InputKey key = mapper.getKey(upsertion);
-			map.put(key, upsertion);
-			int index = map.headMap(key).size();
-			fireTableRowsUpdated(index, index);
-		}
+	public void insert(InputValue value) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -56,6 +50,19 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	// TableModel
 
 	
+	// Listener
+	
+	@Override
+	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
+		//log.trace("UPDATE("+upsertions+")");
+		for (InputValue upsertion : updates) {
+			InputKey key = mapper.getKey(upsertion);
+			map.put(key, upsertion);
+			int index = map.headMap(key).size();
+			fireTableRowsUpdated(index, index);
+		}
+	}
+
 	protected String columnNames[] = new String[]{"id", "version"};
 
 	@Override
@@ -77,12 +84,6 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		InputValue value = (InputValue)map.values().toArray()[rowIndex]; // yikes !!
 		return mapper.getField(value, columnIndex);
-	}
-
-	@Override
-	public void insert(InputValue value) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

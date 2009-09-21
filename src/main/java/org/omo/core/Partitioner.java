@@ -22,6 +22,16 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 	}
 	
 	@Override
+	public void insert(V value) {
+		partitions.get(strategy.partition(value)).update(value);
+	}
+
+	@Override
+	public void update(V value) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
+	@Override
 	public void delete(K key) {
 		throw new UnsupportedOperationException("NYI");
 	}
@@ -32,26 +42,15 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 		List<V>[] tmp = new List[numberofPartitions];
 		for (int p=0; p<numberofPartitions; p++)
 			tmp[p] = new ArrayList<V>();
-		for (V upsertion : updates)
-			tmp[strategy.partition(upsertion)].add(upsertion);
+		for (V insertion : insertions)
+			tmp[strategy.partition(insertion)].add(insertion);
 		for (int p=0; p<numberofPartitions; p++) {
 			View<K, V> partition = partitions.get(p);
-			List<V> upsertions2 = tmp[p];
-			if (upsertions2.size()>0)
-				partition.batch(null, upsertions2, null);
+			List<V> insertions2 = tmp[p];
+			if (insertions2.size()>0)
+				partition.batch(insertions2, null, null);
 			// TODO: extend
 		}
-	}
-
-	@Override
-	public void update(V value) {
-		partitions.get(strategy.partition(value)).update(value);
-	}
-
-	@Override
-	public void insert(V value) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }
