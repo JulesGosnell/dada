@@ -38,21 +38,17 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	// Listener
 	
 	@Override
-	public void update(Value value) {
+	public void insert(Value value) {
 		if (query.apply(value)) {
 			results.addFirst(value);
 			for (View<Key, Value> listener : views)
-				listener.update(value);
+				listener.insert(value);
 		}
 	}
 
 	@Override
-	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
-		List<Value> relevantUpdates = query.apply(updates);
-		if (!relevantUpdates.isEmpty())
-			for (View<Key, Value> view : views)
-				view.batch(null, relevantUpdates, null);
-		// TODO: extend
+	public void update(Value value) {
+		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
@@ -61,8 +57,13 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	}
 
 	@Override
-	public void insert(Value value) {
-		// TODO Auto-generated method stub
-		
+	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
+		List<Value> relevantInsertions = query.apply(insertions);
+		if (!relevantInsertions.isEmpty())
+			for (View<Key, Value> view : views)
+				view.batch(relevantInsertions, null, null);
+		if ((updates != null && updates.size()>0) || (deletions != null && deletions.size()>0))
+			throw new UnsupportedOperationException("NYI");
 	}
+
 }

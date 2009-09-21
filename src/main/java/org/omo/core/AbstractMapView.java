@@ -16,6 +16,18 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 		return map;
 	}
 
+	// View
+	
+	@Override
+	public void insert(InputValue value) {
+		throw new UnsupportedOperationException("NYI");
+	}
+	
+	@Override
+	public void update(InputValue value) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
 	@Override
 	public void delete(InputKey key) {
 		synchronized (map) {
@@ -25,20 +37,8 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 
 	@Override
 	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
-		// TODO Auto-generated method stub
-
+		throw new UnsupportedOperationException("NYI");
 	}
 
-	@Override
-	public void update(InputValue value) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void insert(InputValue value) {
-		// TODO Auto-generated method stub
-		
-	}
 
 }
