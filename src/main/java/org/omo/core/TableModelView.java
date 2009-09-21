@@ -29,9 +29,9 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	// Listener
 	
 	@Override
-	public void upsert(Collection<InputValue> upsertions) {
+	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
 		//log.trace("UPDATE("+upsertions+")");
-		for (InputValue upsertion : upsertions) {
+		for (InputValue upsertion : updates) {
 			InputKey key = mapper.getKey(upsertion);
 			map.put(key, upsertion);
 			int index = map.headMap(key).size();
@@ -40,21 +40,16 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	}
 
 	@Override
-	public void upsert(InputValue upsertion) {
-		log.trace("UPDATE("+upsertion+")");
-		InputKey key = mapper.getKey(upsertion);
-		map.put(key, upsertion);
+	public void update(InputValue value) {
+		log.trace("UPDATE("+value+")");
+		InputKey key = mapper.getKey(value);
+		map.put(key, value);
 		int index = map.headMap(key).size();
 		fireTableRowsUpdated(index, index);
 	}
 	
 	@Override
-	public void delete(Collection<InputKey> deletions) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void delete(InputKey deletion) {
+	public void delete(InputKey key) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
@@ -82,6 +77,12 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		InputValue value = (InputValue)map.values().toArray()[rowIndex]; // yikes !!
 		return mapper.getField(value, columnIndex);
+	}
+
+	@Override
+	public void insert(InputValue value) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

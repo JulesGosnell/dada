@@ -38,29 +38,31 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	// Listener
 	
 	@Override
-	public void upsert(Value upsertion) {
-		if (query.apply(upsertion)) {
-			results.addFirst(upsertion);
+	public void update(Value value) {
+		if (query.apply(value)) {
+			results.addFirst(value);
 			for (View<Key, Value> listener : views)
-				listener.upsert(upsertion);
+				listener.update(value);
 		}
 	}
 
 	@Override
-	public void upsert(Collection<Value> upsertions) {
-		List<Value> relevantUpdates = query.apply(upsertions);
+	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
+		List<Value> relevantUpdates = query.apply(updates);
 		if (!relevantUpdates.isEmpty())
 			for (View<Key, Value> view : views)
-				view.upsert(relevantUpdates);
+				view.batch(null, relevantUpdates, null);
+		// TODO: extend
 	}
 
 	@Override
-	public void delete(Collection<Key> deletions) {
+	public void delete(Key key) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
-	public void delete(Key deletion) {
-		throw new UnsupportedOperationException("NYI");
+	public void insert(Value value) {
+		// TODO Auto-generated method stub
+		
 	}
 }

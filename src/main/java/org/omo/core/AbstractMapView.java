@@ -17,30 +17,28 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 	}
 
 	@Override
-	public void delete(Collection<InputKey> deletions) {
+	public void delete(InputKey key) {
 		synchronized (map) {
-			for (InputKey deletion : deletions)
-			map.remove(deletion);
+			map.remove(key);
 		}
 	}
 
 	@Override
-	public void delete(InputKey deletion) {
-		synchronized (map) {
-			map.remove(deletion);
-		}
-	}
-
-	@Override
-	public void upsert(Collection<InputValue> upsertions) {
+	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void upsert(InputValue upsertion) {
+	public void update(InputValue value) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void insert(InputValue value) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

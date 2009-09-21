@@ -52,7 +52,7 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		synchronized (views) {
 			for (View<OutputKey, OutputValue> view : views)
 				try {
-					view.upsert(upsertion);
+					view.update(upsertion);
 				} catch (RuntimeException e) {
 					log.error("view notification failed: " + view + " <- " + upsertion, e);
 				}
@@ -62,7 +62,7 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	protected void notifyUpsertion(Collection<OutputValue> upsertions) {
 		for (View<OutputKey, OutputValue> view : views)
 			try {
-				view.upsert(upsertions);
+				view.batch(null, upsertions, null);
 			} catch (RuntimeException e) {
 				log.error("view notification failed: " + view + " <- " + upsertions, e);
 			}

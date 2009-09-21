@@ -5,7 +5,7 @@ public abstract class AbstractView<InputKey, InputValue> implements View<InputKe
 
 	public void connect(Model<InputKey, InputValue> model) {
 		synchronized (getLock()) {
-			upsert(model.registerView(this));
+			batch(null, model.registerView(this), null);
 		}
 	}
 	

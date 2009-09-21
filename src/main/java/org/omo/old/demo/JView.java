@@ -3,8 +3,6 @@
  */
 package org.omo.old.demo;
 
-import java.awt.Dimension;
-
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;

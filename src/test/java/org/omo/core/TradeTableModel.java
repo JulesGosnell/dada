@@ -20,32 +20,28 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	// Listener
 	
 	@Override
-	public void upsert(Collection<Trade> upsertions) {
-		log.info("UPDATE("+upsertions+")");
-		for (Trade upsertion : upsertions) {
+	public void batch(Collection<Trade> insertions, Collection<Trade> updates, Collection<Integer> deletions) {
+		log.info("UPDATE("+updates+")");
+		for (Trade upsertion : updates) {
 			int id = upsertion.getId();
 			trades.put(id, upsertion);
 			int index = trades.headMap(id).size();
 			fireTableRowsUpdated(index, index);
 		}
+		// TODO: extend
 	}
 
 	@Override
-	public void upsert(Trade upsertion) {
-		log.info("UPDATE("+upsertion+")");
-		int id = upsertion.getId();
-		trades.put(id, upsertion);
+	public void update(Trade value) {
+		log.info("UPDATE("+value+")");
+		int id = value.getId();
+		trades.put(id, value);
 		int index = trades.headMap(id).size();
 		fireTableRowsUpdated(index, index);
 	}
 	
 	@Override
-	public void delete(Collection<Integer> deletions) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void delete(Integer deletion) {
+	public void delete(Integer key) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
@@ -81,6 +77,12 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 		}
 		
 		throw new IllegalArgumentException("columnIndex out of bounds: " + columnIndex);
+	}
+
+	@Override
+	public void insert(Trade value) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

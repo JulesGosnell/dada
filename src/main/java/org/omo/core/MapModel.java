@@ -37,36 +37,35 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 
 	// View
 	@Override
-	public void delete(Collection<Key> deletions) {
+	public void delete(Key key) {
 		synchronized (map.values()) {
-			for (Key deletion : deletions)
-				map.remove(deletion);
-		}
-	}
-
-	@Override
-	public void delete(Key deletion) {
-		synchronized (map.values()) {
-			map.remove(deletion);
+			map.remove(key);
 		}
 		
 	}
 
 	@Override
-	public void upsert(Collection<Value> upsertions) {
+	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
 		synchronized (map.values()) {
-			for (Value upsertion : upsertions)
+			for (Value upsertion : updates)
 				map.put(adaptor.getKey(upsertion), upsertion);
 		}
-		notifyUpsertion(upsertions);
+		notifyUpsertion(updates);
+		// TODO: extend
 	}
 
 	@Override
-	public void upsert(Value upsertion) {
+	public void update(Value value) {
 		synchronized (map.values()) {
-			map.put(adaptor.getKey(upsertion), upsertion);
+			map.put(adaptor.getKey(value), value);
 		}
-		notifyUpsertion(upsertion);
+		notifyUpsertion(value);
+	}
+
+	@Override
+	public void insert(Value value) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
