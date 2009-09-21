@@ -35,6 +35,19 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 		// TODO Auto-generated method stub
 	}
 
+	@Override
+	public void insert(Value value) {
+		synchronized (map.values()) {
+			map.put(adaptor.getKey(value), value);
+		}
+		notifyInsertion(value);
+	}
+
+	@Override
+	public void update(Value value) {
+		throw new UnsupportedOperationException("NYI");
+	}
+
 	// View
 	@Override
 	public void delete(Key key) {
@@ -47,25 +60,11 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 	@Override
 	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
 		synchronized (map.values()) {
-			for (Value upsertion : updates)
-				map.put(adaptor.getKey(upsertion), upsertion);
+			for (Value insertion : insertions)
+				map.put(adaptor.getKey(insertion), insertion);
 		}
-		notifyUpsertion(updates);
+		notifyBatch(insertions, null, null);
 		// TODO: extend
-	}
-
-	@Override
-	public void update(Value value) {
-		synchronized (map.values()) {
-			map.put(adaptor.getKey(value), value);
-		}
-		notifyUpsertion(value);
-	}
-
-	@Override
-	public void insert(Value value) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

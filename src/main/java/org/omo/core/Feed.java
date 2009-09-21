@@ -33,7 +33,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			// Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
 			V newTrade = strategy.createNewVersion(oldTrade);
 			vs.put(strategy.getKey(newTrade), newTrade);
-			notifyUpsertion(newTrade);
+			notifyInsertion(newTrade);
 		}
 	};
 	
@@ -52,7 +52,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V item = strategy.createNewItem(i);
 			vs.put(strategy.getKey(item), item);
 		}
-		notifyUpsertion(vs.values());
+		notifyBatch(vs.values(), null, null);
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
