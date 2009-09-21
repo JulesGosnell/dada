@@ -51,9 +51,9 @@ public class Server {
 		final long now = new Date().getTime();
 		final int numTrades = 100000;
 		final int numPartitions = 2;
-		final int numDays = 7;
-		final int numAccounts = 25;
-		final int numCurrencies = 10;
+		final int numDays = 5;
+		final int numAccounts = 5;
+		final int numCurrencies = 3;
 
 		// adding TradeFeed
 		Model<Integer, Trade> tradeFeed;
@@ -90,7 +90,7 @@ public class Server {
 					return value.getId();
 				}};
 			for (int p=0; p<numPartitions; p++) {
-				String partitionName = "Trades."+p;
+				String partitionName = "Trade."+p;
 				MapModel<Integer, Trade> partition = new MapModel<Integer, Trade>(partitionName, adaptor);
 				partitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
