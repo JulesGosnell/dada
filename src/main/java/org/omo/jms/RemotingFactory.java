@@ -104,6 +104,8 @@ public class RemotingFactory<T> {
 				result = e.getTargetException();
 			}
 
+			if (isException)
+				log.warn(result);
 			if (correlationId != null && replyTo != null) {
 				ObjectMessage response = null;
 				try {

@@ -20,8 +20,8 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	protected final Query<Value> query;
 	protected final LinkedList<Value> results;
 	
-	public FilterView(String name, Query<Value> query) {
-		super(name);
+	public FilterView(String name, Metadata<Key, Value> metadata, Query<Value> query) {
+		super(name, metadata);
 		this.query = query;
 		this.results = new LinkedList<Value>();
 	}

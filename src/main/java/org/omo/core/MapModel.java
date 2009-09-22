@@ -14,8 +14,8 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 	protected final Adaptor<Key, Value> adaptor;
 	protected final Map<Key, Value> map = new HashMap<Key, Value>();
 	
-	public MapModel(String name, Adaptor<Key, Value> adaptor) {
-		super(name);
+	public MapModel(String name, Metadata<Key, Value> metadata, Adaptor<Key, Value> adaptor) {
+		super(name, metadata);
 		this.adaptor =  adaptor;
 	}
 	

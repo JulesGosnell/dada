@@ -22,10 +22,6 @@ public class Trade extends DatumImpl {
 	}	
 
 
-	public Date getValueDate() {
-		return valueDate;
-	}
-
 	public BigDecimal getAmount() {
 		return amount;
 	}
@@ -38,6 +34,11 @@ public class Trade extends DatumImpl {
 		return currency;
 	}
 	
+	public Date getValueDate() {
+		return valueDate;
+	}
+
+
 	// Object
 	@Override
 	public String toString() {

@@ -13,11 +13,14 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	protected final String name;
 	
 	protected final Collection<View<OutputKey, OutputValue>> views = new ArrayList<View<OutputKey, OutputValue>>();
+
+	protected final Metadata<OutputKey, OutputValue> metadata;
 	
 	protected abstract Collection<OutputValue> getData();
 	
-	public AbstractModel(String name) {
+	public AbstractModel(String name, Metadata<OutputKey, OutputValue> metadata) {
 		this.name = name;
+		this.metadata = metadata;
 	}
 	
 	@Override
@@ -26,14 +29,18 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	}
 	
 	@Override
-	public Collection<OutputValue> registerView(View<OutputKey, OutputValue> view) {
+	public Registration<OutputKey, OutputValue> registerView(View<OutputKey, OutputValue> view) {
 		log.debug("registering view: " + view);
 		synchronized (views) {
 			views.add(view);
 		}
-		return getData();
+		return new Registration(getMetadata(), getData());
 	}
 	
+	private Metadata<OutputKey, OutputValue> getMetadata() {
+		return metadata;
+	}
+
 	@Override
 	public boolean deregisterView(View<OutputKey, OutputValue> view) {
 		boolean success;

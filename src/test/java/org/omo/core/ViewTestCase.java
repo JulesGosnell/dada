@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.omo.cash.IntrospectiveMetadata;
 import org.omo.core.AbstractQuery;
 import org.omo.core.AndQuery;
 import org.omo.core.FilterView;
@@ -17,6 +18,8 @@ public class ViewTestCase extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
+		datumMetadata = new IntrospectiveMetadata<Integer, Datum>(Datum.class, "Id");
+		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, "Id");
 	}
 
 	protected void tearDown() throws Exception {
@@ -33,8 +36,19 @@ public class ViewTestCase extends TestCase {
 			this.flag = flag;
 		}
 		
+		public int getId() {
+			return id;
+		}
+		
+		public boolean getFlag() {
+			return flag;
+		}
+		
 	};
 
+	protected Metadata<Integer, Datum> datumMetadata;
+	protected Metadata<Integer, StringDatum> stringDatumMetadata;
+	
 	static class DatumIsTrueQuery extends AbstractQuery<Datum> {
 
 		@Override
@@ -86,9 +100,9 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilterView<Integer, Datum> view = new FilterView<Integer, Datum>("IsTrue", new DatumIsTrueQuery());
+		FilterView<Integer, Datum> view = new FilterView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
 		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
-		Collection<Datum> insertions = view.registerView(counter);
+		Collection<Datum> insertions = view.registerView(counter).getData();
 		counter.batch(insertions, null, null);
 		view.insert(new Datum(0, false));
 		view.insert(new Datum(1, true));
@@ -131,11 +145,11 @@ public class ViewTestCase extends TestCase {
 
 	public void testCompoundView() {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
-		FilterView<Integer, StringDatum> isTrue = new FilterView<Integer, StringDatum>("IsTrue", new IsTrueQuery());
-		FilterView<Integer, StringDatum> isNull = new FilterView<Integer, StringDatum>("IsNull", new IsNullQuery());
-		Collection<StringDatum> isNullData = isTrue.registerView(isNull);
+		FilterView<Integer, StringDatum> isTrue = new FilterView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
+		FilterView<Integer, StringDatum> isNull = new FilterView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
+		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
 		isNull.batch(isNullData, null, null);
-		Collection<StringDatum> counterData = isNull.registerView(counter);
+		Collection<StringDatum> counterData = isNull.registerView(counter).getData();
 		counter.batch(counterData, null, null);
 		isTrue.insert(new StringDatum(0, false, ""));
 		assertTrue(counter.count==0);

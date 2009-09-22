@@ -5,9 +5,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.rmi.server.UID;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -27,51 +25,28 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.core.Model;
+import org.omo.core.Registration;
 import org.omo.core.TableModelView;
 import org.omo.core.View;
-import org.omo.core.TableModelView.Mapper;
 import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
 
-public class Client<K, V> {
+public class Client {
 	
 	private final static Log LOG = LogFactory.getLog(Client.class);
 
-	private final Mapper<K, V> mapper = new Mapper<K, V>() {
-
-		@Override
-		public Object getField(V value, int index) {
-			switch (index) {
-			case 0: return value;
-			}
-			throw new IllegalArgumentException("index out of bounds: " + index);
-		}
-
-		@Override
-		public List<String> getFieldNames() {
-			List<String> names = new ArrayList<String>();
-			names.add("name");
-			return names; // TODO: avoid reallocation...
-		}
-
-		@Override
-		public K getKey(V value) {
-			return (K)value; // TODO
-		}
-	};
-	
 	private final String serverName;
 	private final String modelName;
 	private final Session session;
 	private final int timeout;
 	private final boolean topLevel;
-	private final TableModelView<K, V> guiModel;
+	private final TableModelView<Object, Object> guiModel;
 	private final Destination serverDestination;
-	private final RemotingFactory<Model<K, V>> clientFactory;
-	private final Model<K, V> serverProxy;
+	private final RemotingFactory<Model<Object, Object>> clientFactory;
+	private final Model<Object, Object> serverProxy;
 	private final Destination clientDestination;
-	private final RemotingFactory<View<K, V>> serverFactory;
-	private final View<K, V> clientServer;
+	private final RemotingFactory<View<Object, Object>> serverFactory;
+	private final View<Object, Object> clientServer;
 	private final JView jview;
 	private final JTable table;
 	private final JFrame frame;
@@ -86,23 +61,26 @@ public class Client<K, V> {
 		this.timeout = timeout;
 		this.topLevel = topLevel;
 
-		guiModel = new TableModelView<K, V>(mapper);
+		guiModel = new TableModelView<Object, Object>();
 
 		serverDestination = session.createQueue(serverName + "." + this.modelName);
-		clientFactory = new RemotingFactory<Model<K, V>>(session, Model.class, serverDestination, timeout);
+		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, serverDestination, timeout);
 		serverProxy = clientFactory.createSynchronousClient();
 
 		// create a Client
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
-		serverFactory = new RemotingFactory<View<K, V>>(session, View.class, clientDestination, timeout);
+		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, clientDestination, timeout);
 		serverFactory.createServer(guiModel);
 		clientServer = serverFactory.createSynchronousClient();
 
 		// pass the client over to the server to attach as a listener..
-		Collection<V> models = serverProxy.registerView(clientServer);
-		if (models != null)
-			guiModel.batch(null, models, null);
+		Registration<Object, Object> registration = serverProxy.registerView(clientServer); 
+		Collection<Object> models = registration.getData();
+		if (models != null) {
+			guiModel.setMetadata(registration.getMetadata());
+			guiModel.batch(models, null, null);
+		}
 		else
 			LOG.warn("null model content returned");
 		LOG.info("Client ready: "+clientDestination);
@@ -135,7 +113,7 @@ public class Client<K, V> {
 					String targetModelName = (String)guiModel.getValueAt(selected, 0);
 					LOG.info("Opening: "+targetModelName);
 					try {
-						new Client<String, String>(Client.this.serverName, targetModelName, Client.this.session, Client.this.timeout, false);
+						new Client(Client.this.serverName, targetModelName, Client.this.session, Client.this.timeout, false);
 					} catch (JMSException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -197,7 +175,7 @@ public class Client<K, V> {
 			@Override
 			public void run() {
 				try {
-					new Client<String, String>(serverName, "MetaModel", session, 60000, true);
+					new Client(serverName, "MetaModel", session, 60000, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

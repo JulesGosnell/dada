@@ -1,0 +1,35 @@
+we need columns in GUI properly mapped
+different Model types need to collapse and translate inserts/updates accordingly
+update should take two parameters
+
+
+partitioning strategy returns -1 for drop, 1-n for accept
+listeners register at known index
+partitioner goes back to model behind it when listener registers... - how ?
+
+
+I think that we need :
+
+ListModel/View - a simple queue of replayable deltas
+MapModel/View - collapses deltas according to a pluggable strategy - initially a combination of id/version
+
+ListView interface would probably support upsert/delete
+MapView interface would probably support insert/update/delete
+
+By increasing granularity of MapView interface we can better support
+aggregators (as Model/Views) that need to e.g. total trades by various criteria, but do
+not need to hold them all.
+
+A projection can then be expressed as the set of aggregations of trade
+amounts for a given set of days, along with a set of balances, an
+active balance and a total.
+
+We also need to introduce/extend a datatype to encapsulate :
+
+key/version/serialisable
+
+MapModel/View should use this, whereas LiistModel may just use Object/?
+
+Should we split version out of Datum ?
+
+What if we want to batch together a number of insertions, updates and deletions ?

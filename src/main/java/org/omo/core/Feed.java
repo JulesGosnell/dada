@@ -37,8 +37,8 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		}
 	};
 	
-	public Feed(String name, int numTrades, long delay, Strategy<K, V> feedStrategy) {
-		super(name);
+	public Feed(String name, Metadata<K, V> metadata, int numTrades, long delay, Strategy<K, V> feedStrategy) {
+		super(name, metadata);
 		this.numTrades = numTrades;
 		this.delay = delay;
 		this.strategy = feedStrategy;

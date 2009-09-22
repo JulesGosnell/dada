@@ -1,7 +1,6 @@
 package org.omo.core;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.swing.table.AbstractTableModel;
@@ -13,19 +12,13 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 
 	private final Log log = LogFactory.getLog(getClass());
 	
-	public interface Mapper<InputKey, InputValue> {
-		InputKey getKey(InputValue value);
-		Object getField(InputValue value, int index);
-		List<String> getFieldNames();
-	}
-
-	private final Mapper<InputKey, InputValue> mapper;
+	private Metadata<InputKey, InputValue> metadata;
 	private final ConcurrentSkipListMap<InputKey, InputValue> map = new ConcurrentSkipListMap<InputKey, InputValue>();
 	
-	public TableModelView(Mapper<InputKey, InputValue> mapper) {
-		this.mapper = mapper;
+	public void setMetadata(Metadata<InputKey, InputValue> metadata) {
+		this.metadata = metadata;
 	}
-	
+
 	// Listener
 	
 	@Override
@@ -36,7 +29,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	@Override
 	public void update(InputValue value) {
 		log.trace("UPDATE("+value+")");
-		InputKey key = mapper.getKey(value);
+		InputKey key = metadata.getKey(value);
 		map.put(key, value);
 		int index = map.headMap(key).size();
 		fireTableRowsUpdated(index, index);
@@ -55,24 +48,33 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	@Override
 	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
 		//log.trace("UPDATE("+upsertions+")");
-		for (InputValue upsertion : updates) {
-			InputKey key = mapper.getKey(upsertion);
-			map.put(key, upsertion);
-			int index = map.headMap(key).size();
-			fireTableRowsUpdated(index, index);
-		}
+		if (insertions != null)
+			for (InputValue insertion : insertions) {
+				InputKey key = metadata.getKey(insertion);
+				map.put(key, insertion);
+				int index = map.headMap(key).size();
+				fireTableRowsInserted(index, index);
+			}
+		if (updates != null)
+			for (InputValue update : updates) {
+				InputKey key = metadata.getKey(update);
+				map.put(key, update);
+				int index = map.headMap(key).size();
+				fireTableRowsUpdated(index, index);
+			}
+		// TODO: handle deletions
 	}
 
 	protected String columnNames[] = new String[]{"id", "version"};
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		return mapper.getFieldNames().get(columnIndex);
+		return metadata.getAttributeNames().get(columnIndex);
 	}
 	
 	@Override
 	public int getColumnCount() {
-		return mapper.getFieldNames().size();
+		return metadata.getAttributeNames().size();
 	}
 
 	@Override
@@ -83,7 +85,7 @@ public class TableModelView<InputKey, InputValue> extends AbstractTableModel imp
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		InputValue value = (InputValue)map.values().toArray()[rowIndex]; // yikes !!
-		return mapper.getField(value, columnIndex);
+		return metadata.getAttributeValue(value, columnIndex);
 	}
 
 }
