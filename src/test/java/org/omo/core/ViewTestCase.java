@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.omo.cash.IntrospectiveMetadata;
 import org.omo.core.AbstractQuery;
 import org.omo.core.AndQuery;
 import org.omo.core.FilterView;
