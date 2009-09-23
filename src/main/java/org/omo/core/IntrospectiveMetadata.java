@@ -7,12 +7,12 @@ import java.util.List;
 
 public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
-	private final Class clazz;
+	private final Class<?> clazz;
 	private final List<String> attributeNames;
 	private int keyIndex;
 	//private final List<Method> getters;
 	
-	public IntrospectiveMetadata(Class clazz, String keyName) throws SecurityException, NoSuchMethodException {
+	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws SecurityException, NoSuchMethodException {
 		this.clazz = clazz;
 		keyName = "get"+keyName;
 		attributeNames = new ArrayList<String>();

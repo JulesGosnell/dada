@@ -34,7 +34,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		synchronized (views) {
 			views.add(view);
 		}
-		return new Registration(getMetadata(), getData());
+		return new Registration<K, V>(getMetadata(), getData());
 	}
 	
 	private Metadata<K, V> getMetadata() {
