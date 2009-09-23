@@ -17,13 +17,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.core.Feed;
 import org.omo.core.IntrospectiveMetadata;
-import org.omo.core.MapModel;
+import org.omo.core.MapModelView;
 import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.Partitioner;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
-import org.omo.core.MapModel.Adaptor;
+import org.omo.core.MapModelView.Adaptor;
 import org.omo.jms.RemotingFactory;
 
 public class Server {
@@ -35,7 +35,7 @@ public class Server {
 	private final Connection connection;
 	private final Session session;
 	private final RemotingFactory<Model<String, String>> factory;
-	private final MapModel<String, String> metaModel;
+	private final MapModelView<String, String> metaModel;
 	private final Adaptor<String, String> adaptor = new  Adaptor<String, String>() {@Override public String getKey(String value) {return value;}};
 	
 	public Server(String name, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
@@ -44,7 +44,7 @@ public class Server {
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		factory = new RemotingFactory<Model<String, String>>(session, Model.class, (Destination)null, timeout);
 		Metadata<String,String> modelMetadata = new StringMetadata("Name");
-		metaModel = new MapModel<String, String>(META_MODEL, modelMetadata, adaptor);
+		metaModel = new MapModelView<String, String>(META_MODEL, modelMetadata, adaptor);
 		Queue queue = session.createQueue(name + "." + META_MODEL);
 		factory.createServer(metaModel, queue);
 		metaModel.insert(metaModel.getName()); // The metaModel is a Model !
@@ -89,14 +89,14 @@ public class Server {
 		{
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
-			MapModel.Adaptor<Integer, Trade> adaptor = new MapModel.Adaptor<Integer, Trade>() {
+			MapModelView.Adaptor<Integer, Trade> adaptor = new MapModelView.Adaptor<Integer, Trade>() {
 				@Override
 				public Integer getKey(Trade value) {
 					return value.getId();
 				}};
 			for (int p=0; p<numPartitions; p++) {
 				String partitionName = "Trade."+p;
-				MapModel<Integer, Trade> partition = new MapModel<Integer, Trade>(partitionName, tradeMetadata, adaptor);
+				MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
 				partitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
 				partition.start();
@@ -105,7 +105,7 @@ public class Server {
 				List<View<Integer, Trade>> days= new ArrayList<View<Integer, Trade>>();
 				for (int d=0; d<numDays; d++) {
 					String dayName = partitionName+".Date."+d;
-					MapModel<Integer, Trade> day = new MapModel<Integer, Trade>(dayName, tradeMetadata, adaptor);
+					MapModelView<Integer, Trade> day = new MapModelView<Integer, Trade>(dayName, tradeMetadata, adaptor);
 					days.add(day);
 					serverFactory.createServer(day, session.createQueue("Server."+dayName));
 					day.start();
@@ -114,7 +114,7 @@ public class Server {
 					List<View<Integer, Trade>> accounts= new ArrayList<View<Integer, Trade>>();
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account."+a;
-						MapModel<Integer, Trade> account= new MapModel<Integer, Trade>(accountName, tradeMetadata, adaptor);
+						MapModelView<Integer, Trade> account= new MapModelView<Integer, Trade>(accountName, tradeMetadata, adaptor);
 						accounts.add(account);
 						serverFactory.createServer(account, session.createQueue("Server."+accountName));
 						account.start();
@@ -136,7 +136,7 @@ public class Server {
 					List<View<Integer, Trade>> currencys= new ArrayList<View<Integer, Trade>>();
 					for (int a=0; a<numCurrencies; a++) {
 						String currencyName = dayName+".Currency."+a;
-						MapModel<Integer, Trade> currency= new MapModel<Integer, Trade>(currencyName, tradeMetadata, adaptor);
+						MapModelView<Integer, Trade> currency= new MapModelView<Integer, Trade>(currencyName, tradeMetadata, adaptor);
 						currencys.add(currency);
 						serverFactory.createServer(currency, session.createQueue("Server."+currencyName));
 						currency.start();

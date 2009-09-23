@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class MapModel<K, V> extends AbstractModel<K, V> implements View<K, V> {
+public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V> {
 
 	public interface Adaptor<K, V> {
 		public K getKey(V value);
@@ -15,7 +15,7 @@ public class MapModel<K, V> extends AbstractModel<K, V> implements View<K, V> {
 	protected final Adaptor<K, V> adaptor;
 	protected final Map<K, V> map = new HashMap<K, V>();
 	
-	public MapModel(String name, Metadata<K, V> metadata, Adaptor<K, V> adaptor) {
+	public MapModelView(String name, Metadata<K, V> metadata, Adaptor<K, V> adaptor) {
 		super(name, metadata);
 		this.adaptor =  adaptor;
 	}

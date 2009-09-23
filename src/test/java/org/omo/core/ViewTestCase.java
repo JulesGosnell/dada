@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.omo.core.AbstractQuery;
 import org.omo.core.AndQuery;
-import org.omo.core.FilterView;
+import org.omo.core.FilterModelView;
 import org.omo.core.Query;
 import org.omo.core.View;
 
@@ -99,7 +99,7 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilterView<Integer, Datum> view = new FilterView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
+		FilterModelView<Integer, Datum> view = new FilterModelView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
 		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
 		Collection<Datum> insertions = view.registerView(counter).getData();
 		counter.batch(insertions, new ArrayList<Update<Datum>>(), new ArrayList<Integer>());
@@ -144,8 +144,8 @@ public class ViewTestCase extends TestCase {
 
 	public void testCompoundView() {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
-		FilterView<Integer, StringDatum> isTrue = new FilterView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
-		FilterView<Integer, StringDatum> isNull = new FilterView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
+		FilterModelView<Integer, StringDatum> isTrue = new FilterModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
+		FilterModelView<Integer, StringDatum> isNull = new FilterModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
 		isNull.batch(isNullData, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();

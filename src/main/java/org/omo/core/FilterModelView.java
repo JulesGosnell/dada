@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K, V, K, V> {
+public class FilterModelView<K,V> extends AbstractModel<K, V> implements ModelView<K, V, K, V> {
 
 	// Lifecycle
 	
@@ -21,7 +21,7 @@ public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K,
 	protected final Query<V> query;
 	protected final LinkedList<V> results;
 	
-	public FilterView(String name, Metadata<K, V> metadata, Query<V> query) {
+	public FilterModelView(String name, Metadata<K, V> metadata, Query<V> query) {
 		super(name, metadata);
 		this.query = query;
 		this.results = new LinkedList<V>();
