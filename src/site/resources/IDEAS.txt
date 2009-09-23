@@ -1,3 +1,10 @@
+-XX:+useConcMarkSweepGC
+-XX:ThreadStackSize=256
+-XX:+DisableExplicitGC
+
+
+
+
 we need columns in GUI properly mapped
 different Model types need to collapse and translate inserts/updates accordingly
 update should take two parameters

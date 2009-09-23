@@ -6,19 +6,19 @@ import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class AbstractModel<OutputKey, OutputValue> implements Model<OutputKey, OutputValue> {
+public abstract class AbstractModel<K, V> implements Model<K, V> {
 
 	protected final Log log = LogFactory.getLog(getClass());
 
 	protected final String name;
 	
-	protected final Collection<View<OutputKey, OutputValue>> views = new ArrayList<View<OutputKey, OutputValue>>();
+	protected final Collection<View<K, V>> views = new ArrayList<View<K, V>>();
 
-	protected final Metadata<OutputKey, OutputValue> metadata;
+	protected final Metadata<K, V> metadata;
 	
-	protected abstract Collection<OutputValue> getData();
+	protected abstract Collection<V> getData();
 	
-	public AbstractModel(String name, Metadata<OutputKey, OutputValue> metadata) {
+	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
 		this.metadata = metadata;
 	}
@@ -29,7 +29,7 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 	}
 	
 	@Override
-	public Registration<OutputKey, OutputValue> registerView(View<OutputKey, OutputValue> view) {
+	public Registration<K, V> registerView(View<K, V> view) {
 		log.debug("registering view: " + view);
 		synchronized (views) {
 			views.add(view);
@@ -37,12 +37,12 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		return new Registration(getMetadata(), getData());
 	}
 	
-	private Metadata<OutputKey, OutputValue> getMetadata() {
+	private Metadata<K, V> getMetadata() {
 		return metadata;
 	}
 
 	@Override
-	public boolean deregisterView(View<OutputKey, OutputValue> view) {
+	public boolean deregisterView(View<K, V> view) {
 		boolean success;
 		synchronized (views) {
 			success = views.remove(view);
@@ -55,9 +55,9 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		return success;
 	}	
 	
-	protected void notifyInsertion(OutputValue update) {
+	protected void notifyInsertion(V update) {
 		synchronized (views) {
-			for (View<OutputKey, OutputValue> view : views)
+			for (View<K, V> view : views)
 				try {
 					view.insert(update);
 				} catch (RuntimeException e) {
@@ -66,9 +66,9 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		}
 	}
 
-	protected void notifyUpdate(OutputValue value) {
+	protected void notifyUpdate(V value) {
 		synchronized (views) {
-			for (View<OutputKey, OutputValue> view : views)
+			for (View<K, V> view : views)
 				try {
 					view.update(null, value);
 				} catch (RuntimeException e) {
@@ -79,8 +79,8 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 
 	// TODO: notifications for update/delete
 
-	protected void notifyBatch(Collection<OutputValue> insertions, Collection<Update<OutputValue>> updates, Collection<OutputKey> deletions) {
-		for (View<OutputKey, OutputValue> view : views)
+	protected void notifyBatch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
+		for (View<K, V> view : views)
 			try {
 				view.batch(insertions, updates, deletions);
 			} catch (RuntimeException e) {

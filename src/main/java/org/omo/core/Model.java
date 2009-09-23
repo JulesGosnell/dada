@@ -1,10 +1,10 @@
 package org.omo.core;
 
-public interface Model<OutputKey, OutputValue> extends Lifecycle {
+public interface Model<K, V> extends Lifecycle {
 
 	String getName();
 	
-	Registration<OutputKey, OutputValue> registerView(View<OutputKey, OutputValue> view);
-	boolean deregisterView(View<OutputKey, OutputValue> view);
+	Registration<K, V> registerView(View<K, V> view);
+	boolean deregisterView(View<K, V> view);
 	
 }
