@@ -1,0 +1,45 @@
+digraph unix {
+
+	rankdir=LR
+	size="6,6";
+	node [color=lightblue2, style=filled];
+
+	TradeFeed -> "Trades.0"
+	TradeFeed -> "Trades.N"
+
+	"Trades.0" -> "Trades.0.ByDate"
+	"Trades.N" -> "Trades.N.ByDate"
+
+	"Trades.0.ByDate" -> "Trades.0.ByDate.Today"
+	"Trades.0.ByDate" -> "Trades.0.ByDate.Tomorrow"
+
+	"Trades.N.ByDate" -> "Trades.N.ByDate.Today"
+	"Trades.N.ByDate" -> "Trades.N.ByDate.Tomorrow"
+
+	"Trades.0.ByDate.Today" -> "Trades.0.ByDate.Today.ByCurrency"
+	"Trades.0.ByDate.Today" -> "Trades.0.ByDate.Today.ByCurrency.Total"
+
+	"Trades.0.ByDate.Today" -> "Trades.0.ByDate.Today.ByAccount"
+	"Trades.0.ByDate.Today" -> "Trades.0.ByDate.Today.ByAccount.Total"
+
+	"Trades.0.ByDate.Tomorrow" -> "Trades.0.ByDate.Tomorrow.ByCurrency"
+	"Trades.0.ByDate.Tomorrow" -> "Trades.0.ByDate.Tomorrow.ByCurrency.Total"
+
+	"Trades.0.ByDate.Tomorrow" -> "Trades.0.ByDate.Tomorrow.ByAccount"
+	"Trades.0.ByDate.Tomorrow" -> "Trades.0.ByDate.Tomorrow.ByAccount.Total"
+
+	"Trades.N.ByDate.Today" -> "Trades.N.ByDate.Today.ByCurrency"
+	"Trades.N.ByDate.Today" -> "Trades.N.ByDate.Today.ByCurrency.Total"
+
+	"Trades.N.ByDate.Today" -> "Trades.N.ByDate.Today.ByAccount"
+	"Trades.N.ByDate.Today" -> "Trades.N.ByDate.Today.ByAccount.Total"
+
+	"Trades.N.ByDate.Tomorrow" -> "Trades.N.ByDate.Tomorrow.ByCurrency"
+	"Trades.N.ByDate.Tomorrow" -> "Trades.N.ByDate.Tomorrow.ByCurrency.Total"
+
+	"Trades.N.ByDate.Tomorrow" -> "Trades.N.ByDate.Tomorrow.ByAccount"
+	"Trades.N.ByDate.Tomorrow" -> "Trades.N.ByDate.Tomorrow.ByAccount.Total"
+
+	"Trades.0.ByDate.Today.ByCurrency" -> "TradesByDate.Today.ByCurrency"
+	"Trades.N.ByDate.Today.ByCurrency" -> "TradesByDate.Today.ByCurrency"
+}
