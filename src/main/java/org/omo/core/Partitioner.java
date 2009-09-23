@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+
 public class Partitioner<K, V extends Datum> implements View<K, V> {
 
 	public interface Strategy<V> {
@@ -37,7 +38,7 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 	}
 
 	@Override
-	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 		int numberofPartitions = strategy.getNumberOfPartitions();
 		List<V>[] tmp = new List[numberofPartitions];
 		for (int p=0; p<numberofPartitions; p++)

@@ -46,7 +46,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	// Listener
 	
 	@Override
-	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 		//log.trace("UPDATE("+upsertions+")");
 		if (insertions != null)
 			for (V insertion : insertions) {
@@ -56,9 +56,10 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 				fireTableRowsInserted(index, index);
 			}
 		if (updates != null)
-			for (V update : updates) {
-				K key = metadata.getKey(update);
-				map.put(key, update);
+			for (Update<V> update : updates) {
+				V newValue = update.getNewValue();
+				K key = metadata.getKey(newValue);
+				map.put(key, newValue);
 				int index = map.headMap(key).size();
 				fireTableRowsUpdated(index, index);
 			}

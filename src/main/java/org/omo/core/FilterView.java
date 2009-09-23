@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+
 public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K, V, K, V> {
 
 	// Lifecycle
@@ -57,7 +58,7 @@ public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K,
 	}
 
 	@Override
-	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 		List<V> relevantInsertions = query.apply(insertions);
 		if (!relevantInsertions.isEmpty())
 			for (View<K, V> view : views)

@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class MapModel<K, V> extends AbstractModel<K, V> implements View<K, V> {
 
 	public interface Adaptor<K, V> {
@@ -61,7 +62,7 @@ public class MapModel<K, V> extends AbstractModel<K, V> implements View<K, V> {
 	}
 
 	@Override
-	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 		synchronized (map.values()) {
 			for (V insertion : insertions)
 				map.put(adaptor.getKey(insertion), insertion);

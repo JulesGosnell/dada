@@ -89,7 +89,7 @@ public class ViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+		public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 			count += (insertions == null ? 0 : insertions.size());
 			if ((updates != null && updates.size()>0) || (deletions!=null && deletions.size()>0))
 				throw new UnsupportedOperationException("NYI");

@@ -51,11 +51,12 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	// Listener
 	
 	@Override
-	public void batch(Collection<Trade> insertions, Collection<Trade> updates, Collection<Integer> deletions) {
+	public void batch(Collection<Trade> insertions, Collection<Update<Trade>> updates, Collection<Integer> deletions) {
 		log.info("UPDATE("+updates+")");
-		for (Trade upsertion : updates) {
-			int id = upsertion.getId();
-			trades.put(id, upsertion);
+		for (Update<Trade> update : updates) {
+			Trade trade = update.getNewValue();
+			int id = trade.getId();
+			trades.put(id, trade);
 			int index = trades.headMap(id).size();
 			fireTableRowsUpdated(index, index);
 		}

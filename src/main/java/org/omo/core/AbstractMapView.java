@@ -3,11 +3,12 @@ package org.omo.core;
 import java.util.Collection;
 import java.util.Map;
 
-public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey, InputValue> {
 
-	protected final Map<InputKey, InputValue> map;
+public class AbstractMapView<K, V> extends AbstractView<K, V> {
+
+	protected final Map<K, V> map;
 	
-	public AbstractMapView(Map<InputKey, InputValue> map) {
+	public AbstractMapView(Map<K, V> map) {
 		this.map = map;
 	}
 	
@@ -19,24 +20,24 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 	// View
 	
 	@Override
-	public void insert(InputValue value) {
+	public void insert(V value) {
 		throw new UnsupportedOperationException("NYI");
 	}
 	
 	@Override
-	public void update(InputValue oldValue, InputValue newValue) {
+	public void update(V oldValue, V newValue) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
-	public void delete(InputKey key) {
+	public void delete(K key) {
 		synchronized (map) {
 			map.remove(key);
 		}
 	}
 
 	@Override
-	public void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions) {
+	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

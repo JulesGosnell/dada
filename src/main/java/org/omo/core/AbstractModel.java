@@ -79,10 +79,10 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 
 	// TODO: notifications for update/delete
 
-	protected void notifyBatch(Collection<OutputValue> insertions, Collection<OutputValue> updates, Collection<OutputKey> deletions) {
+	protected void notifyBatch(Collection<OutputValue> insertions, Collection<Update<OutputValue>> updates, Collection<OutputKey> deletions) {
 		for (View<OutputKey, OutputValue> view : views)
 			try {
-				view.batch(null, insertions, null);
+				view.batch(insertions, updates, deletions);
 			} catch (RuntimeException e) {
 				log.error("view notification failed: " + view + " <- " + insertions, e);
 			}
