@@ -1,16 +1,5 @@
 package org.omo.old;
 
-import org.omo.old.Account;
-import org.omo.old.AccountImpl;
-import org.omo.old.AccountManager;
-import org.omo.old.AccountManagerImpl;
-import org.omo.old.Currency;
-import org.omo.old.CurrencyImpl;
-import org.omo.old.CurrencyManager;
-import org.omo.old.CurrencyManagerImpl;
-import org.omo.old.Trade;
-import org.omo.old.TradeImpl;
-
 import junit.framework.TestCase;
 
 public class PositionManagerTestCase extends TestCase {

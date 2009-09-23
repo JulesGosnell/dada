@@ -2,8 +2,6 @@ package org.omo.old;
 
 import java.util.Date;
 
-import org.omo.old.DatePartitioningStrategy;
-
 import junit.framework.TestCase;
 
 public class DatePartitioningStrategyTestCase extends TestCase {

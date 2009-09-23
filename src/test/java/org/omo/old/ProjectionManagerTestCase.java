@@ -2,15 +2,6 @@ package org.omo.old;
 
 import java.util.Date;
 
-import org.omo.old.Account;
-import org.omo.old.AccountImpl;
-import org.omo.old.DatePartitioningStrategy;
-import org.omo.old.PartitioningStrategy;
-import org.omo.old.PositionManager;
-import org.omo.old.ProjectionManager;
-import org.omo.old.ProjectionManagerImpl;
-import org.omo.old.Trade;
-
 import junit.framework.TestCase;
 
 public class ProjectionManagerTestCase extends TestCase {

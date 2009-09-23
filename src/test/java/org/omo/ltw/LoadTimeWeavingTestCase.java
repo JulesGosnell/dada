@@ -1,11 +1,9 @@
 package org.omo.ltw;
 
-import org.omo.ltw.Person;
-import org.omo.ltw.PersonImpl;
+import junit.framework.TestCase;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import junit.framework.TestCase;
 
 public class LoadTimeWeavingTestCase extends TestCase {
 

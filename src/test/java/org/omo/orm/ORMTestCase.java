@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.omo.orm.Person;
-
 import junit.framework.TestCase;
 
 public class ORMTestCase extends TestCase {

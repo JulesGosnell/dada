@@ -19,16 +19,6 @@ import junit.framework.TestCase;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.old.Account;
-import org.omo.old.AccountImpl;
-import org.omo.old.AccountManager;
-import org.omo.old.AccountManagerImpl;
-import org.omo.old.Identifiable;
-import org.omo.old.Trade;
-import org.omo.old.TradeImpl;
-import org.omo.old.TradeManager;
-import org.omo.old.TradeManagerImpl;
-import org.omo.old.Update;
 
 // TODO
 // AM aggregates trade totals

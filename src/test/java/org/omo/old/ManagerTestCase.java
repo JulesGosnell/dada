@@ -3,11 +3,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.omo.old.Identifiable;
-import org.omo.old.IdentifiableImpl;
-import org.omo.old.Manager;
-import org.omo.old.ManagerImpl;
-
 import junit.framework.TestCase;
 
 public class ManagerTestCase extends TestCase {

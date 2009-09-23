@@ -2,11 +2,6 @@ package org.omo.consensus.paxos;
 
 import java.io.IOException;
 
-import org.omo.consensus.paxos.Acceptor;
-import org.omo.consensus.paxos.AcceptorImpl;
-import org.omo.consensus.paxos.Proposal;
-
-
 import junit.framework.TestCase;
 
 /**
