@@ -5,7 +5,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.rmi.server.UID;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -27,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 import org.omo.core.Model;
 import org.omo.core.Registration;
 import org.omo.core.TableModelView;
+import org.omo.core.Update;
 import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
 import org.omo.old.demo.JView;
@@ -79,7 +82,7 @@ public class Client {
 		Collection<Object> models = registration.getData();
 		if (models != null) {
 			guiModel.setMetadata(registration.getMetadata());
-			guiModel.batch(models, null, null);
+			guiModel.batch(models, new ArrayList<Update<Object>>(), Collections.emptyList());
 		}
 		else
 			LOG.warn("null model content returned");

@@ -102,7 +102,7 @@ public class ViewTestCase extends TestCase {
 		FilterView<Integer, Datum> view = new FilterView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
 		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
 		Collection<Datum> insertions = view.registerView(counter).getData();
-		counter.batch(insertions, null, null);
+		counter.batch(insertions, new ArrayList<Update<Datum>>(), new ArrayList<Integer>());
 		view.insert(new Datum(0, false));
 		view.insert(new Datum(1, true));
 		view.insert(new Datum(2, false));
@@ -147,9 +147,9 @@ public class ViewTestCase extends TestCase {
 		FilterView<Integer, StringDatum> isTrue = new FilterView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
 		FilterView<Integer, StringDatum> isNull = new FilterView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
-		isNull.batch(isNullData, null, null);
+		isNull.batch(isNullData, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();
-		counter.batch(counterData, null, null);
+		counter.batch(counterData, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
 		isTrue.insert(new StringDatum(0, false, ""));
 		assertTrue(counter.count==0);
 		isTrue.insert(new StringDatum(1, true, ""));
@@ -164,7 +164,7 @@ public class ViewTestCase extends TestCase {
 		insertions.add(new StringDatum(5, true, ""));
 		insertions.add(new StringDatum(6, false, null));
 		insertions.add(new StringDatum(7, true, null));
-		isTrue.batch(insertions, null, null);
+		isTrue.batch(insertions, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
 		assertTrue(counter.count==2);
 	}
 

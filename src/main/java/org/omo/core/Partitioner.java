@@ -49,8 +49,10 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 			View<K, V> partition = partitions.get(p);
 			List<V> insertions2 = tmp[p];
 			if (insertions2.size()>0)
-				partition.batch(insertions2, null, null);
+				partition.batch(insertions2, new ArrayList<Update<V>>(), new ArrayList<K>());
 			// TODO: extend
+			if (updates.size()>0 || deletions.size()>0)
+				throw new UnsupportedOperationException("NYI");
 		}
 	}
 

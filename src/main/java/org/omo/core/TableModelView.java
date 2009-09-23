@@ -29,6 +29,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	@Override
 	public void update(V oldValue, V newValue) {
 		log.trace("UPDATE("+newValue+")");
+		
 		K key = metadata.getKey(newValue);
 		map.put(key, newValue);
 		int index = map.headMap(key).size();

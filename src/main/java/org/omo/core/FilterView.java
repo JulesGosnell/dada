@@ -62,9 +62,10 @@ public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K,
 		List<V> relevantInsertions = query.apply(insertions);
 		if (!relevantInsertions.isEmpty())
 			for (View<K, V> view : views)
-				view.batch(relevantInsertions, null, null);
-		if ((updates != null && updates.size()>0) || (deletions != null && deletions.size()>0))
+				view.batch(relevantInsertions, updates, deletions);
+		if (updates.size()>0 || deletions.size()>0)
 			throw new UnsupportedOperationException("NYI");
+		// TODO: extend
 	}
 
 }
