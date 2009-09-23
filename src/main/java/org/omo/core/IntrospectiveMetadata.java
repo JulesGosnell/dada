@@ -36,8 +36,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	public V getAttributeValue(V value, int index) {
 		try {
 			//Method method = getters.get(index);
-			Method method = clazz.getMethod("get"+attributeNames.get(index), null);
-			return (V)method.invoke(value, null);
+			Method method = clazz.getMethod("get"+attributeNames.get(index), (Class<?>[])null);
+			return (V)method.invoke(value, (Object[])null);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
