@@ -24,7 +24,7 @@ public class AbstractMapView<InputKey, InputValue> extends AbstractView<InputKey
 	}
 	
 	@Override
-	public void update(InputValue value) {
+	public void update(InputValue oldValue, InputValue newValue) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

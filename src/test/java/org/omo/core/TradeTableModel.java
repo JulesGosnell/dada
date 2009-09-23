@@ -29,10 +29,10 @@ public class TradeTableModel extends AbstractTableModel implements View<Integer,
 	}
 
 	@Override
-	public void update(Trade value) {
-		log.info("UPDATE("+value+")");
-		int id = value.getId();
-		trades.put(id, value);
+	public void update(Trade oldValue, Trade newValue) {
+		log.info("UPDATE("+newValue+")");
+		int id = newValue.getId();
+		trades.put(id, newValue);
 		int index = trades.headMap(id).size();
 		fireTableRowsUpdated(index, index);
 	}

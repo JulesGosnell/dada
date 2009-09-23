@@ -70,7 +70,7 @@ public abstract class AbstractModel<OutputKey, OutputValue> implements Model<Out
 		synchronized (views) {
 			for (View<OutputKey, OutputValue> view : views)
 				try {
-					view.update(value);
+					view.update(null, value);
 				} catch (RuntimeException e) {
 					log.error("view update failed: " + view + " <- " + value, e);
 				}

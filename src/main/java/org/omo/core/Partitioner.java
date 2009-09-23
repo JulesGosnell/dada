@@ -27,8 +27,8 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 	}
 
 	@Override
-	public void update(V value) {
-		partitions.get(strategy.partition(value)).update(value);
+	public void update(V oldValue, V newValue) {
+		partitions.get(strategy.partition(newValue)).update(null, newValue);
 	}
 
 	@Override

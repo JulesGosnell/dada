@@ -5,12 +5,12 @@ package org.omo.core;
 
 import java.util.Collection;
 
-public interface View<InputKey, InputValue> {
+public interface View<K, V> {
 	 
-	void batch(Collection<InputValue> insertions, Collection<InputValue> updates, Collection<InputKey> deletions);
+	void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions);
 	
-	void insert(InputValue value);
-	void update(InputValue value);
-	void delete(InputKey key);
+	void insert(V value);
+	void update(V oldValue, V newValue);
+	void delete(K key);
 	
 }

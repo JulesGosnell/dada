@@ -79,7 +79,7 @@ public class ViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void update(V value) {
+		public void update(V oldValue, V newValue) {
 			throw new UnsupportedOperationException("NYI");
 		}
 		

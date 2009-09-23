@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements ModelView<Key, Value, Key, Value> {
+public class FilterView<K,V> extends AbstractModel<K, V> implements ModelView<K, V, K, V> {
 
 	// Lifecycle
 	
@@ -17,18 +17,18 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	public void stop() {
 	}
 	
-	protected final Query<Value> query;
-	protected final LinkedList<Value> results;
+	protected final Query<V> query;
+	protected final LinkedList<V> results;
 	
-	public FilterView(String name, Metadata<Key, Value> metadata, Query<Value> query) {
+	public FilterView(String name, Metadata<K, V> metadata, Query<V> query) {
 		super(name, metadata);
 		this.query = query;
-		this.results = new LinkedList<Value>();
+		this.results = new LinkedList<V>();
 	}
 	
 	// Model
 	
-	protected Collection<Value> getData() {
+	protected Collection<V> getData() {
 		return results;
 	}
 	
@@ -38,29 +38,29 @@ public class FilterView<Key,Value> extends AbstractModel<Key, Value> implements 
 	// Listener
 	
 	@Override
-	public void insert(Value value) {
+	public void insert(V value) {
 		if (query.apply(value)) {
 			results.addFirst(value);
-			for (View<Key, Value> listener : views)
+			for (View<K, V> listener : views)
 				listener.insert(value);
 		}
 	}
 
 	@Override
-	public void update(Value value) {
+	public void update(V oldValue, V newValue) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
-	public void delete(Key key) {
+	public void delete(K key) {
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
-	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
-		List<Value> relevantInsertions = query.apply(insertions);
+	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
+		List<V> relevantInsertions = query.apply(insertions);
 		if (!relevantInsertions.isEmpty())
-			for (View<Key, Value> view : views)
+			for (View<K, V> view : views)
 				view.batch(relevantInsertions, null, null);
 		if ((updates != null && updates.size()>0) || (deletions != null && deletions.size()>0))
 			throw new UnsupportedOperationException("NYI");

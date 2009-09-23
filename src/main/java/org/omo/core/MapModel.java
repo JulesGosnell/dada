@@ -5,24 +5,24 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements View<Key, Value> {
+public class MapModel<K, V> extends AbstractModel<K, V> implements View<K, V> {
 
-	public interface Adaptor<Key, Value> {
-		public Key getKey(Value value);
+	public interface Adaptor<K, V> {
+		public K getKey(V value);
 	}
 	
-	protected final Adaptor<Key, Value> adaptor;
-	protected final Map<Key, Value> map = new HashMap<Key, Value>();
+	protected final Adaptor<K, V> adaptor;
+	protected final Map<K, V> map = new HashMap<K, V>();
 	
-	public MapModel(String name, Metadata<Key, Value> metadata, Adaptor<Key, Value> adaptor) {
+	public MapModel(String name, Metadata<K, V> metadata, Adaptor<K, V> adaptor) {
 		super(name, metadata);
 		this.adaptor =  adaptor;
 	}
 	
 	// Model
 	@Override
-	protected Collection<Value> getData() {
-		return new ArrayList<Value>(map.values());
+	protected Collection<V> getData() {
+		return new ArrayList<V>(map.values());
 	}
 
 	@Override
@@ -36,7 +36,7 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 	}
 
 	@Override
-	public void insert(Value value) {
+	public void insert(V value) {
 		synchronized (map.values()) {
 			map.put(adaptor.getKey(value), value);
 		}
@@ -44,16 +44,16 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 	}
 
 	@Override
-	public void update(Value value) {
+	public void update(V oldValue, V newValue) {
 		synchronized (map.values()) {
-			map.put(adaptor.getKey(value), value);
+			map.put(adaptor.getKey(newValue), newValue);
 		}
-		notifyUpdate(value);
+		notifyUpdate(newValue);
 	}
 
 	// View
 	@Override
-	public void delete(Key key) {
+	public void delete(K key) {
 		synchronized (map.values()) {
 			map.remove(key);
 		}
@@ -61,9 +61,9 @@ public class MapModel<Key, Value> extends AbstractModel<Key, Value> implements V
 	}
 
 	@Override
-	public void batch(Collection<Value> insertions, Collection<Value> updates, Collection<Key> deletions) {
+	public void batch(Collection<V> insertions, Collection<V> updates, Collection<K> deletions) {
 		synchronized (map.values()) {
-			for (Value insertion : insertions)
+			for (V insertion : insertions)
 				map.put(adaptor.getKey(insertion), insertion);
 		}
 		notifyBatch(insertions, null, null);
