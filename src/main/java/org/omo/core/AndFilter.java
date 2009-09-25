@@ -3,9 +3,6 @@
  */
 package org.omo.core;
 
-import java.util.Collection;
-import java.util.LinkedList;
-
 public class AndFilter<V> implements Filter<V> {
 	
 	Filter<V> lhs;
@@ -19,11 +16,6 @@ public class AndFilter<V> implements Filter<V> {
 	@Override
 	public boolean apply(V value) {
 		return lhs.apply(value) && rhs.apply(value);
-	}
-
-	@Override
-	public LinkedList<V> apply(Collection<V> values) {
-		return rhs.apply(lhs.apply(values));
 	}
 
 }

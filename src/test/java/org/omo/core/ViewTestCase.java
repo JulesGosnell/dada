@@ -12,7 +12,7 @@ public class ViewTestCase extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		datumMetadata = new IntrospectiveMetadata<Integer, Datum>(Datum.class, "Id");
+		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, "Id");
 		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, "Id");
 	}
 
@@ -20,18 +20,13 @@ public class ViewTestCase extends TestCase {
 		super.tearDown();
 	}
 	
-	static class Datum {
+	static class BooleanDatum extends DatumImpl {
 		
-		final int id;
 		final boolean flag;
 
-		Datum(int id, boolean flag) {
-			this.id = id;
+		BooleanDatum(int id, boolean flag) {
+			super(id, 0);
 			this.flag = flag;
-		}
-		
-		public int getId() {
-			return id;
 		}
 		
 		public boolean getFlag() {
@@ -40,28 +35,16 @@ public class ViewTestCase extends TestCase {
 		
 	};
 
-	protected Metadata<Integer, Datum> datumMetadata;
+	protected Metadata<Integer, BooleanDatum> datumMetadata;
 	protected Metadata<Integer, StringDatum> stringDatumMetadata;
 	
-	static class DatumIsTrueFilter extends AbstractFilter<Datum> {
+	static class DatumIsTrueFilter implements Filter<BooleanDatum> {
 
 		@Override
-		public boolean apply(Datum value) {
+		public boolean apply(BooleanDatum value) {
 			return value.flag;
 		}
 		
-	}
-	
-	public void testSimpleQuery() {
-
-		LinkedList<Datum> data = new LinkedList<Datum>();
-		Datum d1=new Datum(0, false);
-		data.addFirst(d1);
-		Datum d2=new Datum(1, true);
-		data.add(d2);
-		List<Datum> results = new DatumIsTrueFilter().apply(data);
-		assertTrue(results.size()==1);
-		assertTrue(results.get(0)==d2);
 	}
 	
 	static class Counter<K, V> implements View<K, V> {
@@ -77,17 +60,17 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilterModelView<Integer, Datum> view = new FilterModelView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
-		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
-		Collection<Datum> insertions = view.registerView(counter).getData();
+		FilteredModelView<Integer, BooleanDatum> view = new FilteredModelView<Integer, BooleanDatum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
+		Counter<Integer, BooleanDatum> counter = new Counter<Integer, BooleanDatum>();
+		Collection<BooleanDatum> insertions = view.registerView(counter).getData();
 		counter.update(insertions);
-		view.update(Collections.singleton(new Datum(0, false)));
-		view.update(Collections.singleton(new Datum(1, true)));
-		view.update(Collections.singleton(new Datum(2, false)));
+		view.update(Collections.singleton(new BooleanDatum(0, false)));
+		view.update(Collections.singleton(new BooleanDatum(1, true)));
+		view.update(Collections.singleton(new BooleanDatum(2, false)));
 		assertTrue(counter.count==1);
 	}
 
-	class StringDatum extends Datum {
+	class StringDatum extends BooleanDatum {
 		String string;
 		
 		StringDatum(int id, boolean flag, String string) {
@@ -96,14 +79,14 @@ public class ViewTestCase extends TestCase {
 		}
 	}
 	
-	class IsTrueFilter extends AbstractFilter<StringDatum> {
+	class IsTrueFilter implements Filter<StringDatum> {
 		
 		public boolean apply(StringDatum value) {
 			return value.flag;
 		}
 	}
 
-	class IsNullFilter extends AbstractFilter<StringDatum> {
+	class IsNullFilter implements Filter<StringDatum> {
 		
 		public boolean apply(StringDatum value) {
 			return value.string==null;
@@ -122,8 +105,8 @@ public class ViewTestCase extends TestCase {
 
 	public void testCompoundView() {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
-		FilterModelView<Integer, StringDatum> isTrue = new FilterModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
-		FilterModelView<Integer, StringDatum> isNull = new FilterModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
+		FilteredModelView<Integer, StringDatum> isTrue = new FilteredModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
+		FilteredModelView<Integer, StringDatum> isNull = new FilteredModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
 		isNull.update(isNullData);
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();

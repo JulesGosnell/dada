@@ -5,16 +5,13 @@ package org.omo.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import clojure.lang.IPersistentMap;
-import clojure.lang.IPersistentSet;
 import clojure.lang.PersistentTreeMap;
-import clojure.lang.PersistentTreeSet;
 
 public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 

@@ -3,7 +3,7 @@
  */
 package org.omo.core;
 
-class IdentityFilter<V> extends AbstractFilter<V> {
+class IdentityFilter<V> implements Filter<V> {
 
 	@Override
 	public boolean apply(V value) {
