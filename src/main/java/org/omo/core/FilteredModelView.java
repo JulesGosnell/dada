@@ -29,9 +29,9 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 	
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
-	private final Query<V> query;
+	private final Filter<V> query;
 	
-	public FilteredModelView(String name, Metadata<K, V> metadata, Query<V> query) {
+	public FilteredModelView(String name, Metadata<K, V> metadata, Filter<V> query) {
 		this.name = name;
 		this.metadata = metadata;
 		this.query = query;

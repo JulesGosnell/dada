@@ -43,11 +43,11 @@ public class ViewTestCase extends TestCase {
 	protected Metadata<Integer, Datum> datumMetadata;
 	protected Metadata<Integer, StringDatum> stringDatumMetadata;
 	
-	static class DatumIsTrueQuery extends AbstractQuery<Datum> {
+	static class DatumIsTrueFilter extends AbstractFilter<Datum> {
 
 		@Override
-		public boolean apply(Datum element) {
-			return element.flag;
+		public boolean apply(Datum value) {
+			return value.flag;
 		}
 		
 	}
@@ -59,7 +59,7 @@ public class ViewTestCase extends TestCase {
 		data.addFirst(d1);
 		Datum d2=new Datum(1, true);
 		data.add(d2);
-		List<Datum> results = new DatumIsTrueQuery().apply(data);
+		List<Datum> results = new DatumIsTrueFilter().apply(data);
 		assertTrue(results.size()==1);
 		assertTrue(results.get(0)==d2);
 	}
@@ -77,7 +77,7 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilterModelView<Integer, Datum> view = new FilterModelView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
+		FilterModelView<Integer, Datum> view = new FilterModelView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
 		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
 		Collection<Datum> insertions = view.registerView(counter).getData();
 		counter.update(insertions);
@@ -96,24 +96,24 @@ public class ViewTestCase extends TestCase {
 		}
 	}
 	
-	class IsTrueQuery extends AbstractQuery<StringDatum> {
+	class IsTrueFilter extends AbstractFilter<StringDatum> {
 		
-		public boolean apply(StringDatum element) {
-			return element.flag;
+		public boolean apply(StringDatum value) {
+			return value.flag;
 		}
 	}
 
-	class IsNullQuery extends AbstractQuery<StringDatum> {
+	class IsNullFilter extends AbstractFilter<StringDatum> {
 		
-		public boolean apply(StringDatum element) {
-			return element.string==null;
+		public boolean apply(StringDatum value) {
+			return value.string==null;
 		}
 	}
 	
 	public void testCompoundQuery() {
-		IsTrueQuery isTrue = new IsTrueQuery();
-		IsNullQuery isNull = new IsNullQuery();
-		Query<StringDatum> isTrueAndIsNull = new AndQuery<StringDatum>(isTrue, isNull);
+		IsTrueFilter isTrue = new IsTrueFilter();
+		IsNullFilter isNull = new IsNullFilter();
+		Filter<StringDatum> isTrueAndIsNull = new AndFilter<StringDatum>(isTrue, isNull);
 		assertTrue(!isTrueAndIsNull.apply(new StringDatum(0, false, "")));
 		assertTrue(!isTrueAndIsNull.apply(new StringDatum(1, true, "")));
 		assertTrue(!isTrueAndIsNull.apply(new StringDatum(2, false, null)));
@@ -122,8 +122,8 @@ public class ViewTestCase extends TestCase {
 
 	public void testCompoundView() {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
-		FilterModelView<Integer, StringDatum> isTrue = new FilterModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
-		FilterModelView<Integer, StringDatum> isNull = new FilterModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
+		FilterModelView<Integer, StringDatum> isTrue = new FilterModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
+		FilterModelView<Integer, StringDatum> isNull = new FilterModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
 		isNull.update(isNullData);
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();

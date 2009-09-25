@@ -3,10 +3,10 @@
  */
 package org.omo.core;
 
-class IdentityFilter<T> extends AbstractQuery<T> {
+class IdentityFilter<V> extends AbstractFilter<V> {
 
 	@Override
-	public boolean apply(T element) {
+	public boolean apply(V value) {
 		return true;
 	}
 

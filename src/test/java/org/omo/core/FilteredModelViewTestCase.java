@@ -13,37 +13,12 @@ import clojure.lang.PersistentTreeSet;
 
 public class FilteredModelViewTestCase extends TestCase {
 
-	class TestQuery<V> implements Query<V> {
-
-		private boolean answer;
-		
-		public boolean isAnswer() {
-			return answer;
-		}
-
-		public void setAnswer(boolean answer) {
-			this.answer = answer;
-		}
-
-		@Override
-		public boolean apply(V element) {
-			return answer;
-		}
-
-		@Override
-		public LinkedList<V> apply(Collection<V> elements) {
-			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException("NYI");
-		}
-		
-	}
-	
-	private TestQuery<Datum> query;
+	private SwitchableFilter<Datum> query;
 	private FilteredModelView<Integer, Datum> view;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
-		query = new TestQuery<Datum>();
+		query = new SwitchableFilter<Datum>();
 		view = new FilteredModelView<Integer, Datum>(null, null, query);
 	}
 
@@ -167,17 +142,6 @@ public class FilteredModelViewTestCase extends TestCase {
 		assertTrue(view.maps.current.count() == 1);
 		assertTrue(view.maps.current.valAt(0) == datum8);
 		assertTrue(view.maps.historic.count() == 0);
-	}
-	
-
-	public void testFoo() throws Exception {
-		
-		IPersistentSet set = PersistentTreeSet.EMPTY;
-		assertTrue(set.count()==0);
-		set = (IPersistentSet)set.cons(1);
-		assertTrue(set.count()==1);
-		set = set.disjoin(1);
-		assertTrue(set.count()==0);
 	}
 	
 }

@@ -25,7 +25,7 @@ import org.omo.core.MapModelView;
 import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.Partitioner;
-import org.omo.core.Query;
+import org.omo.core.Filter;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
@@ -102,7 +102,7 @@ public class Server {
 			for (int p=0; p<numPartitions; p++) {
 				String partitionName = "Trade."+p;
 				//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
-				Query filter = new Query() {
+				Filter filter = new Filter() {
 
 					@Override
 					public boolean apply(Object element) {

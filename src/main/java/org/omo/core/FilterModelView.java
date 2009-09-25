@@ -18,10 +18,10 @@ public class FilterModelView<K,V> extends AbstractModel<K, V> implements ModelVi
 	public void stop() {
 	}
 	
-	protected final Query<V> query;
+	protected final Filter<V> query;
 	protected final LinkedList<V> results;
 	
-	public FilterModelView(String name, Metadata<K, V> metadata, Query<V> query) {
+	public FilterModelView(String name, Metadata<K, V> metadata, Filter<V> query) {
 		super(name, metadata);
 		this.query = query;
 		this.results = new LinkedList<V>();
