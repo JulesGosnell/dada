@@ -36,38 +36,14 @@ public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V
 		// TODO Auto-generated method stub
 	}
 
-	@Override
-	public void insert(V value) {
-		synchronized (map.values()) {
-			map.put(adaptor.getKey(value), value);
-		}
-		notifyInsertion(value);
-	}
-
-	@Override
-	public void update(V oldValue, V newValue) {
-		synchronized (map.values()) {
-			map.put(adaptor.getKey(newValue), newValue);
-		}
-		notifyUpdate(newValue);
-	}
-
 	// View
 	@Override
-	public void delete(K key) {
+	public void update(Collection<V> updates) {
 		synchronized (map.values()) {
-			map.remove(key);
-		}
-		
-	}
-
-	@Override
-	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
-		synchronized (map.values()) {
-			for (V insertion : insertions)
+			for (V insertion : updates)
 				map.put(adaptor.getKey(insertion), insertion);
 		}
-		notifyBatch(insertions, new ArrayList<Update<V>>(), new ArrayList<K>());
+		notifyUpdates(updates);
 		// TODO: extend
 	}
 

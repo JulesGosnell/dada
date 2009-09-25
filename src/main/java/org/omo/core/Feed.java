@@ -2,6 +2,7 @@ package org.omo.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -33,7 +34,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			// Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
 			V newTrade = strategy.createNewVersion(oldTrade);
 			vs.put(strategy.getKey(newTrade), newTrade);
-			notifyUpdate(newTrade);
+			notifyUpdates(Collections.singleton(newTrade));
 		}
 	};
 	
@@ -52,7 +53,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V item = strategy.createNewItem(i);
 			vs.put(strategy.getKey(item), item);
 		}
-		notifyBatch(vs.values(), null, null);
+		notifyUpdates(vs.values());
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	

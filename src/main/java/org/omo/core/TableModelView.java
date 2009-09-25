@@ -19,52 +19,20 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 		this.metadata = metadata;
 	}
 
-	// Listener
-	
-	@Override
-	public void insert(V value) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void update(V oldValue, V newValue) {
-		log.trace("UPDATE("+newValue+")");
-		
-		K key = metadata.getKey(newValue);
-		map.put(key, newValue);
-		int index = map.headMap(key).size();
-		fireTableRowsUpdated(index, index);
-	}
-	
-	@Override
-	public void delete(K key) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
 	// TableModel
-
 	
 	// Listener
 	
 	@Override
-	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
+	public void update(Collection<V> updates) {
 		//log.trace("UPDATE("+upsertions+")");
-		if (insertions != null)
-			for (V insertion : insertions) {
+		if (updates != null)
+			for (V insertion : updates) {
 				K key = metadata.getKey(insertion);
 				map.put(key, insertion);
 				int index = map.headMap(key).size();
 				fireTableRowsInserted(index, index);
 			}
-		if (updates != null)
-			for (Update<V> update : updates) {
-				V newValue = update.getNewValue();
-				K key = metadata.getKey(newValue);
-				map.put(key, newValue);
-				int index = map.headMap(key).size();
-				fireTableRowsUpdated(index, index);
-			}
-		// TODO: handle deletions
 	}
 
 	protected String columnNames[] = new String[]{"id", "version"};

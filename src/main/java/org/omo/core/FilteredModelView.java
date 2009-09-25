@@ -66,7 +66,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 			newViews.add(view);
 			views = newViews;
 		}
-		Collection values = ((PersistentTreeMap)maps.getCurrent()).values();
+		Collection<V> values = ((PersistentTreeMap)maps.getCurrent()).values();
 		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
 	}
 
@@ -90,7 +90,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 		List<View<K, V>> snapshot = views;
 		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
 		for (View<K, V> view : snapshot) {
-			view.batch(values, new ArrayList<Update<V>>(), new ArrayList<K>());
+			view.update(values);
 		}
 	}
 
@@ -108,32 +108,18 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 	// - don't update historic
 	// - unretire historic
 	// should be easy to collapse two branches into one submethod...
-	@Override
-	public void insert(V newValue) {
-		batch(Collections.singleton(newValue), new ArrayList<Update<V>>(), new ArrayList<K>());
-	}
 
 	@Override
-	public void update(V oldValue, V newValue) {
-		batch(Collections.singleton(newValue), new ArrayList<Update<V>>(), new ArrayList<K>());
-	}
-
-	@Override
-	public void delete(K key) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void batch(Collection<V> insertions, Collection<Update<V>> notUsed1, Collection<K> notUsed2) {
+	public void update(Collection<V> updates) {
 		// TODO: too long/complicated - simplify...
-		List<V> updates = new ArrayList<V>();
+		List<V> updates2 = new ArrayList<V>();
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
 			final IPersistentMap originalCurrent = snapshot.getCurrent();
 			final IPersistentMap originalHistoric = snapshot.getHistoric();
 			IPersistentMap current = originalCurrent;
 			IPersistentMap historic = originalHistoric;
-			for (V newValue : insertions) {
+			for (V newValue : updates) {
 				final int key = newValue.getId();
 				final V oldCurrentValue = (V)current.valAt(key);
 				if (oldCurrentValue != null) {
@@ -143,13 +129,13 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 						if (filter(newValue)) {
 							// update current value
 							current = current.assoc(key, newValue);
-							updates.add(newValue);
+							updates2.add(newValue);
 						} else {
 							// retire value
 							try {
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
-								updates.add(newValue);
+								updates2.add(newValue);
 							}  catch (Exception e) {
 								log.error("unexpected problem retiring value");
 							}
@@ -167,20 +153,21 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 								try {
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
-									updates.add(newValue);
+									updates2.add(newValue);
 								} catch (Exception e) {
 									log.error("unexpected problem unretiring value");
 								}
 							} else {
 								// bring retired version up to date
 								historic = historic.assoc(key, newValue);
-								updates.add(newValue);
+								updates2.add(newValue);
 							}
 						}
 					} else {
 						if (filter(newValue)) {
 							// adopt new value
 							current = current.assoc(key, newValue); 
+							updates2.add(newValue);
 						} else {
 							// ignore value
 						}
@@ -191,8 +178,8 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 			if (current != originalCurrent || historic!=originalHistoric)
 				maps = new Maps(current, historic);
 		}
-		if (updates.size() > 0)
-			notifyUpdate(updates);
+		if (updates2.size() > 0)
+			notifyUpdate(updates2);
 	}
 
 }

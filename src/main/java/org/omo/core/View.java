@@ -7,10 +7,7 @@ import java.util.Collection;
 
 public interface View<K, V> {
 	 
-	void insert(V value);
-	void update(V oldValue, V newValue);
-	void delete(K key);
-
-	void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions);
+	//void update(V value);
+	void update(Collection<V> updates);
 	
 }

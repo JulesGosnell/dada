@@ -23,36 +23,18 @@ public class Partitioner<K, V extends Datum> implements View<K, V> {
 	}
 	
 	@Override
-	public void insert(V value) {
-		partitions.get(strategy.partition(value)).insert(value);
-	}
-
-	@Override
-	public void update(V oldValue, V newValue) {
-		partitions.get(strategy.partition(newValue)).update(null, newValue);
-	}
-
-	@Override
-	public void delete(K key) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
+	public void update(Collection<V> updates) {
 		int numberofPartitions = strategy.getNumberOfPartitions();
 		List<V>[] tmp = new List[numberofPartitions];
 		for (int p=0; p<numberofPartitions; p++)
 			tmp[p] = new ArrayList<V>();
-		for (V insertion : insertions)
+		for (V insertion : updates)
 			tmp[strategy.partition(insertion)].add(insertion);
 		for (int p=0; p<numberofPartitions; p++) {
 			View<K, V> partition = partitions.get(p);
 			List<V> insertions2 = tmp[p];
 			if (insertions2.size()>0)
-				partition.batch(insertions2, new ArrayList<Update<V>>(), new ArrayList<K>());
-			// TODO: extend
-			if (updates.size()>0 || deletions.size()>0)
-				throw new UnsupportedOperationException("NYI");
+				partition.update(insertions2);
 		}
 	}
 

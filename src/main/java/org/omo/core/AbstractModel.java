@@ -54,37 +54,15 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		
 		return success;
 	}	
-	
-	protected void notifyInsertion(V update) {
-		synchronized (views) {
-			for (View<K, V> view : views)
-				try {
-					view.insert(update);
-				} catch (RuntimeException e) {
-					log.error("view insertion failed: " + view + " <- " + update, e);
-				}
-		}
-	}
-
-	protected void notifyUpdate(V value) {
-		synchronized (views) {
-			for (View<K, V> view : views)
-				try {
-					view.update(null, value);
-				} catch (RuntimeException e) {
-					log.error("view update failed: " + view + " <- " + value, e);
-				}
-		}
-	}
 
 	// TODO: notifications for update/delete
 
-	protected void notifyBatch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
+	protected void notifyUpdates(Collection<V> updates) {
 		for (View<K, V> view : views)
 			try {
-				view.batch(insertions, updates, deletions);
+				view.update(updates);
 			} catch (RuntimeException e) {
-				log.error("view notification failed: " + view + " <- " + insertions, e);
+				log.error("view notification failed: " + view + " <- " + updates, e);
 			}
 	}
 }

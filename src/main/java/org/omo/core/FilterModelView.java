@@ -37,35 +37,13 @@ public class FilterModelView<K,V> extends AbstractModel<K, V> implements ModelVi
 	// TODO: how can we handle them efficiently in a concurrent environment
 
 	// Listener
-	
-	@Override
-	public void insert(V value) {
-		if (query.apply(value)) {
-			results.addFirst(value);
-			for (View<K, V> listener : views)
-				listener.insert(value);
-		}
-	}
 
 	@Override
-	public void update(V oldValue, V newValue) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void delete(K key) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
-		List<V> relevantInsertions = query.apply(insertions);
+	public void update(Collection<V> updates) {
+		List<V> relevantInsertions = query.apply(updates);
 		if (!relevantInsertions.isEmpty())
 			for (View<K, V> view : views)
-				view.batch(relevantInsertions, updates, deletions);
-		if (updates.size()>0 || deletions.size()>0)
-			throw new UnsupportedOperationException("NYI");
-		// TODO: extend
+				view.update(relevantInsertions);
 	}
 
 }

@@ -3,6 +3,7 @@ package org.omo.cash;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,7 +52,7 @@ public class Server {
 		metaModel = new MapModelView<String, String>(META_MODEL, modelMetadata, adaptor);
 		Queue queue = session.createQueue(name + "." + META_MODEL);
 		factory.createServer(metaModel, queue);
-		metaModel.insert(metaModel.getName()); // The metaModel is a Model !
+		metaModel.update(Collections.singleton(metaModel.getName())); // The metaModel is a Model !
 		LOG.info("Listening on: " + queue);
 
 		// we'' randomize trade dates out over the next week...
@@ -87,7 +88,7 @@ public class Server {
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
-			metaModel.insert(feedName);
+			metaModel.update(Collections.singleton(feedName));
 			tradeFeed = feed;
 		}
 		{
@@ -118,7 +119,7 @@ public class Server {
 				partitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
 				partition.start();
-				metaModel.insert(partitionName);
+				metaModel.update(Collections.singleton(partitionName));
 
 				List<View<Integer, Trade>> days= new ArrayList<View<Integer, Trade>>();
 				for (int d=0; d<numDays; d++) {
@@ -127,7 +128,7 @@ public class Server {
 					days.add(day);
 					serverFactory.createServer(day, session.createQueue("Server."+dayName));
 					day.start();
-					metaModel.insert(dayName);
+					metaModel.update(Collections.singleton(dayName));
 
 					List<View<Integer, Trade>> accounts= new ArrayList<View<Integer, Trade>>();
 					for (int a=0; a<numAccounts; a++) {
@@ -136,7 +137,7 @@ public class Server {
 						accounts.add(account);
 						serverFactory.createServer(account, session.createQueue("Server."+accountName));
 						account.start();
-						metaModel.insert(accountName);
+						metaModel.update(Collections.singleton(accountName));
 					}
 					Partitioner<Integer, Trade> partitionerByAccount= new Partitioner<Integer, Trade>(accounts, new Partitioner.Strategy<Trade>() {
 
@@ -158,7 +159,7 @@ public class Server {
 						currencys.add(currency);
 						serverFactory.createServer(currency, session.createQueue("Server."+currencyName));
 						currency.start();
-						metaModel.insert(currencyName);
+						metaModel.update(Collections.singleton(currencyName));
 					}
 					Partitioner<Integer, Trade> partitionerByCurrency= new Partitioner<Integer, Trade>(currencys, new Partitioner.Strategy<Trade>() {
 
@@ -227,7 +228,7 @@ public class Server {
 			RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
-			metaModel.insert(feedName);
+			metaModel.update(Collections.singleton(feedName));
 		}
 		// adding CurrencyFeed
 		{
@@ -253,7 +254,7 @@ public class Server {
 			RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
-			metaModel.insert(feedName);
+			metaModel.update(Collections.singleton(feedName));
 		}
 		// adding BalanceFeed
 		{
@@ -279,7 +280,7 @@ public class Server {
 			RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
-			metaModel.insert(feedName);
+			metaModel.update(Collections.singleton(feedName));
 		}
 		// adding CompanyFeed
 		{
@@ -305,7 +306,7 @@ public class Server {
 			RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
-			metaModel.insert(feedName);
+			metaModel.update(Collections.singleton(feedName));
 		}
 	}
 

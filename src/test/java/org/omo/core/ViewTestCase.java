@@ -2,6 +2,7 @@ package org.omo.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -66,27 +67,10 @@ public class ViewTestCase extends TestCase {
 	static class Counter<K, V> implements View<K, V> {
 
 		int count;
-		
-		@Override
-		public void insert(V value) {
-			count++;
-		}
 
 		@Override
-		public void update(V oldValue, V newValue) {
-			throw new UnsupportedOperationException("NYI");
-		}
-		
-		@Override
-		public void delete(K key) {
-			throw new UnsupportedOperationException("NYI");
-		}
-
-		@Override
-		public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
-			count += (insertions == null ? 0 : insertions.size());
-			if ((updates != null && updates.size()>0) || (deletions!=null && deletions.size()>0))
-				throw new UnsupportedOperationException("NYI");
+		public void update(Collection<V> updates) {
+			count += updates.size();
 		}
 
 		
@@ -96,10 +80,10 @@ public class ViewTestCase extends TestCase {
 		FilterModelView<Integer, Datum> view = new FilterModelView<Integer, Datum>("IsTrue", datumMetadata, new DatumIsTrueQuery());
 		Counter<Integer, Datum> counter = new Counter<Integer, Datum>();
 		Collection<Datum> insertions = view.registerView(counter).getData();
-		counter.batch(insertions, new ArrayList<Update<Datum>>(), new ArrayList<Integer>());
-		view.insert(new Datum(0, false));
-		view.insert(new Datum(1, true));
-		view.insert(new Datum(2, false));
+		counter.update(insertions);
+		view.update(Collections.singleton(new Datum(0, false)));
+		view.update(Collections.singleton(new Datum(1, true)));
+		view.update(Collections.singleton(new Datum(2, false)));
 		assertTrue(counter.count==1);
 	}
 
@@ -141,16 +125,16 @@ public class ViewTestCase extends TestCase {
 		FilterModelView<Integer, StringDatum> isTrue = new FilterModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueQuery());
 		FilterModelView<Integer, StringDatum> isNull = new FilterModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullQuery());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
-		isNull.batch(isNullData, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
+		isNull.update(isNullData);
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();
-		counter.batch(counterData, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
-		isTrue.insert(new StringDatum(0, false, ""));
+		counter.update(counterData);
+		isTrue.update(Collections.singleton(new StringDatum(0, false, "")));
 		assertTrue(counter.count==0);
-		isTrue.insert(new StringDatum(1, true, ""));
+		isTrue.update(Collections.singleton(new StringDatum(1, true, "")));
 		assertTrue(counter.count==0);
-		isTrue.insert(new StringDatum(2, false, null));
+		isTrue.update(Collections.singleton(new StringDatum(2, false, null)));
 		assertTrue(counter.count==0);
-		isTrue.insert(new StringDatum(3, true, null));
+		isTrue.update(Collections.singleton(new StringDatum(3, true, null)));
 		assertTrue(counter.count==1);
 		
 		List<StringDatum> insertions = new ArrayList<StringDatum>(4);
@@ -158,7 +142,7 @@ public class ViewTestCase extends TestCase {
 		insertions.add(new StringDatum(5, true, ""));
 		insertions.add(new StringDatum(6, false, null));
 		insertions.add(new StringDatum(7, true, null));
-		isTrue.batch(insertions, new ArrayList<Update<StringDatum>>(), new ArrayList<Integer>());
+		isTrue.update(insertions);
 		assertTrue(counter.count==2);
 	}
 
