@@ -1,142 +1,14 @@
 package org.omo.core;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import junit.framework.TestCase;
-import clojure.lang.APersistentMap;
-import clojure.lang.IPersistentMap;
-import clojure.lang.PersistentTreeMap;
+
+import org.omo.core.test.TestView;
 
 public class NewTestCase extends TestCase {
 
-	public static class Maps implements Serializable {
-
-		private final IPersistentMap current;
-		private final IPersistentMap historic;
-		
-		public Maps(IPersistentMap current, IPersistentMap historic) {
-			this.current = current;
-			this.historic = historic;
-		}
-
-		public IPersistentMap getCurrent() {
-			return current;
-		}
-
-		public IPersistentMap getHistoric() {
-			return historic;
-		}
-
-	}
-	
-	class TestView<K, V extends Datum> implements View<K, V> {
-
-		private final Log log = LogFactory.getLog(getClass());
-		private volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY);
-		private final Query<V> query;
-		
-		public TestView(Query<V> query) {
-			this.query = query;
-		}
-		
-		protected boolean filter(V value) {
-			return query.apply(value);
-		}
-
-		// View
-
-		// only one thread may write new maps at any one time...
-		// how do we test this ?
-		// how do we simplify this ?
-		// how do we integrate this ?
-		// adding notification code may help with testing - 6 cases:
-		// - update current
-		// - don't update current
-		// - retire current
-		// - update historic
-		// - don't update historic
-		// - unretire historic
-		// should be easy to collapse two branches into one submethod...
-		@Override
-		public void insert(V newValue) {
-			final Maps snapshot = maps;
-			final IPersistentMap current = snapshot.getCurrent();
-			final IPersistentMap historic = snapshot.getHistoric();
-			final int key = newValue.getId();
-			final V oldCurrentValue = (V)current.valAt(key);
-			if (oldCurrentValue != null) {
-				if (oldCurrentValue.getVersion() >= newValue.getVersion()) {
-					// ignore out of sequence update...
-				} else {
-					if (filter(newValue)) {
-						// update current value
-						maps = new Maps(current.assoc(key, newValue), historic);
-					} else {
-						// retire value
-						try {
-							maps = new Maps(current.without(key), historic.assoc(key, newValue));
-						}  catch (Exception e) {
-							log.error("unexpected problem retiring value");
-						}
-					}
-				}
-			} else {
-				// has it already been retired ?
-				final V oldHistoricValue = (V)historic.valAt(key);
-				if (oldHistoricValue != null) {
-					if (oldHistoricValue.getVersion() >= newValue.getVersion()) {
-						// ignore out of sequence update...
-					} else {
-						if (filter(newValue)) {
-							// unretire value
-							try {
-								IPersistentMap newHistoric = historic.without(key);
-								maps = new Maps(current.assoc(key, newValue), newHistoric);
-							} catch (Exception e) {
-								log.error("unexpected problem unretiring value");
-							}
-						} else {
-							// bring retired version up to date
-							maps = new Maps(current, historic.assoc(key, newValue));
-						}
-					}
-				} else {
-					if (filter(newValue)) {
-						// adopt this value
-						maps = new Maps(current.assoc(key, newValue), historic); 
-					} else {
-						// ignore value
-					}
-				}
-			}
-		}
-
-		@Override
-		public void update(V oldValue, V newValue) {
-			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException("NYI");
-		}
-
-		@Override
-		public void delete(K key) {
-			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException("NYI");
-		}
-
-		@Override
-		public void batch(Collection<V> insertions, Collection<Update<V>> updates, Collection<K> deletions) {
-			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException("NYI");
-		}
-		
-
-	};
-	
 	class TestQuery<V> implements Query<V> {
 
 		private boolean answer;
