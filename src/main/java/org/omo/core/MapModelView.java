@@ -67,7 +67,7 @@ public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V
 			for (V insertion : insertions)
 				map.put(adaptor.getKey(insertion), insertion);
 		}
-		notifyBatch(insertions, null, null);
+		notifyBatch(insertions, new ArrayList<Update<V>>(), new ArrayList<K>());
 		// TODO: extend
 	}
 

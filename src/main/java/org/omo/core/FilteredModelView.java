@@ -24,7 +24,8 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 	private final Metadata<K, V> metadata;
 	
 	private final Object viewsLock = new Object();
-	private volatile IPersistentSet views = PersistentTreeSet.EMPTY;
+	private volatile List<View<K, V>> views = new ArrayList<View<K,V>>();
+	//private volatile IPersistentSet views = PersistentTreeSet.EMPTY;
 	
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
@@ -60,16 +61,23 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 	@Override
 	public Registration<K, V> registerView(View<K, V> view) {
 		synchronized (viewsLock) {
-			views = (IPersistentSet)views.cons(view); 
+			//views = (IPersistentSet)views.cons(view);
+			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			newViews.add(view);
+			views = newViews;
 		}
-		return new Registration<K, V>(metadata, ((PersistentTreeMap)maps.getCurrent()).values()); // TODO: hack
+		Collection values = ((PersistentTreeMap)maps.getCurrent()).values();
+		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
 	}
 
 	@Override
 	public boolean deregisterView(View<K, V> view) {
 		try {
 			synchronized (viewsLock) {
-				views = views.disjoin(view);
+				//views = views.disjoin(view);
+				List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+				newViews.remove(view);
+				views = newViews;
 			}
 		} catch (Exception e) {
 			log.error("unable to deregister view: " + view);
@@ -78,8 +86,10 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 	}
 	
 	protected void notifyUpdate(Collection<V> values) {
-		IPersistentSet snapshot = views;
-		for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
+		//IPersistentSet snapshot = views;
+		List<View<K, V>> snapshot = views;
+		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
+		for (View<K, V> view : snapshot) {
 			view.batch(values, new ArrayList<Update<V>>(), new ArrayList<K>());
 		}
 	}

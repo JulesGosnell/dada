@@ -2,7 +2,9 @@ package org.omo.cash;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.jms.Connection;
@@ -16,11 +18,13 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.core.Feed;
+import org.omo.core.FilteredModelView;
 import org.omo.core.IntrospectiveMetadata;
 import org.omo.core.MapModelView;
 import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.Partitioner;
+import org.omo.core.Query;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
@@ -96,7 +100,21 @@ public class Server {
 				}};
 			for (int p=0; p<numPartitions; p++) {
 				String partitionName = "Trade."+p;
-				MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
+				//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
+				Query filter = new Query() {
+
+					@Override
+					public boolean apply(Object element) {
+						return true;
+					}
+
+					@Override
+					public LinkedList apply(Collection elements) {
+						throw new UnsupportedOperationException("NYI");
+					}
+					
+				};
+				FilteredModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, filter);
 				partitions.add(partition);
 				serverFactory.createServer(partition, session.createQueue("Server."+partitionName));
 				partition.start();
