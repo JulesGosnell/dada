@@ -5,13 +5,12 @@ import java.util.LinkedList;
 
 import junit.framework.TestCase;
 
-import org.omo.core.test.ModelView;
 
 import clojure.lang.IPersistentCollection;
 import clojure.lang.IPersistentSet;
 import clojure.lang.PersistentTreeSet;
 
-public class NewTestCase extends TestCase {
+public class FilteredModelViewTestCase extends TestCase {
 
 	class TestQuery<V> implements Query<V> {
 
@@ -39,12 +38,12 @@ public class NewTestCase extends TestCase {
 	}
 	
 	private TestQuery<Datum> query;
-	private ModelView<Integer, Datum> view;
+	private FilteredModelView<Integer, Datum> view;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
 		query = new TestQuery<Datum>();
-		view = new ModelView<Integer, Datum>(null, null, query);
+		view = new FilteredModelView<Integer, Datum>(null, null, query);
 	}
 
 	protected void tearDown() throws Exception {

@@ -1,28 +1,22 @@
 /**
  * 
  */
-package org.omo.core.test;
+package org.omo.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.omo.core.Datum;
-import org.omo.core.Metadata;
-import org.omo.core.Model;
-import org.omo.core.Query;
-import org.omo.core.Registration;
-import org.omo.core.Update;
-import org.omo.core.View;
 
 import clojure.lang.IPersistentMap;
 import clojure.lang.IPersistentSet;
 import clojure.lang.PersistentTreeMap;
 import clojure.lang.PersistentTreeSet;
 
-public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
+public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 
 	private final Log log = LogFactory.getLog(getClass());
 	
@@ -36,7 +30,7 @@ public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
 	private final Query<V> query;
 	
-	public ModelView(String name, Metadata<K, V> metadata, Query<V> query) {
+	public FilteredModelView(String name, Metadata<K, V> metadata, Query<V> query) {
 		this.name = name;
 		this.metadata = metadata;
 		this.query = query;
@@ -122,6 +116,7 @@ public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 	@Override
 	public void batch(Collection<V> insertions, Collection<Update<V>> notUsed1, Collection<K> notUsed2) {
 		// TODO: too long/complicated - simplify...
+		List<V> updates = new ArrayList<V>();
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
 			final IPersistentMap originalCurrent = snapshot.getCurrent();
@@ -138,11 +133,13 @@ public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 						if (filter(newValue)) {
 							// update current value
 							current = current.assoc(key, newValue);
+							updates.add(newValue);
 						} else {
 							// retire value
 							try {
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
+								updates.add(newValue);
 							}  catch (Exception e) {
 								log.error("unexpected problem retiring value");
 							}
@@ -160,12 +157,14 @@ public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 								try {
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
+									updates.add(newValue);
 								} catch (Exception e) {
 									log.error("unexpected problem unretiring value");
 								}
 							} else {
 								// bring retired version up to date
 								historic = historic.assoc(key, newValue);
+								updates.add(newValue);
 							}
 						}
 					} else {
@@ -182,6 +181,8 @@ public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 			if (current != originalCurrent || historic!=originalHistoric)
 				maps = new Maps(current, historic);
 		}
+		if (updates.size() > 0)
+			notifyUpdate(updates);
 	}
 
 }

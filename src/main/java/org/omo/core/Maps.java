@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.omo.core.test;
+package org.omo.core;
 
 import java.io.Serializable;
 
