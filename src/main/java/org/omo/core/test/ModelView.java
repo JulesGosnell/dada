@@ -3,31 +3,91 @@
  */
 package org.omo.core.test;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.core.Datum;
+import org.omo.core.Metadata;
+import org.omo.core.Model;
 import org.omo.core.Query;
+import org.omo.core.Registration;
 import org.omo.core.Update;
 import org.omo.core.View;
 
 import clojure.lang.IPersistentMap;
+import clojure.lang.IPersistentSet;
 import clojure.lang.PersistentTreeMap;
+import clojure.lang.PersistentTreeSet;
 
-public class TestView<K, V extends Datum> implements View<K, V> {
+public class ModelView<K, V extends Datum> implements Model<K,V>, View<K, V> {
 
 	private final Log log = LogFactory.getLog(getClass());
-	private final Object lock = new Object(); // only needed by writers ...
+	
+	private final String name;
+	private final Metadata<K, V> metadata;
+	
+	private final Object viewsLock = new Object();
+	private volatile IPersistentSet views = PersistentTreeSet.EMPTY;
+	
+	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
 	private final Query<V> query;
 	
-	public TestView(Query<V> query) {
+	public ModelView(String name, Metadata<K, V> metadata, Query<V> query) {
+		this.name = name;
+		this.metadata = metadata;
 		this.query = query;
 	}
 	
 	protected boolean filter(V value) {
 		return query.apply(value);
+	}
+
+	// Model.Lifecycle
+	
+	@Override
+	public void start() {
+	}
+
+	@Override
+	public void stop() {
+	}
+
+	// Model
+	
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public Registration<K, V> registerView(View<K, V> view) {
+		synchronized (viewsLock) {
+			views = (IPersistentSet)views.cons(view); 
+		}
+		return new Registration<K, V>(metadata, ((PersistentTreeMap)maps.getCurrent()).values()); // TODO: hack
+	}
+
+	@Override
+	public boolean deregisterView(View<K, V> view) {
+		try {
+			synchronized (viewsLock) {
+				views = views.disjoin(view);
+			}
+		} catch (Exception e) {
+			log.error("unable to deregister view: " + view);
+		}
+		return true;
+	}
+	
+	protected void notifyUpdate(Collection<V> values) {
+		IPersistentSet snapshot = views;
+		for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
+			view.batch(values, new ArrayList<Update<V>>(), new ArrayList<K>());
+		}
 	}
 
 	// View
@@ -46,74 +106,23 @@ public class TestView<K, V extends Datum> implements View<K, V> {
 	// should be easy to collapse two branches into one submethod...
 	@Override
 	public void insert(V newValue) {
-		final Maps snapshot = maps;
-		final IPersistentMap current = snapshot.getCurrent();
-		final IPersistentMap historic = snapshot.getHistoric();
-		final int key = newValue.getId();
-		final V oldCurrentValue = (V)current.valAt(key);
-		if (oldCurrentValue != null) {
-			if (oldCurrentValue.getVersion() >= newValue.getVersion()) {
-				// ignore out of sequence update...
-			} else {
-				if (filter(newValue)) {
-					// update current value
-					maps = new Maps(current.assoc(key, newValue), historic);
-				} else {
-					// retire value
-					try {
-						maps = new Maps(current.without(key), historic.assoc(key, newValue));
-					}  catch (Exception e) {
-						log.error("unexpected problem retiring value");
-					}
-				}
-			}
-		} else {
-			// has it already been retired ?
-			final V oldHistoricValue = (V)historic.valAt(key);
-			if (oldHistoricValue != null) {
-				if (oldHistoricValue.getVersion() >= newValue.getVersion()) {
-					// ignore out of sequence update...
-				} else {
-					if (filter(newValue)) {
-						// unretire value
-						try {
-							IPersistentMap newHistoric = historic.without(key);
-							maps = new Maps(current.assoc(key, newValue), newHistoric);
-						} catch (Exception e) {
-							log.error("unexpected problem unretiring value");
-						}
-					} else {
-						// bring retired version up to date
-						maps = new Maps(current, historic.assoc(key, newValue));
-					}
-				}
-			} else {
-				if (filter(newValue)) {
-					// adopt this value
-					maps = new Maps(current.assoc(key, newValue), historic); 
-				} else {
-					// ignore value
-				}
-			}
-		}
+		batch(Collections.singleton(newValue), new ArrayList<Update<V>>(), new ArrayList<K>());
 	}
 
 	@Override
 	public void update(V oldValue, V newValue) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		batch(Collections.singleton(newValue), new ArrayList<Update<V>>(), new ArrayList<K>());
 	}
 
 	@Override
 	public void delete(K key) {
-		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
 	public void batch(Collection<V> insertions, Collection<Update<V>> notUsed1, Collection<K> notUsed2) {
 		// TODO: too long/complicated - simplify...
-		synchronized (lock) { // take lock before snapshotting and until replacing maps with new version
+		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
 			final IPersistentMap originalCurrent = snapshot.getCurrent();
 			final IPersistentMap originalHistoric = snapshot.getHistoric();
@@ -174,5 +183,5 @@ public class TestView<K, V extends Datum> implements View<K, V> {
 				maps = new Maps(current, historic);
 		}
 	}
-	
+
 }
