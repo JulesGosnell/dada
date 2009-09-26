@@ -122,51 +122,24 @@ public class Server {
 					day.start();
 					metaModel.update(Collections.singleton(dayName));
 
-					List<View<Integer, Trade>> accounts= new ArrayList<View<Integer, Trade>>();
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account."+a;
-						MapModelView<Integer, Trade> account= new MapModelView<Integer, Trade>(accountName, tradeMetadata, adaptor);
-						accounts.add(account);
+						Filter<Trade> f = new AccountFilter(a);
+						FilteredModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
 						serverFactory.createServer(account, session.createQueue("Server."+accountName));
+						day.registerView(account);
 						account.start();
 						metaModel.update(Collections.singleton(accountName));
 					}
-					Partitioner<Integer, Trade> partitionerByAccount= new Partitioner<Integer, Trade>(accounts, new Partitioner.Strategy<Trade>() {
 
-						@Override
-						public int getNumberOfPartitions() {
-							return numAccounts;
-						}
-
-						@Override
-						public int partition(Trade value) {
-							return value.getAccount();
-						}});
-					day.registerView(partitionerByAccount);
-
-					List<View<Integer, Trade>> currencys= new ArrayList<View<Integer, Trade>>();
-					for (int a=0; a<numCurrencies; a++) {
-						String currencyName = dayName+".Currency."+a;
-						MapModelView<Integer, Trade> currency= new MapModelView<Integer, Trade>(currencyName, tradeMetadata, adaptor);
-						currencys.add(currency);
+					for (int c=0; c<numCurrencies; c++) {
+						String currencyName = dayName+".Currency."+c;
+						Filter<Trade> f = new CurrencyFilter(c);
+						FilteredModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
 						serverFactory.createServer(currency, session.createQueue("Server."+currencyName));
+						day.registerView(currency);
 						currency.start();
 						metaModel.update(Collections.singleton(currencyName));
-					}
-					Partitioner<Integer, Trade> partitionerByCurrency= new Partitioner<Integer, Trade>(currencys, new Partitioner.Strategy<Trade>() {
-
-						@Override
-						public int getNumberOfPartitions() {
-							return numCurrencies;
-						}
-
-						@Override
-						public int partition(Trade value) {
-							return value.getCurrency();
-						}});
-					day.registerView(partitionerByCurrency);
-
-					{
 					}
 				}
 				Partitioner<Integer, Trade> partitionerByDay = new Partitioner<Integer, Trade>(days, new Partitioner.Strategy<Trade>() {
