@@ -49,7 +49,7 @@ public class Server {
 			calendar.set(Calendar.MILLISECOND, 0);
 			startOfWeek = calendar.getTime();
 
-			calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
 			calendar.set(Calendar.HOUR_OF_DAY, 23);
 			calendar.set(Calendar.MINUTE, 59);
 			calendar.set(Calendar.SECOND, 59);
@@ -146,11 +146,21 @@ public class Server {
 				partition.start();
 				metaModel.update(Collections.singleton(partitionName));
 
-				List<View<Integer, Trade>> days= new ArrayList<View<Integer, Trade>>();
+				Calendar calendar = Calendar.getInstance();
+				calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+				calendar.set(Calendar.HOUR_OF_DAY, 0);
+				calendar.set(Calendar.MINUTE, 0);
+				calendar.set(Calendar.SECOND, 0);
+				calendar.set(Calendar.MILLISECOND, 0);
+
 				for (int d=0; d<numDays; d++) {
 					String dayName = partitionName+".Date."+d;
-					MapModelView<Integer, Trade> day = new MapModelView<Integer, Trade>(dayName, tradeMetadata, adaptor);
-					days.add(day);
+					Date start = calendar.getTime();
+					calendar.set(Calendar.DAY_OF_WEEK, calendar.get(Calendar.DAY_OF_WEEK) + 1);
+					Date end = calendar.getTime();
+					Filter<Trade> valueDateFilter = new ValueDateFilter(start, end);
+					FilteredModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
+					partition.registerView(day);
 					serverFactory.createServer(day, session.createQueue("Server."+dayName));
 					day.start();
 					metaModel.update(Collections.singleton(dayName));
@@ -175,19 +185,6 @@ public class Server {
 						metaModel.update(Collections.singleton(currencyName));
 					}
 				}
-				Partitioner<Integer, Trade> partitionerByDay = new Partitioner<Integer, Trade>(days, new Partitioner.Strategy<Trade>() {
-
-					@Override
-					public int getNumberOfPartitions() {
-						return numDays;
-					}
-
-					@Override
-					public int partition(Trade value) {
-						return (int)((value.getValueDate().getTime() - now) / DAY) ;
-					}});
-				partition.registerView(partitionerByDay);
-
 			}
 			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
 
