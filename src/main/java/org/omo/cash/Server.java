@@ -2,6 +2,7 @@ package org.omo.cash;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -30,6 +31,53 @@ import org.omo.core.MapModelView.Adaptor;
 import org.omo.jms.RemotingFactory;
 
 public class Server {
+
+	private final class TradeFeedStrategy implements Feed.Strategy<Integer, Trade> {
+
+		private final Date startOfWeek;
+		private final Date endOfWeek;
+		private final long millisInWeek;
+		private final int numAccounts;
+		private final int numCurrencies;
+		
+		private TradeFeedStrategy(int numAccounts, int numCurrencies) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			calendar.set(Calendar.MILLISECOND, 0);
+			startOfWeek = calendar.getTime();
+
+			calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+			calendar.set(Calendar.HOUR_OF_DAY, 23);
+			calendar.set(Calendar.MINUTE, 59);
+			calendar.set(Calendar.SECOND, 59);
+			calendar.set(Calendar.MILLISECOND, 999);
+			endOfWeek = calendar.getTime();
+			
+			millisInWeek = endOfWeek.getTime() - startOfWeek.getTime();
+			
+			this.numAccounts = numAccounts;
+			this.numCurrencies = numCurrencies;
+		}
+
+		@Override
+		public Trade createNewItem(int counter) {
+			Date date = new Date(startOfWeek.getTime() + (long)(Math.random() * millisInWeek));
+			return new Trade(counter, 0, date, new BigDecimal(100), (int)(Math.random()*numAccounts), (int)(Math.random()*numCurrencies));
+		}
+
+		@Override
+		public Trade createNewVersion(Trade original) {
+			return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount(), original.getCurrency());
+		}
+
+		@Override
+		public Integer getKey(Trade item) {
+			return item.getId();
+		}
+	}
 
 	private final static Log LOG = LogFactory.getLog(Server.class);
 
@@ -67,22 +115,7 @@ public class Server {
 		Model<Integer, Trade> tradeFeed;
 		{
 			String feedName = "TradeFeed";
-			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, tradeMetadata, numTrades, 100L, new Feed.Strategy<Integer, Trade>(){
-
-				@Override
-				public Trade createNewItem(int counter) {
-					return new Trade(counter, 0, new Date(now + (long)(DAY * Math.random() * numDays)), new BigDecimal(100), (int)(Math.random()*numAccounts), (int)(Math.random()*numCurrencies));
-				}
-
-				@Override
-				public Trade createNewVersion(Trade original) {
-					return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount(), original.getCurrency());
-				}
-
-				@Override
-				public Integer getKey(Trade item) {
-					return item.getId();
-				}});
+			Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, tradeMetadata, numTrades, 100L, new TradeFeedStrategy(numAccounts, numCurrencies));
 			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
 			serverFactory.createServer(feed, session.createQueue("Server."+feedName));
 			feed.start();
