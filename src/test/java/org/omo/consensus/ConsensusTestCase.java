@@ -1,5 +1,10 @@
 package org.omo.consensus;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Session;
@@ -55,10 +60,11 @@ public class ConsensusTestCase extends TestCase {
 	}
 	
 	public void testTopic() throws Exception {
-		Paxos server1 = remotingFactory.createServer(new PaxosImpl());
-		Paxos server2 = remotingFactory.createServer(new PaxosImpl());
-		Paxos server3 = remotingFactory.createServer(new PaxosImpl());
-		Paxos server4 = remotingFactory.createServer(new PaxosImpl());
+		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+		Paxos server1 = remotingFactory.createServer(new PaxosImpl(), executor);
+		Paxos server2 = remotingFactory.createServer(new PaxosImpl(), executor);
+		Paxos server3 = remotingFactory.createServer(new PaxosImpl(), executor);
+		Paxos server4 = remotingFactory.createServer(new PaxosImpl(), executor);
 		AsynchronousClient client = remotingFactory.createAsynchronousClient();
 		
 		client.invoke(Paxos.class.getMethod("foo", (Class<?>[])null), null, new AsyncInvocationListener(){

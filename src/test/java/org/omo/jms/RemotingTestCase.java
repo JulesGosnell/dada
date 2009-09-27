@@ -4,7 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
@@ -70,7 +73,8 @@ public class RemotingTestCase extends TestCase {
 
 	public void testProxyRemotability() throws Exception {
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, session.createTemporaryQueue(), timeout);
-		Server server = factory.createServer(new ServerImpl());
+		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100)); 
+		Server server = factory.createServer(new ServerImpl(), executor);
 		Server localClient = factory.createSynchronousClient();
 		String foo = "foo";
 		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
@@ -92,8 +96,8 @@ public class RemotingTestCase extends TestCase {
 	public void testRemoteInvocation() throws Exception {
 		QueueFactory queueFactory = new QueueFactory();
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, queueFactory, timeout);
-
-		final Server server = factory.createServer(new ServerImpl());
+		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+		final Server server = factory.createServer(new ServerImpl(), executor);
 		final Server client = factory.createSynchronousClient();
 		AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
 		

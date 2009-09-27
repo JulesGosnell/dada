@@ -54,17 +54,18 @@ public class RemotingFactory<T> {
 		private final T target;
 		private final MessageProducer producer;
 		private final MessageConsumer consumer;
+		protected final Executor executor; 
 
-		public Server(T target, Destination invocationDestination) throws JMSException {
+		public Server(T target, Destination invocationDestination, Executor executor) throws JMSException {
 			this.target = target;
 			log = LogFactory.getLog(Server.class);
 			producer = session.createProducer(null);
 			consumer = session.createConsumer(invocationDestination);
 			log.info("consuming messages on: " + invocationDestination);
 			consumer.setMessageListener(this);
+			this.executor = executor;
 		}
 
-		protected Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
 		
 		@Override
 		public void onMessage(final Message message) {
@@ -124,13 +125,13 @@ public class RemotingFactory<T> {
 	
 	//----------------------------------------------------------------------------
 	
-	public T createServer(T target) throws JMSException {
-		new Server(target, invocationDestination);
+	public T createServer(T target, Executor executor) throws JMSException {
+		new Server(target, invocationDestination, executor);
 		return target;
 	}
 
-	public T createServer(T target, Destination invocationDestination) throws JMSException {
-		new Server(target, invocationDestination);
+	public T createServer(T target, Destination invocationDestination, Executor executor) throws JMSException {
+		new Server(target, invocationDestination, executor);
 		return target;
 	}
 	

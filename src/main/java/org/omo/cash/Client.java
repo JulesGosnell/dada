@@ -6,6 +6,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.rmi.server.UID;
 import java.util.Collection;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -71,7 +75,8 @@ public class Client {
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, clientDestination, timeout);
-		serverFactory.createServer(guiModel);
+		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+		serverFactory.createServer(guiModel, executor);
 		clientServer = serverFactory.createSynchronousClient();
 
 		// pass the client over to the server to attach as a listener..

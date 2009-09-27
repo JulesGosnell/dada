@@ -15,13 +15,13 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	public interface Strategy<K, V> {
 		
 		K getKey(V item);
-		V createNewItem(int counter);
+		V createNewValue(int counter);
 		V createNewVersion(V original);
 		
 	}
 	
 	protected final Map<K, V> vs = new HashMap<K, V>();
-	protected final int numTrades;
+	protected final int numValues;
 	protected final long delay;
 	protected final Strategy<K, V> strategy;
 	protected final Timer timer = new Timer();
@@ -29,18 +29,17 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		
 		@Override
 		public void run() {
-			int id = (int)(Math.random()*numTrades);
-			V oldTrade = vs.get(id);
-			// Trade newTrade = new Trade(id, oldTrade.getVersion()+1);
-			V newTrade = strategy.createNewVersion(oldTrade);
-			vs.put(strategy.getKey(newTrade), newTrade);
-			notifyUpdates(Collections.singleton(newTrade));
+			int id = (int)(Math.random()*numValues);
+			V oldValue = vs.get(id);
+			V newValue = strategy.createNewVersion(oldValue);
+			vs.put(strategy.getKey(newValue), newValue);
+			notifyUpdates(Collections.singleton(newValue));
 		}
 	};
 	
-	public Feed(String name, Metadata<K, V> metadata, int numTrades, long delay, Strategy<K, V> feedStrategy) {
+	public Feed(String name, Metadata<K, V> metadata, int numValues, long delay, Strategy<K, V> feedStrategy) {
 		super(name, metadata);
-		this.numTrades = numTrades;
+		this.numValues = numValues;
 		this.delay = delay;
 		this.strategy = feedStrategy;
 	}
@@ -49,11 +48,14 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	
 	@Override
 	public void start() {
-		for (int i=0 ;i<numTrades; i++) {
-			V item = strategy.createNewItem(i);
+		log.debug("creating " + numValues +" values...");
+		for (int i=0 ;i<numValues; i++) {
+			V item = strategy.createNewValue(i);
 			vs.put(strategy.getKey(item), item);
 		}
+		log.debug("notifying " + numValues +" values...");
 		notifyUpdates(vs.values());
+		log.debug("starting timer...");
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
