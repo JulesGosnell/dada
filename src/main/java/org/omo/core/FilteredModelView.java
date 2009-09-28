@@ -62,6 +62,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 			newViews.add(view);
 			views = newViews;
+			log.debug("" + this + " registered view:" + view + " -> " + views);
 		}
 		Collection<V> values = ((PersistentTreeMap)maps.getCurrent()).values();
 		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
@@ -75,6 +76,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 				List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 				newViews.remove(view);
 				views = newViews;
+				log.debug("" + this + " deregistered view:" + view + " -> " + views);
 			}
 		} catch (Exception e) {
 			log.error("unable to deregister view: " + view);
@@ -86,7 +88,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 		//IPersistentSet snapshot = views;
 		List<View<K, V>> snapshot = views;
 		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
-		log.info("NfOTIFYING UPDATE ("+getName()+"): "+values);
+		//log.info("NOTIFYING UPDATE ("+getName()+"): "+values);
 		for (View<K, V> view : snapshot) {
 			view.update(values);
 		}
@@ -180,4 +182,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 			notifyUpdate(updates2);
 	}
 
+	public String toString() {
+		return "<" + getClass().getSimpleName() + ": " + name + ">";
+	}
 }

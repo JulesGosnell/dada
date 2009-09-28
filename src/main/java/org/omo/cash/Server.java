@@ -111,11 +111,11 @@ public class Server {
 		LOG.info("Listening on: " + queue);
 
 		// we'' randomize trade dates out over the next week...
-		final int numTrades = 100;
+		final int numTrades = 10000;
 		final int numPartitions = 3;
 		final int numDays = 5;
-		final int numAccounts = 1;
-		final int numCurrencies = 1;
+		final int numAccounts = 5;
+		final int numCurrencies = 2;
 
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
@@ -186,14 +186,13 @@ public class Server {
 							if (p == 0) {
 								String name2 = "Trade.Date."+d+".Account."+a;
 								FilteredModelView<Integer, Trade> model = new FilteredModelView<Integer, Trade>(name2, tradeMetadata, new IdentityFilter<Trade>());
-								serverFactory.createServer(account, session.createQueue("Server."+name2), executor);
+								serverFactory.createServer(model, session.createQueue("Server."+name2), executor);
 								model.start();
 								aggregatedAccounts.put(name2, model);
 								metaModel.update(Collections.singleton(name2));
 							}
 							FilteredModelView<Integer, Trade> aggregateModel = aggregatedAccounts.get("Trade.Date."+d+".Account."+a);
 							view(account, aggregateModel);
-							LOG.info("REGISTERING "+aggregateModel.getName()+" with "+account.getName());
 						}
 
 						for (int c=0; c<numCurrencies; c++) {
@@ -329,7 +328,6 @@ public class Server {
 	
 	protected void view(Model<Integer, Trade> model, View<Integer, Trade> view) {
 		Registration<Integer, Trade> registration = model.registerView(view);
-		LOG.info(model.getName()+": "+registration.getData());
 		view.update(registration.getData());
 	}
 

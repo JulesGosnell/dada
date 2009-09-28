@@ -25,7 +25,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	
 	@Override
 	public void update(Collection<V> updates) {
-		log.debug("UPDATE("+updates+")");
+		//log.debug("UPDATE("+updates+")");
 		if (updates != null)
 			for (V insertion : updates) {
 				K key = metadata.getKey(insertion);
