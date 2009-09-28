@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -24,11 +26,13 @@ import org.apache.commons.logging.LogFactory;
 import org.omo.core.Feed;
 import org.omo.core.Filter;
 import org.omo.core.FilteredModelView;
+import org.omo.core.IdentityFilter;
 import org.omo.core.IntrospectiveMetadata;
 import org.omo.core.MapModelView;
 import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.Partitioner;
+import org.omo.core.Registration;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
@@ -43,7 +47,7 @@ public class Server {
 		private final long millisInWeek;
 		private final int numAccounts;
 		private final int numCurrencies;
-		
+
 		private TradeFeedStrategy(int numAccounts, int numCurrencies) {
 			Calendar calendar = Calendar.getInstance();
 			calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
@@ -59,9 +63,9 @@ public class Server {
 			calendar.set(Calendar.SECOND, 59);
 			calendar.set(Calendar.MILLISECOND, 999);
 			endOfWeek = calendar.getTime();
-			
+
 			millisInWeek = endOfWeek.getTime() - startOfWeek.getTime();
-			
+
 			this.numAccounts = numAccounts;
 			this.numCurrencies = numCurrencies;
 		}
@@ -93,7 +97,7 @@ public class Server {
 	private final MapModelView<String, String> metaModel;
 	private final Adaptor<String, String> adaptor = new  Adaptor<String, String>() {@Override public String getKey(String value) {return value;}};
 	private final Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-	
+
 	public Server(String name, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
 		connection = connectionFactory.createConnection();
 		connection.start();
@@ -108,10 +112,10 @@ public class Server {
 
 		// we'' randomize trade dates out over the next week...
 		final int numTrades = 100;
-		final int numPartitions = 10;
+		final int numPartitions = 3;
 		final int numDays = 5;
-		final int numAccounts = 3;
-		final int numCurrencies = 3;
+		final int numAccounts = 1;
+		final int numCurrencies = 1;
 
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
@@ -134,101 +138,114 @@ public class Server {
 					return value.getId();
 				}};
 
+				Map<String, FilteredModelView<Integer, Trade>> aggregatedAccounts = new HashMap<String, FilteredModelView<Integer,Trade>>();
 				for (int p=0; p<numPartitions; p++) {
-				String partitionName = "Trade."+p;
-				//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
-				Filter<Trade> filter = new Filter<Trade>() {
+					String partitionName = "Trade."+p;
+					//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
+					Filter<Trade> filter = new Filter<Trade>() {
+
+						@Override
+						public boolean apply(Trade value) {
+							return true;
+						}
+					};
+					FilteredModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, filter);
+					partitions.add(partition);
+					serverFactory.createServer(partition, session.createQueue("Server."+partitionName), executor);
+					partition.start();
+					metaModel.update(Collections.singleton(partitionName));
+
+					Calendar calendar = Calendar.getInstance();
+					calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+					calendar.set(Calendar.HOUR_OF_DAY, 0);
+					calendar.set(Calendar.MINUTE, 0);
+					calendar.set(Calendar.SECOND, 0);
+					calendar.set(Calendar.MILLISECOND, 0);
+
+					for (int d=0; d<numDays; d++) {
+						String dayName = partitionName+".Date."+d;
+						Date start = calendar.getTime();
+						calendar.set(Calendar.DAY_OF_WEEK, calendar.get(Calendar.DAY_OF_WEEK) + 1);
+						Date end = calendar.getTime();
+						Filter<Trade> valueDateFilter = new ValueDateFilter(start, end);
+						FilteredModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
+						view(partition, day);
+						serverFactory.createServer(day, session.createQueue("Server."+dayName), executor);
+						day.start();
+						metaModel.update(Collections.singleton(dayName));
+
+						for (int a=0; a<numAccounts; a++) {
+							String accountName = dayName+".Account."+a;
+							Filter<Trade> f = new AccountFilter(a);
+							FilteredModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
+							serverFactory.createServer(account, session.createQueue("Server."+accountName), executor);
+							view(day, account);
+							account.start();
+							metaModel.update(Collections.singleton(accountName));
+
+							if (p == 0) {
+								String name2 = "Trade.Date."+d+".Account."+a;
+								FilteredModelView<Integer, Trade> model = new FilteredModelView<Integer, Trade>(name2, tradeMetadata, new IdentityFilter<Trade>());
+								serverFactory.createServer(account, session.createQueue("Server."+name2), executor);
+								model.start();
+								aggregatedAccounts.put(name2, model);
+								metaModel.update(Collections.singleton(name2));
+							}
+							FilteredModelView<Integer, Trade> aggregateModel = aggregatedAccounts.get("Trade.Date."+d+".Account."+a);
+							view(account, aggregateModel);
+							LOG.info("REGISTERING "+aggregateModel.getName()+" with "+account.getName());
+						}
+
+						for (int c=0; c<numCurrencies; c++) {
+							String currencyName = dayName+".Currency."+c;
+							Filter<Trade> f = new CurrencyFilter(c);
+							FilteredModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
+							serverFactory.createServer(currency, session.createQueue("Server."+currencyName), executor);
+							view(day, currency);
+							currency.start();
+							metaModel.update(Collections.singleton(currencyName));
+						}
+					}
+				}
+				Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
 
 					@Override
-					public boolean apply(Trade value) {
-						return true;
-					}
-				};
-				FilteredModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, filter);
-				partitions.add(partition);
-				serverFactory.createServer(partition, session.createQueue("Server."+partitionName), executor);
-				partition.start();
-				metaModel.update(Collections.singleton(partitionName));
-
-				Calendar calendar = Calendar.getInstance();
-				calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
-				calendar.set(Calendar.HOUR_OF_DAY, 0);
-				calendar.set(Calendar.MINUTE, 0);
-				calendar.set(Calendar.SECOND, 0);
-				calendar.set(Calendar.MILLISECOND, 0);
-
-				for (int d=0; d<numDays; d++) {
-					String dayName = partitionName+".Date."+d;
-					Date start = calendar.getTime();
-					calendar.set(Calendar.DAY_OF_WEEK, calendar.get(Calendar.DAY_OF_WEEK) + 1);
-					Date end = calendar.getTime();
-					Filter<Trade> valueDateFilter = new ValueDateFilter(start, end);
-					FilteredModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
-					partition.registerView(day);
-					serverFactory.createServer(day, session.createQueue("Server."+dayName), executor);
-					day.start();
-					metaModel.update(Collections.singleton(dayName));
-
-					for (int a=0; a<numAccounts; a++) {
-						String accountName = dayName+".Account."+a;
-						Filter<Trade> f = new AccountFilter(a);
-						FilteredModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
-						serverFactory.createServer(account, session.createQueue("Server."+accountName), executor);
-						day.registerView(account);
-						account.start();
-						metaModel.update(Collections.singleton(accountName));
+					public int getNumberOfPartitions() {
+						return numPartitions;
 					}
 
-					for (int c=0; c<numCurrencies; c++) {
-						String currencyName = dayName+".Currency."+c;
-						Filter<Trade> f = new CurrencyFilter(c);
-						FilteredModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
-						serverFactory.createServer(currency, session.createQueue("Server."+currencyName), executor);
-						day.registerView(currency);
-						currency.start();
-						metaModel.update(Collections.singleton(currencyName));
+					@Override
+					public int partition(Trade value) {
+						return value.getId() % numPartitions;
 					}
-				}
-			}
-			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
-
-				@Override
-				public int getNumberOfPartitions() {
-					return numPartitions;
-				}
-
-				@Override
-				public int partition(Trade value) {
-					return value.getId() % numPartitions;
-				}
-			});
-			tradeFeed.registerView(partitioner);
+				});
+				view(tradeFeed, partitioner);
 		}
-		
+
 		// adding AccountFeed
 		{
 			String feedName = "AccountFeed";
 			IntrospectiveMetadata<Integer, Account> metadata = new IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
 			Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer, Account>(){
-			@Override
-			public Account createNewValue(int counter) {
-				return new Account(counter, 0);
-			}
+				@Override
+				public Account createNewValue(int counter) {
+					return new Account(counter, 0);
+				}
 
-			@Override
-			public Account createNewVersion(Account original) {
-				return new Account(original.getId(), original.getVersion()+1);
-			}
+				@Override
+				public Account createNewVersion(Account original) {
+					return new Account(original.getId(), original.getVersion()+1);
+				}
 
-			@Override
-			public Integer getKey(Account item) {
-				return item.getId();
-			}};
-			Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, numAccounts, 100L, strategy);
-			RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
-			serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-			feed.start();
-			metaModel.update(Collections.singleton(feedName));
+				@Override
+				public Integer getKey(Account item) {
+					return item.getId();
+				}};
+				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, numAccounts, 100L, strategy);
+				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
+				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
+				feed.start();
+				metaModel.update(Collections.singleton(feedName));
 		}
 		// adding CurrencyFeed
 		{
@@ -249,12 +266,12 @@ public class Server {
 				public Integer getKey(Currency item) {
 					return item.getId();
 				}};
-			Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
-			Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, numCurrencies, 100L, strategy);
-			RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
-			serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-			feed.start();
-			metaModel.update(Collections.singleton(feedName));
+				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
+				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, numCurrencies, 100L, strategy);
+				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
+				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
+				feed.start();
+				metaModel.update(Collections.singleton(feedName));
 		}
 		// adding BalanceFeed
 		{
@@ -275,12 +292,12 @@ public class Server {
 				public Integer getKey(Balance item) {
 					return item.getId();
 				}};
-			Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
-			Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, 1000, 100L, strategy);
-			RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
-			serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-			feed.start();
-			metaModel.update(Collections.singleton(feedName));
+				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
+				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, 1000, 100L, strategy);
+				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
+				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
+				feed.start();
+				metaModel.update(Collections.singleton(feedName));
 		}
 		// adding CompanyFeed
 		{
@@ -301,13 +318,19 @@ public class Server {
 				public Integer getKey(Company item) {
 					return item.getId();
 				}};
-			Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
-			Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, 10, 100L, strategy);
-			RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
-			serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-			feed.start();
-			metaModel.update(Collections.singleton(feedName));
+				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
+				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, 10, 100L, strategy);
+				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
+				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
+				feed.start();
+				metaModel.update(Collections.singleton(feedName));
 		}
+	}
+	
+	protected void view(Model<Integer, Trade> model, View<Integer, Trade> view) {
+		Registration<Integer, Trade> registration = model.registerView(view);
+		LOG.info(model.getName()+": "+registration.getData());
+		view.update(registration.getData());
 	}
 
 	/**
@@ -328,6 +351,6 @@ public class Server {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
+	}
 
 }

@@ -86,6 +86,7 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 		//IPersistentSet snapshot = views;
 		List<View<K, V>> snapshot = views;
 		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
+		log.info("NfOTIFYING UPDATE ("+getName()+"): "+values);
 		for (View<K, V> view : snapshot) {
 			view.update(values);
 		}
