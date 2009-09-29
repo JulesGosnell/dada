@@ -130,12 +130,16 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 							// update current value
 							current = current.assoc(key, newValue);
 							updates2.add(newValue);
+							for (Aggregator<? extends Object, V> aggregator : aggregators)
+								aggregator.update(oldCurrentValue, newValue);
 						} else {
 							// retire value
 							try {
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
+								for (Aggregator<? extends Object, V> aggregator : aggregators)
+									aggregator.remove(oldCurrentValue);
 							}  catch (Exception e) {
 								log.error("unexpected problem retiring value");
 							}
@@ -154,6 +158,8 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
 									updates2.add(newValue);
+									for (Aggregator<? extends Object, V> aggregator : aggregators)
+										aggregator.insert(newValue);
 								} catch (Exception e) {
 									log.error("unexpected problem unretiring value");
 								}
@@ -168,6 +174,8 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 							// adopt new value
 							current = current.assoc(key, newValue); 
 							updates2.add(newValue);
+							for (Aggregator<? extends Object, V> aggregator : aggregators)
+								aggregator.insert(newValue);
 						} else {
 							// ignore value
 						}
@@ -184,5 +192,21 @@ public class FilteredModelView<K, V extends Datum> implements Model<K,V>, View<K
 
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + name + ">";
+	}
+	
+	// temporary aggregation solution
+	
+	private volatile Collection<Aggregator<? extends Object, V>> aggregators = new ArrayList<Aggregator<? extends Object,V>>();
+	
+	public void register(Aggregator<? extends Object, V> aggregator) {
+		Collection<Aggregator<? extends Object, V>> newAggregators = new ArrayList<Aggregator<? extends Object,V>>(aggregators);
+		newAggregators.add(aggregator);
+		aggregators = newAggregators;
+	}
+	
+	public void deregister(Aggregator<? extends Object, V> aggregator) {
+		Collection<Aggregator<? extends Object, V>> newAggregators = new ArrayList<Aggregator<? extends Object,V>>(aggregators);
+		newAggregators.remove(aggregator);
+		aggregators = newAggregators;
 	}
 }

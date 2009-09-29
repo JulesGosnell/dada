@@ -73,12 +73,12 @@ public class Server {
 		@Override
 		public Trade createNewValue(int counter) {
 			Date date = new Date(startOfWeek.getTime() + (long)(Math.random() * millisInWeek));
-			return new Trade(counter, 0, date, new BigDecimal(100), (int)(Math.random()*numAccounts), (int)(Math.random()*numCurrencies));
+			return new Trade(counter, 0, date, new BigDecimal(((int)(100000000*Math.random()))/100), (int)(Math.random()*numAccounts), (int)(Math.random()*numCurrencies));
 		}
 
 		@Override
 		public Trade createNewVersion(Trade original) {
-			return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), original.getAmount(), original.getAccount(), original.getCurrency());
+			return new Trade(original.getId(), original.getVersion()+1, original.getValueDate(), new BigDecimal(((int)(100000000*Math.random()))/100), original.getAccount(), original.getCurrency());
 		}
 
 		@Override
@@ -111,7 +111,7 @@ public class Server {
 		LOG.info("Listening on: " + queue);
 
 		// we'' randomize trade dates out over the next week...
-		final int numTrades = 10000;
+		final int numTrades = 100;
 		final int numPartitions = 3;
 		final int numDays = 5;
 		final int numAccounts = 5;
@@ -190,6 +190,7 @@ public class Server {
 								model.start();
 								aggregatedAccounts.put(name2, model);
 								metaModel.update(Collections.singleton(name2));
+								model.register(new AmountAggregator());
 							}
 							FilteredModelView<Integer, Trade> aggregateModel = aggregatedAccounts.get("Trade.Date."+d+".Account."+a);
 							view(account, aggregateModel);
