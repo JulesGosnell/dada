@@ -59,7 +59,7 @@ public class ViewTestCase extends TestCase {
 	};
 
 	public void testSimpleView() {
-		FilteredModelView<Integer, BooleanDatum> view = new FilteredModelView<Integer, BooleanDatum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
+		ModelView<Integer, BooleanDatum> view = new FilteredModelView<Integer, BooleanDatum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
 		Counter<Integer, BooleanDatum> counter = new Counter<Integer, BooleanDatum>();
 		Collection<BooleanDatum> insertions = view.registerView(counter).getData();
 		counter.update(insertions);
@@ -104,8 +104,8 @@ public class ViewTestCase extends TestCase {
 
 	public void testCompoundView() {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
-		FilteredModelView<Integer, StringDatum> isTrue = new FilteredModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
-		FilteredModelView<Integer, StringDatum> isNull = new FilteredModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
+		ModelView<Integer, StringDatum> isTrue = new FilteredModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
+		ModelView<Integer, StringDatum> isNull = new FilteredModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
 		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
 		isNull.update(isNullData);
 		Collection<StringDatum> counterData = isNull.registerView(counter).getData();

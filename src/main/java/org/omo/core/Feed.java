@@ -15,13 +15,13 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	public interface Strategy<K, V> {
 		
 		K getKey(V item);
-		V createNewValue(int counter);
+		Collection<V> createNewValues(Range<K> range);
 		V createNewVersion(V original);
 		
 	}
 	
 	protected final Map<K, V> vs = new HashMap<K, V>();
-	protected final int numValues;
+	protected final Range<K> range;
 	protected final long delay;
 	protected final Strategy<K, V> strategy;
 	protected final Timer timer = new Timer();
@@ -29,7 +29,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		
 		@Override
 		public void run() {
-			int id = (int)(Math.random()*numValues);
+			K id = range.random();
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
@@ -37,24 +37,30 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		}
 	};
 	
-	public Feed(String name, Metadata<K, V> metadata, int numValues, long delay, Strategy<K, V> feedStrategy) {
+	public Feed(String name, Metadata<K, V> metadata, Range<K> range, long delay, Strategy<K, V> feedStrategy) {
 		super(name, metadata);
-		this.numValues = numValues;
+		this.range = range;
 		this.delay = delay;
 		this.strategy = feedStrategy;
 	}
 
 	// Lifecycle
 	
+	// IDEAS
+	// get range stuff going
+	// use topics as well as queues
+	// reference count listeners only
+	// make void invocations async - no return value
+	
+	
 	@Override
 	public void start() {
-		log.debug("creating " + numValues +" values...");
-		for (int i=0 ;i<numValues; i++) {
-			V item = strategy.createNewValue(i);
-			vs.put(strategy.getKey(item), item);
-		}
-		log.debug("notifying " + numValues +" values...");
-		notifyUpdates(vs.values());
+		log.debug("creating values...");
+		Collection<V> updates = strategy.createNewValues(range);
+		for (V update : updates)
+			vs.put(strategy.getKey(update), update); // TODO - what happened to the code create the value - range should only be responsible for the key
+		log.debug("notifying " + updates.size() +" values...");
+		notifyUpdates(updates);
 		log.debug("starting timer...");
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}

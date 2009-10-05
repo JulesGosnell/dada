@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+
+  <bean id="..." class="...">
+  <property name="beanOne"><ref bean="anotherExampleBean"/></property>
+    ...
+  </bean>
+  <bean id="..." class="...">
+    ...
+  </bean>
+
+  ...
+  <!-- this bean must not be lazily initialized if the exporting is to happen -->
+  <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter" lazy-init="false">
+    <property name="beans">
+      <map>
+        <entry key="bean:name=testBean1" value-ref="testBean"/>
+      </map>
+    </property>
+  </bean>
+
+  <bean id="testBean" class="org.springframework.jmx.JmxTestBean">
+    <property name="name" value="TEST"/>
+    <property name="age" value="100"/>
+  </bean>
+
+  <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean"/>
+
+  <!--
+    this bean needs to be eagerly pre-instantiated in order for the exporting to occur;
+    this means that it must not be marked as lazily initialized
+  -->
+  <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+    <property name="beans">
+      <map>
+        <entry key="bean:name=testBean1" value-ref="testBean"/>
+      </map>
+    </property>
+    <property name="server" ref="mbeanServer"/>
+  </bean>
+
+  <bean id="testBean" class="org.springframework.jmx.JmxTestBean">
+    <property name="name" value="TEST"/>
+    <property name="age" value="100"/>
+  </bean>
+
+
+
+<!--
+
+public class AnnotationTestBean implements IJmxTestBean {
+
+  private String name;
+  private int age;
+
+  @ManagedAttribute(description="The Age Attribute", currencyTimeLimit=15)
+  public int getAge() {
+    return age;
+  }
+
+  public void setAge(int age) {
+    this.age = age;
+  }
+
+  @ManagedAttribute(description="The Name Attribute",
+      currencyTimeLimit=20,
+      defaultValue="bar",
+      persistPolicy="OnUpdate")
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  @ManagedAttribute(defaultValue="foo", persistPeriod=300)
+  public String getName() {
+    return name;
+  }
+
+  @ManagedOperation(description="Add two numbers")
+  @ManagedOperationParameters({
+    @ManagedOperationParameter(name = "x", description = "The first number"),
+    @ManagedOperationParameter(name = "y", description = "The second number")})
+  public int add(int x, int y) {
+    return x + y;
+  }
+
+  public void dontExposeMe() {
+    throw new RuntimeException();
+  }
+}
+
+-->
+
+<beans>
+    <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
+        <property name="assembler" ref="assembler"/>
+        <property name="namingStrategy" ref="namingStrategy"/>
+        <property name="autodetect" value="true"/>
+    </bean>
+
+    <bean id="jmxAttributeSource"
+          class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource"/>
+
+    <!-- will create management interface using annotation metadata -->
+    <bean id="assembler"
+          class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
+
+    <!-- will pick up the ObjectName from the annotation -->
+    <bean id="namingStrategy"
+          class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource"/>
+    </bean>
+
+    <bean id="testBean" class="org.springframework.jmx.AnnotationTestBean">
+        <property name="name" value="TEST"/>
+        <property name="age" value="100"/>
+    </bean>
+</beans>
+
+</beans>
