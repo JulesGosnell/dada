@@ -69,6 +69,15 @@ public class Server {
 
 	private final MapModelView<String, String> metaModel;
 
+	protected void remote(Model model, RemotingFactory serverFactory) throws JMSException {
+		String name = model.getName();
+		Queue queue = session.createQueue(name);
+		serverFactory.createServer(model, queue, executor);
+		model.start();
+		metaModel.update(Collections.singleton(name));
+		LOG.info("Listening on: " + name);
+	}
+	
 	public Server(String serverName, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
 		connection = connectionFactory.createConnection();
 		connection.start();
@@ -76,50 +85,30 @@ public class Server {
 
 		// build MetaModel
 		{
-			String modelName = "MetaModel"; 
+			String modelName = serverName + ".MetaModel"; 
 			Metadata<String,String> modelMetadata = new StringMetadata("Name");
 			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(session, Model.class, (Destination)null, timeout);
 			metaModel = new MapModelView<String, String>(modelName, modelMetadata, adaptor);
-			Queue queue = session.createQueue(serverName + "." + modelName);
-			factory.createServer(metaModel, queue, executor);
-			metaModel.update(Collections.singleton(metaModel.getName())); // The metaModel is a Model !
-			LOG.info("Listening on: " + queue);
+			remote(metaModel, factory);
 		}
 		
 		// we'' randomize trade dates out over the next week...
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
-		Model<Integer, Trade> tradeFeed;
+		RemotingFactory<Model<Integer, Trade>> tradeRemotingFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+		Feed<Integer, Trade> tradeFeed;
 		{
-			String modelName = "TradeFeed";
+			String modelName = serverName + ".TradeFeed";
 			DateRange dateRange = new DateRange();
-			Model<Integer, Trade> model = new Feed<Integer, Trade>(modelName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-			Queue queue = session.createQueue(serverName+"."+modelName);
-			serverFactory.createServer(model, queue, executor);
-			model.start();
-			metaModel.update(Collections.singleton(modelName));
-			tradeFeed = model;
+			tradeFeed = new Feed<Integer, Trade>(modelName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
+			remote(tradeFeed, tradeRemotingFactory);
 		}
 		{
-			RemotingFactory<Model<Integer, Trade>> serverFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
 			Map<String, FilteredModelView<Integer, Trade>> aggregatedAccounts = new HashMap<String, FilteredModelView<Integer,Trade>>();
 			for (int p=0; p<numPartitions; p++) {
 
-				// make the Feeds
-				{
-					String feedName = "TradeFeed." + p;
-					DateRange dateRange = new DateRange();
-					Model<Integer, Trade> feed = new Feed<Integer, Trade>(feedName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
-					RemotingFactory<Model<Integer, Trade>> serverFactory2 = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
-					serverFactory2.createServer(feed, session.createQueue("Server."+feedName), executor);
-					feed.start();
-					metaModel.update(Collections.singleton(feedName));
-					tradeFeed = feed;
-				}
-
-				String partitionName = "Trade."+p;
+				String partitionName = serverName + ".Trade."+p;
 				//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
 				Filter<Trade> filter = new Filter<Trade>() {
 
@@ -130,9 +119,7 @@ public class Server {
 				};
 				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, filter);
 				partitions.add(partition);
-				serverFactory.createServer(partition, session.createQueue("Server."+partitionName), executor);
-				partition.start();
-				metaModel.update(Collections.singleton(partitionName));
+				remote(partition, tradeRemotingFactory);
 
 				DateRange dateRange = new DateRange();
 				
@@ -141,27 +128,21 @@ public class Server {
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
 					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
 					view(partition, day);
-					serverFactory.createServer(day, session.createQueue("Server."+dayName), executor);
-					day.start();
-					metaModel.update(Collections.singleton(dayName));
+					remote(day, tradeRemotingFactory);
 
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account="+a;
 						Filter<Trade> f = new AccountFilter(a);
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
-						serverFactory.createServer(account, session.createQueue("Server."+accountName), executor);
 						view(day, account);
-						account.start();
-						metaModel.update(Collections.singleton(accountName));
+						remote(account, tradeRemotingFactory);
 
-						String name2 = "Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
+						String name2 = serverName + ".Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
 						FilteredModelView<Integer, Trade> model = aggregatedAccounts.get(name2);
 						if (model == null) {
 							model = new FilteredModelView<Integer, Trade>(name2, tradeMetadata, new IdentityFilter<Trade>());
 							aggregatedAccounts.put(name2, model);
-							serverFactory.createServer(model, session.createQueue("Server."+name2), executor);
-							model.start();
-							metaModel.update(Collections.singleton(name2));
+							remote(model, tradeRemotingFactory);
 							//model.register(new AmountAggregator(d, a));
 						}
 						view(account, model);
@@ -171,10 +152,8 @@ public class Server {
 						String currencyName = dayName+".Currency="+c;
 						Filter<Trade> f = new CurrencyFilter(c);
 						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
-						serverFactory.createServer(currency, session.createQueue("Server."+currencyName), executor);
 						view(day, currency);
-						currency.start();
-						metaModel.update(Collections.singleton(currencyName));
+						remote(currency, tradeRemotingFactory);
 					}
 				}
 			}
@@ -195,7 +174,7 @@ public class Server {
 
 		// adding AccountFeed
 		{
-			String feedName = "AccountFeed";
+			String feedName = serverName + ".AccountFeed";
 			IntrospectiveMetadata<Integer, Account> metadata = new IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
 			Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer, Account>(){
 				@Override
@@ -217,13 +196,11 @@ public class Server {
 				}};
 				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
 				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
-				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-				feed.start();
-				metaModel.update(Collections.singleton(feedName));
+				remote(feed, serverFactory);
 		}
 		// adding CurrencyFeed
 		{
-			String feedName = "CurrencyFeed";
+			String feedName = serverName + ".CurrencyFeed";
 			Feed.Strategy<Integer, Currency> strategy = new Feed.Strategy<Integer, Currency>(){
 
 				@Override
@@ -246,13 +223,11 @@ public class Server {
 				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
 				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
 				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
-				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-				feed.start();
-				metaModel.update(Collections.singleton(feedName));
+				remote(feed, serverFactory);
 		}
 		// adding BalanceFeed
 		{
-			String feedName = "BalanceFeed";
+			String feedName = serverName + ".BalanceFeed";
 			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
 
 				@Override
@@ -275,13 +250,11 @@ public class Server {
 				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
 				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
 				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
-				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-				feed.start();
-				metaModel.update(Collections.singleton(feedName));
+				remote(feed, serverFactory);
 		}
 		// adding CompanyFeed
 		{
-			String feedName = "CompanyFeed";
+			String feedName = serverName + ".CompanyFeed";
 			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
 
 				@Override
@@ -304,9 +277,7 @@ public class Server {
 				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
 				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
 				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
-				serverFactory.createServer(feed, session.createQueue("Server."+feedName), executor);
-				feed.start();
-				metaModel.update(Collections.singleton(feedName));
+				remote(feed, serverFactory);
 		}
 	}
 

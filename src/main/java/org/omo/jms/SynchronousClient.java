@@ -86,7 +86,7 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 				return value;
 		} catch (TimeoutException e) {
 			correlationIdToResults.remove(correlationId);
-			log.warn("timedout waiting for results from invocation: " + method);
+			log.warn("timed out waiting for results from invocation: " + method + " on " + invocationDestination);
 			return null;
 		}
 		

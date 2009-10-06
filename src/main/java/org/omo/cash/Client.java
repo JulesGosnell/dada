@@ -67,7 +67,7 @@ public class Client {
 
 		guiModel = new TableModelView<Object, Object>();
 
-		serverDestination = session.createQueue(serverName + "." + this.modelName);
+		serverDestination = session.createQueue(this.modelName);
 		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, serverDestination, timeout);
 		serverProxy = clientFactory.createSynchronousClient();
 
@@ -180,7 +180,7 @@ public class Client {
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, "MetaModel", session, 60000, true);
+					new Client(serverName, serverName+".MetaModel", session, 60000, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

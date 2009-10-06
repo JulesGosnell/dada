@@ -3,6 +3,7 @@ package org.omo.core;
 import java.util.ArrayList;
 import java.util.Collection;
 
+// TODO - merge with more recent code - concurrent modification issues in listener collection...
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
