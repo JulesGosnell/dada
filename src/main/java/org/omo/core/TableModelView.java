@@ -8,17 +8,29 @@ import javax.swing.table.AbstractTableModel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import edu.emory.mathcs.backport.java.util.concurrent.CountDownLatch;
+
 public class TableModelView<K, V> extends AbstractTableModel implements View<K, V> {
 
 	private final Log log = LogFactory.getLog(getClass());
-	
+	private final CountDownLatch latch = new CountDownLatch(1);
 	private Metadata<K, V> metadata;
 	private final ConcurrentSkipListMap<K, V> map = new ConcurrentSkipListMap<K, V>();
 	
 	public void setMetadata(Metadata<K, V> metadata) {
 		this.metadata = metadata;
+		latch.countDown();
 	}
 
+	public Metadata<K, V> getMetadata() {
+		try {
+		latch.await();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+		return metadata;
+	}
+	
 	// TableModel
 	
 	// Listener
@@ -26,6 +38,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	@Override
 	public void update(Collection<V> updates) {
 		//log.debug("UPDATE("+updates+")");
+		Metadata<K, V> metadata = getMetadata();
 		if (updates != null)
 			for (V insertion : updates) {
 				K key = metadata.getKey(insertion);
@@ -39,12 +52,12 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		return metadata.getAttributeNames().get(columnIndex);
+		return getMetadata().getAttributeNames().get(columnIndex);
 	}
 	
 	@Override
 	public int getColumnCount() {
-		return metadata.getAttributeNames().size();
+		return getMetadata().getAttributeNames().size();
 	}
 
 	@Override
@@ -55,7 +68,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		V value = (V)map.values().toArray()[rowIndex]; // yikes !!
-		return metadata.getAttributeValue(value, columnIndex);
+		return getMetadata().getAttributeValue(value, columnIndex);
 	}
 
 }
