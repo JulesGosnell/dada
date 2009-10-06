@@ -137,7 +137,7 @@ public class Server {
 				DateRange dateRange = new DateRange();
 				
 				for (Date d : dateRange.getValues()) {
-					String dayName = partitionName+".Date."+dateFormat.format(d);
+					String dayName = partitionName+".ValueDate="+dateFormat.format(d);
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
 					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
 					view(partition, day);
@@ -146,7 +146,7 @@ public class Server {
 					metaModel.update(Collections.singleton(dayName));
 
 					for (int a=0; a<numAccounts; a++) {
-						String accountName = dayName+".Account."+a;
+						String accountName = dayName+".Account="+a;
 						Filter<Trade> f = new AccountFilter(a);
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
 						serverFactory.createServer(account, session.createQueue("Server."+accountName), executor);
@@ -154,7 +154,7 @@ public class Server {
 						account.start();
 						metaModel.update(Collections.singleton(accountName));
 
-						String name2 = "Trade.Date."+dateFormat.format(d)+".Account."+a;
+						String name2 = "Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
 						FilteredModelView<Integer, Trade> model = aggregatedAccounts.get(name2);
 						if (model == null) {
 							model = new FilteredModelView<Integer, Trade>(name2, tradeMetadata, new IdentityFilter<Trade>());
@@ -168,7 +168,7 @@ public class Server {
 					}
 
 					for (int c=0; c<numCurrencies; c++) {
-						String currencyName = dayName+".Currency."+c;
+						String currencyName = dayName+".Currency="+c;
 						Filter<Trade> f = new CurrencyFilter(c);
 						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
 						serverFactory.createServer(currency, session.createQueue("Server."+currencyName), executor);
