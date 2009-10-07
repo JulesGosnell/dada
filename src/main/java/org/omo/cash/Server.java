@@ -1,5 +1,6 @@
 package org.omo.cash;
 
+import java.rmi.server.UID;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -21,6 +23,7 @@ import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,13 +48,15 @@ import org.omo.jms.RemotingFactory;
 
 public class Server {
 
+	private static final IdentityFilter<Trade> IDENTITY_FILTER = new IdentityFilter<Trade>();
+
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 	
 	private final int maxQueuedJobs = 100;
-	private final int maxThreads = 100;
+	private final int maxThreads = 10;
 	private final int minThreads = 10;
 	private final int numTrades = 100;
-	private final int numPartitions = 3;
+	private final int numPartitions = 2;
 	private final int numDays = 5;
 	private final int numAccounts = 5;
 	private final int numCurrencies = 2;
@@ -66,41 +71,32 @@ public class Server {
 
 	private final Connection connection;
 	private final Session session;
+	private final RemotingFactory<Model<Integer, Trade>> tradeRemotingFactory;
 
 	private final MapModelView<String, String> metaModel;
 
-	protected void remote(Model model, RemotingFactory serverFactory) throws JMSException {
-		String name = model.getName();
-		Queue queue = session.createQueue(name);
-		serverFactory.createServer(model, queue, executor);
-		model.start();
-		metaModel.update(Collections.singleton(name));
-		LOG.info("Listening on: " + name);
-	}
-	
 	public Server(String serverName, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
 		connection = connectionFactory.createConnection();
 		connection.start();
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
+		tradeRemotingFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, timeout);
 		// build MetaModel
 		{
-			String modelName = serverName + ".MetaModel"; 
+			String name = serverName + ".MetaModel"; 
 			Metadata<String,String> modelMetadata = new StringMetadata("Name");
-			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(session, Model.class, (Destination)null, timeout);
-			metaModel = new MapModelView<String, String>(modelName, modelMetadata, adaptor);
+			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(session, Model.class, timeout);
+			metaModel = new MapModelView<String, String>(name, modelMetadata, adaptor);
 			remote(metaModel, factory);
 		}
 		
 		// we'' randomize trade dates out over the next week...
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
-		RemotingFactory<Model<Integer, Trade>> tradeRemotingFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, (Destination)null, timeout);
+		String tradeFeedName = serverName + ".TradeFeed";
 		Feed<Integer, Trade> tradeFeed;
 		{
-			String modelName = serverName + ".TradeFeed";
 			DateRange dateRange = new DateRange();
-			tradeFeed = new Feed<Integer, Trade>(modelName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
+			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
 			remote(tradeFeed, tradeRemotingFactory);
 		}
 		{
@@ -109,15 +105,7 @@ public class Server {
 			for (int p=0; p<numPartitions; p++) {
 
 				String partitionName = serverName + ".Trade."+p;
-				//MapModelView<Integer, Trade> partition = new MapModelView<Integer, Trade>(partitionName, tradeMetadata, adaptor);
-				Filter<Trade> filter = new Filter<Trade>() {
-
-					@Override
-					public boolean apply(Trade value) {
-						return true;
-					}
-				};
-				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, filter);
+				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, IDENTITY_FILTER);
 				partitions.add(partition);
 				remote(partition, tradeRemotingFactory);
 
@@ -127,32 +115,32 @@ public class Server {
 					String dayName = partitionName+".ValueDate="+dateFormat.format(d);
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
 					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
-					view(partition, day);
+					view(partitionName, day);
 					remote(day, tradeRemotingFactory);
 
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account="+a;
 						Filter<Trade> f = new AccountFilter(a);
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
-						view(day, account);
+						view(dayName, account);
 						remote(account, tradeRemotingFactory);
 
-						String name2 = serverName + ".Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
-						FilteredModelView<Integer, Trade> model = aggregatedAccounts.get(name2);
-						if (model == null) {
-							model = new FilteredModelView<Integer, Trade>(name2, tradeMetadata, new IdentityFilter<Trade>());
-							aggregatedAccounts.put(name2, model);
-							remote(model, tradeRemotingFactory);
+						String accountsName = serverName + ".Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
+						FilteredModelView<Integer, Trade> accounts = aggregatedAccounts.get(accountsName);
+						if (accounts == null) {
+							accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
+							aggregatedAccounts.put(accountsName, accounts);
+							remote(accounts, tradeRemotingFactory);
 							//model.register(new AmountAggregator(d, a));
 						}
-						view(account, model);
+						view(accountName, accounts);
 					}
 
 					for (int c=0; c<numCurrencies; c++) {
 						String currencyName = dayName+".Currency="+c;
-						Filter<Trade> f = new CurrencyFilter(c);
-						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, f);
-						view(day, currency);
+						Filter<Trade> currencyFilter = new CurrencyFilter(c);
+						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, currencyFilter);
+						view(dayName, currency);
 						remote(currency, tradeRemotingFactory);
 					}
 				}
@@ -169,7 +157,7 @@ public class Server {
 					return value.getId() % numPartitions;
 				}
 			});
-			view(tradeFeed, partitioner);
+			view(tradeFeedName, partitioner);
 		}
 
 		// adding AccountFeed
@@ -195,7 +183,7 @@ public class Server {
 					return item.getId();
 				}};
 				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
-				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, (Destination)null, timeout);
+				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, timeout);
 				remote(feed, serverFactory);
 		}
 		// adding CurrencyFeed
@@ -222,67 +210,93 @@ public class Server {
 				}};
 				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
 				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
-				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, (Destination)null, timeout);
+				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, timeout);
 				remote(feed, serverFactory);
 		}
-		// adding BalanceFeed
-		{
-			String feedName = serverName + ".BalanceFeed";
-			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
-
-				@Override
-				public Collection<Balance> createNewValues(Range<Integer> range) {
-					Collection<Balance> values = new ArrayList<Balance>(range.size());
-					for (int id : range.getValues())
-						values.add(new Balance(id, 0));
-					return values;
-				}
-
-				@Override
-				public Balance createNewVersion(Balance original) {
-					return new Balance(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Balance item) {
-					return item.getId();
-				}};
-				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
-				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
-				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
-				remote(feed, serverFactory);
-		}
-		// adding CompanyFeed
-		{
-			String feedName = serverName + ".CompanyFeed";
-			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
-
-				@Override
-				public Collection<Company> createNewValues(Range<Integer> range) {
-					Collection<Company> values = new ArrayList<Company>(range.size());
-					for (int id : range.getValues())
-						values.add(new Company(id, 0));
-					return values;
-				}
-
-				@Override
-				public Company createNewVersion(Company original) {
-					return new Company(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Company item) {
-					return item.getId();
-				}};
-				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
-				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
-				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
-				remote(feed, serverFactory);
-		}
+//		// adding BalanceFeed
+//		{
+//			String feedName = serverName + ".BalanceFeed";
+//			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
+//
+//				@Override
+//				public Collection<Balance> createNewValues(Range<Integer> range) {
+//					Collection<Balance> values = new ArrayList<Balance>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Balance(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Balance createNewVersion(Balance original) {
+//					return new Balance(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Balance item) {
+//					return item.getId();
+//				}};
+//				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
+//				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
+//				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
+//				remote(feed, serverFactory);
+//		}
+//		// adding CompanyFeed
+//		{
+//			String feedName = serverName + ".CompanyFeed";
+//			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
+//
+//				@Override
+//				public Collection<Company> createNewValues(Range<Integer> range) {
+//					Collection<Company> values = new ArrayList<Company>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Company(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Company createNewVersion(Company original) {
+//					return new Company(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Company item) {
+//					return item.getId();
+//				}};
+//				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
+//				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
+//				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
+//				remote(feed, serverFactory);
+//		}
 	}
 
-	protected void view(Model<Integer, Trade> model, View<Integer, Trade> view) {
-		Registration<Integer, Trade> registration = model.registerView(view);
+	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?,?>>();
+	
+	protected void remote(Model model, RemotingFactory serverFactory) throws JMSException {
+		String name = model.getName();
+		nameToModel.put(name, model);
+		Queue queue = session.createQueue(name);
+		serverFactory.createServer(model, queue, executor);
+		model.start();
+		metaModel.update(Collections.singleton(name));
+		LOG.info("Listening on: " + name);
+	}
+
+	protected void view(String modelName, View<Integer, Trade> view) throws IllegalArgumentException, JMSException {
+		Model<Integer, Trade> model; 
+		View<Integer, Trade> v;
+		
+		if (false) {
+			model = tradeRemotingFactory.createSynchronousClient(modelName); 
+			Destination clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
+			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, clientDestination, timeout);
+			serverFactory.createServer(view, executor);
+			v = serverFactory.createSynchronousClient();
+		} else {
+			model = (Model<Integer, Trade>)nameToModel.get(modelName);
+			v = view;
+		}
+
+		Registration<Integer, Trade> registration = model.registerView(v);
 		view.update(registration.getData());
 	}
 
@@ -293,10 +307,19 @@ public class Server {
 	public static void main(String[] args) throws Exception {
 		String name = (args.length == 0 ? "Server" : args[0]);
 		String url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
-		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
+		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
+		//System.setProperty("org.apache.activemq.UseDedicatedTaskRunner", "false");
+		//activeMQConnectionFactory.setOptimizedMessageDispatch(true);
+		//activeMQConnectionFactory.setObjectMessageSerializationDefered(true);
+		///activeMQConnectionFactory.setCopyMessageOnSend(false);
+		ConnectionFactory connectionFactory = activeMQConnectionFactory;
+		ActiveMQConnection c = (ActiveMQConnection)connectionFactory.createConnection();
+		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
+		LOG.info("OptimizedMessageDispatch="+c.isOptimizedMessageDispatch());
+		LOG.info("CopyMessageOnSend="+c.isCopyMessageOnSend());
 		LOG.info("Broker URL: " +url);
+		LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));
 		new Server(name, connectionFactory);
-
 		// keep going...
 		while (true)
 			try {

@@ -38,6 +38,7 @@ import org.omo.old.demo.JView;
 public class Client {
 	
 	private final static Log LOG = LogFactory.getLog(Client.class);
+	private final static Executor executor = new ThreadPoolExecutor(10, 10, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
 
 	private final String serverName;
 	private final String modelName;
@@ -66,16 +67,16 @@ public class Client {
 		this.topLevel = topLevel;
 
 		guiModel = new TableModelView<Object, Object>();
+		LOG.info("viewing: " + this.modelName);
 
 		serverDestination = session.createQueue(this.modelName);
-		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, serverDestination, timeout);
-		serverProxy = clientFactory.createSynchronousClient();
+		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, timeout);
+		serverProxy = clientFactory.createSynchronousClient(serverDestination);
 
 		// create a Client
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, clientDestination, timeout);
-		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
 		serverFactory.createServer(guiModel, executor);
 		clientServer = serverFactory.createSynchronousClient();
 
