@@ -51,7 +51,7 @@ public class RemotingFactory<T> {
 			this.target = target;
 			this.executor = executor;
 			log = LogFactory.getLog(Server.class);
-			consumer = session.createConsumer(destination);
+			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
 			log.info("consuming messages on: " + destination);
 			consumer.setMessageListener(this);
 		}
@@ -120,18 +120,18 @@ public class RemotingFactory<T> {
 		return target;
 	}
 	
-	public T createSynchronousClient(Destination destination) throws IllegalArgumentException, JMSException {
+	public T createSynchronousClient(Destination destination, boolean trueAsync) throws IllegalArgumentException, JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout));
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));
 	}
 	
-	public T createSynchronousClient(String destinationName) throws IllegalArgumentException, JMSException {
+	public T createSynchronousClient(String destinationName, boolean trueAsync) throws IllegalArgumentException, JMSException {
 		Destination invocationDestination = session.createQueue(destinationName);
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout, true));
 	}
 	
-	public AsynchronousClient createAsynchronousClient(Destination destination) throws JMSException {
-		return new AsynchronousClient(session, destination, interfaze, timeout);
+	public AsynchronousClient createAsynchronousClient(Destination destination, boolean trueAsync) throws JMSException {
+		return new AsynchronousClient(session, destination, interfaze, timeout, trueAsync);
 	}
 }

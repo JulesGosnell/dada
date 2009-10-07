@@ -71,14 +71,14 @@ public class Client {
 
 		serverDestination = session.createQueue(this.modelName);
 		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, timeout);
-		serverProxy = clientFactory.createSynchronousClient(serverDestination);
+		serverProxy = clientFactory.createSynchronousClient(serverDestination, true);
 
 		// create a Client
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
 		serverFactory.createServer(guiModel, clientDestination, executor);
-		clientServer = serverFactory.createSynchronousClient(clientDestination);
+		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..
 		Registration<Object, Object> registration = serverProxy.registerView(clientServer); 

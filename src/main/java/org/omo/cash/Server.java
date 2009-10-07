@@ -285,11 +285,11 @@ public class Server {
 		View<Integer, Trade> v;
 		
 		if (false) {
-			model = tradeRemotingFactory.createSynchronousClient(modelName); 
+			model = tradeRemotingFactory.createSynchronousClient(modelName, true); 
 			Destination clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, timeout);
 			serverFactory.createServer(view, clientDestination, executor);
-			v = serverFactory.createSynchronousClient(clientDestination);
+			v = serverFactory.createSynchronousClient(clientDestination, true);
 		} else {
 			model = (Model<Integer, Trade>)nameToModel.get(modelName);
 			v = view;

@@ -66,7 +66,7 @@ public class ConsensusTestCase extends TestCase {
 		Paxos server2 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
 		Paxos server3 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
 		Paxos server4 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
-		AsynchronousClient client = remotingFactory.createAsynchronousClient(destination);
+		AsynchronousClient client = remotingFactory.createAsynchronousClient(destination, true);
 		
 		client.invoke(Paxos.class.getMethod("foo", (Class<?>[])null), null, new AsyncInvocationListener(){
 

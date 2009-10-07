@@ -78,7 +78,7 @@ public class RemotingTestCase extends TestCase {
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
 		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100)); 
 		Server server = factory.createServer(new ServerImpl(), queue, executor);
-		Server localClient = factory.createSynchronousClient(queue);
+		Server localClient = factory.createSynchronousClient(queue, true);
 		String foo = "foo";
 		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
 		
@@ -101,8 +101,8 @@ public class RemotingTestCase extends TestCase {
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
 		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
 		final Server server = factory.createServer(new ServerImpl(), queue, executor);
-		final Server client = factory.createSynchronousClient(queue);
-		AsynchronousClient asynchronousClient = factory.createAsynchronousClient(queue);
+		final Server client = factory.createSynchronousClient(queue, true);
+		AsynchronousClient asynchronousClient = factory.createAsynchronousClient(queue, true);
 		
 		{
 			final String string = "test";

@@ -21,8 +21,8 @@ public class AsynchronousClient extends Client {
 	private final Log log = LogFactory.getLog(getClass());
 	private final Map<String, AsyncInvocationListener> correlationIdToListener = new ConcurrentHashMap<String, AsyncInvocationListener>();
 
-	AsynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout) throws JMSException {
-		super(session, invocationDestination, interfaze, timeout);
+	public AsynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		super(session, invocationDestination, interfaze, timeout, trueAsync);
 	}
 
 	public void invoke(Method method, Object[] args, AsyncInvocationListener listener) throws JMSException {

@@ -25,6 +25,7 @@ public abstract class Client implements MessageListener, Serializable {
 	protected long timeout;
 	protected Class<?> interfaze;
 	protected Destination invocationDestination;
+	protected boolean trueAsync;
 
 	protected transient Log log;
 	protected transient UUID uuid;
@@ -35,15 +36,16 @@ public abstract class Client implements MessageListener, Serializable {
 	protected /* final */ SimpleMethodMapper mapper;
 	protected transient int count; // used by subclasses
 	
-	public Client(Session session, Destination invocationDestination, Class<?> interfaze, long timeout) throws JMSException {
-		init(session, invocationDestination, interfaze, timeout);
+	public Client(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		init(session, invocationDestination, interfaze, timeout, trueAsync);
 	}
 	
-	protected void init(Session session, Destination invocationDestination, Class<?> interfaze, long timeout) throws JMSException {
+	protected void init(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
 		log = LogFactory.getLog(getClass());
 		this.interfaze = interfaze;
 		mapper = new SimpleMethodMapper(interfaze);
 		this.invocationDestination = invocationDestination;
+		this.trueAsync = trueAsync;
 		this.timeout = timeout;
 		this.uuid = UUID.randomUUID();
 
@@ -68,7 +70,7 @@ public abstract class Client implements MessageListener, Serializable {
 		Class<?> interfaze= (Class<?>)ois.readObject();
 		long timeout = ois.readLong();
 		try {
-			init(session, invocationDestination, interfaze, timeout);
+			init(session, invocationDestination, interfaze, timeout, trueAsync);
 		} catch (JMSException e) {
 			log.error("unexpected problem reconstructing client proxy", e);
 		}

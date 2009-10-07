@@ -29,8 +29,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 	private final Log log = LogFactory.getLog(getClass());
 	private /* final */ transient Map<String, Exchanger<Results>> correlationIdToResults;
 	
-	public SynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout) throws JMSException {
-		super(session, invocationDestination, interfaze, timeout);
+	public SynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		super(session, invocationDestination, interfaze, timeout, trueAsync);
 		correlationIdToResults = new ConcurrentHashMap<String, Exchanger<Results>>();
 	}
 	
