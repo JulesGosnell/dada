@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,10 +54,10 @@ public class Server {
 	private final int maxQueuedJobs = 100;
 	private final int maxThreads = 10;
 	private final int minThreads = 10;
-	private final int numTrades = 100;
+	private final int numTrades = 1000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
-	private final int numAccounts = 5;
+	private final int numAccounts = 2;
 	private final int numCurrencies = 2;
 	private final int numBalances= 100;
 	private final int numCompanies = 10;
@@ -213,60 +212,60 @@ public class Server {
 				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, timeout);
 				remote(feed, serverFactory);
 		}
-//		// adding BalanceFeed
-//		{
-//			String feedName = serverName + ".BalanceFeed";
-//			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
-//
-//				@Override
-//				public Collection<Balance> createNewValues(Range<Integer> range) {
-//					Collection<Balance> values = new ArrayList<Balance>(range.size());
-//					for (int id : range.getValues())
-//						values.add(new Balance(id, 0));
-//					return values;
-//				}
-//
-//				@Override
-//				public Balance createNewVersion(Balance original) {
-//					return new Balance(original.getId(), original.getVersion()+1);
-//				}
-//
-//				@Override
-//				public Integer getKey(Balance item) {
-//					return item.getId();
-//				}};
-//				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
-//				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
-//				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, (Destination)null, timeout);
-//				remote(feed, serverFactory);
-//		}
-//		// adding CompanyFeed
-//		{
-//			String feedName = serverName + ".CompanyFeed";
-//			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
-//
-//				@Override
-//				public Collection<Company> createNewValues(Range<Integer> range) {
-//					Collection<Company> values = new ArrayList<Company>(range.size());
-//					for (int id : range.getValues())
-//						values.add(new Company(id, 0));
-//					return values;
-//				}
-//
-//				@Override
-//				public Company createNewVersion(Company original) {
-//					return new Company(original.getId(), original.getVersion()+1);
-//				}
-//
-//				@Override
-//				public Integer getKey(Company item) {
-//					return item.getId();
-//				}};
-//				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
-//				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
-//				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, (Destination)null, timeout);
-//				remote(feed, serverFactory);
-//		}
+		// adding BalanceFeed
+		{
+			String feedName = serverName + ".BalanceFeed";
+			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
+
+				@Override
+				public Collection<Balance> createNewValues(Range<Integer> range) {
+					Collection<Balance> values = new ArrayList<Balance>(range.size());
+					for (int id : range.getValues())
+						values.add(new Balance(id, 0));
+					return values;
+				}
+
+				@Override
+				public Balance createNewVersion(Balance original) {
+					return new Balance(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Balance item) {
+					return item.getId();
+				}};
+				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
+				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
+				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, timeout);
+				remote(feed, serverFactory);
+		}
+		// adding CompanyFeed
+		{
+			String feedName = serverName + ".CompanyFeed";
+			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
+
+				@Override
+				public Collection<Company> createNewValues(Range<Integer> range) {
+					Collection<Company> values = new ArrayList<Company>(range.size());
+					for (int id : range.getValues())
+						values.add(new Company(id, 0));
+					return values;
+				}
+
+				@Override
+				public Company createNewVersion(Company original) {
+					return new Company(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Company item) {
+					return item.getId();
+				}};
+				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
+				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
+				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, timeout);
+				remote(feed, serverFactory);
+		}
 	}
 
 	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?,?>>();
@@ -308,10 +307,10 @@ public class Server {
 		String name = (args.length == 0 ? "Server" : args[0]);
 		String url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
 		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
-		//System.setProperty("org.apache.activemq.UseDedicatedTaskRunner", "false");
-		//activeMQConnectionFactory.setOptimizedMessageDispatch(true);
-		//activeMQConnectionFactory.setObjectMessageSerializationDefered(true);
-		///activeMQConnectionFactory.setCopyMessageOnSend(false);
+		System.setProperty("org.apache.activemq.UseDedicatedTaskRunner", "false");
+		activeMQConnectionFactory.setOptimizedMessageDispatch(true);
+		activeMQConnectionFactory.setObjectMessageSerializationDefered(true);
+		activeMQConnectionFactory.setCopyMessageOnSend(false);
 		ConnectionFactory connectionFactory = activeMQConnectionFactory;
 		ActiveMQConnection c = (ActiveMQConnection)connectionFactory.createConnection();
 		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
