@@ -126,9 +126,9 @@ public class RemotingFactory<T> {
 	}
 	
 	public T createSynchronousClient(String destinationName, boolean trueAsync) throws IllegalArgumentException, JMSException {
-		Destination invocationDestination = session.createQueue(destinationName);
+		Destination destination = session.createQueue(destinationName);
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout, true));
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));
 	}
 	
 	public AsynchronousClient createAsynchronousClient(Destination destination, boolean trueAsync) throws JMSException {
