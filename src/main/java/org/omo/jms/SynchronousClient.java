@@ -70,24 +70,34 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 			return method.invoke(this, args);
 		}
 		message.setObject(new Invocation(methodIndex, args));
-		String correlationId = "" + count++;
-		message.setJMSCorrelationID(correlationId);
-		message.setJMSReplyTo(resultsQueue);
-		Exchanger<Results> exchanger = new Exchanger<Results>();
-		correlationIdToResults.put(correlationId, exchanger);
-		log.trace("SENDING: " + method + " -> " + destination);
-		producer.send(destination, message);
-		try {
-			Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
-			Object value = results.getValue();
-			if (results.isException())
-				throw (Exception)value;
-			else
-				return value;
-		} catch (TimeoutException e) {
-			correlationIdToResults.remove(correlationId);
-			log.warn("timed out waiting for results from invocation: " + method + " on " + destination);
+		
+		// TODO: whether a method is to be used asynchronously should be stored with it to save runtime overhead...
+		boolean async = trueAsync && method.getReturnType().equals(Void.TYPE) && method.getExceptionTypes().length == 0;
+		
+		if (async) {
+			log.trace("SENDING ASYNC: " + method + " -> " + destination);
+			producer.send(destination, message);
 			return null;
+		} else {
+			String correlationId = "" + count++;
+			message.setJMSCorrelationID(correlationId);
+			message.setJMSReplyTo(resultsQueue);
+			Exchanger<Results> exchanger = new Exchanger<Results>();
+			correlationIdToResults.put(correlationId, exchanger);
+			log.trace("SENDING SYNC: " + method + " -> " + destination);
+			producer.send(destination, message);
+			try {
+				Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
+				Object value = results.getValue();
+				if (results.isException())
+					throw (Exception)value;
+				else
+					return value;
+			} catch (TimeoutException e) {
+				correlationIdToResults.remove(correlationId);
+				log.warn("timed out waiting for results from invocation: " + method + " on " + destination);
+				return null;
+			}
 		}
 		
 	}

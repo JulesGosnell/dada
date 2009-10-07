@@ -61,6 +61,7 @@ public abstract class Client implements MessageListener, Serializable {
 		oos.writeObject(destination);
 		oos.writeObject(interfaze);
 		oos.writeLong(timeout);
+		oos.writeBoolean(trueAsync);
 	}
 	
 	//@Override
@@ -69,6 +70,7 @@ public abstract class Client implements MessageListener, Serializable {
 		Destination destination = (Destination)ois.readObject();
 		Class<?> interfaze= (Class<?>)ois.readObject();
 		long timeout = ois.readLong();
+		boolean trueAsync = ois.readBoolean();
 		try {
 			init(session, destination, interfaze, timeout, trueAsync);
 		} catch (JMSException e) {
