@@ -29,6 +29,7 @@ public class RemotingFactory<T> {
 	private final SimpleMethodMapper mapper;
 	private final Destination invocationDestination;
 	private final long timeout;
+	private final MessageProducer producer;
 	
 	public RemotingFactory(Session session, Class<?> interfaze, DestinationFactory factory, long timeout) throws JMSException {
 		this(session, interfaze, factory.create(session, interfaze.getCanonicalName()), timeout);
@@ -40,6 +41,7 @@ public class RemotingFactory<T> {
 		this.mapper = new SimpleMethodMapper(interfaze);
 		this.invocationDestination = null;
 		this.timeout = timeout;
+		this.producer = session.createProducer(null);
 	}
 	
 	public RemotingFactory(Session session, Class<?> interfaze, Destination invocationDestination, long timeout) throws JMSException {
@@ -48,6 +50,7 @@ public class RemotingFactory<T> {
 		this.mapper = new SimpleMethodMapper(interfaze);
 		this.invocationDestination = invocationDestination;
 		this.timeout = timeout;
+		this.producer = session.createProducer(null);
 	}
 	
 	//--------------------------------------------------------------------
@@ -57,14 +60,12 @@ public class RemotingFactory<T> {
 		private final Log log;
 
 		private final T target;
-		private final MessageProducer producer;
 		private final MessageConsumer consumer;
 		protected final Executor executor; 
 
 		public Server(T target, Destination invocationDestination, Executor executor) throws JMSException {
 			this.target = target;
 			log = LogFactory.getLog(Server.class);
-			producer = session.createProducer(null);
 			consumer = session.createConsumer(invocationDestination);
 			log.info("consuming messages on: " + invocationDestination);
 			consumer.setMessageListener(this);
