@@ -24,7 +24,7 @@ public abstract class Client implements MessageListener, Serializable {
 
 	protected long timeout;
 	protected Class<?> interfaze;
-	protected Destination invocationDestination;
+	protected Destination destination;
 	protected boolean trueAsync;
 
 	protected transient Log log;
@@ -36,21 +36,21 @@ public abstract class Client implements MessageListener, Serializable {
 	protected /* final */ SimpleMethodMapper mapper;
 	protected transient int count; // used by subclasses
 	
-	public Client(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
-		init(session, invocationDestination, interfaze, timeout, trueAsync);
+	public Client(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		init(session, destination, interfaze, timeout, trueAsync);
 	}
 	
-	protected void init(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+	protected void init(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
 		log = LogFactory.getLog(getClass());
 		this.interfaze = interfaze;
 		mapper = new SimpleMethodMapper(interfaze);
-		this.invocationDestination = invocationDestination;
+		this.destination = destination;
 		this.trueAsync = trueAsync;
 		this.timeout = timeout;
 		this.uuid = UUID.randomUUID();
 
 		this.session = session;
-		this.producer = session.createProducer(invocationDestination);
+		this.producer = session.createProducer(destination);
 		this.resultsQueue = session.createQueue(interfaze.getCanonicalName() + "." + uuid);
 		this.consumer = session.createConsumer(resultsQueue);
 		this.consumer.setMessageListener(this);
@@ -58,7 +58,7 @@ public abstract class Client implements MessageListener, Serializable {
 
 	//@Override
 	private void writeObject(ObjectOutputStream oos) throws IOException {
-		oos.writeObject(invocationDestination);
+		oos.writeObject(destination);
 		oos.writeObject(interfaze);
 		oos.writeLong(timeout);
 	}
@@ -66,11 +66,11 @@ public abstract class Client implements MessageListener, Serializable {
 	//@Override
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		Session session = getCurrentSession();
-		Destination invocationDestination = (Destination)ois.readObject();
+		Destination destination = (Destination)ois.readObject();
 		Class<?> interfaze= (Class<?>)ois.readObject();
 		long timeout = ois.readLong();
 		try {
-			init(session, invocationDestination, interfaze, timeout, trueAsync);
+			init(session, destination, interfaze, timeout, trueAsync);
 		} catch (JMSException e) {
 			log.error("unexpected problem reconstructing client proxy", e);
 		}

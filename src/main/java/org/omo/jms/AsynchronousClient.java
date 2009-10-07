@@ -21,8 +21,8 @@ public class AsynchronousClient extends Client {
 	private final Log log = LogFactory.getLog(getClass());
 	private final Map<String, AsyncInvocationListener> correlationIdToListener = new ConcurrentHashMap<String, AsyncInvocationListener>();
 
-	public AsynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
-		super(session, invocationDestination, interfaze, timeout, trueAsync);
+	public AsynchronousClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		super(session, destination, interfaze, timeout, trueAsync);
 	}
 
 	public void invoke(Method method, Object[] args, AsyncInvocationListener listener) throws JMSException {
@@ -34,8 +34,8 @@ public class AsynchronousClient extends Client {
 		message.setJMSReplyTo(resultsQueue);
 
 		correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
-		log.trace("SENDING: " + message + " -> " + invocationDestination);
-		producer.send(invocationDestination, message);			
+		log.trace("SENDING: " + message + " -> " + destination);
+		producer.send(destination, message);			
 	}
 
 	@Override

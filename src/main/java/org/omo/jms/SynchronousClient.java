@@ -29,8 +29,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 	private final Log log = LogFactory.getLog(getClass());
 	private /* final */ transient Map<String, Exchanger<Results>> correlationIdToResults;
 	
-	public SynchronousClient(Session session, Destination invocationDestination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
-		super(session, invocationDestination, interfaze, timeout, trueAsync);
+	public SynchronousClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+		super(session, destination, interfaze, timeout, trueAsync);
 		correlationIdToResults = new ConcurrentHashMap<String, Exchanger<Results>>();
 	}
 	
@@ -75,8 +75,8 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 		message.setJMSReplyTo(resultsQueue);
 		Exchanger<Results> exchanger = new Exchanger<Results>();
 		correlationIdToResults.put(correlationId, exchanger);
-		log.trace("SENDING: " + method + " -> " + invocationDestination);
-		producer.send(invocationDestination, message);
+		log.trace("SENDING: " + method + " -> " + destination);
+		producer.send(destination, message);
 		try {
 			Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
 			Object value = results.getValue();
@@ -86,19 +86,19 @@ public class SynchronousClient extends Client implements InvocationHandler, Seri
 				return value;
 		} catch (TimeoutException e) {
 			correlationIdToResults.remove(correlationId);
-			log.warn("timed out waiting for results from invocation: " + method + " on " + invocationDestination);
+			log.warn("timed out waiting for results from invocation: " + method + " on " + destination);
 			return null;
 		}
 		
 	}
 	
 	public String toString() {
-		return "<"+getClass().getSimpleName()+": "+invocationDestination+">";
+		return "<"+getClass().getSimpleName()+": "+destination+">";
 	}
 	
 	public boolean equals(Object object) {
 		// strip off proxy if necessary
 		Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;
-		return (that instanceof SynchronousClient && this.invocationDestination.equals(((SynchronousClient)that).invocationDestination));
+		return (that instanceof SynchronousClient && this.destination.equals(((SynchronousClient)that).destination));
 	}
 }
