@@ -76,9 +76,9 @@ public class Client {
 		// create a Client
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
-		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, clientDestination, timeout);
-		serverFactory.createServer(guiModel, executor);
-		clientServer = serverFactory.createSynchronousClient();
+		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
+		serverFactory.createServer(guiModel, clientDestination, executor);
+		clientServer = serverFactory.createSynchronousClient(clientDestination);
 
 		// pass the client over to the server to attach as a listener..
 		Registration<Object, Object> registration = serverProxy.registerView(clientServer); 

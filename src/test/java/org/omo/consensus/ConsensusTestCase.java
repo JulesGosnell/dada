@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
 import javax.jms.Session;
 
 import junit.framework.TestCase;
@@ -27,6 +28,7 @@ public class ConsensusTestCase extends TestCase {
 	private ConnectionFactory connectionFactory;
 	private Connection connection;
 	private Session session;
+	private Destination destination;
 	private RemotingFactory<Paxos> remotingFactory;
 	
 	public static interface Paxos {
@@ -43,10 +45,9 @@ public class ConsensusTestCase extends TestCase {
 		connection = connectionFactory.createConnection();
 		connection.start();
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		
-		DestinationFactory destinationFactory = new TopicFactory();
+		destination = session.createTopic(Paxos.class.getCanonicalName());
 		int timeout = 5000;
-		remotingFactory = new RemotingFactory<Paxos>(session, Paxos.class, destinationFactory, timeout);
+		remotingFactory = new RemotingFactory<Paxos>(session, Paxos.class, timeout);
 	}
 
 	protected void tearDown() throws Exception {
@@ -61,11 +62,11 @@ public class ConsensusTestCase extends TestCase {
 	
 	public void testTopic() throws Exception {
 		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-		Paxos server1 = remotingFactory.createServer(new PaxosImpl(), executor);
-		Paxos server2 = remotingFactory.createServer(new PaxosImpl(), executor);
-		Paxos server3 = remotingFactory.createServer(new PaxosImpl(), executor);
-		Paxos server4 = remotingFactory.createServer(new PaxosImpl(), executor);
-		AsynchronousClient client = remotingFactory.createAsynchronousClient();
+		Paxos server1 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
+		Paxos server2 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
+		Paxos server3 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
+		Paxos server4 = remotingFactory.createServer(new PaxosImpl(), destination, executor);
+		AsynchronousClient client = remotingFactory.createAsynchronousClient(destination);
 		
 		client.invoke(Paxos.class.getMethod("foo", (Class<?>[])null), null, new AsyncInvocationListener(){
 

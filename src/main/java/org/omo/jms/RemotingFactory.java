@@ -27,30 +27,15 @@ public class RemotingFactory<T> {
 	private final Session session;
 	private final Class<?> interfaze;
 	private final SimpleMethodMapper mapper;
-	private final Destination invocationDestination;
 	private final long timeout;
 	private final MessageProducer producer;
-	
-	public RemotingFactory(Session session, Class<?> interfaze, DestinationFactory factory, long timeout) throws JMSException {
-		this(session, interfaze, factory.create(session, interfaze.getCanonicalName()), timeout);
-	}
 	
 	public RemotingFactory(Session session, Class<?> interfaze, long timeout) throws JMSException {
 		this.session = session;
 		this.interfaze = interfaze;
 		this.mapper = new SimpleMethodMapper(interfaze);
-		this.invocationDestination = null;
 		this.timeout = timeout;
-		this.producer = session.createProducer(null);
-	}
-	
-	public RemotingFactory(Session session, Class<?> interfaze, Destination invocationDestination, long timeout) throws JMSException {
-		this.session = session;
-		this.interfaze = interfaze;
-		this.mapper = new SimpleMethodMapper(interfaze);
-		this.invocationDestination = invocationDestination;
-		this.timeout = timeout;
-		this.producer = session.createProducer(null);
+		producer = session.createProducer(null);
 	}
 	
 	//--------------------------------------------------------------------
@@ -58,30 +43,27 @@ public class RemotingFactory<T> {
 	public class Server implements MessageListener {
 
 		private final Log log;
-
 		private final T target;
 		private final MessageConsumer consumer;
-		protected final Executor executor; 
+		private final Executor executor; 
 
-		public Server(T target, Destination invocationDestination, Executor executor) throws JMSException {
+		public Server(T target, Destination destination, Executor executor) throws JMSException {
 			this.target = target;
-			log = LogFactory.getLog(Server.class);
-			consumer = session.createConsumer(invocationDestination);
-			log.info("consuming messages on: " + invocationDestination);
-			consumer.setMessageListener(this);
 			this.executor = executor;
+			log = LogFactory.getLog(Server.class);
+			consumer = session.createConsumer(destination);
+			log.info("consuming messages on: " + destination);
+			consumer.setMessageListener(this);
 		}
-
 		
 		@Override
 		public void onMessage(final Message message) {
-			Runnable runnable = new Runnable() { // TODO: use a thread pool
+			Runnable runnable = new Runnable() {
 				@Override
 				public void run() {
 					process(message);
 				}
 			};
-			//new Thread(runnable).start(); // TODO: use ThreadPool
 			executor.execute(runnable);
 		}
 		
@@ -132,25 +114,15 @@ public class RemotingFactory<T> {
 	}
 	
 	//----------------------------------------------------------------------------
-	
-	public T createServer(T target, Executor executor) throws JMSException {
-		new Server(target, invocationDestination, executor);
-		return target;
-	}
 
-	public T createServer(T target, Destination invocationDestination, Executor executor) throws JMSException {
-		new Server(target, invocationDestination, executor);
+	public T createServer(T target, Destination destination, Executor executor) throws JMSException {
+		new Server(target, destination, executor);
 		return target;
 	}
 	
-	public T createSynchronousClient() throws IllegalArgumentException, JMSException {
+	public T createSynchronousClient(Destination destination) throws IllegalArgumentException, JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
-	}
-	
-	public T createSynchronousClient(Destination invocationDestination) throws IllegalArgumentException, JMSException {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
+		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout));
 	}
 	
 	public T createSynchronousClient(String destinationName) throws IllegalArgumentException, JMSException {
@@ -159,7 +131,7 @@ public class RemotingFactory<T> {
 		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, invocationDestination, interfaze, timeout));
 	}
 	
-	public AsynchronousClient createAsynchronousClient() throws JMSException {
-		return new AsynchronousClient(session, invocationDestination, interfaze, timeout);
+	public AsynchronousClient createAsynchronousClient(Destination destination) throws JMSException {
+		return new AsynchronousClient(session, destination, interfaze, timeout);
 	}
 }

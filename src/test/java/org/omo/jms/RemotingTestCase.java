@@ -12,7 +12,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.TemporaryQueue;
 
 import junit.framework.TestCase;
 
@@ -72,10 +74,11 @@ public class RemotingTestCase extends TestCase {
 	}
 
 	public void testProxyRemotability() throws Exception {
-		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, session.createTemporaryQueue(), timeout);
+		TemporaryQueue queue = session.createTemporaryQueue();
+		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
 		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100)); 
-		Server server = factory.createServer(new ServerImpl(), executor);
-		Server localClient = factory.createSynchronousClient();
+		Server server = factory.createServer(new ServerImpl(), queue, executor);
+		Server localClient = factory.createSynchronousClient(queue);
 		String foo = "foo";
 		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
 		
@@ -94,12 +97,12 @@ public class RemotingTestCase extends TestCase {
 	}
 	
 	public void testRemoteInvocation() throws Exception {
-		QueueFactory queueFactory = new QueueFactory();
-		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, queueFactory, timeout);
+		Queue queue = session.createQueue(Server.class.getCanonicalName());
+		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
 		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-		final Server server = factory.createServer(new ServerImpl(), executor);
-		final Server client = factory.createSynchronousClient();
-		AsynchronousClient asynchronousClient = factory.createAsynchronousClient();
+		final Server server = factory.createServer(new ServerImpl(), queue, executor);
+		final Server client = factory.createSynchronousClient(queue);
+		AsynchronousClient asynchronousClient = factory.createAsynchronousClient(queue);
 		
 		{
 			final String string = "test";
