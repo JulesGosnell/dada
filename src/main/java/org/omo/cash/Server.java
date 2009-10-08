@@ -94,7 +94,7 @@ public class Server {
 		String tradeFeedName = serverName + ".TradeFeed";
 		Feed<Integer, Trade> tradeFeed;
 		{
-			DateRange dateRange = new DateRange();
+			DateRange dateRange = new DateRange(numDays);
 			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
 			remote(tradeFeed, tradeRemotingFactory);
 		}
@@ -108,7 +108,7 @@ public class Server {
 				partitions.add(partition);
 				remote(partition, tradeRemotingFactory);
 
-				DateRange dateRange = new DateRange();
+				DateRange dateRange = new DateRange(numDays);
 				
 				for (Date d : dateRange.getValues()) {
 					String dayName = partitionName+".ValueDate="+dateFormat.format(d);
@@ -275,8 +275,8 @@ public class Server {
 		nameToModel.put(name, model);
 		Queue queue = session.createQueue(name);
 		serverFactory.createServer(model, queue, executor);
-		model.start();
 		metaModel.update(Collections.singleton(name));
+		model.start();
 		LOG.info("Listening on: " + name);
 	}
 
