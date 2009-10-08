@@ -16,7 +16,7 @@ import javax.jms.Session;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class AsynchronousClient extends Client {
+public class AsynchronousClient extends AbstractClient {
 	
 	private final Log log = LogFactory.getLog(getClass());
 	private final Map<String, AsyncInvocationListener> correlationIdToListener = new ConcurrentHashMap<String, AsyncInvocationListener>();

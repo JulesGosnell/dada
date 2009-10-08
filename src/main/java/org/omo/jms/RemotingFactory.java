@@ -77,7 +77,7 @@ public class RemotingFactory<T> {
 				correlationId = message.getJMSCorrelationID();
 				replyTo = message.getJMSReplyTo();
 				ObjectMessage request = (ObjectMessage)message;
-				Client.setCurrentSession(session);
+				AbstractClient.setCurrentSession(session);
 				Invocation invocation = (Invocation)request.getObject();
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();

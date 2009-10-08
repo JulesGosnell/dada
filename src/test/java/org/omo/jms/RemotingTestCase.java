@@ -87,7 +87,7 @@ public class RemotingTestCase extends TestCase {
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		oos.writeObject(localClient);
 		log.info("UNMARSHALLING PROXY...");
-		Client.setCurrentSession(session);
+		AbstractClient.setCurrentSession(session);
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		ObjectInputStream ois = new ObjectInputStream(bais);
 		Server remoteClient = (Server)ois.readObject();

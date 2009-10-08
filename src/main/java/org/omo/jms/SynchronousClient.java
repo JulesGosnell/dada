@@ -24,7 +24,7 @@ import javax.jms.Session;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class SynchronousClient extends Client implements InvocationHandler, Serializable {
+public class SynchronousClient extends AbstractClient implements InvocationHandler, Serializable {
 
 	private final Log log = LogFactory.getLog(getClass());
 	private /* final */ transient Map<String, Exchanger<Results>> correlationIdToResults;

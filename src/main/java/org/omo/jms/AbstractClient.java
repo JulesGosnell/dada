@@ -20,7 +20,7 @@ import javax.jms.Session;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class Client implements MessageListener, Serializable {
+public abstract class AbstractClient implements MessageListener, Serializable {
 
 	protected long timeout;
 	protected Class<?> interfaze;
@@ -36,7 +36,7 @@ public abstract class Client implements MessageListener, Serializable {
 	protected /* final */ SimpleMethodMapper mapper;
 	protected transient int count; // used by subclasses
 	
-	public Client(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
+	public AbstractClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
 		init(session, destination, interfaze, timeout, trueAsync);
 	}
 	

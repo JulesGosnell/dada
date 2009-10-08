@@ -17,9 +17,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.jms.AsyncInvocationListener;
 import org.omo.jms.AsynchronousClient;
-import org.omo.jms.DestinationFactory;
 import org.omo.jms.RemotingFactory;
-import org.omo.jms.TopicFactory;
 
 
 public class ConsensusTestCase extends TestCase {

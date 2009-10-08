@@ -313,11 +313,11 @@ public class Server {
 		activeMQConnectionFactory.setCopyMessageOnSend(false);
 		ConnectionFactory connectionFactory = activeMQConnectionFactory;
 		ActiveMQConnection c = (ActiveMQConnection)connectionFactory.createConnection();
-		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
+		LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));
 		LOG.info("OptimizedMessageDispatch="+c.isOptimizedMessageDispatch());
+		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
 		LOG.info("CopyMessageOnSend="+c.isCopyMessageOnSend());
 		LOG.info("Broker URL: " +url);
-		LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));
 		new Server(name, connectionFactory);
 		// keep going...
 		while (true)
