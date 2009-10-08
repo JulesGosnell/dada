@@ -255,7 +255,8 @@ public class Server {
 				remote(feed, serverFactory);
 		}
 		
-		// agreggate models
+		// aggregate models
+
 		// Trades for a given Account for a given Day/Period (aggregated across all Partitions)
 		for (Date d : dateRange.getValues()) {
 			for (int a=0; a<numAccounts; a++) {
@@ -266,6 +267,19 @@ public class Server {
 				remote(accounts, tradeRemotingFactory);
 				for (int p=0; p<numPartitions; p++) {
 					view(prefix + "." + p + suffix, accounts);
+				}
+			}
+		}
+		// Trades for a given Currency for a given Day/Period (aggregated across all Partitions)
+		for (Date d : dateRange.getValues()) {
+			for (int c=0; c<numCurrencies; c++) {
+				String prefix = serverName + ".Trade";
+				String suffix = ".ValueDate="+dateFormat.format(d)+".Currency="+c;
+				String currenciesName = prefix + suffix;
+				FilteredModelView<Integer, Trade> currencies = new FilteredModelView<Integer, Trade>(currenciesName, tradeMetadata, IDENTITY_FILTER);
+				remote(currencies, tradeRemotingFactory);
+				for (int p=0; p<numPartitions; p++) {
+					view(prefix + "." + p + suffix, currencies);
 				}
 			}
 		}
