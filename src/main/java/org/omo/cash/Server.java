@@ -93,14 +93,13 @@ public class Server {
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		String tradeFeedName = serverName + ".TradeFeed";
 		Feed<Integer, Trade> tradeFeed;
+		DateRange dateRange = new DateRange(numDays);
 		{
-			DateRange dateRange = new DateRange(numDays);
 			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
 			remote(tradeFeed, tradeRemotingFactory);
 		}
 		{
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
-			Map<String, FilteredModelView<Integer, Trade>> aggregatedAccounts = new HashMap<String, FilteredModelView<Integer,Trade>>();
 			for (int p=0; p<numPartitions; p++) {
 
 				String partitionName = serverName + ".Trade."+p;
@@ -108,8 +107,7 @@ public class Server {
 				partitions.add(partition);
 				remote(partition, tradeRemotingFactory);
 
-				DateRange dateRange = new DateRange(numDays);
-				
+
 				for (Date d : dateRange.getValues()) {
 					String dayName = partitionName+".ValueDate="+dateFormat.format(d);
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
@@ -123,16 +121,6 @@ public class Server {
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
 						view(dayName, account);
 						remote(account, tradeRemotingFactory);
-
-						String accountsName = serverName + ".Trade.ValueDate="+dateFormat.format(d)+".Account="+a;
-						FilteredModelView<Integer, Trade> accounts = aggregatedAccounts.get(accountsName);
-						if (accounts == null) {
-							accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
-							aggregatedAccounts.put(accountsName, accounts);
-							remote(accounts, tradeRemotingFactory);
-							//model.register(new AmountAggregator(d, a));
-						}
-						view(accountName, accounts);
 					}
 
 					for (int c=0; c<numCurrencies; c++) {
@@ -265,6 +253,21 @@ public class Server {
 				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
 				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, timeout);
 				remote(feed, serverFactory);
+		}
+		
+		// agreggate models
+		// Trades for a given Account for a given Day/Period (aggregated across all Partitions)
+		for (Date d : dateRange.getValues()) {
+			for (int a=0; a<numAccounts; a++) {
+				String prefix = serverName + ".Trade";
+				String suffix = ".ValueDate="+dateFormat.format(d)+".Account="+a;
+				String accountsName = prefix + suffix;
+				FilteredModelView<Integer, Trade> accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
+				remote(accounts, tradeRemotingFactory);
+				for (int p=0; p<numPartitions; p++) {
+					view(prefix + "." + p + suffix, accounts);
+				}
+			}
 		}
 	}
 
