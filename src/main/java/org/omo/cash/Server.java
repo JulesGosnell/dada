@@ -256,7 +256,22 @@ public class Server {
 		}
 		
 		// aggregate models
+		
+		// Total the trades for each day for a given account within a given partition
+		for (int p=0; p<numPartitions; p++) {
+			for (int a=0; a<numAccounts; a++) {
+				for (Date d : dateRange.getValues()) {
+					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;
+					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
+					String viewName = serverName + ".Trade." + p + ".Account=" + a + ".Total";
+					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a);
+					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>)nameToModel.get(modelName);
+					model.register(aggregator);					
+				}
+			}
+		}
 
+		
 		// Trades for a given Account for a given Day/Period (aggregated across all Partitions)
 		for (Date d : dateRange.getValues()) {
 			for (int a=0; a<numAccounts; a++) {

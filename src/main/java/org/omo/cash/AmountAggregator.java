@@ -1,6 +1,7 @@
 package org.omo.cash;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -13,10 +14,12 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	private final Log log = LogFactory.getLog(getClass());
 	private volatile BigDecimal aggregate = new BigDecimal(0);
 	
-	private final int day;
+	private final String name;
+	private final Date day;
 	private final int account;
 	
-	public AmountAggregator(int day, int account) {
+	public AmountAggregator(String name, Date day, int account) {
+		this.name = name;
 		this.day = day;
 		this.account = account;
 	}
@@ -27,17 +30,17 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	
 	public void insert(Trade value) {
 		aggregate = aggregate.add(value.getAmount());
-		log.debug("total["+day+","+account+"]: " + aggregate);
+		log.debug(name + ": " + aggregate);
 	}
 	
 	public void update(Trade oldValue, Trade newValue) {
 		aggregate = aggregate.add(newValue.getAmount()).subtract(oldValue.getAmount());
-		log.debug("total["+day+","+account+"]: " + aggregate);
+		log.debug(name + ": " + aggregate);
 	}
 	
 	public void remove(Trade value) {
 		aggregate = aggregate.subtract(value.getAmount());
-		log.debug("total["+day+","+account+"]: " + aggregate);
+		log.debug(name + ": " + aggregate);
 	}
 	
 }
