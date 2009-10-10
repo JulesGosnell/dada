@@ -1,0 +1,35 @@
+aggregate by partition
+
+aggregate by amount
+aggregate by rolling up with initial balance : account projection for given period set
+aggregate by amount : total due for a/c on given period
+filter by account : trades for a/c on given period
+filter by period : trades for given period
+trade
+
+list of trades and totals should be different models - since I may want to just listen to the latter
+
+nostro and currency projections should be separate models/event for same reason
+
+should each model be capable of aggregating, e.g. a Total for its trades ?
+
+if each model was responsible for totalling itself, a view aggregating all the totals would have to listen to all the data as well as the aggregations....
+
+Aggregators are NOT remotable - they calling must be GUARANTEED, because the are managing DELTAS
+Does ordering matter - it shouldn't do - but we need to know whether w are inserting/updating/deleting...
+Aggregators should be attached synchronously - otherwise they will need versioning
+an aggregator should not be writing onto the wire as receivers of this info may thread inputs and therefore get info in wrrong order
+can messages overtake each other on wire - best to assume so.
+therefore messages over wire must be versioned
+if aggregators are to be unversioned, they must listen and notify synchronously and invm - lets start that way.
+
+an aggregating model must maintain version and key
+
+should we just allow models to support listening to multiple
+"attributes" - i.e. "data", "total", "all" - is this better than
+multiple models ?
+
+
+attach a synchronous aggregator to each account's day's trades
+feed them into a ProjectionModel which maintains a row for each account with a version
+each time a row is updated it recalculates the projection and increments the version

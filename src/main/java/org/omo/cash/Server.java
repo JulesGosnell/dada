@@ -260,11 +260,15 @@ public class Server {
 		// Total the trades for each day for a given account within a given partition
 		for (int p=0; p<numPartitions; p++) {
 			for (int a=0; a<numAccounts; a++) {
+				String name = serverName + ".Trade." + p + ".Account="+a + ".Totals";
+				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
+				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(name, accountTotalMetadata, new IdentityFilter<AccountTotal>());
+				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout));
 				for (Date d : dateRange.getValues()) {
-					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;
+					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;					
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
 					String viewName = serverName + ".Trade." + p + ".Account=" + a + ".Total";
-					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a);
+					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>)nameToModel.get(modelName);
 					model.register(aggregator);					
 				}
