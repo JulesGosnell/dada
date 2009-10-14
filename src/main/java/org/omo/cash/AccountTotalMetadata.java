@@ -21,7 +21,7 @@ public class AccountTotalMetadata implements Metadata<Date, AccountTotal> {
 	public Object getAttributeValue(AccountTotal value, int index) {
 		switch (index) {
 		case 0:
-			return value.getDate();
+			return value.getId();
 		case 1:
 			return value.getVersion();
 		case 2:
@@ -32,6 +32,6 @@ public class AccountTotalMetadata implements Metadata<Date, AccountTotal> {
 
 	@Override
 	public Date getKey(AccountTotal value) {
-		return value.getDate();
+		return value.getId();
 	}
 }

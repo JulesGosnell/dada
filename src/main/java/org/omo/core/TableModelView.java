@@ -24,7 +24,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 
 	public Metadata<K, V> getMetadata() {
 		try {
-		latch.await();
+			latch.await();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
@@ -37,7 +37,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	
 	@Override
 	public void update(Collection<V> updates) {
-		//log.debug("UPDATE("+updates+")");
+		log.info("update: " + updates);
 		Metadata<K, V> metadata = getMetadata();
 		if (updates != null)
 			for (V insertion : updates) {

@@ -3,10 +3,10 @@ package org.omo.cash;
 import java.math.BigDecimal;
 import java.util.Date;
 
-import org.omo.core.DatumImpl;
+import org.omo.core.IntegerDatum;
 
 
-public class Trade extends DatumImpl {
+public class Trade extends IntegerDatum {
 
 	private final Date valueDate;
 	private final BigDecimal amount;
@@ -42,6 +42,6 @@ public class Trade extends DatumImpl {
 	// Object
 	@Override
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + " valueDate=" + valueDate + ", account=" + account + ", currency=" + currency + "]>";
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + " valueDate=" + valueDate + ", account=" + account + ", currency=" + currency + ", amount=" + amount +"]>";
 	}
 }

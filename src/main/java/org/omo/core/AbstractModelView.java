@@ -87,10 +87,11 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 	}
 
 	// TODO: move aggregation up into an interface
-	public void register(Aggregator<? extends Object, V> aggregator) {
+	public Registration<K, V> register(Aggregator<? extends Object, V> aggregator) {
 		Collection<Aggregator<? extends Object, V>> newAggregators = new ArrayList<Aggregator<? extends Object,V>>(aggregators);
 		newAggregators.add(aggregator);
 		aggregators = newAggregators;
+		return new Registration<K, V>(null, getValues());
 	}
 
 	public void deregister(Aggregator<? extends Object, V> aggregator) {

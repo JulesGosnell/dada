@@ -10,7 +10,7 @@ import java.util.List;
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
 
-public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V> {
+public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
 
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
@@ -33,6 +33,7 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 	
 	@Override
 	public void update(Collection<V> updates) {
+		log.info(name + ": update: " + updates);
 		// TODO: too long/complicated - simplify...
 		List<V> updates2 = new ArrayList<V>();
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
@@ -42,11 +43,12 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 			IPersistentMap current = originalCurrent;
 			IPersistentMap historic = originalHistoric;
 			for (V newValue : updates) {
-				final int key = newValue.getId();
+				final K key = newValue.getId();
 				final V oldCurrentValue = (V)current.valAt(key);
 				if (oldCurrentValue != null) {
 					if (oldCurrentValue.getVersion() >= newValue.getVersion()) {
 						// ignore out of sequence update...
+						log.trace("ignoring: " + oldCurrentValue + "is more recent than " + newValue);
 					} else {
 						if (filter(newValue)) {
 							// update current value
@@ -60,6 +62,7 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
+								log.trace("retiring: filter rejection: " + newValue);
 								for (Aggregator<? extends Object, V> aggregator : aggregators)
 									aggregator.remove(oldCurrentValue);
 							}  catch (Exception e) {
@@ -73,6 +76,7 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 					if (oldHistoricValue != null) {
 						if (oldHistoricValue.getVersion() >= newValue.getVersion()) {
 							// ignore out of sequence update...
+							log.trace("ignoring: " + oldHistoricValue + "is more recent than " + newValue);
 						} else {
 							if (filter(newValue)) {
 								// unretire value
@@ -80,6 +84,7 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
 									updates2.add(newValue);
+									log.trace("un-retiring: filter acceptance: " + newValue);
 									for (Aggregator<? extends Object, V> aggregator : aggregators)
 										aggregator.insert(newValue);
 								} catch (Exception e) {
@@ -89,6 +94,8 @@ public class FilteredModelView<K, V extends Datum> extends AbstractModelView<K,V
 								// bring retired version up to date
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
+								//for (Aggregator<? extends Object, V> aggregator : aggregators)
+								//	aggregator.update(oldHistoricValue, newValue);
 							}
 						}
 					} else {

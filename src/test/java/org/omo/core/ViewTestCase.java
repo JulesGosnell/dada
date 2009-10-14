@@ -19,7 +19,7 @@ public class ViewTestCase extends TestCase {
 		super.tearDown();
 	}
 	
-	static class BooleanDatum extends DatumImpl {
+	static class BooleanDatum extends IntegerDatum {
 		
 		final boolean flag;
 
@@ -69,15 +69,6 @@ public class ViewTestCase extends TestCase {
 		assertTrue(counter.count==1);
 	}
 
-	class StringDatum extends BooleanDatum {
-		String string;
-		
-		StringDatum(int id, boolean flag, String string) {
-			super(id, flag);
-			this.string = string;
-		}
-	}
-	
 	class IsTrueFilter implements Filter<StringDatum> {
 		
 		public boolean apply(StringDatum value) {

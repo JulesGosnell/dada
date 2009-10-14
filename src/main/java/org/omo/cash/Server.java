@@ -1,10 +1,10 @@
 package org.omo.cash;
 
+import java.math.BigDecimal;
 import java.rmi.server.UID;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,7 +38,6 @@ import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.ModelView;
 import org.omo.core.Partitioner;
-import org.omo.core.Range;
 import org.omo.core.Registration;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
@@ -62,6 +61,7 @@ public class Server {
 	private final int numBalances= 100;
 	private final int numCompanies = 10;
 	private final int timeout = 60 * 1000; // 1 minute
+	private final long feedPeriod = 100L; // 1 second
 
 	private static final Log LOG = LogFactory.getLog(Server.class);
 
@@ -95,7 +95,7 @@ public class Server {
 		Feed<Integer, Trade> tradeFeed;
 		DateRange dateRange = new DateRange(numDays);
 		{
-			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), 100L, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
+			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
 			remote(tradeFeed, tradeRemotingFactory);
 		}
 		{
@@ -123,13 +123,13 @@ public class Server {
 						remote(account, tradeRemotingFactory);
 					}
 
-					for (int c=0; c<numCurrencies; c++) {
-						String currencyName = dayName+".Currency="+c;
-						Filter<Trade> currencyFilter = new CurrencyFilter(c);
-						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, currencyFilter);
-						view(dayName, currency);
-						remote(currency, tradeRemotingFactory);
-					}
+//					for (int c=0; c<numCurrencies; c++) {
+//						String currencyName = dayName+".Currency="+c;
+//						Filter<Trade> currencyFilter = new CurrencyFilter(c);
+//						ModelView<Integer, Trade> currency= new FilteredModelView<Integer, Trade>(currencyName, tradeMetadata, currencyFilter);
+//						view(dayName, currency);
+//						remote(currency, tradeRemotingFactory);
+//					}
 				}
 			}
 			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
@@ -148,112 +148,112 @@ public class Server {
 		}
 
 		// adding AccountFeed
-		{
-			String feedName = serverName + ".AccountFeed";
-			IntrospectiveMetadata<Integer, Account> metadata = new IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
-			Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer, Account>(){
-				@Override
-				public Collection<Account> createNewValues(Range<Integer> range) {
-					Collection<Account> values = new ArrayList<Account>(range.size());
-					for (int id : range.getValues())
-						values.add(new Account(id, 0));
-					return values;
-				}
-
-				@Override
-				public Account createNewVersion(Account original) {
-					return new Account(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Account item) {
-					return item.getId();
-				}};
-				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
-				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, timeout);
-				remote(feed, serverFactory);
-		}
-		// adding CurrencyFeed
-		{
-			String feedName = serverName + ".CurrencyFeed";
-			Feed.Strategy<Integer, Currency> strategy = new Feed.Strategy<Integer, Currency>(){
-
-				@Override
-				public Collection<Currency> createNewValues(Range<Integer> range) {
-					Collection<Currency> values = new ArrayList<Currency>(range.size());
-					for (int id : range.getValues())
-						values.add(new Currency(id, 0));
-					return values;
-				}
-
-				@Override
-				public Currency createNewVersion(Currency original) {
-					return new Currency(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Currency item) {
-					return item.getId();
-				}};
-				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
-				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
-				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, timeout);
-				remote(feed, serverFactory);
-		}
-		// adding BalanceFeed
-		{
-			String feedName = serverName + ".BalanceFeed";
-			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
-
-				@Override
-				public Collection<Balance> createNewValues(Range<Integer> range) {
-					Collection<Balance> values = new ArrayList<Balance>(range.size());
-					for (int id : range.getValues())
-						values.add(new Balance(id, 0));
-					return values;
-				}
-
-				@Override
-				public Balance createNewVersion(Balance original) {
-					return new Balance(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Balance item) {
-					return item.getId();
-				}};
-				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
-				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
-				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, timeout);
-				remote(feed, serverFactory);
-		}
-		// adding CompanyFeed
-		{
-			String feedName = serverName + ".CompanyFeed";
-			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
-
-				@Override
-				public Collection<Company> createNewValues(Range<Integer> range) {
-					Collection<Company> values = new ArrayList<Company>(range.size());
-					for (int id : range.getValues())
-						values.add(new Company(id, 0));
-					return values;
-				}
-
-				@Override
-				public Company createNewVersion(Company original) {
-					return new Company(original.getId(), original.getVersion()+1);
-				}
-
-				@Override
-				public Integer getKey(Company item) {
-					return item.getId();
-				}};
-				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
-				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
-				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, timeout);
-				remote(feed, serverFactory);
-		}
+//		{
+//			String feedName = serverName + ".AccountFeed";
+//			IntrospectiveMetadata<Integer, Account> metadata = new IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
+//			Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer, Account>(){
+//				@Override
+//				public Collection<Account> createNewValues(Range<Integer> range) {
+//					Collection<Account> values = new ArrayList<Account>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Account(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Account createNewVersion(Account original) {
+//					return new Account(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Account item) {
+//					return item.getId();
+//				}};
+//				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
+//				RemotingFactory<Model<Integer, Account>> serverFactory = new RemotingFactory<Model<Integer, Account>>(session, Model.class, timeout);
+//				remote(feed, serverFactory);
+//		}
+//		// adding CurrencyFeed
+//		{
+//			String feedName = serverName + ".CurrencyFeed";
+//			Feed.Strategy<Integer, Currency> strategy = new Feed.Strategy<Integer, Currency>(){
+//
+//				@Override
+//				public Collection<Currency> createNewValues(Range<Integer> range) {
+//					Collection<Currency> values = new ArrayList<Currency>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Currency(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Currency createNewVersion(Currency original) {
+//					return new Currency(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Currency item) {
+//					return item.getId();
+//				}};
+//				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
+//				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
+//				RemotingFactory<Model<Integer, Currency>> serverFactory = new RemotingFactory<Model<Integer, Currency>>(session, Model.class, timeout);
+//				remote(feed, serverFactory);
+//		}
+//		// adding BalanceFeed
+//		{
+//			String feedName = serverName + ".BalanceFeed";
+//			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
+//
+//				@Override
+//				public Collection<Balance> createNewValues(Range<Integer> range) {
+//					Collection<Balance> values = new ArrayList<Balance>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Balance(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Balance createNewVersion(Balance original) {
+//					return new Balance(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Balance item) {
+//					return item.getId();
+//				}};
+//				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
+//				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
+//				RemotingFactory<Model<Integer, Balance>> serverFactory = new RemotingFactory<Model<Integer, Balance>>(session, Model.class, timeout);
+//				remote(feed, serverFactory);
+//		}
+//		// adding CompanyFeed
+//		{
+//			String feedName = serverName + ".CompanyFeed";
+//			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer, Company>(){
+//
+//				@Override
+//				public Collection<Company> createNewValues(Range<Integer> range) {
+//					Collection<Company> values = new ArrayList<Company>(range.size());
+//					for (int id : range.getValues())
+//						values.add(new Company(id, 0));
+//					return values;
+//				}
+//
+//				@Override
+//				public Company createNewVersion(Company original) {
+//					return new Company(original.getId(), original.getVersion()+1);
+//				}
+//
+//				@Override
+//				public Integer getKey(Company item) {
+//					return item.getId();
+//				}};
+//				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
+//				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
+//				RemotingFactory<Model<Integer, Company>> serverFactory = new RemotingFactory<Model<Integer, Company>>(session, Model.class, timeout);
+//				remote(feed, serverFactory);
+//		}
 		
 		// aggregate models
 		
@@ -267,10 +267,14 @@ public class Server {
 				for (Date d : dateRange.getValues()) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;					
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
-					String viewName = serverName + ".Trade." + p + ".Account=" + a + ".Total";
 					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>)nameToModel.get(modelName);
-					model.register(aggregator);					
+					accountTotal.update(Collections.singleton(new AccountTotal(d, 0, a, new BigDecimal(0))));
+					Registration<Integer, Trade> registration = model.register(aggregator);
+					LOG.info("registering aggregator with: " + modelName + " and feeding: " + name);
+					for (Trade trade : registration.getData()) {
+						aggregator.insert(trade);
+					}
 				}
 			}
 		}
@@ -289,19 +293,19 @@ public class Server {
 				}
 			}
 		}
-		// Trades for a given Currency for a given Day/Period (aggregated across all Partitions)
-		for (Date d : dateRange.getValues()) {
-			for (int c=0; c<numCurrencies; c++) {
-				String prefix = serverName + ".Trade";
-				String suffix = ".ValueDate="+dateFormat.format(d)+".Currency="+c;
-				String currenciesName = prefix + suffix;
-				FilteredModelView<Integer, Trade> currencies = new FilteredModelView<Integer, Trade>(currenciesName, tradeMetadata, IDENTITY_FILTER);
-				remote(currencies, tradeRemotingFactory);
-				for (int p=0; p<numPartitions; p++) {
-					view(prefix + "." + p + suffix, currencies);
-				}
-			}
-		}
+//		// Trades for a given Currency for a given Day/Period (aggregated across all Partitions)
+//		for (Date d : dateRange.getValues()) {
+//			for (int c=0; c<numCurrencies; c++) {
+//				String prefix = serverName + ".Trade";
+//				String suffix = ".ValueDate="+dateFormat.format(d)+".Currency="+c;
+//				String currenciesName = prefix + suffix;
+//				FilteredModelView<Integer, Trade> currencies = new FilteredModelView<Integer, Trade>(currenciesName, tradeMetadata, IDENTITY_FILTER);
+//				remote(currencies, tradeRemotingFactory);
+//				for (int p=0; p<numPartitions; p++) {
+//					view(prefix + "." + p + suffix, currencies);
+//				}
+//			}
+//		}
 	}
 
 	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?,?>>();

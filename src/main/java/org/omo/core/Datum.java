@@ -2,9 +2,9 @@ package org.omo.core;
 
 import java.io.Serializable;
 
-public interface Datum extends Serializable, Comparable<Datum> {
+public interface Datum<K> extends Serializable, Comparable<Datum<K>> {
 
-	int getId();
+	K getId();
 	int getVersion();
 
 }

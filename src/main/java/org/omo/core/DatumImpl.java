@@ -1,17 +1,17 @@
 package org.omo.core;
 
-public class DatumImpl implements Datum {
+public abstract class DatumImpl<K> implements Datum<K> {
 
-	protected final int id;
+	protected final K id;
 	protected final int version;
 
-	public DatumImpl(int id, int version) {
+	public DatumImpl(K id, int version) {
 		this.id = id;
 		this.version = version;
 	}
 	
 	@Override
-	public int getId() {
+	public K getId() {
 		return id;
 	}
 
@@ -19,18 +19,10 @@ public class DatumImpl implements Datum {
 	public int getVersion() {
 		return version;
 	}
-	
-	// Object
+
 	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]>";
 	}
-
-	// Comparable
-	@Override
-	public int compareTo(Datum datum) {
-		return id - datum.getId();
-	}
-
 
 }

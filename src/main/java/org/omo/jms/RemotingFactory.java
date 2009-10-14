@@ -104,7 +104,7 @@ public class RemotingFactory<T> {
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
 					response.setObject(results);
-					log.trace("SENDING: " + results + " -> " + replyTo);
+					log.trace("RESPONDING: " + results + " -> " + replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
 					log.warn("problem replying to message: " + response, e);
