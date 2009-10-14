@@ -33,7 +33,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
-			log.info(name + ": new version: " + newValue);
+			log.trace(name + ": new version: " + newValue);
 			notifyUpdates(Collections.singleton(newValue));
 		}
 	};

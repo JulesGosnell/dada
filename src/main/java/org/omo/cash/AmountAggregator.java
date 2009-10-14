@@ -37,19 +37,19 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	
 	public synchronized void insert(Trade value) {
 		aggregate = aggregate.add(value.getAmount());
-		log.info(name + ": insert: " + value);
+		log.trace(name + ": insert: " + value);
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	
 	public synchronized void update(Trade oldValue, Trade newValue) {
 		aggregate = aggregate.add(newValue.getAmount()).subtract(oldValue.getAmount());
-		log.info(name + ": update: " + oldValue + " -> " + newValue);
+		log.trace(name + ": update: " + oldValue + " -> " + newValue);
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	
 	public synchronized void remove(Trade value) {
 		aggregate = aggregate.subtract(value.getAmount());
-		log.info(name + ": remove: " + value);
+		log.trace(name + ": remove: " + value);
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	

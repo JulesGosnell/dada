@@ -37,7 +37,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	
 	@Override
 	public void update(Collection<V> updates) {
-		log.info("update: " + updates);
+		log.trace("update: " + updates);
 		Metadata<K, V> metadata = getMetadata();
 		if (updates != null)
 			for (V insertion : updates) {

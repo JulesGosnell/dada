@@ -33,7 +33,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 	
 	@Override
 	public void update(Collection<V> updates) {
-		log.info(name + ": update: " + updates);
+		//log.trace(name + ": update: " + updates);
 		// TODO: too long/complicated - simplify...
 		List<V> updates2 = new ArrayList<V>();
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
