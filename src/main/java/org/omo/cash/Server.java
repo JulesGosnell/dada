@@ -259,11 +259,18 @@ public class Server {
 		
 		// Total the trades for each day for a given account within a given partition
 		for (int p=0; p<numPartitions; p++) {
+			// build a projection for this account for the following days...
+			String accountProjectionName = serverName + ".Trade." + p + ".AccountProjection";
+			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(dateRange);
+			FilteredModelView<Integer, Projection> accountProjection= new FilteredModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata, new IdentityFilter<Projection>());
+			remote(accountProjection, new RemotingFactory<Model<Integer, Projection>>(session, Model.class, timeout));
+			
 			for (int a=0; a<numAccounts; a++) {
-				String name = serverName + ".Trade." + p + ".Account="+a + ".Totals";
+				String accountTotalName = serverName + ".Trade." + p + ".Account="+a + ".Total";
 				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
-				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(name, accountTotalMetadata, new IdentityFilter<AccountTotal>());
+				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata, new IdentityFilter<AccountTotal>());
 				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout));
+				
 				for (Date d : dateRange.getValues()) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;					
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
@@ -271,10 +278,11 @@ public class Server {
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>)nameToModel.get(modelName);
 					accountTotal.update(Collections.singleton(new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.register(aggregator);
-					LOG.info("registering aggregator with: " + modelName + " and feeding: " + name);
+					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
 					for (Trade trade : registration.getData()) {
 						aggregator.insert(trade);
 					}
+					// attach aggregators to Total models to power Projection models
 				}
 			}
 		}
