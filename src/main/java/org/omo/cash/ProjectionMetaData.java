@@ -29,7 +29,7 @@ public class ProjectionMetaData implements Metadata<Integer, Projection> {
 		switch (index) {
 		case 0:
 			return value.getId();
-		case 2:
+		case 1:
 			return value.getVersion();
 		default:
 			return value.getPosition(index - 2);

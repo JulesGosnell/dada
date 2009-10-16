@@ -33,7 +33,7 @@ public class AccountTotal extends DatumImpl<Date> {
 	// Object
 	@Override
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]>";
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]: " + amount + ">";
 	}
 
 

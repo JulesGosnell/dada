@@ -61,7 +61,7 @@ public class Server {
 	private final int numBalances= 100;
 	private final int numCompanies = 10;
 	private final int timeout = 60 * 1000; // 1 minute
-	private final long feedPeriod = 100L; // 1 second
+	private final long feedPeriod = 100L; // millis
 
 	private static final Log LOG = LogFactory.getLog(Server.class);
 
@@ -271,6 +271,11 @@ public class Server {
 				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata, new IdentityFilter<AccountTotal>());
 				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout));
 				
+				// attach aggregators to Total models to power Projection models
+				String projectionModelAggregator = "";
+				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a, accountProjection);
+				accountTotal.register(projectionAggregator);
+				
 				for (Date d : dateRange.getValues()) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;					
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
@@ -282,7 +287,6 @@ public class Server {
 					for (Trade trade : registration.getData()) {
 						aggregator.insert(trade);
 					}
-					// attach aggregators to Total models to power Projection models
 				}
 			}
 		}
