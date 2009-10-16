@@ -44,6 +44,24 @@ import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
 import org.omo.jms.RemotingFactory;
 
+//  TODO:
+// scalability:
+// work out AMQ incantation to reduce threads - increase dates/accounts/currencies etc
+// can we reduce footprint ? increase trade size and number of trades - how big can we go
+// snapshotting and journalling - consider...
+// how quickly can a snapshot be loaded ?
+// how much impact does making in-vm listeners concurrent have on startup
+// can we deserialise parts of the same snapshot concurrently ?
+// investigate java6 optimisations
+// what can we do to reduce filtering costs
+// if we are only looking at a portion of all the trades (e.g. a 6 week window) does that reduce startup time ?
+
+// functionality:
+// run partitions from separate spring configs
+// aggregate projections from all partitions
+// produce and aggregate currency projections
+// investigate mono/c# - java comms - xml/protocol-buffers/etc. ?
+
 public class Server {
 
 	private static final IdentityFilter<Trade> IDENTITY_FILTER = new IdentityFilter<Trade>();
