@@ -28,12 +28,12 @@ import javax.swing.event.ListSelectionListener;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.omo.core.JView;
 import org.omo.core.Model;
 import org.omo.core.Registration;
 import org.omo.core.TableModelView;
 import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
-import org.omo.old.demo.JView;
 
 public class Client {
 	

@@ -6,9 +6,6 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.spi.LoggerFactory;
-import org.omo.cash.Projection;
-
 
 public class ProjectionTestCase extends TestCase {
 

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.omo.old.demo;
+package org.omo.core;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
