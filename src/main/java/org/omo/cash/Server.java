@@ -43,6 +43,8 @@ import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
 import org.omo.jms.RemotingFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 //  TODO:
 // scalability:
@@ -71,11 +73,11 @@ public class Server {
 	private final int maxQueuedJobs = 100;
 	private final int maxThreads = 10;
 	private final int minThreads = 10;
-	private final int numTrades = 1000;
+	private final int numTrades = 10000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
-	private final int numAccounts = 2;
-	private final int numCurrencies = 2;
+	private final int numAccounts = 10;
+	private final int numCurrencies = 10;
 	private final int numBalances= 100;
 	private final int numCompanies = 10;
 	private final int timeout = 60 * 1000; // 1 minute
@@ -354,7 +356,7 @@ public class Server {
 		Model<Integer, Trade> model; 
 		View<Integer, Trade> v;
 		
-		if (false) {
+		if (true) {
 			model = tradeRemotingFactory.createSynchronousClient(modelName, true); 
 			Destination clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, timeout);
@@ -375,12 +377,28 @@ public class Server {
 	 */
 	public static void main(String[] args) throws Exception {
 		String name = (args.length == 0 ? "Server" : args[0]);
-		String url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
+		boolean usePeerProtocol = false;
+		String url;
+		//System.setProperty("org.apache.activemq.UseDedicatedTaskRunner", "false"); // causes: RejectedExecutionException - need to inject our own Executor strategy
+		if (usePeerProtocol) {
+			url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
+		} else {
+			// url = "tcp://localhost:61616";
+			url = "vm://" + name +"?marshal=false&broker.persistent=false&create=false";
+//			BrokerService broker = new BrokerService();
+//			broker.setBrokerName(name);
+//			broker.addConnector("tcp://localhost:61616");
+//			//broker.addConnector(connector)
+//			broker.setT
+//			broker.start();
+//			broker.start();
+		    ApplicationContext context = new ClassPathXmlApplicationContext("/application-context.xml");
+		    //SomeClass bean = (SomeClass) context.getBean("myBean");
+		}
 		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
-		System.setProperty("org.apache.activemq.UseDedicatedTaskRunner", "false");
 		activeMQConnectionFactory.setOptimizedMessageDispatch(true);
 		activeMQConnectionFactory.setObjectMessageSerializationDefered(true);
-		activeMQConnectionFactory.setCopyMessageOnSend(false);
+		//activeMQConnectionFactory.setCopyMessageOnSend(false); // seems to cause NullPtrExcs
 		ConnectionFactory connectionFactory = activeMQConnectionFactory;
 		ActiveMQConnection c = (ActiveMQConnection)connectionFactory.createConnection();
 		LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));

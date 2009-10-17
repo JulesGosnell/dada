@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 public class Invocation implements Serializable {
 
-
 	private final int methodIndex;
 	private final Object[] args;
 	

@@ -1,14 +1,13 @@
 package org.omo.cash;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.omo.core.Aggregator;
 import org.omo.core.View;
-
-import edu.emory.mathcs.backport.java.util.Collections;
 
 // TODO: to lock or to copy-on-write ?
 
