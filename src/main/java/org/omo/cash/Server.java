@@ -70,17 +70,17 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 	
-	private final int maxQueuedJobs = 100;
-	private final int maxThreads = 10;
+	private final int maxQueuedJobs = 1000000;
+	private final int maxThreads = 100;
 	private final int minThreads = 10;
-	private final int numTrades = 10000;
+	private final int numTrades = 1000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
-	private final int numAccounts = 10;
+	private final int numAccounts = 2;
 	private final int numCurrencies = 10;
 	private final int numBalances= 100;
 	private final int numCompanies = 10;
-	private final int timeout = 60 * 1000; // 1 minute
+	private final int timeout = 10 * 60 * 1000; // 1 minute
 	private final long feedPeriod = 100L; // millis
 
 	private static final Log LOG = LogFactory.getLog(Server.class);
@@ -383,17 +383,10 @@ public class Server {
 		if (usePeerProtocol) {
 			url = "peer://" + name + "/broker0?broker.persistent=false&useJmx=false";
 		} else {
-			// url = "tcp://localhost:61616";
 			url = "vm://" + name +"?marshal=false&broker.persistent=false&create=false";
-//			BrokerService broker = new BrokerService();
-//			broker.setBrokerName(name);
-//			broker.addConnector("tcp://localhost:61616");
-//			//broker.addConnector(connector)
-//			broker.setT
-//			broker.start();
-//			broker.start();
 		    ApplicationContext context = new ClassPathXmlApplicationContext("/application-context.xml");
-		    //SomeClass bean = (SomeClass) context.getBean("myBean");
+		    for (String name2 : context.getBeanDefinitionNames())
+		    	System.out.println(name2);
 		}
 		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
 		activeMQConnectionFactory.setOptimizedMessageDispatch(true);

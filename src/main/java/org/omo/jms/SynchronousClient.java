@@ -86,6 +86,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			correlationIdToResults.put(correlationId, exchanger);
 			log.trace("SENDING SYNC: " + method + " -> " + destination);
 			producer.send(destination, message);
+			long start = System.currentTimeMillis();
 			try {
 				Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
 				Object value = results.getValue();
@@ -94,9 +95,11 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 				else
 					return value;
 			} catch (TimeoutException e) {
+				long elapsed = System.currentTimeMillis() - start;
 				correlationIdToResults.remove(correlationId);
-				log.warn("timed out waiting for results from invocation: " + method + " on " + destination);
-				return null;
+				log.warn("timeout was: " + timeout);
+				log.warn("timed out, after " + elapsed + " millis, waiting for results from invocation: " + method + " on " + destination);
+				throw e;
 			}
 		}
 		

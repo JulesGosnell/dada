@@ -43,6 +43,9 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 			IPersistentMap current = originalCurrent;
 			IPersistentMap historic = originalHistoric;
 			for (V newValue : updates) {
+				
+				// TODO: if version==0, then we needn't check for existing versions - this is the first...
+				
 				final K key = newValue.getId();
 				final V oldCurrentValue = (V)current.valAt(key);
 				if (oldCurrentValue != null) {

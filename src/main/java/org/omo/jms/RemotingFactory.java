@@ -58,6 +58,7 @@ public class RemotingFactory<T> {
 		
 		@Override
 		public void onMessage(final Message message) {
+			//process(message);
 			Runnable runnable = new Runnable() {
 				@Override
 				public void run() {
