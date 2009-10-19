@@ -33,7 +33,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
-			log.trace(name + ": new version: " + newValue);
+			logger.trace(name + ": new version: " + newValue);
 			notifyUpdates(Collections.singleton(newValue));
 		}
 	};
@@ -56,13 +56,13 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	
 	@Override
 	public void start() {
-		log.debug("creating values...");
+		logger.debug("creating values...");
 		Collection<V> updates = strategy.createNewValues(range);
 		for (V update : updates)
 			vs.put(strategy.getKey(update), update); // TODO - what happened to the code create the value - range should only be responsible for the key
-		log.debug("notifying " + updates.size() +" values...");
+		logger.debug("notifying " + updates.size() +" values...");
 		notifyUpdates(updates);
-		log.debug("starting timer...");
+		logger.debug("starting timer...");
 		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	

@@ -5,7 +5,7 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.LoggerFactory;
 
 public class ProjectionTestCase extends TestCase {
 
@@ -25,7 +25,7 @@ public class ProjectionTestCase extends TestCase {
 		totals.add(new BigDecimal(-0));
 
 		Projection projection = new Projection(50, 100, totals);
-		LogFactory.getLog(getClass()).info(projection);
+		LoggerFactory.getLogger(getClass()).info(projection.toString());
 
 		assertTrue(projection.getId() == 50);
 		assertTrue(projection.getVersion() == 100);

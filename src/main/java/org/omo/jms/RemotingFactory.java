@@ -14,8 +14,8 @@ import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO: reuse more code between these classes...
 // TODO: support topic/multi-shot result aggregation
@@ -42,7 +42,7 @@ public class RemotingFactory<T> {
 	
 	public class Server implements MessageListener {
 
-		private final Log log;
+		private final Logger logger;
 		private final T target;
 		private final MessageConsumer consumer;
 		private final Executor executor; 
@@ -50,9 +50,9 @@ public class RemotingFactory<T> {
 		public Server(T target, Destination destination, Executor executor) throws JMSException {
 			this.target = target;
 			this.executor = executor;
-			log = LogFactory.getLog(Server.class);
+			logger = LoggerFactory.getLogger(Server.class);
 			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
-			log.info("consuming messages on: " + destination);
+			logger.info("consuming messages on: " + destination);
 			consumer.setMessageListener(this);
 		}
 		
@@ -83,7 +83,7 @@ public class RemotingFactory<T> {
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
-				log.trace("RECEIVING: " + method + " <- " + message.getJMSDestination());
+				logger.trace("RECEIVING: " + method + " <- " + message.getJMSDestination());
 				result = method.invoke(Server.this.target, args);
 			} catch (JMSException e) {
 				isException = true;
@@ -97,7 +97,7 @@ public class RemotingFactory<T> {
 			}
 
 			if (isException)
-				log.warn(result);
+				logger.warn(result.toString());
 			if (correlationId != null && replyTo != null) {
 				ObjectMessage response = null;
 				try {
@@ -105,10 +105,10 @@ public class RemotingFactory<T> {
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
 					response.setObject(results);
-					log.trace("RESPONDING: " + results + " -> " + replyTo);
+					logger.trace("RESPONDING: " + results + " -> " + replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
-					log.warn("problem replying to message: " + response, e);
+					logger.warn("problem replying to message: " + response, e);
 				}
 			}
 		}

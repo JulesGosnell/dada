@@ -26,18 +26,18 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.omo.core.JView;
 import org.omo.core.Model;
 import org.omo.core.Registration;
 import org.omo.core.TableModelView;
 import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Client {
 	
-	private final static Log LOG = LogFactory.getLog(Client.class);
+	private final static Logger LOG = LoggerFactory.getLogger(Client.class);
 	private final static Executor executor = new ThreadPoolExecutor(10, 10, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
 
 	private final String serverName;

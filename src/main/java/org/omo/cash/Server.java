@@ -24,8 +24,6 @@ import javax.jms.Session;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.omo.core.DateRange;
 import org.omo.core.Feed;
 import org.omo.core.Filter;
@@ -43,6 +41,8 @@ import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
 import org.omo.jms.RemotingFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -83,7 +83,7 @@ public class Server {
 	private final int timeout = 10 * 60 * 1000; // 1 minute
 	private final long feedPeriod = 100L; // millis
 
-	private static final Log LOG = LogFactory.getLog(Server.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
 	private final Executor executor =  new ThreadPoolExecutor(minThreads, maxThreads, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(maxQueuedJobs));
 	private final Adaptor<String, String> adaptor = new  Adaptor<String, String>() {@Override public String getKey(String value) {return value;}};

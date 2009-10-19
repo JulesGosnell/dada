@@ -2,16 +2,16 @@ package org.omo.cash;
 
 import java.util.Date;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.omo.core.Feed;
 import org.omo.core.IntrospectiveMetadata;
 import org.omo.core.Metadata;
 import org.omo.core.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TradeFeed extends Feed<Integer, Trade> {
 	
-	private static final Log log = LogFactory.getLog(TradeFeed.class);
+	private static final Logger logger = LoggerFactory.getLogger(TradeFeed.class);
 	
 	private static /* final */ Metadata<Integer, Trade> metadata;
 	
@@ -19,7 +19,7 @@ public class TradeFeed extends Feed<Integer, Trade> {
 		try {
 			metadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		} catch (Exception e) {
-			log.fatal("could not build metadata for TradeFeed", e);
+			logger.error("could not build metadata for TradeFeed", e);
 		}
 	}
 	

@@ -19,13 +19,13 @@ import javax.jms.TemporaryQueue;
 import junit.framework.TestCase;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class RemotingTestCase extends TestCase {
 
-	private final Log log = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected ConnectionFactory connectionFactory;
 	protected Connection connection;
@@ -82,18 +82,18 @@ public class RemotingTestCase extends TestCase {
 		String foo = "foo";
 		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
 		
-		log.info("MARSHALLING PROXY...");
+		logger.info("MARSHALLING PROXY...");
 		ByteArrayOutputStream baos =  new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		oos.writeObject(localClient);
-		log.info("UNMARSHALLING PROXY...");
+		logger.info("UNMARSHALLING PROXY...");
 		AbstractClient.setCurrentSession(session);
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		ObjectInputStream ois = new ObjectInputStream(bais);
 		Server remoteClient = (Server)ois.readObject();
-		log.info("REUSING PROXY...");
+		logger.info("REUSING PROXY...");
 		assertTrue(remoteClient.hashcode(foo) == server.hashcode(foo));
-		log.info("...DONE");
+		logger.info("...DONE");
 	}
 	
 	public void testRemoteInvocation() throws Exception {

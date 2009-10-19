@@ -7,15 +7,15 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.omo.core.Aggregator;
 import org.omo.core.DateRange;
 import org.omo.core.View;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProjectionAggregator implements Aggregator<Projection, AccountTotal> {
 
-	private final Log log = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final List<BigDecimal> positions;
 	private final List<Date> dates;

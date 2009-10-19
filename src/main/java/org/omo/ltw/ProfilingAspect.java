@@ -1,17 +1,17 @@
 package org.omo.ltw;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StopWatch;
 
 @Aspect
 public class ProfilingAspect {
 
-    private static final Log LOG = LogFactory.getLog(ProfilingAspect.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProfilingAspect.class);
 
 	@Around("methodsToBeProfiled()")
     public Object profile(ProceedingJoinPoint pjp) throws Throwable {

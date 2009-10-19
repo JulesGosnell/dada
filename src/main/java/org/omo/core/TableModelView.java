@@ -5,14 +5,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.swing.table.AbstractTableModel;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.emory.mathcs.backport.java.util.concurrent.CountDownLatch;
 
 public class TableModelView<K, V> extends AbstractTableModel implements View<K, V> {
 
-	private final Log log = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final CountDownLatch latch = new CountDownLatch(1);
 	private Metadata<K, V> metadata;
 	private final ConcurrentSkipListMap<K, V> map = new ConcurrentSkipListMap<K, V>();
@@ -37,7 +37,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	
 	@Override
 	public void update(Collection<V> updates) {
-		log.trace("update: " + updates);
+		logger.trace("update: " + updates);
 		Metadata<K, V> metadata = getMetadata();
 		if (updates != null)
 			for (V insertion : updates) {

@@ -3,12 +3,12 @@ package org.omo.ltw;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Aspect
 public class RelationalAspect {
@@ -23,7 +23,7 @@ public class RelationalAspect {
 		return table;
 	}
 	
-    private static final Log LOG = LogFactory.getLog(RelationalAspect.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RelationalAspect.class);
 
 	@Around("getters()")
     public Object adviseGetter(ProceedingJoinPoint pjp) throws Throwable {

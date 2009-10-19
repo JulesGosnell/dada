@@ -13,16 +13,16 @@ import javax.jms.Session;
 import junit.framework.TestCase;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.omo.jms.AsyncInvocationListener;
 import org.omo.jms.AsynchronousClient;
 import org.omo.jms.RemotingFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ConsensusTestCase extends TestCase {
 
-	private static final Log LOG = LogFactory.getLog(ConsensusTestCase.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ConsensusTestCase.class);
 	private ConnectionFactory connectionFactory;
 	private Connection connection;
 	private Session session;

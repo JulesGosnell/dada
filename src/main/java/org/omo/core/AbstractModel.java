@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 // TODO - merge with more recent code - concurrent modification issues in listener collection...
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractModel<K, V> implements Model<K, V> {
 
-	protected final Log log = LogFactory.getLog(getClass());
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected final String name;
 	
@@ -31,7 +31,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	
 	@Override
 	public Registration<K, V> registerView(View<K, V> view) {
-		log.debug("registering view: " + view);
+		logger.debug("registering view: " + view);
 		synchronized (views) {
 			views.add(view);
 		}
@@ -49,9 +49,9 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			success = views.remove(view);
 		}
 		if (success)
-			log.debug("deregistered view: " + view);
+			logger.debug("deregistered view: " + view);
 		else
-			log.warn("failed to deregister view: " + view);
+			logger.warn("failed to deregister view: " + view);
 		
 		return success;
 	}	
@@ -63,7 +63,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			try {
 				view.update(updates);
 			} catch (RuntimeException e) {
-				log.error("view notification failed: " + view + " <- " + updates, e);
+				logger.error("view notification failed: " + view + " <- " + updates, e);
 			}
 	}
 }

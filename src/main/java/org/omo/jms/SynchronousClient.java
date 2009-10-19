@@ -21,12 +21,12 @@ import javax.jms.Message;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SynchronousClient extends AbstractClient implements InvocationHandler, Serializable {
 
-	private final Log log = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private /* final */ transient Map<String, Exchanger<Results>> correlationIdToResults;
 	
 	public SynchronousClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
@@ -45,19 +45,19 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			String correlationID = message.getJMSCorrelationID();
 			Exchanger<Results> exchanger = correlationIdToResults.remove(correlationID);
 			if (exchanger == null) {
-				log.warn("no exchanger for message: " + message);
+				logger.warn("no exchanger for message: " + message);
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
-				log.trace("RECEIVING: " + results + " <- " + message.getJMSDestination());
+				logger.trace("RECEIVING: " + results + " <- " + message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
 		} catch(JMSException e) {
-			log.warn("problem unpacking message: " + message);
+			logger.warn("problem unpacking message: " + message);
 		} catch (InterruptedException e) {
 			// TODO: how should we deal with this...
 		} catch (TimeoutException e) {
-			log.warn("timed out waiting for exchange: " + message);
+			logger.warn("timed out waiting for exchange: " + message);
 		}
 	}
 	
@@ -75,7 +75,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 		boolean async = trueAsync && method.getReturnType().equals(Void.TYPE) && method.getExceptionTypes().length == 0;
 		
 		if (async) {
-			log.trace("SENDING ASYNC: " + method + " -> " + destination);
+			logger.trace("SENDING ASYNC: " + method + " -> " + destination);
 			producer.send(destination, message);
 			return null;
 		} else {
@@ -84,7 +84,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			message.setJMSReplyTo(resultsQueue);
 			Exchanger<Results> exchanger = new Exchanger<Results>();
 			correlationIdToResults.put(correlationId, exchanger);
-			log.trace("SENDING SYNC: " + method + " -> " + destination);
+			logger.trace("SENDING SYNC: " + method + " -> " + destination);
 			producer.send(destination, message);
 			long start = System.currentTimeMillis();
 			try {
@@ -97,8 +97,8 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			} catch (TimeoutException e) {
 				long elapsed = System.currentTimeMillis() - start;
 				correlationIdToResults.remove(correlationId);
-				log.warn("timeout was: " + timeout);
-				log.warn("timed out, after " + elapsed + " millis, waiting for results from invocation: " + method + " on " + destination);
+				logger.warn("timeout was: " + timeout);
+				logger.warn("timed out, after " + elapsed + " millis, waiting for results from invocation: " + method + " on " + destination);
 				throw e;
 			}
 		}

@@ -17,8 +17,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractClient implements MessageListener, Serializable {
 
@@ -27,7 +27,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 	protected Destination destination;
 	protected boolean trueAsync;
 
-	protected transient Log log;
+	protected transient Logger logger;
 	protected transient UUID uuid;
 	protected transient Session session;
 	protected transient MessageProducer producer;
@@ -41,7 +41,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 	}
 	
 	protected void init(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
-		log = LogFactory.getLog(getClass());
+		logger = LoggerFactory.getLogger(getClass());
 		this.interfaze = interfaze;
 		mapper = new SimpleMethodMapper(interfaze);
 		this.destination = destination;
@@ -74,7 +74,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		try {
 			init(session, destination, interfaze, timeout, trueAsync);
 		} catch (JMSException e) {
-			log.error("unexpected problem reconstructing client proxy", e);
+			logger.error("unexpected problem reconstructing client proxy", e);
 		}
 	}
 	

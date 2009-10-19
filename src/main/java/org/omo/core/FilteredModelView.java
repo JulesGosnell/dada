@@ -51,7 +51,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 				if (oldCurrentValue != null) {
 					if (oldCurrentValue.getVersion() >= newValue.getVersion()) {
 						// ignore out of sequence update...
-						log.trace("ignoring: " + oldCurrentValue + "is more recent than " + newValue);
+						logger.trace("ignoring: " + oldCurrentValue + "is more recent than " + newValue);
 					} else {
 						if (filter(newValue)) {
 							// update current value
@@ -65,11 +65,11 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
-								log.trace("retiring: filter rejection: " + newValue);
+								logger.trace("retiring: filter rejection: " + newValue);
 								for (Aggregator<? extends Object, V> aggregator : aggregators)
 									aggregator.remove(oldCurrentValue);
 							}  catch (Exception e) {
-								log.error("unexpected problem retiring value");
+								logger.error("unexpected problem retiring value");
 							}
 						}
 					}
@@ -79,7 +79,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 					if (oldHistoricValue != null) {
 						if (oldHistoricValue.getVersion() >= newValue.getVersion()) {
 							// ignore out of sequence update...
-							log.trace("ignoring: " + oldHistoricValue + "is more recent than " + newValue);
+							logger.trace("ignoring: " + oldHistoricValue + "is more recent than " + newValue);
 						} else {
 							if (filter(newValue)) {
 								// unretire value
@@ -87,11 +87,11 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
 									updates2.add(newValue);
-									log.trace("un-retiring: filter acceptance: " + newValue);
+									logger.trace("un-retiring: filter acceptance: " + newValue);
 									for (Aggregator<? extends Object, V> aggregator : aggregators)
 										aggregator.insert(newValue);
 								} catch (Exception e) {
-									log.error("unexpected problem unretiring value");
+									logger.error("unexpected problem unretiring value");
 								}
 							} else {
 								// bring retired version up to date

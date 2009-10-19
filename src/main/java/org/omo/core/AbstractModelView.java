@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 
-	protected final Log log = LogFactory.getLog(getClass());
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
 	protected final String name;
 	protected final Metadata<K, V> metadata;
 	private final Object viewsLock = new Object();
@@ -50,7 +50,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 			newViews.add(view);
 			views = newViews;
-			log.debug("" + this + " registered view:" + view + " -> " + views);
+			logger.debug("" + this + " registered view:" + view + " -> " + views);
 		}
 		Collection<V> values = getValues();
 		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
@@ -64,10 +64,10 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 				List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 				newViews.remove(view);
 				views = newViews;
-				log.debug("" + this + " deregistered view:" + view + " -> " + views);
+				logger.debug("" + this + " deregistered view:" + view + " -> " + views);
 			}
 		} catch (Exception e) {
-			log.error("unable to deregister view: " + view);
+			logger.error("unable to deregister view: " + view);
 		}
 		return true;
 	}

@@ -13,12 +13,12 @@ import javax.jms.Message;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AsynchronousClient extends AbstractClient {
 	
-	private final Log log = LogFactory.getLog(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, AsyncInvocationListener> correlationIdToListener = new ConcurrentHashMap<String, AsyncInvocationListener>();
 
 	public AsynchronousClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
@@ -34,18 +34,18 @@ public class AsynchronousClient extends AbstractClient {
 		message.setJMSReplyTo(resultsQueue);
 
 		correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
-		log.trace("SENDING: " + message + " -> " + destination);
+		logger.trace("SENDING: " + message + " -> " + destination);
 		producer.send(destination, message);			
 	}
 
 	@Override
 	public void onMessage(Message message) {
-		try{log.info("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
+		try{logger.info("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
 		try {
 			String correlationID = message.getJMSCorrelationID();
 			AsyncInvocationListener listener = correlationIdToListener.remove(correlationID); // one-shot - parameterize 
 			if (listener == null) {
-				log.warn("no listener for message: " + message);
+				logger.warn("no listener for message: " + message);
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
@@ -57,7 +57,7 @@ public class AsynchronousClient extends AbstractClient {
 				}
 			}
 		} catch (JMSException e) {
-			log.error("problem extracting data from message; "+message);
+			logger.error("problem extracting data from message; "+message);
 		}
 	}
 }
