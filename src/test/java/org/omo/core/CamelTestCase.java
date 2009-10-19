@@ -6,56 +6,58 @@ import junit.framework.TestCase;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.bean.ProxyHelper;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.util.jndi.JndiContext;
 
 public class CamelTestCase extends TestCase {
 	
-	private CamelContext camelContext;
-	
 	protected void setUp() throws Exception {
 		super.setUp();
-		camelContext = new DefaultCamelContext();
 	}
 
 	protected void tearDown() throws Exception {
-		camelContext = null;
 		super.tearDown();
 	}
 
-	public void testNothing() {
-		
+	public static interface Munger {
+		public String munge(String string);
 	}
 	
-	public void doNottestRemoting() throws Exception {
+	public static class MungerImpl implements Munger {
+		public String munge(String string) {
+			System.out.println("munging: " + string);
+			return string.toUpperCase();
+		}
+	}
+	
+	public void testRemoting() throws Exception {
+		MungerImpl munger = new MungerImpl();
+		String string = "hello";
+		String mungedString = munger.munge(string);
 		
+		JndiContext jndiContext = new JndiContext();
+		jndiContext.bind("munger", munger);
+		CamelContext camelContext = new DefaultCamelContext(jndiContext);
+		
+		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useShutdownHook=false");
+		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
+
 		camelContext.addRoutes(new RouteBuilder() {
-
 		    public void configure() {
-		        from("test-jms:queue:test.queue").to("file://test");
-		        // set up a listener on the file component
-		        from("file://test").process(new Processor() {
-
-		            public void process(Exchange e) {
-		                System.out.println("Received exchange: " + e.getIn());
-		            }
-		        });
+		        from("test-jms:queue:test.queue").to("bean:munger");
 		    }
 		});
-		
-		ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false");
-		// Note we can explicity name the component
-		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
-		ProducerTemplate template = camelContext.createProducerTemplate();
 		camelContext.start();
 
-		for (int i = 0; i < 10; i++) {
-		    template.sendBody("test-jms:queue:test.queue", "Test Message: " + i);
-		}
 
+		Munger proxy = ProxyHelper.createProxy(camelContext.getEndpoint("test-jms:queue:test.queue"), Munger.class);
+		assertTrue(proxy.munge(string).equals(mungedString));
+		assertTrue(proxy.munge(string).equals(mungedString));
+		
+		camelContext.stop();
+		
 	}
 }
