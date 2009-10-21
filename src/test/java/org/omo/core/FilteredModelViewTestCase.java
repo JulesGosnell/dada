@@ -123,8 +123,10 @@ public class FilteredModelViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void insert(Datum<Integer> value) {
-			total += value.getId();
+		public void insert(Collection<Datum<Integer>> values) {
+			for (Datum<Integer> value : values) {
+				total += value.getId();
+			}
 		}
 
 		@Override
@@ -226,8 +228,7 @@ public class FilteredModelViewTestCase extends TestCase {
 		// register an aggregator
 		Aggregator<Integer, Datum<Integer>> aggregator2 = new IdAggregator();
 		Registration<Integer, Datum<Integer>> registration = view.register(aggregator2);
-		for (Datum<Integer> datum : registration.getData())
-			aggregator2.insert(datum);
+		aggregator2.insert(registration.getData());
 		assertTrue(aggregator2.getAggregate() == 3);
 
 		Datum<Integer> datum13 = new IntegerDatum(3, 0);

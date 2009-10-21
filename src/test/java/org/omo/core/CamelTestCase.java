@@ -11,6 +11,7 @@ import org.apache.camel.component.bean.ProxyHelper;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.util.jndi.JndiContext;
+import org.slf4j.LoggerFactory;
 
 public class CamelTestCase extends TestCase {
 	
@@ -67,6 +68,8 @@ public class CamelTestCase extends TestCase {
 		 
 		// can we migrate a proxy and still use it ?
 		//assertTrue(proxy.munge(proxy, string).equals(mungedString));
+		
+		LoggerFactory.getLogger(getClass()).info("1:{}, 2:{}", "a", "b");
 	}
 	
 	// TODO: CAMEL proxies are not relocatable (Serialisable)... - can I replace their impl ?

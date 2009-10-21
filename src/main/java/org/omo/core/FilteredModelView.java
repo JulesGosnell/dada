@@ -10,6 +10,8 @@ import java.util.List;
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
 
+// TODO: collect together insertions and deliver to aggregator in single collection...
+
 public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
 
 	private final Object mapsLock = new Object(); // only needed by writers ...
@@ -31,11 +33,14 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 
 	// Model.Lifecycle
 	
+	// TODO: this method is too long and complicated...
 	@Override
 	public void update(Collection<V> updates) {
 		//log.trace(name + ": update: " + updates);
 		// TODO: too long/complicated - simplify...
 		List<V> updates2 = new ArrayList<V>();
+		int potentialSize = updates.size();
+		List<V> aggregatorInsertions = new ArrayList<V>(potentialSize);
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
 			final IPersistentMap originalCurrent = snapshot.getCurrent();
@@ -51,7 +56,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 				if (oldCurrentValue != null) {
 					if (oldCurrentValue.getVersion() >= newValue.getVersion()) {
 						// ignore out of sequence update...
-						logger.trace("ignoring: " + oldCurrentValue + "is more recent than " + newValue);
+						logger.trace("ignoring: {} is more recent than {}", oldCurrentValue, newValue);
 					} else {
 						if (filter(newValue)) {
 							// update current value
@@ -65,7 +70,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 								current = current.without(key);
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
-								logger.trace("retiring: filter rejection: " + newValue);
+								logger.trace("retiring: filter rejection: {}", newValue);
 								for (Aggregator<? extends Object, V> aggregator : aggregators)
 									aggregator.remove(oldCurrentValue);
 							}  catch (Exception e) {
@@ -88,8 +93,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 									historic = historic.without(key);
 									updates2.add(newValue);
 									logger.trace("un-retiring: filter acceptance: " + newValue);
-									for (Aggregator<? extends Object, V> aggregator : aggregators)
-										aggregator.insert(newValue);
+									aggregatorInsertions.add(newValue);
 								} catch (Exception e) {
 									logger.error("unexpected problem unretiring value");
 								}
@@ -97,6 +101,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 								// bring retired version up to date
 								historic = historic.assoc(key, newValue);
 								updates2.add(newValue);
+								// TODO: do aggregators worry about retired values ? 
 								//for (Aggregator<? extends Object, V> aggregator : aggregators)
 								//	aggregator.update(oldHistoricValue, newValue);
 							}
@@ -106,8 +111,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 							// adopt new value
 							current = current.assoc(key, newValue); 
 							updates2.add(newValue);
-							for (Aggregator<? extends Object, V> aggregator : aggregators)
-								aggregator.insert(newValue);
+							aggregatorInsertions.add(newValue);
 						} else {
 							// ignore value
 						}
@@ -120,5 +124,9 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 		}
 		if (updates2.size() > 0)
 			notifyUpdate(updates2);
+		if (aggregatorInsertions.size() > 0) {
+			for (Aggregator<? extends Object, V> aggregator : aggregators)
+				aggregator.insert(aggregatorInsertions);
+		}
 	}
 }

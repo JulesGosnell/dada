@@ -304,9 +304,7 @@ public class Server {
 					accountTotal.update(Collections.singleton(new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.register(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
-					for (Trade trade : registration.getData()) {
-						aggregator.insert(trade);
-					}
+					aggregator.insert(registration.getData());
 				}
 			}
 		}

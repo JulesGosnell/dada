@@ -1,6 +1,7 @@
 package org.omo.cash;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
@@ -34,9 +35,10 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		return aggregate;
 	}
 	
-	public synchronized void insert(Trade value) {
-		aggregate = aggregate.add(value.getAmount());
-		logger.trace(name + ": insert: " + value);
+	public synchronized void insert(Collection<Trade> values) {
+		for (Trade value : values) {
+			aggregate = aggregate.add(value.getAmount());
+		}
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	

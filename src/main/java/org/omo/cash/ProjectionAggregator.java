@@ -3,6 +3,7 @@ package org.omo.cash;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -41,16 +42,15 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 	}
 
 	@Override
-	public void insert(AccountTotal value) {
-		//log.info("insert: " + value);
-		Date date = value.getId();
-		int index = dates.indexOf(date);
-		Projection projection;
-		synchronized (positions) {
+	public synchronized void insert(Collection<AccountTotal> values) {
+		for (AccountTotal value : values) {
+			//log.info("insert: " + value);
+			Date date = value.getId();
+			int index = dates.indexOf(date);
 			positions.set(index, value.getAmount());
-			projection = new Projection(account, version++, positions);
 		}
-		view.update(Collections.singleton(projection));
+		Projection projection = new Projection(account, version++, positions);
+		view.update(Collections.singleton(projection)); // TODO: do we want this inside sync block ?
 	}
 
 	@Override
