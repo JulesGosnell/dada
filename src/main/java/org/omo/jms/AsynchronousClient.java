@@ -34,18 +34,18 @@ public class AsynchronousClient extends AbstractClient {
 		message.setJMSReplyTo(resultsQueue);
 
 		correlationIdToListener.put(correlationId, listener); // TODO: support a timeout after which this listener is removed...
-		logger.trace("SENDING: " + message + " -> " + destination);
+		logger.trace("SENDING: {} -> {}", message, destination);
 		producer.send(destination, message);			
 	}
 
 	@Override
 	public void onMessage(Message message) {
-		try{logger.info("RECEIVING: " + message + " <- " + message.getJMSDestination());}catch(Exception e){};
+	    try{logger.info("RECEIVING: {} <- {}", message, message.getJMSDestination());}catch(Exception e){};
 		try {
 			String correlationID = message.getJMSCorrelationID();
 			AsyncInvocationListener listener = correlationIdToListener.remove(correlationID); // one-shot - parameterize 
 			if (listener == null) {
-				logger.warn("no listener for message: " + message);
+				logger.warn("no listener for message: {}", message);
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
@@ -57,7 +57,7 @@ public class AsynchronousClient extends AbstractClient {
 				}
 			}
 		} catch (JMSException e) {
-			logger.error("problem extracting data from message; "+message);
+		        logger.error("problem extracting data from message: {}", message);
 		}
 	}
 }

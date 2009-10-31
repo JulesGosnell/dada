@@ -43,8 +43,9 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 
 	@Override
 	public synchronized void insert(Collection<AccountTotal> values) {
+		logger.debug("insert: size={}", values.size());
 		for (AccountTotal value : values) {
-			//log.info("insert: " + value);
+			//log.info("insert: {}", value);
 			Date date = value.getId();
 			int index = dates.indexOf(date);
 			positions.set(index, value.getAmount());
@@ -55,13 +56,13 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 
 	@Override
 	public void remove(AccountTotal value) {
-		//log.info("remove: " + value);
+		logger.debug("remove: size={}", 1);
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
 	public void update(AccountTotal oldValue, AccountTotal newValue) {
-		//log.info("update: " + oldValue + " -> " + newValue);
+		logger.debug("update: {} -> {}", oldValue, newValue);
 		Date date = newValue.getId();
 		int index = dates.indexOf(date);
 		Projection projection;

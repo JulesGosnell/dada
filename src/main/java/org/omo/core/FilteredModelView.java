@@ -36,7 +36,12 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 	// TODO: this method is too long and complicated...
 	@Override
 	public void update(Collection<V> updates) {
-		//log.trace(name + ": update: " + updates);
+		logger.debug("{}: update: size={}", name, updates.size());
+		
+		// TODO: lose later
+		if (updates.size() < 1)
+			logger.warn("wasteful message: 0 size update", new RuntimeException());
+		
 		// TODO: too long/complicated - simplify...
 		List<V> updates2 = new ArrayList<V>();
 		int potentialSize = updates.size();
@@ -84,7 +89,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 					if (oldHistoricValue != null) {
 						if (oldHistoricValue.getVersion() >= newValue.getVersion()) {
 							// ignore out of sequence update...
-							logger.trace("ignoring: " + oldHistoricValue + "is more recent than " + newValue);
+						        logger.trace("ignoring: {} is more recent than {}", oldHistoricValue, newValue);
 						} else {
 							if (filter(newValue)) {
 								// unretire value
@@ -92,7 +97,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 									current = current.assoc(key, newValue);
 									historic = historic.without(key);
 									updates2.add(newValue);
-									logger.trace("un-retiring: filter acceptance: " + newValue);
+									logger.trace("un-retiring: filter acceptance: {}", newValue);
 									aggregatorInsertions.add(newValue);
 								} catch (Exception e) {
 									logger.error("unexpected problem unretiring value");

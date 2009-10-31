@@ -36,6 +36,7 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	}
 	
 	public synchronized void insert(Collection<Trade> values) {
+		logger.debug("insert: size={}", values.size());
 		for (Trade value : values) {
 			aggregate = aggregate.add(value.getAmount());
 		}
@@ -43,14 +44,16 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	}
 	
 	public synchronized void update(Trade oldValue, Trade newValue) {
+		logger.debug("update: size={}", 1);
 		aggregate = aggregate.add(newValue.getAmount()).subtract(oldValue.getAmount());
-		logger.trace(name + ": update: " + oldValue + " -> " + newValue);
+		logger.trace(name + ": update: " + oldValue + " -> " + newValue); // TODO: slf4j-ise
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	
 	public synchronized void remove(Trade value) {
+		logger.debug("renove: size={}", 1);
 		aggregate = aggregate.subtract(value.getAmount());
-		logger.trace(name + ": remove: " + value);
+		logger.trace("{}: remove: {}", name, value);
 		view.update(Collections.singletonList(new AccountTotal(date, version++, account, aggregate)));
 	}
 	

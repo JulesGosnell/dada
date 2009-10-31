@@ -50,7 +50,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 			newViews.add(view);
 			views = newViews;
-			logger.debug("" + this + " registered view:" + view + " -> " + views);
+			logger.debug("{}: registered view: {}", name, view);
 		}
 		Collection<V> values = getValues();
 		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
@@ -67,7 +67,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 				logger.debug("" + this + " deregistered view:" + view + " -> " + views);
 			}
 		} catch (Exception e) {
-			logger.error("unable to deregister view: " + view);
+		    logger.error("unable to deregister view: {}", view);
 		}
 		return true;
 	}
@@ -76,7 +76,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 		//IPersistentSet snapshot = views;
 		List<View<K, V>> snapshot = views;
 		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
-		//log.info("NOTIFYING UPDATE ("+getName()+"): "+values);
+		//log.info("NOTIFYING UPDATE ({}): {}", getName(), values);
 		for (View<K, V> view : snapshot) {
 			view.update(values);
 		}

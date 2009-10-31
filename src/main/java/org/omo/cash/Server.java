@@ -5,6 +5,7 @@ import java.rmi.server.UID;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -70,10 +71,10 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 	
-	private final int maxQueuedJobs = 1000000;
+	private final int maxQueuedJobs = 1000;
 	private final int maxThreads = 100;
 	private final int minThreads = 10;
-	private final int numTrades = 1000;
+	private final int numTrades = 1000000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
 	private final int numAccounts = 2;
@@ -93,7 +94,8 @@ public class Server {
 	private final RemotingFactory<Model<Integer, Trade>> tradeRemotingFactory;
 
 	private final MapModelView<String, String> metaModel;
-
+	private final Feed<Integer, Trade> tradeFeed;
+	
 	public Server(String serverName, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
 		connection = connectionFactory.createConnection();
 		connection.start();
@@ -105,19 +107,19 @@ public class Server {
 			Metadata<String,String> modelMetadata = new StringMetadata("Name");
 			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(session, Model.class, timeout);
 			metaModel = new MapModelView<String, String>(name, modelMetadata, adaptor);
-			remote(metaModel, factory);
+			remote(metaModel, factory, true);
 		}
 		
 		// we'' randomize trade dates out over the next week...
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		String tradeFeedName = serverName + ".TradeFeed";
-		Feed<Integer, Trade> tradeFeed;
 		DateRange dateRange = new DateRange(numDays);
 		{
 			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
-			remote(tradeFeed, tradeRemotingFactory);
+			remote(tradeFeed, tradeRemotingFactory, false);
 		}
+		Collection<Date> dateRangeValues = dateRange.getValues();
 		{
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
 			for (int p=0; p<numPartitions; p++) {
@@ -125,22 +127,22 @@ public class Server {
 				String partitionName = serverName + ".Trade."+p;
 				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, IDENTITY_FILTER);
 				partitions.add(partition);
-				remote(partition, tradeRemotingFactory);
+				remote(partition, tradeRemotingFactory, true);
 
 
-				for (Date d : dateRange.getValues()) {
+				for (Date d : dateRangeValues) {
 					String dayName = partitionName+".ValueDate="+dateFormat.format(d);
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
 					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
 					view(partitionName, day);
-					remote(day, tradeRemotingFactory);
+					remote(day, tradeRemotingFactory, true);
 
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account="+a;
 						Filter<Trade> f = new AccountFilter(a);
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
 						view(dayName, account);
-						remote(account, tradeRemotingFactory);
+						remote(account, tradeRemotingFactory, true);
 					}
 
 //					for (int c=0; c<numCurrencies; c++) {
@@ -283,41 +285,44 @@ public class Server {
 			String accountProjectionName = serverName + ".Trade." + p + ".AccountProjection";
 			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(dateRange);
 			FilteredModelView<Integer, Projection> accountProjection= new FilteredModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata, new IdentityFilter<Projection>());
-			remote(accountProjection, new RemotingFactory<Model<Integer, Projection>>(session, Model.class, timeout));
+			remote(accountProjection, new RemotingFactory<Model<Integer, Projection>>(session, Model.class, timeout), true);
 			
 			for (int a=0; a<numAccounts; a++) {
 				String accountTotalName = serverName + ".Trade." + p + ".Account="+a + ".Total";
 				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
 				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata, new IdentityFilter<AccountTotal>());
-				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout));
+				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout), true);
 				
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
 				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a, accountProjection);
 				accountTotal.register(projectionAggregator);
 				
-				for (Date d : dateRange.getValues()) {
+				List<AccountTotal> accountTotals = new ArrayList<AccountTotal>(dateRangeValues.size());
+				for (Date d : dateRangeValues) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d)+".Account="+a;					
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate="+dateFormat.format(d) + ".Account=" + a + ".Total";
 					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>)nameToModel.get(modelName);
-					accountTotal.update(Collections.singleton(new AccountTotal(d, 0, a, new BigDecimal(0))));
+					accountTotals.add(new AccountTotal(d, 0, a, new BigDecimal(0)));
 					Registration<Integer, Trade> registration = model.register(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
 					aggregator.insert(registration.getData());
 				}
+				accountTotal.update(accountTotals);
+
 			}
 		}
 
 		
 		// Trades for a given Account for a given Day/Period (aggregated across all Partitions)
-		for (Date d : dateRange.getValues()) {
+		for (Date d : dateRangeValues) {
 			for (int a=0; a<numAccounts; a++) {
 				String prefix = serverName + ".Trade";
 				String suffix = ".ValueDate="+dateFormat.format(d)+".Account="+a;
 				String accountsName = prefix + suffix;
 				FilteredModelView<Integer, Trade> accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
-				remote(accounts, tradeRemotingFactory);
+				remote(accounts, tradeRemotingFactory, true);
 				for (int p=0; p<numPartitions; p++) {
 					view(prefix + "." + p + suffix, accounts);
 				}
@@ -340,14 +345,13 @@ public class Server {
 
 	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?,?>>();
 	
-	protected void remote(Model model, RemotingFactory serverFactory) throws JMSException {
+	protected void remote(Model model, RemotingFactory serverFactory, boolean start) throws JMSException {
 		String name = model.getName();
 		nameToModel.put(name, model);
 		Queue queue = session.createQueue(name);
 		serverFactory.createServer(model, queue, executor);
 		metaModel.update(Collections.singleton(name));
-		model.start();
-		LOG.info("Listening on: " + name);
+		if (start) model.start();
 	}
 
 	protected void view(String modelName, View<Integer, Trade> view) throws IllegalArgumentException, JMSException {
@@ -366,14 +370,24 @@ public class Server {
 		}
 
 		Registration<Integer, Trade> registration = model.registerView(v);
-		view.update(registration.getData());
+		Collection<Trade> data = registration.getData();
+		if (data.size() > 0)
+			view.update(data);
 	}
 
+	public void start() throws Exception {
+		long started = System.currentTimeMillis();
+		tradeFeed.start();
+		LOG.info("running in {} seconds", ((System.currentTimeMillis() - started) / 1000));
+	}
+	
+	
 	/**
 	 * @param args
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
+		long started = System.currentTimeMillis();
 		String name = (args.length == 0 ? "Server" : args[0]);
 		boolean usePeerProtocol = false;
 		String url;
@@ -397,8 +411,10 @@ public class Server {
 		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
 		LOG.info("CopyMessageOnSend="+c.isCopyMessageOnSend());
 		LOG.info("Broker URL: " +url);
-		new Server(name, connectionFactory);
+		Server server = new Server(name, connectionFactory);
+		LOG.info("started in {} seconds", ((System.currentTimeMillis() - started) / 1000));
 		// keep going...
+		server.start();
 		while (true)
 			try {
 				Thread.sleep(60*1000);

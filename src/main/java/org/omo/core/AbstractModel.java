@@ -31,7 +31,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	
 	@Override
 	public Registration<K, V> registerView(View<K, V> view) {
-		logger.debug("registering view: " + view);
+	        logger.debug("registering view: {}", view);
 		synchronized (views) {
 			views.add(view);
 		}
@@ -49,9 +49,9 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			success = views.remove(view);
 		}
 		if (success)
-			logger.debug("deregistered view: " + view);
+		        logger.debug("deregistered view: {}", view);
 		else
-			logger.warn("failed to deregister view: " + view);
+		        logger.warn("failed to deregister view: {}", view);
 		
 		return success;
 	}	
@@ -63,7 +63,8 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			try {
 				view.update(updates);
 			} catch (RuntimeException e) {
-				logger.error("view notification failed: " + view + " <- " + updates, e);
+			    logger.error("view notification failed: {} <- {}", view, updates);
+			    logger.error("", e);
 			}
 	}
 }

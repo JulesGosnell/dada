@@ -52,7 +52,7 @@ public class RemotingFactory<T> {
 			this.executor = executor;
 			logger = LoggerFactory.getLogger(Server.class);
 			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
-			logger.info("consuming messages on: " + destination);
+			logger.info("consuming messages on: {}", destination);
 			consumer.setMessageListener(this);
 		}
 		
@@ -83,7 +83,7 @@ public class RemotingFactory<T> {
 				int methodIndex = invocation.getMethodIndex();
 				Object args[] = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
-				logger.trace("RECEIVING: " + method + " <- " + message.getJMSDestination());
+				logger.trace("RECEIVING: {} <- {}", method, message.getJMSDestination());
 				result = method.invoke(Server.this.target, args);
 			} catch (JMSException e) {
 				isException = true;
@@ -105,10 +105,10 @@ public class RemotingFactory<T> {
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
 					response.setObject(results);
-					logger.trace("RESPONDING: " + results + " -> " + replyTo);
+					logger.trace("RESPONDING: {} -> {}",results, replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
-					logger.warn("problem replying to message: " + response, e);
+				        logger.warn("problem replying to message: {}", response, e);
 				}
 			}
 		}
