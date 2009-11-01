@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 // TODO: insert a ThreadingProxy, to thread dispatched calls, so reentrancy works.
 // TODO: apply patch to allow serialisation of Proxies
 // TODO: add 'final' to all interface signatures to tell Camel that these params are OUT only
-// TODO: replace our JMS remoting with Camels...
+// TODO: replace our JMS remoting with Camel's...
 
 public class CamelTestCase extends TestCase {
 
@@ -164,10 +164,10 @@ public class CamelTestCase extends TestCase {
 	public void testOutboundUnserialisable() throws Exception {
 		Unserialisable unserialisable = new Unserialisable();
 		String serialisable = "serialisable";
-		//assertTrue(1 == server.one(serialisable));
-		//assertTrue(1 == client.one(serialisable));
+		assertTrue(1 == server.one(serialisable));
+		assertTrue(1 == client.one(serialisable));
 		logger.info("serialisable OK");
-		//assertTrue(1 == server.one(unserialisable));
+		assertTrue(1 == server.one(unserialisable));
 		assertTrue(1 == client.one(unserialisable));
 		logger.info("unserialisable OK");
 	}

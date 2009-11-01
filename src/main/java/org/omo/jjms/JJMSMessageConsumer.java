@@ -20,11 +20,9 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	private final JJMSDestination destination;
 	private final String messageSelector;
 
-	private volatile MessageListener messageListener = defaultMessagelistener;
+	private volatile MessageListener messageListener = defaultMessagelistener; // start in synchronous mode
 	
 	protected JJMSMessageConsumer(JJMSDestination destination, String messageSelector) {
-		// default behaviour - push messages onto queue for receive() - replaced
-		// if user calls setMessageListener()...
 		this.destination = destination;
 		this.messageSelector = messageSelector;
 		destination.addMessageConsumer(this);
@@ -35,9 +33,7 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	
 	protected void dispatch(Message message) {
 		logger.info("receive {}", message);
-		MessageListener snapshot = messageListener;
-		if (snapshot != null)
-			snapshot.onMessage(message);
+		messageListener.onMessage(message);
 	}
 	
 	@Override
@@ -58,7 +54,6 @@ public class JJMSMessageConsumer implements MessageConsumer {
 
 	@Override
 	public Message receive() throws JMSException {
-		assert messageListener != null : "messageListener is unset";
 		try {
 			return queue.take();
 		} catch (InterruptedException e) {
@@ -68,7 +63,6 @@ public class JJMSMessageConsumer implements MessageConsumer {
 
 	@Override
 	public Message receive(long timeout) throws JMSException {
-		assert messageListener != null  : "messageListener is unset";
 		try {
 			return queue.poll(timeout, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
@@ -78,13 +72,19 @@ public class JJMSMessageConsumer implements MessageConsumer {
 
 	@Override
 	public Message receiveNoWait() throws JMSException {
-		assert messageListener != null : "messageListener is unset";
 		return queue.poll();
 	}
 
 	@Override
-	public void setMessageListener(MessageListener newMessageListener) throws JMSException {
-		this.messageListener = newMessageListener;
+	public void setMessageListener(MessageListener messageListener) throws JMSException {
+		if (messageListener == null) {
+			this.messageListener = defaultMessagelistener; // switch to synchronous mode
+		} else {
+			this.messageListener = messageListener; // switch to asynchronous mode
+			Message message;
+			while ((message = receiveNoWait()) != null) // empty synchronous queue onto asynchronous listener
+				messageListener.onMessage(message);
+		}
 	}
 
 }
