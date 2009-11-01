@@ -26,7 +26,7 @@ public class JJMSMessageConsumer implements MessageConsumer {
 		this.destination = destination;
 		this.messageSelector = messageSelector;
 		destination.addMessageConsumer(this);
-		if (messageSelector != null) // TODO: implement
+		if (messageSelector != null) // TODO: "A message selector is a String, whose syntax is based on a subset of the SQL92 conditional expression syntax."
 			throw new UnsupportedOperationException("NYI");
 		logger.info("open");
 	}
