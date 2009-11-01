@@ -1,11 +1,9 @@
 package org.omo.jjms;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -13,21 +11,25 @@ import javax.jms.MessageListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jms.JmsException;
-import org.springframework.jms.UncategorizedJmsException;
 
 public class JJMSMessageConsumer implements MessageConsumer {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private final JJMSSession session;
+	private final BlockingQueue<Message> queue = new LinkedBlockingQueue<Message>();
+	private final MessageListener defaultMessagelistener = new MessageListener() {@Override public void onMessage(Message message) {queue.add(message);}}; 
 	private final JJMSDestination destination;
-	//private final BlockingQueue<Message> queue = new LinkedBlockingQueue<Message>(100); 
+	private final String messageSelector;
 
-	private volatile MessageListener messageListener;
+	private volatile MessageListener messageListener = defaultMessagelistener;
 	
-	protected JJMSMessageConsumer(JJMSSession session, JJMSDestination destination) {
-		this.session = session;
+	protected JJMSMessageConsumer(JJMSDestination destination, String messageSelector) {
+		// default behaviour - push messages onto queue for receive() - replaced
+		// if user calls setMessageListener()...
 		this.destination = destination;
+		this.messageSelector = messageSelector;
+		destination.addMessageConsumer(this);
+		if (messageSelector != null) // TODO: implement
+			throw new UnsupportedOperationException("NYI");
 		logger.info("open");
 	}
 	
@@ -40,72 +42,49 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	
 	@Override
 	public void close() throws JMSException {
+		destination.removeMessageConsumer(this);
 		logger.info("close");
 	}
 
 	@Override
 	public MessageListener getMessageListener() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return messageListener;
 	}
 
 	@Override
 	public String getMessageSelector() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return messageSelector;
 	}
 
 	@Override
 	public Message receive() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		assert messageListener != null : "messageListener is unset";
+		try {
+			return queue.take();
+		} catch (InterruptedException e) {
+			throw new JMSException(e.getMessage());
+		}
 	}
-
-	private Message receiveHack;
 
 	@Override
 	public Message receive(long timeout) throws JMSException {
-		final CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-		final MessageListener oldMessageListener = messageListener;
-		setMessageListener(new MessageListener() {
-			@Override
-			public void onMessage(Message message) {
-				messageListener = oldMessageListener;
-				receiveHack = message;
-				latch.countDown();
-			}
-		});
+		assert messageListener != null  : "messageListener is unset";
 		try {
-			if (latch.await(timeout, TimeUnit.MILLISECONDS))
-				return receiveHack;
-			else {
-				logger.warn("receive() timed out");
-				return null;
-			}
+			return queue.poll(timeout, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
-			throw new UncategorizedJmsException(e);
+			throw new JMSException(e.getMessage());
 		}
 	}
 
 	@Override
 	public Message receiveNoWait() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		assert messageListener != null : "messageListener is unset";
+		return queue.poll();
 	}
 
 	@Override
 	public void setMessageListener(MessageListener newMessageListener) throws JMSException {
-		MessageListener oldMessageListener = this.messageListener;
 		this.messageListener = newMessageListener;
-		if (oldMessageListener == null) {
-			if (newMessageListener != null) {
-				destination.addMessageConsumer(this);
-			}
-		} else {
-			if (newMessageListener == null) {
-				destination.removeMessageConsumer(this);
-			}
-		}
 	}
 
 }

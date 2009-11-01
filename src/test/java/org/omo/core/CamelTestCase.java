@@ -30,6 +30,11 @@ import org.omo.jjms.JJMSConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: insert a ThreadingProxy, to thread dispatched calls, so reentrancy works.
+// TODO: apply patch to allow serialisation of Proxies
+// TODO: add 'final' to all interface signatures to tell Camel that these params are OUT only
+// TODO: replace our JMS remoting with Camels...
+
 public class CamelTestCase extends TestCase {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -90,28 +95,29 @@ public class CamelTestCase extends TestCase {
 	};
 	
 	public static interface Munger {
-		public String munge(String string);
-		public String munge(Munger munger, String string);
-		public Unserialisable noop(Unserialisable unserialisable);
-		public int one(Object object);
+		public String munge(final String string);
+		public String munge(final Munger munger, final String string);
+		public Unserialisable noop(final Unserialisable unserialisable);
+		public int one(final Object object);
 		
 	}
 	
 	public static class MungerImpl implements Munger {
-		public String munge(String string) {
+		public String munge(final String string) {
 			System.out.println("munging: " + string);
+			//new Exception().printStackTrace();
 			return string.toUpperCase();
 		}
-		public String munge(Munger munger, String string) {
+		public String munge(final Munger munger, final String string) {
 			return munger.munge(string);
 		}
 		
-		public Unserialisable noop(Unserialisable unserialisable) {
+		public Unserialisable noop(final Unserialisable unserialisable) {
 			System.out.println("nooping: " + unserialisable);
 			return unserialisable;
 		}
 
-		public int one(Object object) {
+		public int one(final Object object) {
 			System.out.println("one: " + object);
 			//new Exception().printStackTrace();
 			return 1;
@@ -126,7 +132,7 @@ public class CamelTestCase extends TestCase {
 
 	public void testProxyRemotability() throws Exception {
 		// can we migrate a proxy and still use it ?
-		//assertTrue(proxy.munge(proxy, string).equals(mungedString));
+		assertTrue(client.munge(client, string).equals(mungedString));
 		// TODO: CAMEL proxies are not relocatable (Serialisable)... - can I replace their impl ?
 	}
 	

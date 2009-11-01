@@ -80,13 +80,12 @@ public class JJMSSession implements Session {
 
 	@Override
 	public MessageConsumer createConsumer(Destination destination) throws JMSException {
-		return new JJMSMessageConsumer(this, (JJMSDestination)destination);
+		return new JJMSMessageConsumer((JJMSDestination)destination, null);
 	}
 
 	@Override
 	public MessageConsumer createConsumer(Destination destination, String messageSelector) throws JMSException {
-		// TODO: implement messageSelector
-		return new JJMSMessageConsumer(this, (JJMSDestination)destination);
+		return new JJMSMessageConsumer((JJMSDestination)destination, messageSelector);
 	}
 
 	@Override

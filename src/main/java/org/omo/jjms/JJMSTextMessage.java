@@ -7,6 +7,12 @@ public class JJMSTextMessage extends JJMSMessage implements TextMessage {
 
 	private String text;
 	
+	public String toString() {
+		return "<" + getClass().getSimpleName() + ": " + text + ">";
+	}
+	
+	// JMS
+	
 	@Override
 	public String getText() throws JMSException {
 		return text;
