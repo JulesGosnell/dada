@@ -32,7 +32,7 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	}
 	
 	protected void dispatch(Message message) {
-		logger.info("receive {}", message);
+		logger.trace("receive {}", message);
 		messageListener.onMessage(message);
 	}
 	
@@ -64,7 +64,9 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	@Override
 	public Message receive(long timeout) throws JMSException {
 		try {
-			return queue.poll(timeout, TimeUnit.MILLISECONDS);
+			Message message = queue.poll(timeout, TimeUnit.MILLISECONDS);
+			logger.trace("receive({}) <- {}", timeout, message);
+			return message;
 		} catch (InterruptedException e) {
 			throw new JMSException(e.getMessage());
 		}
@@ -78,8 +80,10 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	@Override
 	public void setMessageListener(MessageListener messageListener) throws JMSException {
 		if (messageListener == null) {
+			logger.debug("switch to sync mode");
 			this.messageListener = defaultMessagelistener; // switch to synchronous mode
 		} else {
+			logger.debug("switch to async mode");
 			this.messageListener = messageListener; // switch to asynchronous mode
 			Message message;
 			while ((message = receiveNoWait()) != null) // empty synchronous queue onto asynchronous listener

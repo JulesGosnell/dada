@@ -21,14 +21,17 @@ import junit.framework.TestCase;
 
 //import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Endpoint;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.bean.ProxyHelper;
 import org.apache.camel.component.jms.JmsComponent;
+import org.apache.camel.component.jms.JmsEndpoint;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.util.jndi.JndiContext;
 import org.omo.jjms.JJMSConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jms.connection.CachingConnectionFactory;
 
 // TODO: insert a ThreadingProxy, to thread dispatched calls, so reentrancy works.
 // TODO: apply patch to allow serialisation of Proxies
@@ -48,6 +51,7 @@ public class CamelTestCase extends TestCase {
 	ConnectionFactory connectionFactory;
 
 	protected void setUp() throws Exception {
+		logger.info("start test");
 		super.setUp();
 		server = new MungerImpl();
 		string = "hello";
@@ -62,7 +66,7 @@ public class CamelTestCase extends TestCase {
 //		connectionFactory = activeMQConnectionFactory;
 		JJMSConnectionFactory jjmsConnectionFactory = new JJMSConnectionFactory();
 		jjmsConnectionFactory.run();
-		connectionFactory = jjmsConnectionFactory;
+		connectionFactory = new CachingConnectionFactory(jjmsConnectionFactory);
 		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
 		camelContext.addRoutes(new RouteBuilder() {
 		    public void configure() {
@@ -70,7 +74,10 @@ public class CamelTestCase extends TestCase {
 		    }
 		});
 
-		client = ProxyHelper.createProxy(camelContext.getEndpoint("test-jms:queue:test.queue"), Munger.class);
+		long day = 1000 * 60 * 24;
+		JmsEndpoint endpoint = (JmsEndpoint)camelContext.getEndpoint("test-jms:queue:test.queue");
+		//endpoint.getConfiguration().setRequestTimeout(1 * day);
+		client = ProxyHelper.createProxy(endpoint, Munger.class);
 		//client = ProxyHelper.createProxy(camelContext.getEndpoint("bean:munger"), Munger.class);
 		camelContext.start();
 		
@@ -80,6 +87,7 @@ public class CamelTestCase extends TestCase {
 	protected void tearDown() throws Exception {
 		camelContext.stop();
 		super.tearDown();
+		logger.info("end test");
 	}
 
 	public static class Unserialisable implements Serializable {
@@ -96,7 +104,7 @@ public class CamelTestCase extends TestCase {
 	
 	public static interface Munger {
 		public String munge(final String string);
-		public String munge(final Munger munger, final String string);
+		public String remunge(final Munger munger, final String string);
 		public Unserialisable noop(final Unserialisable unserialisable);
 		public int one(final Object object);
 		
@@ -108,7 +116,7 @@ public class CamelTestCase extends TestCase {
 			//new Exception().printStackTrace();
 			return string.toUpperCase();
 		}
-		public String munge(final Munger munger, final String string) {
+		public String remunge(final Munger munger, final String string) {
 			return munger.munge(string);
 		}
 		
@@ -124,15 +132,13 @@ public class CamelTestCase extends TestCase {
 		}
 	}
 	
-	public void testBeanToBeanOverQueue() throws Exception {
-
+	public void testSimpleRoundTrip() throws Exception {
 		assertTrue(client.munge(string).equals(mungedString));
-		logger.info("1:{}, 2:{}", "a", "b");
 	}
 
-	public void testProxyRemotability() throws Exception {
+	public void testNestedRoundTrip() throws Exception {
 		// can we migrate a proxy and still use it ?
-		assertTrue(client.munge(client, string).equals(mungedString));
+		assertTrue(client.remunge(client, string).equals(mungedString));
 		// TODO: CAMEL proxies are not relocatable (Serialisable)... - can I replace their impl ?
 	}
 	

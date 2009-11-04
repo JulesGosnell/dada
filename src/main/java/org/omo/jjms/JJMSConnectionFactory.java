@@ -40,6 +40,7 @@ public class JJMSConnectionFactory implements ConnectionFactory {
 	}
 
 	public void run() {
+		logger.debug("run");
 		new Thread(new Runnable() {
 
 			@Override

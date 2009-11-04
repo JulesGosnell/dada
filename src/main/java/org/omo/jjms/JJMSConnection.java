@@ -66,8 +66,7 @@ public class JJMSConnection implements Connection {
 
 	@Override
 	public ExceptionListener getExceptionListener() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return exceptionListener;
 	}
 
 	@Override

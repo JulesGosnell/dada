@@ -14,7 +14,10 @@ public class JJMSMessageProducer implements MessageProducer {
 
 	private final JJMSSession session;
 	private Destination destination;
-
+	private int deliveryMode;
+	private int priority;
+	private long timeToLive;
+	
 	protected JJMSMessageProducer(JJMSSession session, Destination destination) {
 		this.session = session;
 		this.destination = destination;
@@ -28,8 +31,7 @@ public class JJMSMessageProducer implements MessageProducer {
 
 	@Override
 	public int getDeliveryMode() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return deliveryMode;
 	}
 
 	@Override
@@ -51,26 +53,23 @@ public class JJMSMessageProducer implements MessageProducer {
 
 	@Override
 	public int getPriority() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return priority;
 	}
 
 	@Override
 	public long getTimeToLive() throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return timeToLive;
 	}
 
 	@Override
 	public void send(Message message) throws JMSException {
-		logger.info("send {} -> {}", message, destination);
-		session.send((JJMSMessage)message, (JJMSDestination)destination);
+		send(destination, message);
 	}
 
 	@Override
-	public void send(Destination arg0, Message arg1) throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+	public void send(Destination destination, Message message) throws JMSException {
+		logger.trace("send {} -> {}", message, destination);
+		session.send((JJMSMessage)message, (JJMSDestination)destination);
 	}
 
 	@Override
@@ -91,9 +90,8 @@ public class JJMSMessageProducer implements MessageProducer {
 	}
 
 	@Override
-	public void setDeliveryMode(int arg0) throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+	public void setDeliveryMode(int deliveryMode) throws JMSException {
+		this.deliveryMode = deliveryMode;  
 	}
 
 	@Override
@@ -109,15 +107,13 @@ public class JJMSMessageProducer implements MessageProducer {
 	}
 
 	@Override
-	public void setPriority(int arg0) throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+	public void setPriority(int priority) throws JMSException {
+		this.priority = priority;
 	}
 
 	@Override
-	public void setTimeToLive(long arg0) throws JMSException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+	public void setTimeToLive(long timeToLive) throws JMSException {
+		this.timeToLive = timeToLive;
 	}
 
 }

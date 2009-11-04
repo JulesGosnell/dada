@@ -41,6 +41,7 @@ import org.omo.core.Registration;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
+import org.omo.jjms.JJMSConnectionFactory;
 import org.omo.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class Server {
 	private final int maxQueuedJobs = 1000;
 	private final int maxThreads = 100;
 	private final int minThreads = 10;
-	private final int numTrades = 1000000;
+	private final int numTrades = 1000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
 	private final int numAccounts = 2;
@@ -86,26 +87,39 @@ public class Server {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
-	private final Executor executor =  new ThreadPoolExecutor(minThreads, maxThreads, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(maxQueuedJobs));
 	private final Adaptor<String, String> adaptor = new  Adaptor<String, String>() {@Override public String getKey(String value) {return value;}};
 
-	private final Connection connection;
-	private final Session session;
-	private final RemotingFactory<Model<Integer, Trade>> tradeRemotingFactory;
+	private final Connection internalConnection;
+	private final Session internalSession;
+	private final RemotingFactory<Model<Integer, Trade>> internalTradeRemotingFactory;
+	private final RemotingFactory internalRemotingFactory;
+	private final Executor internalExecutor =  new ThreadPoolExecutor(minThreads, maxThreads, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(maxQueuedJobs));
+
+	private final Connection externalConnection;
+	private final Session externalSession;
+	private final RemotingFactory externalRemotingFactory;
+	private final Executor externalExecutor =  new ThreadPoolExecutor(minThreads, maxThreads, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(maxQueuedJobs));
 
 	private final MapModelView<String, String> metaModel;
 	private final Feed<Integer, Trade> tradeFeed;
 	
-	public Server(String serverName, ConnectionFactory connectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
-		connection = connectionFactory.createConnection();
-		connection.start();
-		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		tradeRemotingFactory = new RemotingFactory<Model<Integer, Trade>>(session, Model.class, timeout);
+	public Server(String serverName, ConnectionFactory internalConnectionFactory, ConnectionFactory externalConnectionFactory) throws JMSException, SecurityException, NoSuchMethodException {
+		internalConnection = internalConnectionFactory.createConnection();
+		internalConnection.start();
+		internalSession = internalConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		internalTradeRemotingFactory = new RemotingFactory<Model<Integer, Trade>>(internalSession, Model.class, timeout);
+		internalRemotingFactory = new RemotingFactory(internalSession, Model.class, timeout);
+		
+		externalConnection = externalConnectionFactory.createConnection();
+		externalConnection.start();
+		externalSession = externalConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		externalRemotingFactory = new RemotingFactory(externalSession, Model.class, timeout);
+		
 		// build MetaModel
 		{
 			String name = serverName + ".MetaModel"; 
 			Metadata<String,String> modelMetadata = new StringMetadata("Name");
-			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(session, Model.class, timeout);
+			RemotingFactory<Model<String, String>> factory = new RemotingFactory<Model<String, String>>(internalSession, Model.class, timeout);
 			metaModel = new MapModelView<String, String>(name, modelMetadata, adaptor);
 			remote(metaModel, factory, true);
 		}
@@ -117,7 +131,7 @@ public class Server {
 		DateRange dateRange = new DateRange(numDays);
 		{
 			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata, new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(dateRange, new IntegerRange(0, numAccounts), new IntegerRange(0, numCurrencies)));
-			remote(tradeFeed, tradeRemotingFactory, false);
+			remote(tradeFeed, internalTradeRemotingFactory, false);
 		}
 		Collection<Date> dateRangeValues = dateRange.getValues();
 		{
@@ -127,7 +141,7 @@ public class Server {
 				String partitionName = serverName + ".Trade."+p;
 				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, IDENTITY_FILTER);
 				partitions.add(partition);
-				remote(partition, tradeRemotingFactory, true);
+				remote(partition, internalTradeRemotingFactory, true);
 
 
 				for (Date d : dateRangeValues) {
@@ -135,14 +149,14 @@ public class Server {
 					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
 					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
 					view(partitionName, day);
-					remote(day, tradeRemotingFactory, true);
+					remote(day, internalTradeRemotingFactory, true);
 
 					for (int a=0; a<numAccounts; a++) {
 						String accountName = dayName+".Account="+a;
 						Filter<Trade> f = new AccountFilter(a);
 						ModelView<Integer, Trade> account= new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
 						view(dayName, account);
-						remote(account, tradeRemotingFactory, true);
+						remote(account, internalTradeRemotingFactory, true);
 					}
 
 //					for (int c=0; c<numCurrencies; c++) {
@@ -285,13 +299,13 @@ public class Server {
 			String accountProjectionName = serverName + ".Trade." + p + ".AccountProjection";
 			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(dateRange);
 			FilteredModelView<Integer, Projection> accountProjection= new FilteredModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata, new IdentityFilter<Projection>());
-			remote(accountProjection, new RemotingFactory<Model<Integer, Projection>>(session, Model.class, timeout), true);
+			remote(accountProjection, new RemotingFactory<Model<Integer, Projection>>(internalSession, Model.class, timeout), true);
 			
 			for (int a=0; a<numAccounts; a++) {
 				String accountTotalName = serverName + ".Trade." + p + ".Account="+a + ".Total";
 				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
 				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata, new IdentityFilter<AccountTotal>());
-				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(session, Model.class, timeout), true);
+				remote(accountTotal, new RemotingFactory<Model<Date, AccountTotal>>(internalSession, Model.class, timeout), true);
 				
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
@@ -322,7 +336,7 @@ public class Server {
 				String suffix = ".ValueDate="+dateFormat.format(d)+".Account="+a;
 				String accountsName = prefix + suffix;
 				FilteredModelView<Integer, Trade> accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
-				remote(accounts, tradeRemotingFactory, true);
+				remote(accounts, internalTradeRemotingFactory, true);
 				for (int p=0; p<numPartitions; p++) {
 					view(prefix + "." + p + suffix, accounts);
 				}
@@ -348,8 +362,10 @@ public class Server {
 	protected void remote(Model model, RemotingFactory serverFactory, boolean start) throws JMSException {
 		String name = model.getName();
 		nameToModel.put(name, model);
-		Queue queue = session.createQueue(name);
-		serverFactory.createServer(model, queue, executor);
+		Queue internalQueue = internalSession.createQueue(name);
+		Queue externalQueue = externalSession.createQueue(name);
+		internalRemotingFactory.createServer(model, internalQueue, internalExecutor);
+		externalRemotingFactory.createServer(model, externalQueue, externalExecutor);
 		metaModel.update(Collections.singleton(name));
 		if (start) model.start();
 	}
@@ -357,12 +373,12 @@ public class Server {
 	protected void view(String modelName, View<Integer, Trade> view) throws IllegalArgumentException, JMSException {
 		Model<Integer, Trade> model; 
 		View<Integer, Trade> v;
-		
-		if (true) {
-			model = tradeRemotingFactory.createSynchronousClient(modelName, true); 
-			Destination clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
-			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(session, View.class, timeout);
-			serverFactory.createServer(view, clientDestination, executor);
+		boolean async = true;
+		if (async) {
+			model = internalTradeRemotingFactory.createSynchronousClient(modelName, true); 
+			Destination clientDestination = internalSession.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
+			RemotingFactory<View<Integer, Trade>> serverFactory = new RemotingFactory<View<Integer, Trade>>(internalSession, View.class, timeout);
+			serverFactory.createServer(view, clientDestination, internalExecutor);
 			v = serverFactory.createSynchronousClient(clientDestination, true);
 		} else {
 			model = (Model<Integer, Trade>)nameToModel.get(modelName);
@@ -380,7 +396,6 @@ public class Server {
 		tradeFeed.start();
 		LOG.info("running in {} seconds", ((System.currentTimeMillis() - started) / 1000));
 	}
-	
 	
 	/**
 	 * @param args
@@ -403,15 +418,19 @@ public class Server {
 		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory(url);
 		activeMQConnectionFactory.setOptimizedMessageDispatch(true);
 		activeMQConnectionFactory.setObjectMessageSerializationDefered(true);
-		//activeMQConnectionFactory.setCopyMessageOnSend(false); // seems to cause NullPtrExcs
-		ConnectionFactory connectionFactory = activeMQConnectionFactory;
-		ActiveMQConnection c = (ActiveMQConnection)connectionFactory.createConnection();
-		LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));
-		LOG.info("OptimizedMessageDispatch="+c.isOptimizedMessageDispatch());
-		LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
-		LOG.info("CopyMessageOnSend="+c.isCopyMessageOnSend());
-		LOG.info("Broker URL: " +url);
-		Server server = new Server(name, connectionFactory);
+		//activeMQConnectionFactopry.setCopyMessageOnSend(false); // seems to cause NullPtrExcs
+		ConnectionFactory externalConnectionFactory = activeMQConnectionFactory;
+		{
+			ActiveMQConnection c = (ActiveMQConnection)externalConnectionFactory.createConnection();
+			LOG.info("org.apache.activemq.UseDedicatedTaskRunner=" + System.getProperty("org.apache.activemq.UseDedicatedTaskRunner"));
+			LOG.info("OptimizedMessageDispatch="+c.isOptimizedMessageDispatch());
+			LOG.info("ObjectMessageSerializationDeferred="+c.isObjectMessageSerializationDefered());
+			LOG.info("CopyMessageOnSend="+c.isCopyMessageOnSend());
+			LOG.info("Broker URL: " +url);
+		}		
+		JJMSConnectionFactory internalConnectionFactory = new JJMSConnectionFactory();
+		internalConnectionFactory.run();
+		Server server = new Server(name, internalConnectionFactory, externalConnectionFactory);
 		LOG.info("started in {} seconds", ((System.currentTimeMillis() - started) / 1000));
 		// keep going...
 		server.start();
