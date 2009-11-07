@@ -1,9 +1,11 @@
-package org.omo.core;
+package org.omo.jms;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
@@ -19,16 +21,13 @@ import javax.jms.TemporaryQueue;
 
 import junit.framework.TestCase;
 
-//import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.CamelContext;
-import org.apache.camel.Endpoint;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.bean.ProxyHelper;
 import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.component.jms.JmsEndpoint;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.util.jndi.JndiContext;
-import org.omo.jjms.JJMSConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jms.connection.CachingConnectionFactory;
@@ -38,18 +37,21 @@ import org.springframework.jms.connection.CachingConnectionFactory;
 // TODO: add 'final' to all interface signatures to tell Camel that these params are OUT only
 // TODO: replace our JMS remoting with Camel's...
 
-public class CamelTestCase extends TestCase {
+public abstract class AbstractCamelTestCase extends TestCase {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	Munger server;
-	Munger client;
-	String string;
-	String mungedString;
-	JndiContext jndiContext;
-	CamelContext camelContext;
-	ConnectionFactory connectionFactory;
+	protected Munger server;
+	protected Munger client;
+	protected String string;
+	protected String mungedString;
+	protected JndiContext jndiContext;
+	protected CamelContext camelContext;
+	protected ConnectionFactory connectionFactory;
+	protected ExecutorService executorService = Executors.newFixedThreadPool(20);
 
+	public abstract ConnectionFactory getConnectionFactory();
+	
 	protected void setUp() throws Exception {
 		logger.info("start test");
 		super.setUp();
@@ -59,14 +61,7 @@ public class CamelTestCase extends TestCase {
 		jndiContext = new JndiContext();
 		jndiContext.bind("munger", server);
 		camelContext = new DefaultCamelContext(jndiContext);
-//		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useShutdownHook=false");
-//		activeMQConnectionFactory.setOptimizedMessageDispatch(true); // don't know - possibly defaut anyway
-//		activeMQConnectionFactory.setObjectMessageSerializationDefered(true); // do not serialise on send - only use object once 
-//		activeMQConnectionFactory.setCopyMessageOnSend(false); // only use a message once
-//		connectionFactory = activeMQConnectionFactory;
-		JJMSConnectionFactory jjmsConnectionFactory = new JJMSConnectionFactory();
-		jjmsConnectionFactory.run();
-		connectionFactory = new CachingConnectionFactory(jjmsConnectionFactory);
+		connectionFactory = new CachingConnectionFactory(getConnectionFactory());
 		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
 		camelContext.addRoutes(new RouteBuilder() {
 		    public void configure() {
@@ -140,31 +135,6 @@ public class CamelTestCase extends TestCase {
 		// can we migrate a proxy and still use it ?
 		assertTrue(client.remunge(client, string).equals(mungedString));
 		// TODO: CAMEL proxies are not relocatable (Serialisable)... - can I replace their impl ?
-	}
-	
-	public void testAMQ() throws Exception {
-		Connection connection = connectionFactory.createConnection();
-		connection.start();
-		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		TemporaryQueue queue = session.createTemporaryQueue();
-		MessageProducer producer = session.createProducer(queue);
-		MessageConsumer consumer = session.createConsumer(queue);
-		final CountDownLatch latch = new CountDownLatch(1);
-		consumer.setMessageListener(new MessageListener() {
-			@Override
-			public void onMessage(Message arg0) {
-				try {
-					logger.info(((ObjectMessage)arg0).getObject().toString());
-				} catch (JMSException e) {
-					// ignore
-				}
-				latch.countDown();
-			}
-		});
-		ObjectMessage message = session.createObjectMessage();
-		message.setObject(new Unserialisable());
-		producer.send(message);
-		assertTrue(latch.await(1000L, TimeUnit.MILLISECONDS));
 	}
 	
 	public void testOutboundUnserialisable() throws Exception {

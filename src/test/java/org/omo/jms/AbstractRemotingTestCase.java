@@ -1,40 +1,43 @@
 package org.omo.jms;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.MessageProducer;
+import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 
 import junit.framework.TestCase;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.omo.jms.AbstractCamelTestCase.Unserialisable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+public abstract class AbstractRemotingTestCase extends TestCase {
 
-public class RemotingTestCase extends TestCase {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected ConnectionFactory connectionFactory;
 	protected Connection connection;
 	protected Session session;
 	protected int timeout;
 	
+	protected abstract ConnectionFactory getConnnectionFactory();
+	
 	@Override
 	protected void setUp() throws Exception {
-		connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
+		connectionFactory = getConnnectionFactory(); 
 		connection = connectionFactory.createConnection();
 		connection.start();
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -52,15 +55,20 @@ public class RemotingTestCase extends TestCase {
 		connectionFactory = null;
 	}
 	
-	static class ServerException extends Exception{};
+	public static class ServerException extends Exception{};
 
-	static interface Server {
+	public static interface Server {
 		int hashcode(String string);
 		void throwException() throws ServerException;
 		Exception returnException();
+		Object register(Client client, Object data);
+	}
+
+	public static interface Client {
+		Object callback(Object data);
 	}
 	
-	static class ServerImpl implements Server {
+	public static class ServerImpl implements Server {
 		public int hashcode(String string) {
 			return string.hashCode();
 		}
@@ -71,36 +79,23 @@ public class RemotingTestCase extends TestCase {
 		public Exception returnException() {
 			return new ServerException();
 		}
+		@Override
+		public Object register(Client client, Object data) {
+			return client.callback(data);
+		}
 	}
 
-	public void testProxyRemotability() throws Exception {
-		TemporaryQueue queue = session.createTemporaryQueue();
-		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
-		Executor executor =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100)); 
-		Server server = factory.createServer(new ServerImpl(), queue, executor);
-		Server localClient = factory.createSynchronousClient(queue, true);
-		String foo = "foo";
-		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
-		
-		logger.info("MARSHALLING PROXY...");
-		ByteArrayOutputStream baos =  new ByteArrayOutputStream();
-		ObjectOutputStream oos = new ObjectOutputStream(baos);
-		oos.writeObject(localClient);
-		logger.info("UNMARSHALLING PROXY...");
-		AbstractClient.setCurrentSession(session);
-		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-		ObjectInputStream ois = new ObjectInputStream(bais);
-		Server remoteClient = (Server)ois.readObject();
-		logger.info("REUSING PROXY...");
-		assertTrue(remoteClient.hashcode(foo) == server.hashcode(foo));
-		logger.info("...DONE");
+	public static class ClientImpl implements Client {
+		public Object callback(Object data) {
+			return data;
+		}
 	}
 	
-	public void testRemoteInvocation() throws Exception {
+	public void testInvocationTypes() throws Exception {
 		Queue queue = session.createQueue(Server.class.getCanonicalName());
 		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
-		Executor executor = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-		final Server server = factory.createServer(new ServerImpl(), queue, executor);
+		ExecutorService executorservice = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+		final Server server = factory.createServer(new ServerImpl(), queue, executorservice);
 		final Server client = factory.createSynchronousClient(queue, true);
 		AsynchronousClient asynchronousClient = factory.createAsynchronousClient(queue, true);
 		
@@ -168,4 +163,54 @@ public class RemotingTestCase extends TestCase {
 		}
 		
 	}
+	
+	public void testReentrantInvocation() throws Exception {
+		ExecutorService executorservice = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+
+		Queue serverQueue = session.createQueue(Server.class.getCanonicalName());
+		RemotingFactory<Server> serverFactory = new RemotingFactory<Server>(session, Server.class, timeout);
+		final Server serverImpl = serverFactory.createServer(new ServerImpl(), serverQueue, executorservice);
+		final Server serverProxy = serverFactory.createSynchronousClient(serverQueue, true);
+		
+		Client client = new ClientImpl(); 
+		Queue clientQueue = session.createQueue(Client.class.getCanonicalName());
+		RemotingFactory<Client> clientFactory = new RemotingFactory<Client>(session, Client.class, timeout);
+		final Client clientImpl = clientFactory.createServer(client, clientQueue, executorservice);
+		final Client clientProxy = clientFactory.createSynchronousClient(clientQueue, true);
+
+		// call server passing client and data.
+		// server calls client passing data
+		// client returns data to server
+		// server returns data to us...
+		Object data = "data";
+		assertTrue(data.equals(serverProxy.register(clientProxy, data)));
+	}
+
+	
+	public void testSendAsyncReceive() throws Exception {
+		Connection connection = connectionFactory.createConnection();
+		connection.start();
+		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		TemporaryQueue queue = session.createTemporaryQueue();
+		MessageProducer producer = session.createProducer(queue);
+		MessageConsumer consumer = session.createConsumer(queue);
+		final CountDownLatch latch = new CountDownLatch(1);
+		consumer.setMessageListener(new MessageListener() {
+			@Override
+			public void onMessage(Message arg0) {
+				try {
+					logger.info(((ObjectMessage)arg0).getObject().toString());
+				} catch (JMSException e) {
+					// ignore
+				}
+				latch.countDown();
+			}
+		});
+		ObjectMessage message = session.createObjectMessage();
+		message.setObject(new Unserialisable());
+		producer.send(message);
+		assertTrue(latch.await(1000L, TimeUnit.MILLISECONDS));
+	}
+
 }
+

@@ -10,14 +10,16 @@ public class JJMSObjectMessage extends JJMSMessage implements ObjectMessage {
 	private Serializable object;
 	
 	protected JJMSObjectMessage() {
+		super();
 	}
 
 	protected JJMSObjectMessage(Serializable object) {
+		super();
 		this.object = object;
 	}
 
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + object + ">";
+		return "<" + getClass().getSimpleName() + "#" + System.identityHashCode(this) + ":" + jmsCorrelationId + ": " + object + ">";
 	}
 
 	// JMS

@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -45,11 +46,11 @@ public class RemotingFactory<T> {
 		private final Logger logger;
 		private final T target;
 		private final MessageConsumer consumer;
-		private final Executor executor; 
+		private final ExecutorService executorService; 
 
-		public Server(T target, Destination destination, Executor executor) throws JMSException {
+		public Server(T target, Destination destination, ExecutorService executorService) throws JMSException {
 			this.target = target;
-			this.executor = executor;
+			this.executorService = executorService;
 			logger = LoggerFactory.getLogger(Server.class);
 			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
 			logger.info("consuming messages on: {}", destination);
@@ -65,7 +66,7 @@ public class RemotingFactory<T> {
 					process(message);
 				}
 			};
-			executor.execute(runnable);
+			executorService.execute(runnable);
 		}
 		
 		public void process(Message message) {
@@ -97,7 +98,7 @@ public class RemotingFactory<T> {
 			}
 
 			if (isException)
-				logger.warn(result.toString());
+				logger.warn("returning exception", (Throwable)result);
 			if (correlationId != null && replyTo != null) {
 				ObjectMessage response = null;
 				try {
@@ -116,8 +117,8 @@ public class RemotingFactory<T> {
 	
 	//----------------------------------------------------------------------------
 
-	public T createServer(T target, Destination destination, Executor executor) throws JMSException {
-		new Server(target, destination, executor);
+	public T createServer(T target, Destination destination, ExecutorService executorService) throws JMSException {
+		new Server(target, destination, executorService);
 		return target;
 	}
 	

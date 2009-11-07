@@ -18,7 +18,7 @@ public class JJMSMessage implements Message {
 	private Destination jmsDestination;
 	private int jmsDeliveryMode; 
 	private int jmsPriority; 
-	private String jmsCorrelationId;
+	protected String jmsCorrelationId;
 	private String jmsMessageID = new UID().toString(); // TODO: optimise - do we need this ? 
 	private Destination jmsReplyTo;
 	private final Map<String, Object> properties = new HashMap<String, Object>(); // TODO: allocate lazily

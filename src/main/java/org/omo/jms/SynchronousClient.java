@@ -45,7 +45,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			String correlationID = message.getJMSCorrelationID();
 			Exchanger<Results> exchanger = correlationIdToResults.remove(correlationID);
 			if (exchanger == null) {
-			       logger.warn("no exchanger for message: {}", message);
+			       logger.warn("{}: no exchanger for message: {}", System.identityHashCode(this), message);
 			} else {
 				ObjectMessage response = (ObjectMessage)message;
 				Results results = (Results)response.getObject();
@@ -80,6 +80,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			return null;
 		} else {
 			String correlationId = "" + count++;
+			System.out.println("setting correlationId: " + System.identityHashCode(this) + ":" + correlationId);
 			message.setJMSCorrelationID(correlationId);
 			message.setJMSReplyTo(resultsQueue);
 			Exchanger<Results> exchanger = new Exchanger<Results>();

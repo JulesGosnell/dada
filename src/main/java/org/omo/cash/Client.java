@@ -6,10 +6,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.rmi.server.UID;
 import java.util.Collection;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -38,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class Client {
 	
 	private final static Logger LOG = LoggerFactory.getLogger(Client.class);
-	private final static Executor executor = new ThreadPoolExecutor(10, 10, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
+	private final static ExecutorService executorService = Executors.newFixedThreadPool(20);
 
 	private final String serverName;
 	private final String modelName;
@@ -77,7 +75,7 @@ public class Client {
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
-		serverFactory.createServer(guiModel, clientDestination, executor);
+		serverFactory.createServer(guiModel, clientDestination, executorService);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..

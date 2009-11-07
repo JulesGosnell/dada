@@ -56,14 +56,14 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	
 	@Override
 	public void start() {
-		logger.debug("creating values...");
+		logger.info("creating values...");
 		Collection<V> updates = strategy.createNewValues(range);
 		for (V update : updates)
 			vs.put(strategy.getKey(update), update);
-		logger.debug("notifying {} values...", updates.size());
+		logger.info("notifying {} values...", updates.size());
 		notifyUpdates(updates);
-		logger.debug("starting timer...");
-		timer.scheduleAtFixedRate(task, 0, delay);
+		logger.info("starting timer...");
+		//timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
 	@Override
