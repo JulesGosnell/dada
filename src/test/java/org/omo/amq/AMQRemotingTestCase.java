@@ -16,6 +16,8 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.omo.jms.AbstractClient;
 import org.omo.jms.AbstractRemotingTestCase;
 import org.omo.jms.RemotingFactory;
+import org.omo.jms.Peer;
+import org.omo.jms.PeerImpl;
 
 public class AMQRemotingTestCase extends AbstractRemotingTestCase {
 
@@ -24,12 +26,13 @@ public class AMQRemotingTestCase extends AbstractRemotingTestCase {
 		return new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
 	}
 
-	public void testProxySerialisability() throws Exception {
+	// JJMSTemporaryQueue is not Serialisable, so this test stays here...
+	public void testProxyMigration() throws Exception {
 		TemporaryQueue queue = session.createTemporaryQueue();
-		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
+		RemotingFactory<Peer> factory = new RemotingFactory<Peer>(session, Peer.class, timeout);
 		ExecutorService executorService =  new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100)); 
-		Server server = factory.createServer(new ServerImpl(), queue, executorService);
-		Server localClient = factory.createSynchronousClient(queue, true);
+		Peer server = factory.createServer(new PeerImpl(), queue, executorService);
+		Peer localClient = factory.createSynchronousClient(queue, true);
 		String foo = "foo";
 		assertTrue(localClient.hashcode(foo) == server.hashcode(foo));
 		
@@ -41,7 +44,7 @@ public class AMQRemotingTestCase extends AbstractRemotingTestCase {
 		AbstractClient.setCurrentSession(session);
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		ObjectInputStream ois = new ObjectInputStream(bais);
-		Server remoteClient = (Server)ois.readObject();
+		Peer remoteClient = (Peer)ois.readObject();
 		logger.info("REUSING PROXY...");
 		assertTrue(remoteClient.hashcode(foo) == server.hashcode(foo));
 		logger.info("...DONE");

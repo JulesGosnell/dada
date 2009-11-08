@@ -1,23 +1,9 @@
 package org.omo.jms;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
-import javax.jms.Session;
-import javax.jms.TemporaryQueue;
 
 import junit.framework.TestCase;
 
@@ -41,8 +27,8 @@ public abstract class AbstractCamelTestCase extends TestCase {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	protected Munger server;
-	protected Munger client;
+	protected Peer server;
+	protected Peer client;
 	protected String string;
 	protected String mungedString;
 	protected JndiContext jndiContext;
@@ -55,25 +41,25 @@ public abstract class AbstractCamelTestCase extends TestCase {
 	protected void setUp() throws Exception {
 		logger.info("start test");
 		super.setUp();
-		server = new MungerImpl();
+		server = new PeerImpl();
 		string = "hello";
 		mungedString = server.munge(string);
 		jndiContext = new JndiContext();
-		jndiContext.bind("munger", server);
+		jndiContext.bind("Peer", server);
 		camelContext = new DefaultCamelContext(jndiContext);
 		connectionFactory = new CachingConnectionFactory(getConnectionFactory());
 		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
 		camelContext.addRoutes(new RouteBuilder() {
 		    public void configure() {
-		        from("test-jms:queue:test.queue").to("bean:munger");
+		        from("test-jms:queue:test.queue").to("bean:Peer");
 		    }
 		});
 
 		long day = 1000 * 60 * 24;
 		JmsEndpoint endpoint = (JmsEndpoint)camelContext.getEndpoint("test-jms:queue:test.queue");
 		//endpoint.getConfiguration().setRequestTimeout(1 * day);
-		client = ProxyHelper.createProxy(endpoint, Munger.class);
-		//client = ProxyHelper.createProxy(camelContext.getEndpoint("bean:munger"), Munger.class);
+		client = ProxyHelper.createProxy(endpoint, Peer.class);
+		//client = ProxyHelper.createProxy(camelContext.getEndpoint("bean:Peer"), Peer.class);
 		camelContext.start();
 		
 		
@@ -85,48 +71,6 @@ public abstract class AbstractCamelTestCase extends TestCase {
 		logger.info("end test");
 	}
 
-	public static class Unserialisable implements Serializable {
-		private String serialisable = "unserialisable";
-		
-		public String toString() {
-			return "<" + getClass().getSimpleName() + ": " + serialisable + ">"; 
-		}
-
-		private void writeObject(ObjectOutputStream out) throws IOException {
-			throw new RuntimeException();
-		}
-	};
-	
-	public static interface Munger {
-		public String munge(final String string);
-		public String remunge(final Munger munger, final String string);
-		public Unserialisable noop(final Unserialisable unserialisable);
-		public int one(final Object object);
-		
-	}
-	
-	public static class MungerImpl implements Munger {
-		public String munge(final String string) {
-			System.out.println("munging: " + string);
-			//new Exception().printStackTrace();
-			return string.toUpperCase();
-		}
-		public String remunge(final Munger munger, final String string) {
-			return munger.munge(string);
-		}
-		
-		public Unserialisable noop(final Unserialisable unserialisable) {
-			System.out.println("nooping: " + unserialisable);
-			return unserialisable;
-		}
-
-		public int one(final Object object) {
-			System.out.println("one: " + object);
-			//new Exception().printStackTrace();
-			return 1;
-		}
-	}
-	
 	public void testSimpleRoundTrip() throws Exception {
 		assertTrue(client.munge(string).equals(mungedString));
 	}

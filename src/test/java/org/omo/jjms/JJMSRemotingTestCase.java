@@ -6,6 +6,7 @@ import javax.jms.ConnectionFactory;
 
 import org.omo.cash.SyncLock;
 import org.omo.jms.AbstractRemotingTestCase;
+import org.omo.jms.Unserialisable;
 
 import EDU.oswego.cs.dl.util.concurrent.NullSync;
 
@@ -18,4 +19,8 @@ public class JJMSRemotingTestCase extends AbstractRemotingTestCase {
 		return connectionFactory;
 	}
 
+	
+	public void testSendAsyncReceiveUnserialisable() throws Exception {
+		testSendAsyncReceive(new Unserialisable());
+	}
 }

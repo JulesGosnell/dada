@@ -1,9 +1,9 @@
 package org.omo.jms;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
@@ -20,18 +20,24 @@ import javax.jms.TemporaryQueue;
 
 import junit.framework.TestCase;
 
-import org.omo.jms.AbstractCamelTestCase.Unserialisable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractRemotingTestCase extends TestCase {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
+	protected final ExecutorService executorservice = Executors.newFixedThreadPool(10);
 	
 	protected ConnectionFactory connectionFactory;
 	protected Connection connection;
 	protected Session session;
 	protected int timeout;
+	protected RemotingFactory<Peer> factory;
+	protected Queue serverQueue;
+	protected Peer serverImpl;
+	protected Peer serverProxy; // proxy to the server...
+
+	protected AsynchronousClient asyncServerProxy;
 	
 	protected abstract ConnectionFactory getConnnectionFactory();
 	
@@ -42,6 +48,13 @@ public abstract class AbstractRemotingTestCase extends TestCase {
 		connection.start();
 		session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		timeout = 5000;
+
+		factory = new RemotingFactory<Peer>(session, Peer.class, timeout);
+		serverQueue = session.createQueue(Peer.class.getCanonicalName());
+		serverImpl = factory.createServer(new PeerImpl(), serverQueue, executorservice);
+		serverProxy = factory.createSynchronousClient(serverQueue, true);
+		// hmmm...
+		asyncServerProxy = factory.createAsynchronousClient(serverQueue, true);
 	}
 
 	@Override
@@ -55,128 +68,73 @@ public abstract class AbstractRemotingTestCase extends TestCase {
 		connectionFactory = null;
 	}
 	
-	public static class ServerException extends Exception{};
+	public void testSynchronousInvocation() throws Exception {
+		final String string = "test";
+		assertEquals(serverImpl.hashcode(string), serverProxy.hashcode(string));
 
-	public static interface Server {
-		int hashcode(String string);
-		void throwException() throws ServerException;
-		Exception returnException();
-		Object register(Client client, Object data);
-	}
+		final CountDownLatch latch = new CountDownLatch(1);
+		asyncServerProxy.invoke(Peer.class.getMethod("hashcode", new Class[]{String.class}), new Object[]{string}, new AsyncInvocationListener(){
 
-	public static interface Client {
-		Object callback(Object data);
-	}
-	
-	public static class ServerImpl implements Server {
-		public int hashcode(String string) {
-			return string.hashCode();
-		}
-		public void throwException() throws ServerException {
-			throw new ServerException();
-		}
-		@Override
-		public Exception returnException() {
-			return new ServerException();
-		}
-		@Override
-		public Object register(Client client, Object data) {
-			return client.callback(data);
-		}
-	}
-
-	public static class ClientImpl implements Client {
-		public Object callback(Object data) {
-			return data;
-		}
-	}
-	
-	public void testInvocationTypes() throws Exception {
-		Queue queue = session.createQueue(Server.class.getCanonicalName());
-		RemotingFactory<Server> factory = new RemotingFactory<Server>(session, Server.class, timeout);
-		ExecutorService executorservice = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-		final Server server = factory.createServer(new ServerImpl(), queue, executorservice);
-		final Server client = factory.createSynchronousClient(queue, true);
-		AsynchronousClient asynchronousClient = factory.createAsynchronousClient(queue, true);
-		
-		{
-			final String string = "test";
-				assertEquals(server.hashcode(string), client.hashcode(string));
-			
-			final CountDownLatch latch = new CountDownLatch(1);
-			asynchronousClient.invoke(Server.class.getMethod("hashcode", new Class[]{String.class}), new Object[]{string}, new AsyncInvocationListener(){
-
-				@Override
-				public void onError(Exception exception) {
-					assertTrue(false);
-				}
-
-				@Override
-				public void onResult(Object value) {
-					assertEquals(server.hashcode(string), value);
-					latch.countDown();
-				}});
-			latch.await(5, TimeUnit.SECONDS);
-			
-		}
-
-		{
-			try {
-				client.throwException();
+			@Override
+			public void onError(Exception exception) {
 				assertTrue(false);
-			} catch (Exception e) {
-				assertTrue(e instanceof ServerException);
 			}
-			
-			final CountDownLatch latch = new CountDownLatch(1);
-			asynchronousClient.invoke(Server.class.getMethod("throwException", (Class<?>[])null), null, new AsyncInvocationListener(){
 
-				@Override
-				public void onError(Exception exception) {
-					assertTrue(exception instanceof ServerException);
-					latch.countDown();
-				}
+			@Override
+			public void onResult(Object value) {
+				assertEquals(serverImpl.hashcode(string), value);
+				latch.countDown();
+			}});
+		latch.await(5, TimeUnit.SECONDS);
 
-				@Override
-				public void onResult(Object value) {
-					assertTrue(false);
-				}});
-			latch.await(5, TimeUnit.SECONDS);
+	}
+
+	public void testSynchronousInvocationThrowingException() throws Exception {
+		try {
+			serverProxy.throwException();
+			assertTrue(false);
+		} catch (Exception e) {
+			assertTrue(e instanceof PeerException);
 		}
 
-		{
-			assertTrue(client.returnException() instanceof ServerException);
-			final CountDownLatch latch = new CountDownLatch(1);
-			asynchronousClient.invoke(Server.class.getMethod("returnException", (Class<?>[])null), null, new AsyncInvocationListener(){
+		final CountDownLatch latch = new CountDownLatch(1);
+		asyncServerProxy.invoke(Peer.class.getMethod("throwException", (Class<?>[])null), null, new AsyncInvocationListener(){
 
-				@Override
-				public void onError(Exception exception) {
-					assertTrue(false);
-				}
+			@Override
+			public void onError(Exception exception) {
+				assertTrue(exception instanceof PeerException);
+				latch.countDown();
+			}
 
-				@Override
-				public void onResult(Object value) {
-					assertTrue(value instanceof ServerException);
-					latch.countDown();
-				}});
-			latch.await(5, TimeUnit.SECONDS);
-		}
-		
+			@Override
+			public void onResult(Object value) {
+				assertTrue(false);
+			}});
+		latch.await(5, TimeUnit.SECONDS);
+	}
+
+	public void testSynchronousInvocationReturningException() throws Exception {
+		assertTrue(serverProxy.returnException() instanceof PeerException);
+		final CountDownLatch latch = new CountDownLatch(1);
+		asyncServerProxy.invoke(Peer.class.getMethod("returnException", (Class<?>[])null), null, new AsyncInvocationListener(){
+
+			@Override
+			public void onError(Exception exception) {
+				assertTrue(false);
+			}
+
+			@Override
+			public void onResult(Object value) {
+				assertTrue(value instanceof PeerException);
+				latch.countDown();
+			}});
+		latch.await(5, TimeUnit.SECONDS);
 	}
 	
-	public void testReentrantInvocation() throws Exception {
-		ExecutorService executorservice = new ThreadPoolExecutor(10, 100, 600, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100));
-
-		Queue serverQueue = session.createQueue(Server.class.getCanonicalName());
-		RemotingFactory<Server> serverFactory = new RemotingFactory<Server>(session, Server.class, timeout);
-		final Server serverImpl = serverFactory.createServer(new ServerImpl(), serverQueue, executorservice);
-		final Server serverProxy = serverFactory.createSynchronousClient(serverQueue, true);
-		
-		Client client = new ClientImpl(); 
-		Queue clientQueue = session.createQueue(Client.class.getCanonicalName());
-		RemotingFactory<Client> clientFactory = new RemotingFactory<Client>(session, Client.class, timeout);
-		final Client clientImpl = clientFactory.createServer(client, clientQueue, executorservice);
-		final Client clientProxy = clientFactory.createSynchronousClient(clientQueue, true);
+	public void testReentrantSynchronousInvocations() throws Exception {
+		Queue clientQueue = session.createTemporaryQueue();
+		final Peer clientImpl = factory.createServer(new PeerImpl(), clientQueue, executorservice);
+		final Peer clientProxy = factory.createSynchronousClient(clientQueue, true);
 
 		// call server passing client and data.
 		// server calls client passing data
@@ -187,10 +145,7 @@ public abstract class AbstractRemotingTestCase extends TestCase {
 	}
 
 	
-	public void testSendAsyncReceive() throws Exception {
-		Connection connection = connectionFactory.createConnection();
-		connection.start();
-		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+	public void testSendAsyncReceive(Serializable serializable) throws Exception {
 		TemporaryQueue queue = session.createTemporaryQueue();
 		MessageProducer producer = session.createProducer(queue);
 		MessageConsumer consumer = session.createConsumer(queue);
@@ -207,9 +162,13 @@ public abstract class AbstractRemotingTestCase extends TestCase {
 			}
 		});
 		ObjectMessage message = session.createObjectMessage();
-		message.setObject(new Unserialisable());
+		message.setObject(serializable);
 		producer.send(message);
 		assertTrue(latch.await(1000L, TimeUnit.MILLISECONDS));
+	}
+	
+	public void testSendAsyncReceiveSerialisable() throws Exception {
+		testSendAsyncReceive("hello");
 	}
 
 }
