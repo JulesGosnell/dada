@@ -4,8 +4,10 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"
   >
+  
+  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
 
-  <amq:broker useJmx="true" persistent="false" brokerName="Server" advisorySupport="false">
+  <amq:broker id="Broker" useJmx="true" persistent="false" brokerName="Server" advisorySupport="false">
 
     <amq:destinationPolicy>
       <amq:policyMap>
