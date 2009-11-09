@@ -68,7 +68,7 @@ public class JJMSMessageProducer implements MessageProducer {
 
 	@Override
 	public void send(Destination destination, Message message) throws JMSException {
-		logger.trace("send {} -> {}", message, destination);
+		logger.trace("#" + System.identityHashCode(this) + ": send {} -> {}", message, destination);
 		session.send((JJMSMessage)message, (JJMSDestination)destination);
 	}
 

@@ -35,6 +35,7 @@ import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.ModelView;
 import org.omo.core.Partitioner;
+import org.omo.core.Range;
 import org.omo.core.Registration;
 import org.omo.core.StringMetadata;
 import org.omo.core.View;
@@ -76,11 +77,11 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
-	private final int numTrades = 1000000;
+	private final int numTrades = 2000000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
-	private final int numAccounts = 2;
-	private final int numCurrencies = 10;
+	private final int numAccounts = 700;
+	private final int numCurrencies = 200;
 	private final int numBalances = 100;
 	private final int numCompanies = 10;
 	private final int timeout = 10 * 60 * 1000; // 1 minute
@@ -188,133 +189,111 @@ public class Server {
 			view(tradeFeedName, partitioner);
 		}
 
-		// adding AccountFeed
-		// {
-		// String feedName = serverName + ".AccountFeed";
-		// IntrospectiveMetadata<Integer, Account> metadata = new
-		// IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
-		// Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer,
-		// Account>(){
-		// @Override
-		// public Collection<Account> createNewValues(Range<Integer> range) {
-		// Collection<Account> values = new ArrayList<Account>(range.size());
-		// for (int id : range.getValues())
-		// values.add(new Account(id, 0));
-		// return values;
-		// }
-		//
-		// @Override
-		// public Account createNewVersion(Account original) {
-		// return new Account(original.getId(), original.getVersion()+1);
-		// }
-		//
-		// @Override
-		// public Integer getKey(Account item) {
-		// return item.getId();
-		// }};
-		// Model<Integer, Account> feed = new Feed<Integer, Account>(feedName,
-		// metadata, new IntegerRange(0, numAccounts), 100L, strategy);
-		// RemotingFactory<Model<Integer, Account>> serverFactory = new
-		// RemotingFactory<Model<Integer, Account>>(session, Model.class,
-		// timeout);
-		// remote(feed, serverFactory);
-		// }
-		// // adding CurrencyFeed
-		// {
-		// String feedName = serverName + ".CurrencyFeed";
-		// Feed.Strategy<Integer, Currency> strategy = new
-		// Feed.Strategy<Integer, Currency>(){
-		//
-		// @Override
-		// public Collection<Currency> createNewValues(Range<Integer> range) {
-		// Collection<Currency> values = new ArrayList<Currency>(range.size());
-		// for (int id : range.getValues())
-		// values.add(new Currency(id, 0));
-		// return values;
-		// }
-		//
-		// @Override
-		// public Currency createNewVersion(Currency original) {
-		// return new Currency(original.getId(), original.getVersion()+1);
-		// }
-		//
-		// @Override
-		// public Integer getKey(Currency item) {
-		// return item.getId();
-		// }};
-		// Metadata<Integer, Currency> metadata = new
-		// IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
-		// Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName,
-		// metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
-		// RemotingFactory<Model<Integer, Currency>> serverFactory = new
-		// RemotingFactory<Model<Integer, Currency>>(session, Model.class,
-		// timeout);
-		// remote(feed, serverFactory);
-		// }
-		// // adding BalanceFeed
-		// {
-		// String feedName = serverName + ".BalanceFeed";
-		// Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer,
-		// Balance>(){
-		//
-		// @Override
-		// public Collection<Balance> createNewValues(Range<Integer> range) {
-		// Collection<Balance> values = new ArrayList<Balance>(range.size());
-		// for (int id : range.getValues())
-		// values.add(new Balance(id, 0));
-		// return values;
-		// }
-		//
-		// @Override
-		// public Balance createNewVersion(Balance original) {
-		// return new Balance(original.getId(), original.getVersion()+1);
-		// }
-		//
-		// @Override
-		// public Integer getKey(Balance item) {
-		// return item.getId();
-		// }};
-		// Metadata<Integer, Balance> metadata = new
-		// IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
-		// Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName,
-		// metadata, new IntegerRange(0, numBalances), 100L, strategy);
-		// RemotingFactory<Model<Integer, Balance>> serverFactory = new
-		// RemotingFactory<Model<Integer, Balance>>(session, Model.class,
-		// timeout);
-		// remote(feed, serverFactory);
-		// }
-		// // adding CompanyFeed
-		// {
-		// String feedName = serverName + ".CompanyFeed";
-		// Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer,
-		// Company>(){
-		//
-		// @Override
-		// public Collection<Company> createNewValues(Range<Integer> range) {
-		// Collection<Company> values = new ArrayList<Company>(range.size());
-		// for (int id : range.getValues())
-		// values.add(new Company(id, 0));
-		// return values;
-		// }
-		//
-		// @Override
-		// public Company createNewVersion(Company original) {
-		// return new Company(original.getId(), original.getVersion()+1);
-		// }
-		//
-		// @Override
-		// public Integer getKey(Company item) {
-		// return item.getId();
-		// }};
-		// Metadata<Integer, Company> metadata = new
-		// IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
-		// Model<Integer, Company> feed = new Feed<Integer, Company>(feedName,
-		// metadata, new IntegerRange(0, numCompanies), 100L, strategy);
-		// RemotingFactory<Model<Integer, Company>> serverFactory = new
-		// RemotingFactory<Model<Integer, Company>>(session, Model.class,
-		// timeout);
-		// remote(feed, serverFactory);
-		// }
+		//adding AccountFeed
+		{
+			String feedName = serverName + ".AccountFeed";
+			IntrospectiveMetadata<Integer, Account> metadata = new
+			IntrospectiveMetadata<Integer, Account>(Account.class, "Id");
+			Feed.Strategy<Integer, Account> strategy = new Feed.Strategy<Integer, Account>(){
+				@Override
+				public Collection<Account> createNewValues(Range<Integer> range) {
+					Collection<Account> values = new ArrayList<Account>(range.size());
+					for (int id : range.getValues())
+						values.add(new Account(id, 0));
+					return values;
+				}
+
+				@Override
+				public Account createNewVersion(Account original) {
+					return new Account(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Account item) {
+					return item.getId();
+				}};
+				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
+				remote(feed, true);
+		}
+		// adding CurrencyFeed
+		{
+			String feedName = serverName + ".CurrencyFeed";
+			Feed.Strategy<Integer, Currency> strategy = new Feed.Strategy<Integer, Currency>(){
+
+				@Override
+				public Collection<Currency> createNewValues(Range<Integer> range) {
+					Collection<Currency> values = new ArrayList<Currency>(range.size());
+					for (int id : range.getValues())
+						values.add(new Currency(id, 0));
+					return values;
+				}
+
+				@Override
+				public Currency createNewVersion(Currency original) {
+					return new Currency(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Currency item) {
+					return item.getId();
+				}};
+				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
+				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
+				remote(feed, true);
+		}
+		// adding BalanceFeed
+		{
+			String feedName = serverName + ".BalanceFeed";
+			Feed.Strategy<Integer, Balance> strategy = new Feed.Strategy<Integer, Balance>(){
+
+				@Override
+				public Collection<Balance> createNewValues(Range<Integer> range) {
+					Collection<Balance> values = new ArrayList<Balance>(range.size());
+					for (int id : range.getValues())
+						values.add(new Balance(id, 0));
+					return values;
+				}
+
+				@Override
+				public Balance createNewVersion(Balance original) {
+					return new Balance(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Balance item) {
+					return item.getId();
+				}};
+				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
+				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
+				remote(feed, true);
+		}
+		// adding CompanyFeed
+		{
+			String feedName = serverName + ".CompanyFeed";
+			Feed.Strategy<Integer, Company> strategy = new Feed.Strategy<Integer,
+			Company>(){
+
+				@Override
+				public Collection<Company> createNewValues(Range<Integer> range) {
+					Collection<Company> values = new ArrayList<Company>(range.size());
+					for (int id : range.getValues())
+						values.add(new Company(id, 0));
+					return values;
+				}
+
+				@Override
+				public Company createNewVersion(Company original) {
+					return new Company(original.getId(), original.getVersion()+1);
+				}
+
+				@Override
+				public Integer getKey(Company item) {
+					return item.getId();
+				}};
+				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
+				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
+				remote(feed, true);
+		}
 
 		// aggregate models
 

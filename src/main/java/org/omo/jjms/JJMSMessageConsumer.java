@@ -32,7 +32,7 @@ public class JJMSMessageConsumer implements MessageConsumer {
 	}
 	
 	protected void dispatch(Message message) {
-		logger.trace("{} receive {}", System.identityHashCode(this), message);
+		logger.trace("#{}: receive {}", System.identityHashCode(this), message);
 		messageListener.onMessage(message);
 	}
 	
