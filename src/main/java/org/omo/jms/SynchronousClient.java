@@ -75,12 +75,12 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 		boolean async = trueAsync && method.getReturnType().equals(Void.TYPE) && method.getExceptionTypes().length == 0;
 		
 		if (async) {
-		        logger.trace("SENDING ASYNC: {} -> {}", method, destination);
+			logger.trace("SENDING ASYNC: {} -> {}", method, destination);
 			producer.send(destination, message);
 			return null;
 		} else {
 			String correlationId = "" + count++;
-			System.out.println("setting correlationId: " + System.identityHashCode(this) + ":" + correlationId);
+			logger.trace(System.identityHashCode(this) + ": setting correlationId: {}:{}", System.identityHashCode(this), correlationId);
 			message.setJMSCorrelationID(correlationId);
 			message.setJMSReplyTo(resultsQueue);
 			Exchanger<Results> exchanger = new Exchanger<Results>();

@@ -7,7 +7,7 @@
   
   <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
 
-  <amq:broker id="Broker" useJmx="true" persistent="false" brokerName="Server" advisorySupport="false">
+  <amq:broker useJmx="true" persistent="false" brokerName="Server" advisorySupport="false">
 
     <amq:destinationPolicy>
       <amq:policyMap>

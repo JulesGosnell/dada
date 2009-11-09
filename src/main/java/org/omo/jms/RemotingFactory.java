@@ -53,7 +53,7 @@ public class RemotingFactory<T> {
 			this.executorService = executorService;
 			logger = LoggerFactory.getLogger(Server.class);
 			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
-			logger.info("consuming messages on: {}", destination);
+			logger.info("{}: consuming messages on: {}", System.identityHashCode(this), destination);
 			consumer.setMessageListener(this);
 		}
 		

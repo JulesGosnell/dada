@@ -12,7 +12,7 @@ public class JJMSCamelTestCase extends AbstractCamelTestCase {
 	@Override
 	public ConnectionFactory getConnectionFactory() {
 		JJMSConnectionFactory connectionFactory = new JJMSConnectionFactory(executorService, new SyncLock(new NullSync()));
-		connectionFactory.run();
+		connectionFactory.start();
 		return connectionFactory;
 	}
 

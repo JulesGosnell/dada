@@ -43,7 +43,7 @@ public abstract class JJMSDestination implements Destination {
 	}
 
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ":" + name + ">";
+		return "<" + getClass().getSimpleName() + ":" + System.identityHashCode(this) + ":" + name + ">";
 	}
 
 }

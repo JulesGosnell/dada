@@ -40,11 +40,14 @@ public class JJMSConnectionFactory implements ConnectionFactory {
 	}
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private volatile IPersistentMap nameToDestination= PersistentTreeMap.EMPTY;
 	private final BlockingQueue<Job> jobs = new LinkedBlockingQueue<Job>();
 	private final ExecutorService threadPool;
 	private final Lock lock;
 
+	private volatile IPersistentMap nameToDestination= PersistentTreeMap.EMPTY;
+	private volatile boolean running;
+	private volatile Thread thread;
+	
 	public JJMSConnectionFactory(ExecutorService threadPool, Lock lock) {
 		logger.debug("create");
 		this.threadPool = threadPool;
@@ -65,20 +68,27 @@ public class JJMSConnectionFactory implements ConnectionFactory {
 		jobs.add(new Job(message, destination));
 	}
 
-	public void run() {
-		logger.debug("run");
-		new Thread(new Runnable() {
-
+	
+	public void start() {
+		logger.debug("start");
+		thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				while (true) {
+				running = true;
+				while (running) {
 					try {
 						threadPool.execute(jobs.take());
 					} catch (InterruptedException e) {
 						throw new RuntimeException(e);
 					}
 				}
-			}}).start();
+			}});
+		thread.start();
+	}
+
+	public void stop() {
+		running = false;
+		logger.debug("stop");
 	}
 	
 	// JMS

@@ -15,7 +15,7 @@ public class JJMSRemotingTestCase extends AbstractRemotingTestCase {
 	@Override
 	protected ConnectionFactory getConnnectionFactory() {
 		JJMSConnectionFactory connectionFactory = new JJMSConnectionFactory(Executors.newFixedThreadPool(2), new SyncLock(new NullSync()));
-		connectionFactory.run();
+		connectionFactory.start();
 		return connectionFactory;
 	}
 
