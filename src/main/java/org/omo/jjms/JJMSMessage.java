@@ -224,12 +224,12 @@ public class JJMSMessage implements Message {
 	}
 
 	@Override
-	public void setJMSDeliveryMode(int arg0) throws JMSException {
+	public void setJMSDeliveryMode(int jmsDeliveryMode) throws JMSException {
 		this.jmsDeliveryMode = jmsDeliveryMode;
 	}
 
 	@Override
-	public void setJMSDestination(Destination arg0) throws JMSException {
+	public void setJMSDestination(Destination jmsDestination) throws JMSException {
 		this.jmsDestination = jmsDestination;
 	}
 

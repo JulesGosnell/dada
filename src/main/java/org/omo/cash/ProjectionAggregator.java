@@ -7,9 +7,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.omo.core.Aggregator;
 import org.omo.core.DateRange;
+import org.omo.core.Update;
 import org.omo.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,8 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 			positions.set(index, value.getAmount());
 		}
 		Projection projection = new Projection(account, version++, positions);
-		view.update(Collections.singleton(projection)); // TODO: do we want this inside sync block ?
+		Set<Update<Projection>> insertions = Collections.singleton(new Update<Projection>(null, projection));
+		view.update(insertions, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>()); // TODO: do we want this inside sync block ?
 	}
 
 	@Override
@@ -70,7 +73,8 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 			positions.set(index, newValue.getAmount());
 			projection = new Projection(account, version++, positions);
 		}
-		view.update(Collections.singleton(projection));
+		Set<Update<Projection>> insertions = Collections.singleton(new Update<Projection>(null, projection));
+		view.update(insertions, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>());
 	}
 
 }

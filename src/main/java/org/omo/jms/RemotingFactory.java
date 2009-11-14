@@ -3,7 +3,6 @@ package org.omo.jms;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import javax.jms.Destination;

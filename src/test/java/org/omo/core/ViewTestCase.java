@@ -51,8 +51,8 @@ public class ViewTestCase extends TestCase {
 		int count;
 
 		@Override
-		public void update(Collection<V> updates) {
-			count += updates.size();
+		public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+			count += insertions.size();
 		}
 
 		
@@ -61,11 +61,13 @@ public class ViewTestCase extends TestCase {
 	public void testSimpleView() {
 		ModelView<Integer, BooleanDatum> view = new FilteredModelView<Integer, BooleanDatum>("IsTrue", datumMetadata, new DatumIsTrueFilter());
 		Counter<Integer, BooleanDatum> counter = new Counter<Integer, BooleanDatum>();
-		Collection<BooleanDatum> insertions = view.registerView(counter).getData();
-		counter.update(insertions);
-		view.update(Collections.singleton(new BooleanDatum(0, false)));
-		view.update(Collections.singleton(new BooleanDatum(1, true)));
-		view.update(Collections.singleton(new BooleanDatum(2, false)));
+		Collection<Update<BooleanDatum>> insertions = new ArrayList<Update<BooleanDatum>>(); 
+		for (BooleanDatum datum : view.registerView(counter).getData())
+			insertions.add(new Update<BooleanDatum>(null, datum));
+		counter.update(insertions, new ArrayList<Update<BooleanDatum>>(), new ArrayList<Update<BooleanDatum>>());
+		view.update(Collections.singleton(new Update<BooleanDatum>(null, new BooleanDatum(0, false))), new ArrayList<Update<BooleanDatum>>(), new ArrayList<Update<BooleanDatum>>());
+		view.update(Collections.singleton(new Update<BooleanDatum>(null, new BooleanDatum(1, true))), new ArrayList<Update<BooleanDatum>>(), new ArrayList<Update<BooleanDatum>>());
+		view.update(Collections.singleton(new Update<BooleanDatum>(null, new BooleanDatum(2, false))), new ArrayList<Update<BooleanDatum>>(), new ArrayList<Update<BooleanDatum>>());
 		assertTrue(counter.count==1);
 	}
 
@@ -97,25 +99,30 @@ public class ViewTestCase extends TestCase {
 		Counter<Integer, StringDatum> counter = new Counter<Integer, StringDatum>();
 		ModelView<Integer, StringDatum> isTrue = new FilteredModelView<Integer, StringDatum>("IsTrue", stringDatumMetadata, new IsTrueFilter());
 		ModelView<Integer, StringDatum> isNull = new FilteredModelView<Integer, StringDatum>("IsNull", stringDatumMetadata, new IsNullFilter());
-		Collection<StringDatum> isNullData = isTrue.registerView(isNull).getData();
-		isNull.update(isNullData);
-		Collection<StringDatum> counterData = isNull.registerView(counter).getData();
-		counter.update(counterData);
-		isTrue.update(Collections.singleton(new StringDatum(0, false, "")));
+		Collection<Update<StringDatum>> isNullData = new ArrayList<Update<StringDatum>>();  
+		for (StringDatum datum : isTrue.registerView(isNull).getData()) {
+			isNullData.add(new Update<StringDatum>(null, datum));
+		}
+		isNull.update(isNullData, new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
+		Collection<Update<StringDatum>> counterData= new ArrayList<Update<StringDatum>>();  
+		for (StringDatum datum : isNull.registerView(counter).getData())
+			counterData.add(new Update<StringDatum>(null, datum));
+		counter.update(counterData, new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
+		isTrue.update(Collections.singleton(new Update<StringDatum>(null,new StringDatum(0, false, ""))), new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
 		assertTrue(counter.count==0);
-		isTrue.update(Collections.singleton(new StringDatum(1, true, "")));
+		isTrue.update(Collections.singleton(new Update<StringDatum>(null,new StringDatum(1, true, ""))), new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
 		assertTrue(counter.count==0);
-		isTrue.update(Collections.singleton(new StringDatum(2, false, null)));
+		isTrue.update(Collections.singleton(new Update<StringDatum>(null,new StringDatum(2, false, null))), new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
 		assertTrue(counter.count==0);
-		isTrue.update(Collections.singleton(new StringDatum(3, true, null)));
+		isTrue.update(Collections.singleton(new Update<StringDatum>(null,new StringDatum(3, true, null))), new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
 		assertTrue(counter.count==1);
 		
-		List<StringDatum> insertions = new ArrayList<StringDatum>(4);
-		insertions.add(new StringDatum(4, false, ""));
-		insertions.add(new StringDatum(5, true, ""));
-		insertions.add(new StringDatum(6, false, null));
-		insertions.add(new StringDatum(7, true, null));
-		isTrue.update(insertions);
+		List<Update<StringDatum>> insertions = new ArrayList<Update<StringDatum>>(4);
+		insertions.add(new Update<StringDatum>(null, new StringDatum(4, false, "")));
+		insertions.add(new Update<StringDatum>(null, new StringDatum(5, true, "")));
+		insertions.add(new Update<StringDatum>(null, new StringDatum(6, false, null)));
+		insertions.add(new Update<StringDatum>(null, new StringDatum(7, true, null)));
+		isTrue.update(insertions, new ArrayList<Update<StringDatum>>(), new ArrayList<Update<StringDatum>>());
 		assertTrue(counter.count==2);
 	}
 

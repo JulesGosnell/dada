@@ -18,7 +18,6 @@ public class JJMSConnection implements Connection {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final JJMSConnectionFactory connectionFactory;
 	
-	private volatile boolean running;
 	private volatile ExceptionListener exceptionListener;
 
 	protected JJMSConnection(JJMSConnectionFactory connectionFactory) {
@@ -88,12 +87,10 @@ public class JJMSConnection implements Connection {
 
 	@Override
 	public void start() throws JMSException {
-		running = true;
 	}
 
 	@Override
 	public void stop() throws JMSException {
-		running = false;
 	}
 
 }

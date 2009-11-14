@@ -38,12 +38,16 @@ public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V
 
 	// View
 	@Override
-	public void update(Collection<V> updates) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+		Collection<V> insertionsOut = new ArrayList<V>();
 		synchronized (map.values()) {
-			for (V insertion : updates)
-				map.put(adaptor.getKey(insertion), insertion);
+			for (Update<V> insertion : insertions) {
+				V newValue = insertion.getNewValue();
+				map.put(adaptor.getKey(newValue), newValue);
+				insertionsOut.add(newValue);
+			}
 		}
-		notifyUpdates(updates);
+		notifyUpdates(insertionsOut);
 		// TODO: extend
 	}
 

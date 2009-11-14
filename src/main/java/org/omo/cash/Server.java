@@ -38,6 +38,7 @@ import org.omo.core.Partitioner;
 import org.omo.core.Range;
 import org.omo.core.Registration;
 import org.omo.core.StringMetadata;
+import org.omo.core.Update;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
 import org.omo.jjms.JJMSConnectionFactory;
@@ -77,11 +78,11 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
-	private final int numTrades = 2000000;
+	private final int numTrades = 1000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
-	private final int numAccounts = 700;
-	private final int numCurrencies = 200;
+	private final int numAccounts = 10;
+	private final int numCurrencies = 10;
 	private final int numBalances = 100;
 	private final int numCompanies = 10;
 	private final int timeout = 10 * 60 * 1000; // 1 minute
@@ -317,18 +318,18 @@ public class Server {
 				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a, accountProjection);
 				accountTotal.register(projectionAggregator);
 
-				List<AccountTotal> accountTotals = new ArrayList<AccountTotal>(dateRangeValues.size());
+				List<Update<AccountTotal>> accountTotals = new ArrayList<Update<AccountTotal>>(dateRangeValues.size());
 				for (Date d : dateRangeValues) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a;
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a + ".Total";
 					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>) nameToModel.get(modelName);
-					accountTotals.add(new AccountTotal(d, 0, a, new BigDecimal(0)));
+					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.register(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
 					aggregator.insert(registration.getData());
 				}
-				accountTotal.update(accountTotals);
+				accountTotal.update(accountTotals, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
 
 			}
 		}
@@ -374,7 +375,7 @@ public class Server {
 		Queue externalQueue = externalSession.createQueue(name);
 		internalRemotingFactory.createServer(model, internalQueue,executorService);
 		externalRemotingFactory.createServer(model, externalQueue,executorService);
-		metaModel.update(Collections.singleton(name));
+		metaModel.update(Collections.singleton(new Update<String>(null, name)), new ArrayList<Update<String>>(), new ArrayList<Update<String>>());
 		if (start)
 			model.start();
 	}
@@ -396,8 +397,12 @@ public class Server {
 
 		Registration<Integer, Trade> registration = model.registerView(v);
 		Collection<Trade> data = registration.getData();
-		if (data.size() > 0)
-			view.update(data);
+		if (data.size() > 0) {
+			Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
+			for (Trade trade : data)
+				insertions.add(new Update<Trade>(null, trade));
+			view.update(insertions, new ArrayList<Update<Trade>>(), new ArrayList<Update<Trade>>());
+		}
 	}
 
 	public void start() throws Exception {

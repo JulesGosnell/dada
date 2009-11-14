@@ -12,7 +12,6 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import EDU.oswego.cs.dl.util.concurrent.Sync;
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
 

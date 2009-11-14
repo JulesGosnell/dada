@@ -5,6 +5,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.rmi.server.UID;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +29,7 @@ import org.omo.core.JView;
 import org.omo.core.Model;
 import org.omo.core.Registration;
 import org.omo.core.TableModelView;
+import org.omo.core.Update;
 import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
 import org.slf4j.Logger;
@@ -83,7 +85,10 @@ public class Client {
 		Collection<Object> models = registration.getData();
 		if (models != null) {
 			guiModel.setMetadata(registration.getMetadata());
-			guiModel.update(models);
+			Collection<Update<Object>> insertions = new ArrayList<Update<Object>>();
+			for (Object model : models)
+				insertions.add(new Update<Object>(null ,model));
+			guiModel.update(insertions, new ArrayList<Update<Object>>(), new ArrayList<Update<Object>>());
 		}
 		else
 			LOG.warn("null model content returned");

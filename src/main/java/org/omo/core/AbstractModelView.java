@@ -31,7 +31,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 	}
 
 	@Override
-	public void update(Collection<V> updates) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
@@ -72,13 +72,18 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 		return true;
 	}
 
+	protected final Collection<Update<V>> EMPTY = new ArrayList<Update<V>>();
+	
 	protected void notifyUpdate(Collection<V> values) {
 		//IPersistentSet snapshot = views;
 		List<View<K, V>> snapshot = views;
 		//for (View<K, V> view : (Iterable<View<K, V>>)snapshot) {
 		//log.info("NOTIFYING UPDATE ({}): {}", getName(), values);
+		// TODO: temp fix
+		Collection<Update<V>> tmp = new ArrayList<Update<V>>(values.size());
+		for (V value : values) tmp.add(new Update<V>(null, value));
 		for (View<K, V> view : snapshot) {
-			view.update(values);
+			view.update(tmp, EMPTY, EMPTY);
 		}
 	}
 

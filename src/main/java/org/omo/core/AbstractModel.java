@@ -3,7 +3,6 @@ package org.omo.core;
 import java.util.ArrayList;
 import java.util.Collection;
 
-// TODO - merge with more recent code - concurrent modification issues in listener collection...
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +60,10 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	protected void notifyUpdates(Collection<V> updates) {
 		for (View<K, V> view : views)
 			try {
-				view.update(updates);
+				Collection<Update<V>> insertions = new ArrayList<Update<V>>();
+				for (V update : updates)
+					insertions.add(new Update<V>(null, update));
+				view.update(insertions, new ArrayList<Update<V>>(), new ArrayList<Update<V>>());
 			} catch (RuntimeException e) {
 			    logger.error("view notification failed: {} <- {}", view, updates);
 			    logger.error("", e);
