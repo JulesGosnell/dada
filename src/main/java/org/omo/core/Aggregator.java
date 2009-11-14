@@ -1,11 +1,8 @@
 package org.omo.core;
 
-import java.util.Collection;
 
-public interface Aggregator<A, V> {
+public interface Aggregator<A, K, V> extends View<K, V>{
 
 	A getAggregate();
-	
-	void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions);
 
 }

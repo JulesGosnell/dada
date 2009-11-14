@@ -316,7 +316,7 @@ public class Server {
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
 				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a, accountProjection);
-				accountTotal.register(projectionAggregator);
+				accountTotal.registerView(projectionAggregator);
 
 				List<Update<AccountTotal>> accountTotals = new ArrayList<Update<AccountTotal>>(dateRangeValues.size());
 				for (Date d : dateRangeValues) {
@@ -325,7 +325,7 @@ public class Server {
 					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>) nameToModel.get(modelName);
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
-					Registration<Integer, Trade> registration = model.register(aggregator);
+					Registration<Integer, Trade> registration = model.registerView(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
 					Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
 					for (Trade datum : registration.getData())

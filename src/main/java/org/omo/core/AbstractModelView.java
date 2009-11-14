@@ -15,7 +15,6 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 	protected final Metadata<K, V> metadata;
 	private final Object viewsLock = new Object();
 	protected volatile List<View<K, V>> views = new ArrayList<View<K,V>>();
-	protected volatile Collection<Aggregator<? extends Object, V>> aggregators = new ArrayList<Aggregator<? extends Object,V>>();
 	
 	public AbstractModelView(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -81,20 +80,6 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + name + ">";
-	}
-
-	// TODO: move aggregation up into an interface
-	public Registration<K, V> register(Aggregator<? extends Object, V> aggregator) {
-		Collection<Aggregator<? extends Object, V>> newAggregators = new ArrayList<Aggregator<? extends Object,V>>(aggregators);
-		newAggregators.add(aggregator);
-		aggregators = newAggregators;
-		return new Registration<K, V>(null, getValues());
-	}
-
-	public void deregister(Aggregator<? extends Object, V> aggregator) {
-		Collection<Aggregator<? extends Object, V>> newAggregators = new ArrayList<Aggregator<? extends Object,V>>(aggregators);
-		newAggregators.remove(aggregator);
-		aggregators = newAggregators;
 	}
 
 }

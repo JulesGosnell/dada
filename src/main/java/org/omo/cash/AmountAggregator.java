@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO: to lock or to copy-on-write ?
 
-public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
+public class AmountAggregator implements Aggregator<BigDecimal, Integer, Trade> {
 
 	private final Collection<Update<AccountTotal>> empty = new ArrayList<Update<AccountTotal>>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());

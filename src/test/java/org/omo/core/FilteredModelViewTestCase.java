@@ -114,7 +114,7 @@ public class FilteredModelViewTestCase extends TestCase {
 		assertTrue(view.maps.historic.count() == 0);
 	}
 
-	class IdAggregator implements Aggregator<Integer, Datum<Integer>> {
+	class IdAggregator implements Aggregator<Integer, Integer, Datum<Integer>> {
 
 		int total = 0;
 
@@ -137,8 +137,8 @@ public class FilteredModelViewTestCase extends TestCase {
 	public void testAggregator() {
 		query.setAnswer(true);
 
-		Aggregator<Integer, Datum<Integer>> aggregator = new IdAggregator();
-		view.register(aggregator);
+		Aggregator<Integer, Integer, Datum<Integer>> aggregator = new IdAggregator();
+		view.registerView(aggregator);
 
 		assertTrue(view.maps.historic.count() == 0);
 		assertTrue(aggregator.getAggregate() == 0);
@@ -220,8 +220,8 @@ public class FilteredModelViewTestCase extends TestCase {
 		assertTrue(aggregator.getAggregate() == 3);
 
 		// register an aggregator
-		Aggregator<Integer, Datum<Integer>> aggregator2 = new IdAggregator();
-		Registration<Integer, Datum<Integer>> registration = view.register(aggregator2);
+		Aggregator<Integer, Integer, Datum<Integer>> aggregator2 = new IdAggregator();
+		Registration<Integer, Datum<Integer>> registration = view.registerView(aggregator2);
 		Collection<Update<Datum<Integer>>> insertions = empty;
 		for (Datum<Integer> datum : registration.getData())
 			insertions.add(new Update<Datum<Integer>>(null, datum));
