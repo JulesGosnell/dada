@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 
+	private final Collection<Update<AccountTotal>> empty = new ArrayList<Update<AccountTotal>>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private final String name;
@@ -25,7 +26,7 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 	private final View<Date, AccountTotal> view;
 
 	private BigDecimal aggregate = new BigDecimal(0);
-	private int version; // TODO: needs to come from our Model, so if we go, it in not lost...
+	private int version; // TODO: needs to come from our Model, so if we go, it is not lost...
 	
 	public AmountAggregator(String name, Date date, int account, View<Date, AccountTotal> view) {
 		this.name = name;
@@ -38,13 +39,15 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		return aggregate;
 	}
 	
-	public synchronized void insert(Collection<Update<Trade>> values) {
-		logger.debug("insert: size={}", values.size());
-		for (Update<Trade> value : values) {
-			aggregate = aggregate.add(value.getNewValue().getAmount());
+	public synchronized void insert(Collection<Update<Trade>> insertions) {
+		logger.debug("insert: size={}", insertions.size());
+		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
+		for (Update<Trade> insertion : insertions) {
+			aggregate = aggregate.add(insertion.getNewValue().getAmount());
 		}
-		Collection<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(null, new AccountTotal(date, version++, account, aggregate)));
-		view.update(insertions, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
+		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
+		Collection<Update<AccountTotal>> updates = Collections.singletonList(new Update<AccountTotal>(oldValue, newValue));
+		view.update(empty, updates, empty);
 	}
 	
 	public synchronized void update(Trade oldValue, Trade newValue) {
@@ -52,15 +55,18 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		aggregate = aggregate.add(newValue.getAmount()).subtract(oldValue.getAmount());
 		logger.trace(name + ": update: " + oldValue + " -> " + newValue); // TODO: slf4j-ise
 		List<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(null, new AccountTotal(date, version++, account, aggregate)));
-		view.update(insertions, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
+		view.update(insertions, empty, empty);
 	}
 	
-	public synchronized void remove(Trade value) {
-		logger.debug("renove: size={}", 1);
-		aggregate = aggregate.subtract(value.getAmount());
-		logger.trace("{}: remove: {}", name, value);
-		List<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(null, new AccountTotal(date, version++, account, aggregate)));
-		view.update(insertions, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
+	public synchronized void remove(Collection<Update<Trade>> deletions) {
+		logger.debug("remove: size={}", deletions.size());
+		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
+		for (Update<Trade> deletion : deletions) {
+			aggregate = aggregate.subtract(deletion.getOldValue().getAmount());
+		}
+		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
+		Collection<Update<AccountTotal>> updates = Collections.singleton(new Update<AccountTotal>(oldValue, newValue));
+		view.update(empty, updates, empty);
 	}
 	
 }

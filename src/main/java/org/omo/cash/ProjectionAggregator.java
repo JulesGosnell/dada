@@ -43,23 +43,25 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 		throw new UnsupportedOperationException("NYI");
 	}
 
+	private Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(); 
+	
 	@Override
 	public synchronized void insert(Collection<Update<AccountTotal>> insertionsIn) {
 		logger.debug("insert: size={}", insertionsIn.size());
+		Projection oldValue = new Projection(account, version, new ArrayList<BigDecimal>(positions));
 		for (Update<AccountTotal> insertionIn : insertionsIn) {
 			AccountTotal newValue = insertionIn.getNewValue();
-			//log.info("insert: {}", value);
 			Date date = newValue.getId();
 			int index = dates.indexOf(date);
 			positions.set(index, newValue.getAmount());
 		}
-		Projection projection = new Projection(account, version++, positions);
-		Set<Update<Projection>> insertionsOut = Collections.singleton(new Update<Projection>(null, projection));
-		view.update(insertionsOut, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>()); // TODO: do we want this inside sync block ?
+		Projection newValue = new Projection(account, version++, new ArrayList<BigDecimal>(positions));
+		Set<Update<Projection>> updates = Collections.singleton(new Update<Projection>(oldValue, newValue));
+		view.update(empty, updates, empty);
 	}
 
 	@Override
-	public void remove(AccountTotal value) {
+	public void remove(Collection<Update<AccountTotal>> value) {
 		logger.debug("remove: size={}", 1);
 		throw new UnsupportedOperationException("NYI");
 	}

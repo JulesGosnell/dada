@@ -10,6 +10,6 @@ public interface Aggregator<A, V> {
 
 	void update(V oldValue, V newValue);
 
-	void remove(V value);
+	void remove(Collection<Update<V>> value);
 
 }

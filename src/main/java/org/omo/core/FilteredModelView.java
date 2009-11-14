@@ -9,6 +9,7 @@ import java.util.List;
 
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
+import edu.emory.mathcs.backport.java.util.Collections;
 
 // TODO: collect together insertions and deliver to aggregator in single collection...
 
@@ -113,7 +114,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 			for (Update<V> deletion : deletionsOut) {
 				// Views ?
 				for (Aggregator<? extends Object, V> aggregator : aggregators)
-					aggregator.remove(deletion.getOldValue());
+					aggregator.remove(Collections.singleton(new Update<V>(null,deletion.getOldValue())));
 			}
 			// TODO: View api needs fixing
 			notifyUpdate(viewUpdates);
