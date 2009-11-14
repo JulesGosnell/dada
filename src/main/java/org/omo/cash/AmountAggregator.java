@@ -50,12 +50,17 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		view.update(empty, updates, empty);
 	}
 	
-	public synchronized void update(Trade oldValue, Trade newValue) {
-		logger.debug("update: size={}", 1);
-		aggregate = aggregate.add(newValue.getAmount()).subtract(oldValue.getAmount());
-		logger.trace(name + ": update: " + oldValue + " -> " + newValue); // TODO: slf4j-ise
-		List<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(null, new AccountTotal(date, version++, account, aggregate)));
-		view.update(insertions, empty, empty);
+	public synchronized void update(Collection<Update<Trade>> updates) {
+		logger.debug("update: size={}", updates.size());
+		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
+		BigDecimal newAggregate = aggregate;
+		for (Update<Trade> update : updates) {
+			newAggregate = newAggregate.add(update.getNewValue().getAmount()).subtract(update.getOldValue().getAmount());
+		}
+		aggregate = newAggregate;
+		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
+		List<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(oldValue, newValue));
+		view.update(empty, insertions, empty);
 	}
 	
 	public synchronized void remove(Collection<Update<Trade>> deletions) {

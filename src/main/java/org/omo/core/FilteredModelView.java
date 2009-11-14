@@ -5,11 +5,9 @@ package org.omo.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
-import edu.emory.mathcs.backport.java.util.Collections;
 
 // TODO: collect together insertions and deliver to aggregator in single collection...
 
@@ -68,7 +66,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 				V newValue = update.getNewValue();
 				K key = newValue.getId();
 				V currentValue = (V)current.valAt(key);
-				if (newValue.getVersion() > currentValue.getVersion()) {
+				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
 					current = current.assoc(newValue.getId(), newValue);
 					updatesOut.add(update);
 				} else {
@@ -99,26 +97,13 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 
 		// notify Viewers/Aggregators
 		// TODO: merge Aggregator and View
-		if (insertionsOut.size() >0 || updatesOut.size() > 0 || deletionsOut.size() > 0) {
-			// temp adaptor
-			Collection<V> viewUpdates = new ArrayList<V>();
-			for (Update<V> insertion : insertionsOut) {
-				viewUpdates.add(insertion.getNewValue());
-			}
-			for (Update<V> update : updatesOut) {
-				viewUpdates.add(update.getNewValue());
-				for (Aggregator<? extends Object, V> aggregator : aggregators)
-					aggregator.update(update.getOldValue(), update.getNewValue());
-			}
-			// deletions ?
-			for (Update<V> deletion : deletionsOut) {
-				// Views ?
-				for (Aggregator<? extends Object, V> aggregator : aggregators)
-					aggregator.remove(Collections.singleton(new Update<V>(null,deletion.getOldValue())));
+		for (Aggregator<? extends Object, V> aggregator : aggregators) {
+			aggregator.insert(insertionsOut);
+			aggregator.update(updatesOut);
+			aggregator.remove(deletionsOut);
 			}
 			// TODO: View api needs fixing
-			notifyUpdate(viewUpdates);
-		}
+		notifyUpdate(insertionsOut, updatesOut, deletionsOut);
 	}
-	
 }
+	

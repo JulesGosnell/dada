@@ -46,11 +46,11 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 	private Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(); 
 	
 	@Override
-	public synchronized void insert(Collection<Update<AccountTotal>> insertionsIn) {
-		logger.debug("insert: size={}", insertionsIn.size());
+	public synchronized void insert(Collection<Update<AccountTotal>> insertions) {
+		logger.debug("insert: size={}", insertions.size());
 		Projection oldValue = new Projection(account, version, new ArrayList<BigDecimal>(positions));
-		for (Update<AccountTotal> insertionIn : insertionsIn) {
-			AccountTotal newValue = insertionIn.getNewValue();
+		for (Update<AccountTotal> insertion : insertions) {
+			AccountTotal newValue = insertion.getNewValue();
 			Date date = newValue.getId();
 			int index = dates.indexOf(date);
 			positions.set(index, newValue.getAmount());
@@ -61,23 +61,29 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 	}
 
 	@Override
-	public void remove(Collection<Update<AccountTotal>> value) {
-		logger.debug("remove: size={}", 1);
-		throw new UnsupportedOperationException("NYI");
+	public void update(Collection<Update<AccountTotal>> updates) {
+		logger.debug("update: size={}", updates.size());
+		Projection oldValue2 = new Projection(account, version, new ArrayList<BigDecimal>(positions));
+		for (Update<AccountTotal> update : updates) {
+			AccountTotal oldValue = update.getOldValue();
+			AccountTotal newValue = update.getNewValue();
+			logger.debug("update: {} -> {}", oldValue, newValue);
+			Date date = newValue.getId();
+			int index = dates.indexOf(date);
+			Projection projection;
+			synchronized (positions) {
+				positions.set(index, newValue.getAmount());
+				projection = new Projection(account, version++, positions);
+			}
+		}
+		Projection newValue2 = new Projection(account, ++version, new ArrayList<BigDecimal>(positions));
+		Set<Update<Projection>> insertions = Collections.singleton(new Update<Projection>(oldValue2, newValue2));
+		view.update(empty, insertions, empty); 
 	}
 
 	@Override
-	public void update(AccountTotal oldValue, AccountTotal newValue) {
-		logger.debug("update: {} -> {}", oldValue, newValue);
-		Date date = newValue.getId();
-		int index = dates.indexOf(date);
-		Projection projection;
-		synchronized (positions) {
-			positions.set(index, newValue.getAmount());
-			projection = new Projection(account, version++, positions);
-		}
-		Set<Update<Projection>> insertions = Collections.singleton(new Update<Projection>(null, projection));
-		view.update(insertions, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>());
+	public void remove(Collection<Update<AccountTotal>> deletions) {
+		logger.debug("remove: size={}", 1);
 	}
 
 }

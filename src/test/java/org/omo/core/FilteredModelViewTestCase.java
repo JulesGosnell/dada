@@ -131,14 +131,15 @@ public class FilteredModelViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void remove(Collection<Update<Datum<Integer>>> values) {
-			for (Update<Datum<Integer>> value : values)
-				total -= value.getOldValue().getId();
+		public void update(Collection<Update<Datum<Integer>>> updates) {
+			for (Update<Datum<Integer>> update : updates)
+				total += update.getNewValue().getId() - update.getOldValue().getId();
 		}
 
 		@Override
-		public void update(Datum<Integer> oldValue, Datum<Integer> newValue) {
-			total += newValue.getId() - oldValue.getId();
+		public void remove(Collection<Update<Datum<Integer>>> values) {
+			for (Update<Datum<Integer>> value : values)
+				total -= value.getOldValue().getId();
 		}
 
 	}
