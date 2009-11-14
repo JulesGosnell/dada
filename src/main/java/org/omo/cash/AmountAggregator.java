@@ -38,10 +38,10 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		return aggregate;
 	}
 	
-	public synchronized void insert(Collection<Trade> values) {
+	public synchronized void insert(Collection<Update<Trade>> values) {
 		logger.debug("insert: size={}", values.size());
-		for (Trade value : values) {
-			aggregate = aggregate.add(value.getAmount());
+		for (Update<Trade> value : values) {
+			aggregate = aggregate.add(value.getNewValue().getAmount());
 		}
 		Collection<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(null, new AccountTotal(date, version++, account, aggregate)));
 		view.update(insertions, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());

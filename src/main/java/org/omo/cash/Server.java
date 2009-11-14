@@ -327,7 +327,10 @@ public class Server {
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.register(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
-					aggregator.insert(registration.getData());
+					Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
+					for (Trade datum : registration.getData())
+						insertions.add(new Update<Trade>(null, datum));
+					aggregator.insert(insertions);
 				}
 				accountTotal.update(accountTotals, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
 

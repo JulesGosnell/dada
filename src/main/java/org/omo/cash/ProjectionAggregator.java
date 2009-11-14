@@ -44,17 +44,18 @@ public class ProjectionAggregator implements Aggregator<Projection, AccountTotal
 	}
 
 	@Override
-	public synchronized void insert(Collection<AccountTotal> values) {
-		logger.debug("insert: size={}", values.size());
-		for (AccountTotal value : values) {
+	public synchronized void insert(Collection<Update<AccountTotal>> insertionsIn) {
+		logger.debug("insert: size={}", insertionsIn.size());
+		for (Update<AccountTotal> insertionIn : insertionsIn) {
+			AccountTotal newValue = insertionIn.getNewValue();
 			//log.info("insert: {}", value);
-			Date date = value.getId();
+			Date date = newValue.getId();
 			int index = dates.indexOf(date);
-			positions.set(index, value.getAmount());
+			positions.set(index, newValue.getAmount());
 		}
 		Projection projection = new Projection(account, version++, positions);
-		Set<Update<Projection>> insertions = Collections.singleton(new Update<Projection>(null, projection));
-		view.update(insertions, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>()); // TODO: do we want this inside sync block ?
+		Set<Update<Projection>> insertionsOut = Collections.singleton(new Update<Projection>(null, projection));
+		view.update(insertionsOut, new ArrayList<Update<Projection>>(), new ArrayList<Update<Projection>>()); // TODO: do we want this inside sync block ?
 	}
 
 	@Override
