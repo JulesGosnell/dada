@@ -6,10 +6,6 @@ public interface Aggregator<A, V> {
 
 	A getAggregate();
 	
-	void insert(Collection<Update<V>> insertions);
-
-	void update(Collection<Update<V>> updates);
-
-	void remove(Collection<Update<V>> deletions);
+	void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions);
 
 }

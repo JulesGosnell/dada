@@ -124,24 +124,14 @@ public class FilteredModelViewTestCase extends TestCase {
 		}
 
 		@Override
-		public void insert(Collection<Update<Datum<Integer>>> values) {
-			for (Update<Datum<Integer>> value : values) {
-				total += value.getNewValue().getId();
-			}
-		}
-
-		@Override
-		public void update(Collection<Update<Datum<Integer>>> updates) {
+		public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			for (Update<Datum<Integer>> insertion : insertions)
+				total += insertion.getNewValue().getId();
 			for (Update<Datum<Integer>> update : updates)
 				total += update.getNewValue().getId() - update.getOldValue().getId();
+			for (Update<Datum<Integer>> deletion : deletions)
+				total -= deletion.getOldValue().getId();
 		}
-
-		@Override
-		public void remove(Collection<Update<Datum<Integer>>> values) {
-			for (Update<Datum<Integer>> value : values)
-				total -= value.getOldValue().getId();
-		}
-
 	}
 
 	public void testAggregator() {
@@ -155,90 +145,91 @@ public class FilteredModelViewTestCase extends TestCase {
 
 		// simple insertion
 		Datum<Integer> datum0 = new IntegerDatum(0, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		ArrayList<Update<Datum<Integer>>> empty = new ArrayList<Update<Datum<Integer>>>();
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), empty, empty);
 		assertTrue(view.maps.historic.count() == 0);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// update existing current value
 		Datum<Integer> datum1 = new IntegerDatum(0, 1);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum1)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum1)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// out of sequence updates
 		Datum<Integer> datum2 = new IntegerDatum(0, 2);
 		Datum<Integer> datum3 = new IntegerDatum(0, 3);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum3)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum3)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum2)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum2)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		query.setAnswer(false);
 
 		// rejected value
 		Datum<Integer> reject = new IntegerDatum(1, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, reject)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, reject)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// retire existing value
 		Datum<Integer> datum4 = new IntegerDatum(0, 4);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum4)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum4)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// update a retired value
 		Datum<Integer> datum5 = new IntegerDatum(0, 5);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum5)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum5)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// update a retired value out of sequence
 		Datum<Integer> datum6 = new IntegerDatum(0, 6);
 		Datum<Integer> datum7 = new IntegerDatum(0, 7);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum7)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum7)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum6)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum6)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// unretire retired value
 		query.setAnswer(true);
 		Datum<Integer> datum8 = new IntegerDatum(0, 8);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum8)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum8)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 0);
 
 		// insert 2nd value
 		Datum<Integer> datum9 = new IntegerDatum(1, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum9)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum9)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 1);
 
 		// insert 3rd value
 		Datum<Integer> datum10 = new IntegerDatum(2, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum10)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum10)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 3);
 
 		// remove/retire 3rd value
 		query.setAnswer(false);		
 		Datum<Integer> datum11 = new IntegerDatum(2, 1);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum11)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum11)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 1);
 
 		// reinsert 3rd value
 		query.setAnswer(true);
 		Datum<Integer> datum12 = new IntegerDatum(2, 2);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum12)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum12)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 3);
 
 		// register an aggregator
 		Aggregator<Integer, Datum<Integer>> aggregator2 = new IdAggregator();
 		Registration<Integer, Datum<Integer>> registration = view.register(aggregator2);
-		Collection<Update<Datum<Integer>>> insertions = new ArrayList<Update<Datum<Integer>>>();
+		Collection<Update<Datum<Integer>>> insertions = empty;
 		for (Datum<Integer> datum : registration.getData())
 			insertions.add(new Update<Datum<Integer>>(null, datum));
-		aggregator2.insert(insertions);
+		aggregator2.update(insertions, empty, empty);
 		assertTrue(aggregator2.getAggregate() == 3);
 
 		Datum<Integer> datum13 = new IntegerDatum(3, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum13)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum13)), empty, empty);
 		assertTrue(aggregator.getAggregate() == 6);
 	}
 

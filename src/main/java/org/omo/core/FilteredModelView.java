@@ -98,9 +98,7 @@ public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<
 		// notify Viewers/Aggregators
 		// TODO: merge Aggregator and View
 		for (Aggregator<? extends Object, V> aggregator : aggregators) {
-			aggregator.insert(insertionsOut);
-			aggregator.update(updatesOut);
-			aggregator.remove(deletionsOut);
+			aggregator.update(insertionsOut, updatesOut, deletionsOut);
 			}
 			// TODO: View api needs fixing
 		notifyUpdate(insertionsOut, updatesOut, deletionsOut);

@@ -39,39 +39,26 @@ public class AmountAggregator implements Aggregator<BigDecimal, Trade> {
 		return aggregate;
 	}
 	
-	public synchronized void insert(Collection<Update<Trade>> insertions) {
-		logger.debug("insert: size={}", insertions.size());
-		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
-		for (Update<Trade> insertion : insertions) {
-			aggregate = aggregate.add(insertion.getNewValue().getAmount());
-		}
-		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
-		Collection<Update<AccountTotal>> updates = Collections.singletonList(new Update<AccountTotal>(oldValue, newValue));
-		view.update(empty, updates, empty);
-	}
-	
-	public synchronized void update(Collection<Update<Trade>> updates) {
-		logger.debug("update: size={}", updates.size());
+	public synchronized void update(Collection<Update<Trade>> insertions, Collection<Update<Trade>> updates, Collection<Update<Trade>> deletions) {
+		logger.debug("insertion: size={}", insertions.size());
+		logger.debug("update   : size={}", updates.size());
+		logger.debug("deletion : size={}", deletions.size());
 		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
 		BigDecimal newAggregate = aggregate;
+		for (Update<Trade> insertion : insertions) {
+			newAggregate = newAggregate.add(insertion.getNewValue().getAmount());
+		}
 		for (Update<Trade> update : updates) {
-			newAggregate = newAggregate.add(update.getNewValue().getAmount()).subtract(update.getOldValue().getAmount());
+			newAggregate = newAggregate.subtract(update.getOldValue().getAmount());
+			newAggregate = newAggregate.add(update.getNewValue().getAmount());
+		}
+		for (Update<Trade> deletion : deletions) {
+			newAggregate = newAggregate.subtract(deletion.getOldValue().getAmount());
 		}
 		aggregate = newAggregate;
 		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
-		List<Update<AccountTotal>> insertions = Collections.singletonList(new Update<AccountTotal>(oldValue, newValue));
-		view.update(empty, insertions, empty);
-	}
-	
-	public synchronized void remove(Collection<Update<Trade>> deletions) {
-		logger.debug("remove: size={}", deletions.size());
-		AccountTotal oldValue = new AccountTotal(date, version, account, aggregate);
-		for (Update<Trade> deletion : deletions) {
-			aggregate = aggregate.subtract(deletion.getOldValue().getAmount());
-		}
-		AccountTotal newValue = new AccountTotal(date, ++version, account, aggregate);
-		Collection<Update<AccountTotal>> updates = Collections.singleton(new Update<AccountTotal>(oldValue, newValue));
-		view.update(empty, updates, empty);
+		List<Update<AccountTotal>> updatesOut = Collections.singletonList(new Update<AccountTotal>(oldValue, newValue));
+		view.update(empty, updatesOut, empty);
 	}
 	
 }

@@ -330,7 +330,7 @@ public class Server {
 					Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
 					for (Trade datum : registration.getData())
 						insertions.add(new Update<Trade>(null, datum));
-					aggregator.insert(insertions);
+					aggregator.update(insertions, new ArrayList<Update<Trade>>(), new ArrayList<Update<Trade>>());
 				}
 				accountTotal.update(accountTotals, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
 
