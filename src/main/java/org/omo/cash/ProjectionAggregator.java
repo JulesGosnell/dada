@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.omo.core.AbstractModel;
-import org.omo.core.Aggregator;
 import org.omo.core.DateRange;
 import org.omo.core.Update;
+import org.omo.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProjectionAggregator extends AbstractModel<Integer, Projection> implements Aggregator<Projection, Date, AccountTotal> {
+public class ProjectionAggregator extends AbstractModel<Integer, Projection> implements View<Date, AccountTotal> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(0); 
@@ -71,11 +71,6 @@ public class ProjectionAggregator extends AbstractModel<Integer, Projection> imp
 		Projection newValue2 = new Projection(account, ++version, new ArrayList<BigDecimal>(positions));
 		Set<Update<Projection>> updatesOut = Collections.singleton(new Update<Projection>(oldValue2, newValue2));
 		notifyUpdates(empty, updatesOut, empty); 
-	}
-
-	@Override
-	public Projection getAggregate() {
-		return new Projection(account, version, new ArrayList<BigDecimal>(positions));
 	}
 
 	@Override

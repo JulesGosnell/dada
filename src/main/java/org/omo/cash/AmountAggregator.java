@@ -8,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.omo.core.AbstractModel;
-import org.omo.core.Aggregator;
 import org.omo.core.Update;
 import org.omo.core.View;
 import org.slf4j.Logger;
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO: to lock or to copy-on-write ?
 
-public class AmountAggregator extends AbstractModel<Date, AccountTotal> implements Aggregator<BigDecimal, Integer, Trade> {
+public class AmountAggregator extends AbstractModel<Date, AccountTotal> implements View< Integer, Trade> {
 
 	private final Collection<Update<AccountTotal>> empty = new ArrayList<Update<AccountTotal>>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -55,11 +54,6 @@ public class AmountAggregator extends AbstractModel<Date, AccountTotal> implemen
 		notifyUpdates(empty, updatesOut, empty);
 	}
 
-	@Override
-	public synchronized BigDecimal getAggregate() {
-		return aggregate;
-	}
-	
 	@Override
 	protected Collection<AccountTotal> getData() {
 		return Collections.singleton(new AccountTotal(date, version, account, aggregate));
