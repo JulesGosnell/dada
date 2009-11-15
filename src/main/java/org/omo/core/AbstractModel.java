@@ -30,7 +30,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	
 	@Override
 	public Registration<K, V> registerView(View<K, V> view) {
-	        logger.debug("registering view: {}", view);
+		logger.debug("registering view: {}", view);
 		synchronized (views) {
 			views.add(view);
 		}
@@ -48,25 +48,20 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			success = views.remove(view);
 		}
 		if (success)
-		        logger.debug("deregistered view: {}", view);
+			logger.debug("deregistered view: {}", view);
 		else
-		        logger.warn("failed to deregister view: {}", view);
-		
+			logger.warn("failed to deregister view: {}", view);
+
 		return success;
 	}	
 
-	// TODO: notifications for update/delete
-
-	protected void notifyUpdates(Collection<V> updates) {
+	protected void notifyUpdates(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 		for (View<K, V> view : views)
 			try {
-				Collection<Update<V>> insertions = new ArrayList<Update<V>>();
-				for (V update : updates)
-					insertions.add(new Update<V>(null, update));
-				view.update(insertions, new ArrayList<Update<V>>(), new ArrayList<Update<V>>());
+				view.update(insertions, updates, deletions);
 			} catch (RuntimeException e) {
-			    logger.error("view notification failed: {} <- {}", view, updates);
-			    logger.error("", e);
+				logger.error("view notification failed: {} <- {}", view, updates);
+				logger.error("", e);
 			}
 	}
 }

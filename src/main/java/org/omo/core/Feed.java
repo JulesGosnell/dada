@@ -34,7 +34,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
 			logger.trace("{}: new version: {}", name, newValue);
-			notifyUpdates(Collections.singleton(newValue));
+			notifyUpdates(empty, Collections.singleton(new Update<V>(oldValue, newValue)), empty);
 		}
 	};
 	
@@ -53,15 +53,19 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	// reference count listeners only
 	// make void invocations async - no return value
 	
+	protected Collection<Update<V>> empty = new ArrayList<Update<V>>();
 	
 	@Override
 	public void start() {
 		logger.info("creating values...");
-		Collection<V> updates = strategy.createNewValues(range);
-		for (V update : updates)
-			vs.put(strategy.getKey(update), update);
-		logger.info("notifying {} values...", updates.size());
-		notifyUpdates(updates);
+		Collection<V> newValues = strategy.createNewValues(range);
+		Collection<Update<V>> insertions = new ArrayList<Update<V>>();
+		for (V newValue : newValues) {
+			vs.put(strategy.getKey(newValue), newValue);
+			insertions.add(new Update<V>(null, newValue));
+		}
+		logger.info("notifying {} values...", newValues.size());
+		notifyUpdates(insertions, empty, empty);
 		logger.info("starting timer...");
 		//timer.scheduleAtFixedRate(task, 0, delay);
 	}

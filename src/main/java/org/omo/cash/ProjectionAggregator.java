@@ -1,6 +1,5 @@
 package org.omo.cash;
 
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,41 +8,32 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import org.omo.core.AbstractModel;
 import org.omo.core.Aggregator;
 import org.omo.core.DateRange;
 import org.omo.core.Update;
-import org.omo.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProjectionAggregator implements Aggregator<Projection, Date, AccountTotal> {
+public class ProjectionAggregator extends AbstractModel<Integer, Projection> implements Aggregator<Projection, Date, AccountTotal> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-
+	private final Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(0); 
 	private final List<BigDecimal> positions;
 	private final List<Date> dates;
 	private final int account;
-	private final View<Integer, Projection> view;
 
 	private int version;
 	
-	public ProjectionAggregator(String name, DateRange dateRange, int account, View<Integer, Projection> view) {
+	public ProjectionAggregator(String name, DateRange dateRange, int account) {
+		super(name, null);
 		this.account = account;
-		this.view = view;
 		dates = new ArrayList<Date>(dateRange.getValues()); // TODO: clumsy - but enables index lookup - slow - should be a Map ?
 		positions = new ArrayList<BigDecimal>(dates.size());
 		for (Date date : dates) {
-			positions.add(new BigDecimal(0));
+			positions.add(BigDecimal.ZERO);
 		}
 	}
-	
-	@Override
-	public Projection getAggregate() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	private Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(); 
 	
 	@Override
 	public void update(Collection<Update<AccountTotal>> insertions, Collection<Update<AccountTotal>> updates, Collection<Update<AccountTotal>> deletions) {
@@ -69,21 +59,36 @@ public class ProjectionAggregator implements Aggregator<Projection, Date, Accoun
 				positions.set(index, newValue.getAmount());
 			}
 		}
-		// deletions ?
-		if (deletions.size() > 0)
-			throw new UnsupportedOperationException("NYI");
 		for (Update<AccountTotal> deletion : deletions) {
 			AccountTotal oldValue = deletion.getOldValue();
 			Date date = oldValue.getId();
 			int index = dates.indexOf(date);
 			synchronized (positions) {
-				positions.set(index, oldValue.getAmount());
+				positions.set(index, BigDecimal.ZERO);
 			}
 		}
 		
 		Projection newValue2 = new Projection(account, ++version, new ArrayList<BigDecimal>(positions));
 		Set<Update<Projection>> updatesOut = Collections.singleton(new Update<Projection>(oldValue2, newValue2));
-		view.update(empty, updatesOut, empty); 
+		notifyUpdates(empty, updatesOut, empty); 
+	}
+
+	@Override
+	public Projection getAggregate() {
+		return new Projection(account, version, new ArrayList<BigDecimal>(positions));
+	}
+
+	@Override
+	protected Collection<Projection> getData() {
+		return Collections.singleton(new Projection(account, version, new ArrayList<BigDecimal>(positions)));
+	}
+
+	@Override
+	public void start() {
+	}
+
+	@Override
+	public void stop() {
 	}
 
 }

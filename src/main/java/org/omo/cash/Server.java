@@ -315,14 +315,16 @@ public class Server {
 
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
-				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a, accountProjection);
+				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a);
+				projectionAggregator.registerView(accountProjection);
 				accountTotal.registerView(projectionAggregator);
 
 				List<Update<AccountTotal>> accountTotals = new ArrayList<Update<AccountTotal>>(dateRangeValues.size());
 				for (Date d : dateRangeValues) {
 					String modelName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a;
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a + ".Total";
-					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a, accountTotal);
+					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a);
+					aggregator.registerView(accountTotal);
 					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>) nameToModel.get(modelName);
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.registerView(aggregator);
