@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.omo.core.AbstractModel;
-import org.omo.core.DateRange;
+import org.omo.core.OneWeekRange;
 import org.omo.core.Update;
 import org.omo.core.View;
 import org.slf4j.Logger;
@@ -25,10 +25,10 @@ public class ProjectionAggregator extends AbstractModel<Integer, Projection> imp
 
 	private int version;
 	
-	public ProjectionAggregator(String name, DateRange dateRange, int account) {
+	public ProjectionAggregator(String name, OneWeekRange oneWeekRange, int account) {
 		super(name, null);
 		this.account = account;
-		dates = new ArrayList<Date>(dateRange.getValues()); // TODO: clumsy - but enables index lookup - slow - should be a Map ?
+		dates = new ArrayList<Date>(oneWeekRange.getValues()); // TODO: clumsy - but enables index lookup - slow - should be a Map ?
 		positions = new ArrayList<BigDecimal>(dates.size());
 		for (Date date : dates) {
 			positions.add(BigDecimal.ZERO);

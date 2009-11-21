@@ -8,5 +8,7 @@ public interface Range<V> {
 	V random();
 	Collection<V> getValues();
 	int size();
+	V getMin();
+	V getMax();
 	
 }

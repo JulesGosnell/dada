@@ -24,10 +24,11 @@ import javax.jms.Session;
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.omo.core.DateRange;
+import org.omo.core.DateRangeRoutingStrategy;
+import org.omo.core.DayRange;
+import org.omo.core.OneWeekRange;
 import org.omo.core.Feed;
-import org.omo.core.Filter;
-import org.omo.core.FilteredModelView;
-import org.omo.core.IdentityFilter;
+import org.omo.core.SimpleModelView;
 import org.omo.core.IntegerRange;
 import org.omo.core.IntrospectiveMetadata;
 import org.omo.core.MapModelView;
@@ -37,6 +38,7 @@ import org.omo.core.ModelView;
 import org.omo.core.Partitioner;
 import org.omo.core.Range;
 import org.omo.core.Registration;
+import org.omo.core.Router;
 import org.omo.core.StringMetadata;
 import org.omo.core.Update;
 import org.omo.core.View;
@@ -73,8 +75,6 @@ import EDU.oswego.cs.dl.util.concurrent.ReadWriteLock;
 // investigate mono/c# - java comms - xml/protocol-buffers/etc. ?
 
 public class Server {
-
-	private static final IdentityFilter<Trade> IDENTITY_FILTER = new IdentityFilter<Trade>();
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
@@ -134,35 +134,38 @@ public class Server {
 		// adding TradeFeed
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		String tradeFeedName = serverName + ".TradeFeed";
-		DateRange dateRange = new DateRange(numDays);
+		OneWeekRange oneWeekRange = new OneWeekRange(numDays);
 		{
-			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata,new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(dateRange, new IntegerRange(0,numAccounts), new IntegerRange(0, numCurrencies)));
+			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata,new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(oneWeekRange, new IntegerRange(0,numAccounts), new IntegerRange(0, numCurrencies)));
 			remote(tradeFeed, false);
 		}
-		Collection<Date> dateRangeValues = dateRange.getValues();
+		Collection<Date> dateRangeValues = oneWeekRange.getValues();
 		{
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
 			for (int p = 0; p < numPartitions; p++) {
 
 				String partitionName = serverName + ".Trade." + p;
-				ModelView<Integer, Trade> partition = new FilteredModelView<Integer, Trade>(partitionName, tradeMetadata, IDENTITY_FILTER);
+				ModelView<Integer, Trade> partition = new SimpleModelView<Integer, Trade>(partitionName, tradeMetadata);
 				partitions.add(partition);
 				remote(partition, true);
 
+				Map<DateRange, Collection<View<Integer, Trade>>> dateRangeToViews = new HashMap<DateRange, Collection<View<Integer,Trade>>>();
 				for (Date d : dateRangeValues) {
 					String dayName = partitionName + ".ValueDate="+ dateFormat.format(d);
-					Filter<Trade> valueDateFilter = new ValueDateFilter(d);
-					ModelView<Integer, Trade> day = new FilteredModelView<Integer, Trade>(dayName, tradeMetadata, valueDateFilter);
-					view(partitionName, day);
+					ModelView<Integer, Trade> day = new SimpleModelView<Integer, Trade>(dayName, tradeMetadata);
+					dateRangeToViews.put(new DayRange(d, new  Date(d.getTime() + (1000*60*60*24) -1)), Collections.singleton((View<Integer, Trade>) day));
 					remote(day, true);
 
+					Collection<View<Integer, Trade>> accountModels = new ArrayList<View<Integer,Trade>>(numAccounts);
 					for (int a = 0; a < numAccounts; a++) {
 						String accountName = dayName + ".Account=" + a;
-						Filter<Trade> f = new AccountFilter(a);
-						ModelView<Integer, Trade> account = new FilteredModelView<Integer, Trade>(accountName, tradeMetadata, f);
-						view(dayName, account);
+						ModelView<Integer, Trade> account = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
+						accountModels.add(account);
 						remote(account, true);
 					}
+					Router.Strategy<Integer, Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(accountModels);
+					Router<Integer, Integer, Trade> accountRouter = new Router<Integer, Integer, Trade>(accountRoutingStrategy);
+					view(dayName, accountRouter);
 
 					// for (int c=0; c<numCurrencies; c++) {
 					// String currencyName = dayName+".Currency="+c;
@@ -174,19 +177,11 @@ public class Server {
 					// remote(currency, tradeRemotingFactory);
 					// }
 				}
+				Router.Strategy<Integer, Integer, Trade> dateRangeRoutingStrategy = new DateRangeRoutingStrategy(dateRangeToViews);
+				View<Integer, Trade> dayRouter = new Router<Integer, Integer, Trade>(dateRangeRoutingStrategy);
+				view(partitionName, dayRouter);
 			}
-			Partitioner<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions, new Partitioner.Strategy<Trade>() {
-
-						@Override
-						public int getNumberOfPartitions() {
-							return numPartitions;
-						}
-
-						@Override
-						public int partition(Trade value) {
-							return value.getId() % numPartitions;
-						}
-					});
+			View<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions);
 			view(tradeFeedName, partitioner);
 		}
 
@@ -303,19 +298,19 @@ public class Server {
 		for (int p = 0; p < numPartitions; p++) {
 			// build a projection for this account for the following days...
 			String accountProjectionName = serverName + ".Trade." + p + ".AccountProjection";
-			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(dateRange);
-			FilteredModelView<Integer, Projection> accountProjection = new FilteredModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata, new IdentityFilter<Projection>());
+			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(oneWeekRange);
+			SimpleModelView<Integer, Projection> accountProjection = new SimpleModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata);
 			remote(accountProjection, true);
 
 			for (int a = 0; a < numAccounts; a++) {
 				String accountTotalName = serverName + ".Trade." + p + ".Account=" + a + ".Total";
 				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
-				FilteredModelView<Date, AccountTotal> accountTotal = new FilteredModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata, new IdentityFilter<AccountTotal>());
+				SimpleModelView<Date, AccountTotal> accountTotal = new SimpleModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata);
 				remote(accountTotal, true);
 
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
-				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, dateRange, a);
+				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, oneWeekRange, a);
 				projectionAggregator.registerView(accountProjection);
 				accountTotal.registerView(projectionAggregator);
 
@@ -325,7 +320,7 @@ public class Server {
 					String aggregatorName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a + ".Total";
 					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a);
 					aggregator.registerView(accountTotal);
-					FilteredModelView<Integer, Trade> model = (FilteredModelView<Integer, Trade>) nameToModel.get(modelName);
+					SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.registerView(aggregator);
 					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
@@ -346,7 +341,7 @@ public class Server {
 				String prefix = serverName + ".Trade";
 				String suffix = ".ValueDate=" + dateFormat.format(d)+ ".Account=" + a;
 				String accountsName = prefix + suffix;
-				FilteredModelView<Integer, Trade> accounts = new FilteredModelView<Integer, Trade>(accountsName, tradeMetadata, IDENTITY_FILTER);
+				SimpleModelView<Integer, Trade> accounts = new SimpleModelView<Integer, Trade>(accountsName, tradeMetadata);
 				remote(accounts, true);
 				for (int p = 0; p < numPartitions; p++) {
 					view(prefix + "." + p + suffix, accounts);

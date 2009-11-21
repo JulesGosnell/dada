@@ -1,44 +1,45 @@
 package org.omo.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 
-public class Partitioner<K, V extends Datum> implements View<K, V> {
 
-	public interface Strategy<V> {
+public class Partitioner<K, V extends Datum<Integer>> extends Router<Integer, K, V>  {
+
+	public static class PartitioningStrategy<K,V extends Datum<Integer>> implements Strategy<Integer, K, V> {
+
+		private final Collection<View<K, V>>[] views;
+		private final int numPartitions;
 		
-		int getNumberOfPartitions();
-		int partition(V value);
+		public PartitioningStrategy(Collection<View<K, V>> partitions) {
+			numPartitions = partitions.size();
+			views = new Collection[numPartitions];
+			int i = 0;
+			for (View<K, V> partition : partitions)
+				views[i++] = Collections.singleton(partition);
+		}
+		
+		@Override
+		public boolean getMutable() {
+			return false;
+		}
+
+		@Override
+		public Integer getRoute(V value) {
+			return value.getId() % numPartitions;
+		}
+
+		@Override
+		public Collection<View<K, V>> getViews(Integer route) {
+			return views[route];
+		}
 		
 	}
 	
-	private final List<View<K, V>> partitions;
-	private final Strategy<V> strategy;
-	
-	public Partitioner(List<View<K, V>> partitions, Strategy<V> strategy) {
-		this.partitions = partitions;
-		this.strategy = strategy;
+	public Partitioner(List<View<K, V>> partitions) {
+		super(new PartitioningStrategy<K, V>(partitions));
 	}
-	
-	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		int numberofPartitions = strategy.getNumberOfPartitions();
-		List<Update<V>>[] tmp = new List[numberofPartitions];
-		for (int p=0; p<numberofPartitions; p++)
-			tmp[p] = new ArrayList<Update<V>>();
-		for (Update<V> insertion : insertions) {
-			V newValue = insertion.getNewValue();
-			tmp[strategy.partition(newValue)].add(new Update<V>(null, newValue));
-		}
-		for (int p=0; p<numberofPartitions; p++) {
-			View<K, V> partition = partitions.get(p);
-			List<Update<V>> insertions2 = tmp[p];
-			if (insertions2.size()>0)
-				partition.update(insertions2, new ArrayList<Update<V>>(), new ArrayList<Update<V>>());
-		}
-	}
-
 }
 

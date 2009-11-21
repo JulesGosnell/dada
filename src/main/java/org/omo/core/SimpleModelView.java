@@ -11,25 +11,19 @@ import clojure.lang.PersistentTreeMap;
 
 // TODO: collect together insertions and deliver to aggregator in single collection...
 
-public class FilteredModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
+public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
 
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
-	private final Filter<V> query;
 	
-	public FilteredModelView(String name, Metadata<K, V> metadata, Filter<V> query) {
+	public SimpleModelView(String name, Metadata<K, V> metadata) {
 		super(name, metadata);
-		this.query = query;
 	}
 	
 	public Collection<V> getValues() {
 		return ((PersistentTreeMap)maps.getCurrent()).values();
 	}
 	
-	protected boolean filter(V value) {
-		return query.apply(value);
-	}
-
 	// Model.Lifecycle
 	
 	@Override

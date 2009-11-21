@@ -109,6 +109,12 @@
       <version>1.0.0</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>1.6</version>
+      <scope>compile</scope>
+    </dependency>
 <!--
     <dependency>
       <groupId>org.slf4j</groupId>

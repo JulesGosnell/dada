@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.omo.core.DateRange;
+import org.omo.core.OneWeekRange;
 import org.omo.core.Metadata;
 
 public class ProjectionMetaData implements Metadata<Integer, Projection> {
 
 	private final List<String> attributeNames;
 	
-	public ProjectionMetaData(DateRange range) { 
+	public ProjectionMetaData(OneWeekRange range) { 
 		attributeNames = new ArrayList<String>(2 + range.getValues().size());
 		attributeNames.add("Id");
 		attributeNames.add("Version");

@@ -5,7 +5,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
-public class DateRange extends AbstractRange<Date> {
+public class OneWeekRange extends AbstractDateRange {
 
 	protected static final int ONE_DAY = 1000 * 60 * 60 * 24;
 
@@ -29,7 +29,7 @@ public class DateRange extends AbstractRange<Date> {
 		return calendar.getTime();
 	}
 	
-	public DateRange(int numDays) {
+	public OneWeekRange(int numDays) {
 		// 1 week of midnights...
 		super(getMin(Calendar.getInstance()), getMax(Calendar.getInstance()));
 		this.numDays = numDays;
