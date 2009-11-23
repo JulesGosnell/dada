@@ -67,7 +67,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		logger.info("notifying {} values...", newValues.size());
 		notifyUpdates(insertions, empty, empty);
 		logger.info("starting timer...");
-		//timer.scheduleAtFixedRate(task, 0, delay);
+		timer.scheduleAtFixedRate(task, 0, delay);
 	}
 	
 	@Override

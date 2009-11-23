@@ -15,7 +15,7 @@ public class DayRange extends AbstractDateRange {
 	@Override
 	public boolean contains(Date value) {
 		long time = value.getTime();
-		return time >= min.getTime() || time <= max.getTime();
+		return time >= min.getTime() && time <= max.getTime();
 	}
 
 	@Override
@@ -35,4 +35,10 @@ public class DayRange extends AbstractDateRange {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
+	
+	@Override
+	public String toString() {
+		return min.toString();
+	}
+	
 }

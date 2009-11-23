@@ -11,4 +11,10 @@ public abstract class AbstractDateRange extends AbstractRange<Date> implements D
 		super(min, max);
 	}
 	
+	@Override
+	public String toString() {
+		return "" + min + "/" + max;
+	}
+
+	
 }
