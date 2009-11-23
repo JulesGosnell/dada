@@ -73,6 +73,13 @@ import EDU.oswego.cs.dl.util.concurrent.ReadWriteLock;
 // aggregate projections from all partitions
 // produce and aggregate currency projections
 // investigate mono/c# - java comms - xml/protocol-buffers/etc. ?
+// load real currencies - compact
+// load real accounts - sparse
+// load real trades - 150000 ?
+// do 2 currency projections - old (1 month) & new (50 years)
+// aggregate partitioned projections into single models
+// drill down from currency projection, into account projection for that currency
+// an account may be traded in many currencies - change model
 
 public class Server {
 
@@ -131,7 +138,7 @@ public class Server {
 		}
 
 		// we'' randomize trade dates out over the next week...
-		// adding TradeFeed
+		// adding TradeFeedr
 		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		String tradeFeedName = serverName + ".TradeFeed";
 		OneWeekRange oneWeekRange = new OneWeekRange(numDays);
@@ -323,7 +330,6 @@ public class Server {
 					SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
 					Registration<Integer, Trade> registration = model.registerView(aggregator);
-					LOG.info("registering aggregator with: " + modelName + " and feeding: " + accountTotalName);
 					Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
 					for (Trade datum : registration.getData())
 						insertions.add(new Update<Trade>(null, datum));

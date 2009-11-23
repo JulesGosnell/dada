@@ -65,8 +65,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 					updatesOut.add(update);
 				} else {
 					logger.trace("ignoring update: {} is more recent than {}", currentValue, newValue);
-				}
-			}
+				}			}
 			for (Update<V> deletion : deletions) {
 				V newValue = deletion.getNewValue();
 				K key = newValue.getId();

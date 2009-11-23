@@ -37,16 +37,28 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-	        logger.trace("update: {}", insertions);
+		logger.trace("update: {}", insertions);
 		Metadata<K, V> metadata = getMetadata();
-		if (insertions != null)
-			for (Update<V> insertion : insertions) {
-				V newValue = insertion.getNewValue();
-				K key = metadata.getKey(newValue);
+		for (Update<V> insertion : insertions) {
+			V newValue = insertion.getNewValue();
+			K key = metadata.getKey(newValue);
+			map.put(key, newValue);
+			int index = map.headMap(key).size();
+			fireTableRowsInserted(index, index);
+		}
+		for (Update<V> update : updates) {
+			V newValue = update.getNewValue();
+			K key = metadata.getKey(newValue);
+			V oldValue = map.get(key);
+			if (oldValue != null /* || oldValue.getV */ ) {
 				map.put(key, newValue);
 				int index = map.headMap(key).size();
 				fireTableRowsInserted(index, index);
 			}
+		}
+		for (Update<V> deletion : deletions) {
+			throw new UnsupportedOperationException("deletion - NYI");
+		}
 	}
 
 	protected String columnNames[] = new String[]{"id", "version"};
