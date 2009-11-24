@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO: to lock or to copy-on-write ?
 
-public class AmountAggregator extends AbstractModel<Date, AccountTotal> implements View< Integer, Trade> {
+public class AccountAmountAggregator extends AbstractModel<Date, AccountTotal> implements View< Integer, Trade> {
 
 	private final Collection<Update<AccountTotal>> empty = new ArrayList<Update<AccountTotal>>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -26,7 +26,7 @@ public class AmountAggregator extends AbstractModel<Date, AccountTotal> implemen
 	private BigDecimal aggregate = BigDecimal.ZERO;
 	private int version; // TODO: needs to come from our Model, so if we go, it is not lost...
 	
-	public AmountAggregator(String name, Date date, int account) {
+	public AccountAmountAggregator(String name, Date date, int account) {
 		super(name, null);
 		this.date = date;
 		this.account = account;

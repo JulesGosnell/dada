@@ -15,7 +15,7 @@ import org.omo.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProjectionAggregator extends AbstractModel<Integer, Projection> implements View<Date, AccountTotal> {
+public class AccountProjectionAggregator extends AbstractModel<Integer, Projection> implements View<Date, AccountTotal> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Collection<Update<Projection>> empty = new ArrayList<Update<Projection>>(0); 
@@ -25,7 +25,7 @@ public class ProjectionAggregator extends AbstractModel<Integer, Projection> imp
 
 	private int version;
 	
-	public ProjectionAggregator(String name, OneWeekRange oneWeekRange, int account) {
+	public AccountProjectionAggregator(String name, OneWeekRange oneWeekRange, int account) {
 		super(name, null);
 		this.account = account;
 		dates = new ArrayList<Date>(oneWeekRange.getValues()); // TODO: clumsy - but enables index lookup - slow - should be a Map ?

@@ -85,11 +85,11 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
-	private final int numTrades = 1000;
+	private final int numTrades = 200000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
 	private final int numAccounts = 10;
-	private final int numCurrencies = 10;
+	private final int numCurrencies = 256;
 	private final int numBalances = 100;
 	private final int numCompanies = 10;
 	private final int timeout = 10 * 60 * 1000; // 1 minute
@@ -134,7 +134,7 @@ public class Server {
 			String name = serverName + ".MetaModel";
 			Metadata<String, String> modelMetadata = new StringMetadata("Name");
 			metaModel = new MapModelView<String, String>(name, modelMetadata, adaptor);
-			remote(metaModel, true);
+			export(metaModel, true, true);
 		}
 
 		// we'' randomize trade dates out over the next week...
@@ -144,45 +144,47 @@ public class Server {
 		OneWeekRange oneWeekRange = new OneWeekRange(numDays);
 		{
 			tradeFeed = new Feed<Integer, Trade>(tradeFeedName, tradeMetadata,new IntegerRange(0, numTrades), feedPeriod, new TradeFeedStrategy(oneWeekRange, new IntegerRange(0,numAccounts), new IntegerRange(0, numCurrencies)));
-			remote(tradeFeed, false);
+			export(tradeFeed, false, false);
 		}
 		Collection<Date> dateRangeValues = oneWeekRange.getValues();
 		{
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
 			for (int p = 0; p < numPartitions; p++) {
 
-				String partitionName = serverName + ".Trade." + p;
+				String partitionName = serverName + ".Trade.Partition=" + p;
 				ModelView<Integer, Trade> partition = new SimpleModelView<Integer, Trade>(partitionName, tradeMetadata);
 				partitions.add(partition);
-				remote(partition, true);
+				export(partition, true, false);
 
 				Map<DateRange, Collection<View<Integer, Trade>>> dateRangeToViews = new HashMap<DateRange, Collection<View<Integer,Trade>>>();
 				for (Date d : dateRangeValues) {
 					String dayName = partitionName + ".ValueDate="+ dateFormat.format(d);
 					ModelView<Integer, Trade> day = new SimpleModelView<Integer, Trade>(dayName, tradeMetadata);
 					dateRangeToViews.put(new DayRange(d, new  Date(d.getTime() + (1000*60*60*24) -1)), Collections.singleton((View<Integer, Trade>) day));
-					remote(day, true);
+					export(day, true, false);
 
 					Collection<View<Integer, Trade>> accountModels = new ArrayList<View<Integer,Trade>>(numAccounts);
 					for (int a = 0; a < numAccounts; a++) {
 						String accountName = dayName + ".Account=" + a;
 						ModelView<Integer, Trade> account = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
 						accountModels.add(account);
-						remote(account, true);
+						export(account, true, false);
 					}
 					Router.Strategy<Integer, Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(accountModels);
 					Router<Integer, Integer, Trade> accountRouter = new Router<Integer, Integer, Trade>(accountRoutingStrategy);
 					view(dayName, accountRouter);
 
-					// for (int c=0; c<numCurrencies; c++) {
-					// String currencyName = dayName+".Currency="+c;
-					// Filter<Trade> currencyFilter = new CurrencyFilter(c);
-					// ModelView<Integer, Trade> currency= new
-					// FilteredModelView<Integer, Trade>(currencyName,
-					// tradeMetadata, currencyFilter);
-					// view(dayName, currency);
-					// remote(currency, tradeRemotingFactory);
-					// }
+					Collection<View<Integer, Trade>> currencyModels = new ArrayList<View<Integer,Trade>>(numCurrencies);
+					for (int c = 0; c < numCurrencies; c++) {
+						String currencyName = dayName + ".Currency=" + c;
+						ModelView<Integer, Trade> currency = new SimpleModelView<Integer, Trade>(currencyName, tradeMetadata);
+						currencyModels.add(currency);
+						export(currency, true, false);
+					}
+					Router.Strategy<Integer, Integer, Trade> currencyRoutingStrategy = new CurrencyRoutingStrategy(currencyModels);
+					Router<Integer, Integer, Trade> currencyRouter = new Router<Integer, Integer, Trade>(currencyRoutingStrategy);
+					view(dayName, currencyRouter);
+
 				}
 				Router.Strategy<Integer, Integer, Trade> dateRangeRoutingStrategy = new DateRangeRoutingStrategy(dateRangeToViews);
 				View<Integer, Trade> dayRouter = new Router<Integer, Integer, Trade>(dateRangeRoutingStrategy);
@@ -216,7 +218,7 @@ public class Server {
 					return item.getId();
 				}};
 				Model<Integer, Account> feed = new Feed<Integer, Account>(feedName, metadata, new IntegerRange(0, numAccounts), 100L, strategy);
-				remote(feed, true);
+				export(feed, true, false);
 		}
 		// adding CurrencyFeed
 		{
@@ -242,7 +244,7 @@ public class Server {
 				}};
 				Metadata<Integer, Currency> metadata = new IntrospectiveMetadata<Integer, Currency>(Currency.class, "Id");
 				Model<Integer, Currency> feed = new Feed<Integer, Currency>(feedName, metadata, new IntegerRange(0, numCurrencies), 100L, strategy);
-				remote(feed, true);
+				export(feed, true, false);
 		}
 		// adding BalanceFeed
 		{
@@ -268,7 +270,7 @@ public class Server {
 				}};
 				Metadata<Integer, Balance> metadata = new IntrospectiveMetadata<Integer, Balance>(Balance.class, "Id");
 				Model<Integer, Balance> feed = new Feed<Integer, Balance>(feedName, metadata, new IntegerRange(0, numBalances), 100L, strategy);
-				remote(feed, true);
+				export(feed, true, false);
 		}
 		// adding CompanyFeed
 		{
@@ -295,7 +297,7 @@ public class Server {
 				}};
 				Metadata<Integer, Company> metadata = new IntrospectiveMetadata<Integer, Company>(Company.class, "Id");
 				Model<Integer, Company> feed = new Feed<Integer, Company>(feedName, metadata, new IntegerRange(0, numCompanies), 100L, strategy);
-				remote(feed, true);
+				export(feed, true, false);
 		}
 
 		// aggregate models
@@ -304,28 +306,29 @@ public class Server {
 		// partition
 		for (int p = 0; p < numPartitions; p++) {
 			// build a projection for this account for the following days...
-			String accountProjectionName = serverName + ".Trade." + p + ".AccountProjection";
+			String partitionName = serverName + ".Trade.Partition=" + p;
+			String accountProjectionName = partitionName + ".AccountProjection";
 			Metadata<Integer, Projection> accountProjectionMetadata = new ProjectionMetaData(oneWeekRange);
 			SimpleModelView<Integer, Projection> accountProjection = new SimpleModelView<Integer, Projection>(accountProjectionName, accountProjectionMetadata);
-			remote(accountProjection, true);
+			export(accountProjection, true, true);
 
 			for (int a = 0; a < numAccounts; a++) {
-				String accountTotalName = serverName + ".Trade." + p + ".Account=" + a + ".Total";
+				String accountTotalName = partitionName + ".Account=" + a + ".Total";
 				Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
 				SimpleModelView<Date, AccountTotal> accountTotal = new SimpleModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata);
-				remote(accountTotal, true);
+				export(accountTotal, true, false);
 
 				// attach aggregators to Total models to power Projection models
 				String projectionModelAggregator = "";
-				ProjectionAggregator projectionAggregator = new ProjectionAggregator(projectionModelAggregator, oneWeekRange, a);
-				projectionAggregator.registerView(accountProjection);
-				accountTotal.registerView(projectionAggregator);
+				AccountProjectionAggregator accountProjectionAggregator = new AccountProjectionAggregator(projectionModelAggregator, oneWeekRange, a);
+				accountProjectionAggregator.registerView(accountProjection);
+				accountTotal.registerView(accountProjectionAggregator);
 
 				List<Update<AccountTotal>> accountTotals = new ArrayList<Update<AccountTotal>>(dateRangeValues.size());
 				for (Date d : dateRangeValues) {
-					String modelName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a;
-					String aggregatorName = serverName + ".Trade." + p + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a + ".Total";
-					AmountAggregator aggregator = new AmountAggregator(aggregatorName, d, a);
+					String modelName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a;
+					String aggregatorName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Account=" + a + ".Total";
+					AccountAmountAggregator aggregator = new AccountAmountAggregator(aggregatorName, d, a);
 					aggregator.registerView(accountTotal);
 					SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
 					accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
@@ -338,6 +341,42 @@ public class Server {
 				accountTotal.update(accountTotals, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
 
 			}
+
+			// build a projection for this currency for the following days...
+			String currencyProjectionName = partitionName + ".CurrencyProjection";
+			Metadata<Integer, Projection> currencyProjectionMetadata = new ProjectionMetaData(oneWeekRange);
+			SimpleModelView<Integer, Projection> currencyProjection = new SimpleModelView<Integer, Projection>(currencyProjectionName, currencyProjectionMetadata);
+			export(currencyProjection, true, true);
+
+			for (int c = 0; c < numCurrencies; c++) {
+				String currencyTotalName = partitionName + ".Currency=" + c + ".Total";
+				Metadata<Date, CurrencyTotal> currencyTotalMetadata = new CurrencyTotalMetadata();
+				SimpleModelView<Date, CurrencyTotal> currencyTotal = new SimpleModelView<Date, CurrencyTotal>(currencyTotalName, currencyTotalMetadata);
+				export(currencyTotal, true, false);
+
+				// attach aggregators to Total models to power Projection models
+				String projectionModelAggregator = "";
+				CurrencyProjectionAggregator accountProjectionAggregator = new CurrencyProjectionAggregator(projectionModelAggregator, oneWeekRange, c);
+				accountProjectionAggregator.registerView(currencyProjection);
+				currencyTotal.registerView(accountProjectionAggregator);
+
+				List<Update<CurrencyTotal>> currencyTotals = new ArrayList<Update<CurrencyTotal>>(dateRangeValues.size());
+				for (Date d : dateRangeValues) {
+					String modelName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c;
+					String aggregatorName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c + ".Total";
+					CurrencyAmountAggregator aggregator = new CurrencyAmountAggregator(aggregatorName, d, c);
+					aggregator.registerView(currencyTotal);
+					SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
+					currencyTotals.add(new Update<CurrencyTotal>(null, new CurrencyTotal(d, 0, c, new BigDecimal(0))));
+					Registration<Integer, Trade> registration = model.registerView(aggregator);
+					Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
+					for (Trade datum : registration.getData())
+						insertions.add(new Update<Trade>(null, datum));
+					aggregator.update(insertions, new ArrayList<Update<Trade>>(), new ArrayList<Update<Trade>>());
+				}
+				currencyTotal.update(currencyTotals, new ArrayList<Update<CurrencyTotal>>(), new ArrayList<Update<CurrencyTotal>>());
+
+			}
 		}
 
 		// Trades for a given Account for a given Day/Period (aggregated across
@@ -346,42 +385,45 @@ public class Server {
 			for (int a = 0; a < numAccounts; a++) {
 				String prefix = serverName + ".Trade";
 				String suffix = ".ValueDate=" + dateFormat.format(d)+ ".Account=" + a;
-				String accountsName = prefix + suffix;
-				SimpleModelView<Integer, Trade> accounts = new SimpleModelView<Integer, Trade>(accountsName, tradeMetadata);
-				remote(accounts, true);
+				String name = prefix + suffix;
+				SimpleModelView<Integer, Trade> model = new SimpleModelView<Integer, Trade>(name, tradeMetadata);
+				export(model, true, true);
 				for (int p = 0; p < numPartitions; p++) {
-					view(prefix + "." + p + suffix, accounts);
+					view(prefix + ".Partition=" + p + suffix, model);
 				}
 			}
 		}
-		// // Trades for a given Currency for a given Day/Period (aggregated
+		// Trades for a given Currency for a given Day/Period (aggregated
 		// across all Partitions)
-		// for (Date d : dateRange.getValues()) {
-		// for (int c=0; c<numCurrencies; c++) {
-		// String prefix = serverName + ".Trade";
-		// String suffix = ".ValueDate="+dateFormat.format(d)+".Currency="+c;
-		// String currenciesName = prefix + suffix;
-		// FilteredModelView<Integer, Trade> currencies = new
-		// FilteredModelView<Integer, Trade>(currenciesName, tradeMetadata,
-		// IDENTITY_FILTER);
-		// remote(currencies, tradeRemotingFactory);
-		// for (int p=0; p<numPartitions; p++) {
-		// view(prefix + "." + p + suffix, currencies);
-		// }
-		// }
-		// }
+		for (Date d : dateRangeValues) {
+			for (int c = 0; c < numCurrencies; c++) {
+				String prefix = serverName + ".Trade";
+				String suffix = ".ValueDate=" + dateFormat.format(d)+ ".Currency=" + c;
+				String name = prefix + suffix;
+				SimpleModelView<Integer, Trade> model = new SimpleModelView<Integer, Trade>(name, tradeMetadata);
+				export(model, true, true);
+				for (int p = 0; p < numPartitions; p++) {
+					view(prefix + ".Partition=" + p + suffix, model);
+				}
+			}
+		}
 	}
 
 	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?, ?>>();
 
-	protected void remote(Model model, boolean start) throws JMSException {
+	protected void export(Model model, boolean start, boolean remote) throws JMSException {
 		String name = model.getName();
 		nameToModel.put(name, model);
+		// internal
 		Queue internalQueue = internalSession.createQueue(name);
-		Queue externalQueue = externalSession.createQueue(name);
 		internalRemotingFactory.createServer(model, internalQueue,executorService);
-		externalRemotingFactory.createServer(model, externalQueue,executorService);
-		metaModel.update(Collections.singleton(new Update<String>(null, name)), new ArrayList<Update<String>>(), new ArrayList<Update<String>>());
+
+		if (remote) {
+			Queue externalQueue = externalSession.createQueue(name);
+			externalRemotingFactory.createServer(model, externalQueue,executorService);
+			metaModel.update(Collections.singleton(new Update<String>(null, name)), new ArrayList<Update<String>>(), new ArrayList<Update<String>>());
+		}
+		
 		if (start)
 			model.start();
 	}
