@@ -89,7 +89,7 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
-	private final int numTrades = 200000;
+	private final int numTrades = 100000;
 	private final int numPartitions = 2;
 	private final int numDays = 5;
 	private final int numAccounts = 10;
@@ -549,4 +549,15 @@ public class Server {
 
 		System.out.println(intervals);
 	}
+	
+	// N.B.
+	// 38 intervals * 1339 valid settlement account (857) / currency (201) combinations = 50,882 models
+	// looking in prod copy - extant Flows only seem to excercise 519/1339 of these permutations
+	// 38 * 519 = 19722 - and that assumes that every combination is execrcised for every day - unlikely
+	// I'm doing 5 * 10 * 256 at the moment = 12800
+	// need to do 4 times more
+	// should aggressively build interval/currency models, then add interval/currency/account models lazily
+	// many combinations will not be exercised within trading window loaded, so we should not waste resources building them
+	
+	// all Company/Interval/Currency/Account/Trade Models should be created lazily as trades hit us, to avoid aallocating unnecessary combinations
 }

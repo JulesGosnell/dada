@@ -30,6 +30,16 @@ public class Router<R, K, V> implements View<K, V> {
 	
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+		
+		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
+			for (Update<V> insertion : insertions) {
+				for (View<K, V> view : strategy.getViews(strategy.getRoute(insertion.getNewValue()))) {
+					view.update(insertions, updates, deletions);
+				}
+			}
+			return;
+		}
+		
 		// split updates according to Route...
 		MultiMap routeToInsertions = new MultiValueMap();
 		MultiMap routeToUpdates = new MultiValueMap();
@@ -41,8 +51,8 @@ public class Router<R, K, V> implements View<K, V> {
 		} 
 		for (Update<V> update : updates) {
 			R newRoute = strategy.getRoute(update.getNewValue());
-			R oldRoute = strategy.getRoute(update.getOldValue());
-			if (mutable && !oldRoute.equals(newRoute)) {
+			R oldRoute;
+			if (mutable && !(oldRoute = strategy.getRoute(update.getOldValue())).equals(newRoute)) {
 				routeToInsertions.put(newRoute, update);
 				routeToDeletions.put(oldRoute, update);
 			} else {
