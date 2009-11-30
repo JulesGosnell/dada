@@ -8,20 +8,20 @@ import java.util.Set;
 import org.apache.commons.collections.MultiMap;
 import org.apache.commons.collections.map.MultiValueMap;
 
-public class Router<R, K, V> implements View<K, V> {
+public class Router<K, V> implements View<K, V> {
 	
 	// TODO: if we managed the MultiMaps via this API we could optimise them
 	// to arrays when dealing with immutable attributes
-	public interface Strategy<R, K, V> {
+	public interface Strategy<K, V> {
 		boolean getMutable();
-		R getRoute(V value);
-		Collection<View<K, V>> getViews(R route);
+		int getRoute(V value);
+		Collection<View<K, V>> getViews(int route);
 	}
 	
-	private final Strategy<R, K, V> strategy;
+	private final Strategy<K, V> strategy;
 	private final boolean mutable;
 	
-	public Router(Strategy<R, K, V> strategy) {
+	public Router(Strategy<K, V> strategy) {
 		this.strategy = strategy;
 		this.mutable = strategy.getMutable();
 	}
@@ -46,13 +46,13 @@ public class Router<R, K, V> implements View<K, V> {
 		MultiMap routeToDeletions= new MultiValueMap();
 
 		for (Update<V> insertion : insertions) {
-			R route = strategy.getRoute(insertion.getNewValue());
+			int route = strategy.getRoute(insertion.getNewValue());
 			routeToInsertions.put(route, insertion);
 		} 
 		for (Update<V> update : updates) {
-			R newRoute = strategy.getRoute(update.getNewValue());
-			R oldRoute;
-			if (mutable && !(oldRoute = strategy.getRoute(update.getOldValue())).equals(newRoute)) {
+			int newRoute = strategy.getRoute(update.getNewValue());
+			int oldRoute;
+			if (mutable && (oldRoute = strategy.getRoute(update.getOldValue())) != newRoute) {
 				routeToInsertions.put(newRoute, update);
 				routeToDeletions.put(oldRoute, update);
 			} else {
@@ -60,16 +60,16 @@ public class Router<R, K, V> implements View<K, V> {
 			}
 		}
 		for (Update<V> deletion : deletions) {
-			R route = strategy.getRoute(deletion.getOldValue());
+			int route = strategy.getRoute(deletion.getOldValue());
 			routeToInsertions.put(route, deletion);
 		}
 		// then dispatch on viewers...
 		// TODO: optimise for single update case...
-		Set<R> routes = new HashSet<R>();
+		Set<Integer> routes = new HashSet<Integer>();
 		routes.addAll(routeToInsertions.keySet());
 		routes.addAll(routeToUpdates.keySet());
 		routes.addAll(routeToDeletions.keySet());
-		for (R route : routes) {
+		for (int route : routes) {
 			Collection<Update<V>> insertionsOut = (Collection<Update<V>>)routeToInsertions.get(route);
 			Collection<Update<V>> updatesOut = (Collection<Update<V>>)routeToUpdates.get(route);
 			Collection<Update<V>> deletionsOut = (Collection<Update<V>>)routeToDeletions.get(route);

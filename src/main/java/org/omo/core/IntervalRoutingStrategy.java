@@ -20,7 +20,7 @@ import org.omo.cash.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IntervalRoutingStrategy implements Router.Strategy<Integer, Integer, Trade> {
+public class IntervalRoutingStrategy implements Router.Strategy<Integer, Trade> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -65,13 +65,13 @@ public class IntervalRoutingStrategy implements Router.Strategy<Integer, Integer
 	}
 
 	@Override
-	public Integer getRoute(Trade value) {
+	public int getRoute(Trade value) {
 		//logger.warn("routing {} to {}", value.getValueDate(), dateToRoute.floorEntry(value.getValueDate()).getValue());
 		return dateToRoute.floorEntry(value.getValueDate()).getValue();
 	}
 
 	@Override
-	public Collection<View<Integer, Trade>> getViews(Integer route) {
+	public Collection<View<Integer, Trade>> getViews(int route) {
 		return routeToViews[route];
 	}
 	

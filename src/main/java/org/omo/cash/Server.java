@@ -185,25 +185,25 @@ public class Server {
 							accountModels.add(account);
 							export(account, true, false);
 						}
-						Router.Strategy<Integer, Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(accountModels);
-						Router<Integer, Integer, Trade> accountRouter = new Router<Integer, Integer, Trade>(accountRoutingStrategy);
+						Router.Strategy<Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(accountModels);
+						Router<Integer, Trade> accountRouter = new Router<Integer, Trade>(accountRoutingStrategy);
 
 						currencyModels.add(currency);
 						export(currency, true, false);
 
 						view(currencyName, accountRouter);
 					}
-					Router.Strategy<Integer, Integer, Trade> currencyRoutingStrategy = new CurrencyRoutingStrategy(currencyModels);
-					Router<Integer, Integer, Trade> currencyRouter = new Router<Integer, Integer, Trade>(currencyRoutingStrategy);
+					Router.Strategy<Integer, Trade> currencyRoutingStrategy = new CurrencyRoutingStrategy(currencyModels);
+					Router<Integer, Trade> currencyRouter = new Router<Integer, Trade>(currencyRoutingStrategy);
 					view(dayName, currencyRouter);
 
 				}
-				Router.Strategy<Integer, Integer, Trade> intervalRoutingStrategy = new IntervalRoutingStrategy(dateRangeToViews);
-				View<Integer, Trade> dayRouter = new Router<Integer, Integer, Trade>(intervalRoutingStrategy);
+				Router.Strategy<Integer, Trade> intervalRoutingStrategy = new IntervalRoutingStrategy(dateRangeToViews);
+				View<Integer, Trade> dayRouter = new Router<Integer, Trade>(intervalRoutingStrategy);
 				view(partitionName, dayRouter);
 			}
 			PartitioningStrategy<Integer, Trade> partitioningStrategy = new PartitioningStrategy<Integer, Trade>(partitions);
-			View<Integer, Trade> partitioner = new Router<Integer, Integer, Trade>(partitioningStrategy);
+			View<Integer, Trade> partitioner = new Router<Integer, Trade>(partitioningStrategy);
 			view(tradeFeedName, partitioner);
 		}
 

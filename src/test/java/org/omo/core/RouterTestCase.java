@@ -30,7 +30,7 @@ public class RouterTestCase extends TestCase {
 		
 	}
 	
-	public static class SignRoutingStrategy implements Router.Strategy<Integer, Integer, IntegerDatum> {
+	public static class SignRoutingStrategy implements Router.Strategy<Integer, IntegerDatum> {
 
 		protected final Collection<View<Integer, IntegerDatum>>[] views;
 
@@ -44,13 +44,13 @@ public class RouterTestCase extends TestCase {
 		}
 
 		@Override
-		public Integer getRoute(IntegerDatum value) {
+		public int getRoute(IntegerDatum value) {
 			Integer integer = value.getInteger();
 			return integer < 0 ? 0 : integer > 0 ? 1 : 2;
 		}
 
 		@Override
-		public Collection<View<Integer, IntegerDatum>> getViews(Integer route) {
+		public Collection<View<Integer, IntegerDatum>> getViews(int route) {
 			return views[route];
 		}
 	}
@@ -60,7 +60,7 @@ public class RouterTestCase extends TestCase {
 		SimpleModelView<Integer, IntegerDatum> negative = new SimpleModelView<Integer, IntegerDatum>("Negative", null);
 		SimpleModelView<Integer, IntegerDatum> positive = new SimpleModelView<Integer, IntegerDatum>("Positive", null);
 
-		View<Integer, IntegerDatum> router = new Router<Integer, Integer, IntegerDatum>(new SignRoutingStrategy(negative, positive));
+		View<Integer, IntegerDatum> router = new Router<Integer, IntegerDatum>(new SignRoutingStrategy(negative, positive));
 		
 		IntegerDatum d0v0 = new IntegerDatum(0, 0, -4);
 		IntegerDatum d1v0 = new IntegerDatum(1, 0, -3);

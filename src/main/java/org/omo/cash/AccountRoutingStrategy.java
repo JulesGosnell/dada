@@ -7,7 +7,7 @@ import org.omo.core.Router.Strategy;
 
 import edu.emory.mathcs.backport.java.util.Collections;
 
-public class AccountRoutingStrategy implements Strategy<Integer, Integer, Trade> {
+public class AccountRoutingStrategy implements Strategy<Integer, Trade> {
 
 	private final Collection<View<Integer, Trade>>[] views;
 	
@@ -25,12 +25,12 @@ public class AccountRoutingStrategy implements Strategy<Integer, Integer, Trade>
 	}
 
 	@Override
-	public Integer getRoute(Trade value) {
+	public int getRoute(Trade value) {
 		return value.getAccount();
 	}
 
 	@Override
-	public Collection<View<Integer, Trade>> getViews(Integer route) {
+	public Collection<View<Integer, Trade>> getViews(int route) {
 		return views[route];
 	}
 }
