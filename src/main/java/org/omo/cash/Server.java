@@ -36,7 +36,7 @@ import org.omo.core.MapModelView;
 import org.omo.core.Metadata;
 import org.omo.core.Model;
 import org.omo.core.ModelView;
-import org.omo.core.Partitioner;
+import org.omo.core.PartitioningStrategy;
 import org.omo.core.Range;
 import org.omo.core.Registration;
 import org.omo.core.Router;
@@ -202,7 +202,8 @@ public class Server {
 				View<Integer, Trade> dayRouter = new Router<Integer, Integer, Trade>(intervalRoutingStrategy);
 				view(partitionName, dayRouter);
 			}
-			View<Integer, Trade> partitioner = new Partitioner<Integer, Trade>(partitions);
+			PartitioningStrategy<Integer, Trade> partitioningStrategy = new PartitioningStrategy<Integer, Trade>(partitions);
+			View<Integer, Trade> partitioner = new Router<Integer, Integer, Trade>(partitioningStrategy);
 			view(tradeFeedName, partitioner);
 		}
 
