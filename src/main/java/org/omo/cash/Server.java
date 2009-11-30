@@ -421,7 +421,7 @@ public class Server {
 				}
 			}
 		}
-		LOG.info("internal strcture completed in {} millis", System.currentTimeMillis() - start);
+		LOG.info("internal structure completed in {} millis", System.currentTimeMillis() - start);
 	}
 
 	protected final Map<String, Model<?, ?>> nameToModel = new HashMap<String, Model<?, ?>>();
