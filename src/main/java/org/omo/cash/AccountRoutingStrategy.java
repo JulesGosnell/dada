@@ -1,21 +1,22 @@
 package org.omo.cash;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.omo.core.SparseTable;
+import org.omo.core.Table;
 import org.omo.core.View;
 import org.omo.core.Router.Strategy;
 
-import edu.emory.mathcs.backport.java.util.Collections;
-
 public class AccountRoutingStrategy implements Strategy<Integer, Trade> {
 
-	private final Collection<View<Integer, Trade>>[] views;
+	private final Table<Collection<View<Integer, Trade>>> routeToViews = new SparseTable<Collection<View<Integer,Trade>>>(new ConcurrentHashMap<Integer, Collection<View<Integer, Trade>>>(), null);
 	
 	public AccountRoutingStrategy(Collection<View<Integer, Trade>> views) {
 		int i = 0;
-		this.views = new Collection[views.size()];
 		for (View<Integer, Trade> view : views) {
-			this.views[i++] = Collections.singleton(view);
+			this.routeToViews.put(i++, Collections.singleton(view));
 		}
 	}
 	
@@ -31,6 +32,6 @@ public class AccountRoutingStrategy implements Strategy<Integer, Trade> {
 
 	@Override
 	public Collection<View<Integer, Trade>> getViews(int route) {
-		return views[route];
+		return routeToViews.get(route);
 	}
 }

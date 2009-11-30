@@ -1,22 +1,25 @@
 package org.omo.cash;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
+import org.omo.core.CompactTable;
+import org.omo.core.Table;
 import org.omo.core.View;
 import org.omo.core.Router.Strategy;
 
-import edu.emory.mathcs.backport.java.util.Collections;
-
 public class CurrencyRoutingStrategy implements Strategy<Integer, Trade> {
 
-	private final Collection<View<Integer, Trade>>[] views;
+	private final Table<Collection<View<Integer, Trade>>> routeToViews;
 	
 	public CurrencyRoutingStrategy(Collection<View<Integer, Trade>> views) {
-		int i = 0;
-		this.views = new Collection[views.size()];
+		List<Collection<View<Integer, Trade>>> tmp = new ArrayList<Collection<View<Integer, Trade>>>();
 		for (View<Integer, Trade> view : views) {
-			this.views[i++] = Collections.singleton(view);
+			tmp.add(Collections.singleton(view));
 		}
+		routeToViews = new CompactTable<Collection<View<Integer,Trade>>>(tmp, null);
 	}
 	
 	@Override
@@ -31,6 +34,6 @@ public class CurrencyRoutingStrategy implements Strategy<Integer, Trade> {
 
 	@Override
 	public Collection<View<Integer, Trade>> getViews(int route) {
-		return views[route];
+		return routeToViews.get(route);
 	}
 }
