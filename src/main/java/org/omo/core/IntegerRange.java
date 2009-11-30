@@ -15,11 +15,6 @@ public class IntegerRange extends AbstractRange<Integer> {
 	}
 
 	@Override
-	public boolean contains(Integer value) {
-		return min < value && value < max;
-	}
-
-	@Override
 	public Collection<Integer> getValues() {
 		Collection<Integer> result = new ArrayList<Integer>(max-min);
 		for (int i=min; i<max; i++)

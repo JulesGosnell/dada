@@ -8,8 +8,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.Interval;
 import org.omo.core.AbstractModel;
-import org.omo.core.OneWeekRange;
 import org.omo.core.Update;
 import org.omo.core.View;
 import org.slf4j.Logger;
@@ -25,12 +25,13 @@ public class AccountProjectionAggregator extends AbstractModel<Integer, Projecti
 
 	private int version;
 	
-	public AccountProjectionAggregator(String name, OneWeekRange oneWeekRange, int account) {
+	public AccountProjectionAggregator(String name, Collection<Interval> intervals, int account) {
 		super(name, null);
 		this.account = account;
-		dates = new ArrayList<Date>(oneWeekRange.getValues()); // TODO: clumsy - but enables index lookup - slow - should be a Map ?
+		dates = new ArrayList<Date>(intervals.size());
 		positions = new ArrayList<BigDecimal>(dates.size());
-		for (Date date : dates) {
+		for (Interval interval : intervals) {
+			dates.add(interval.getStart().toDate());  // TODO: clumsy - but enables index lookup - slow - should be a Map ?
 			positions.add(BigDecimal.ZERO);
 		}
 	}

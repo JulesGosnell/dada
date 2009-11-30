@@ -3,10 +3,8 @@ package org.omo.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 
 import junit.framework.TestCase;
-import clojure.lang.PersistentTreeMap;
 
 public class SimpleModelViewTestCase extends TestCase {
 
@@ -143,16 +141,5 @@ public class SimpleModelViewTestCase extends TestCase {
 		Datum<Integer> datum13 = new IntegerDatum(3, 0);
 		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum13)), empty, empty);
 		assertTrue(aggregator.getTotal() == 6);
-	}
-
-	public void testDate() {
-		int numDays = 5;
-		PersistentTreeMap map = PersistentTreeMap.EMPTY;
-		Collection<Date> dates = new OneWeekRange(numDays).getValues();
-		for (Date date : dates)
-			map = map.assoc(date, date);
-		assertTrue(map.count() == numDays);
-		for (Date date : dates)
-			assertTrue(map.get(date) == date);
 	}
 }

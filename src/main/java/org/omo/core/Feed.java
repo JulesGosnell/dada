@@ -66,9 +66,9 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		}
 		logger.info("notifying {} values...", newValues.size());
 		long start = System.currentTimeMillis();
-		//notifyUpdates(insertions, empty, empty);
-		for (Update<V> insertion : insertions)
-			notifyUpdates(Collections.singleton(insertion), empty, empty);
+		notifyUpdates(insertions, empty, empty);
+		//for (Update<V> insertion : insertions)
+		//	notifyUpdates(Collections.singleton(insertion), empty, empty);
 		long end = System.currentTimeMillis();
 		logger.info("{} values in {} millis", insertions.size(), end - start);
 		logger.info("starting timer...");

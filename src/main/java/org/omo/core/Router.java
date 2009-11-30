@@ -31,14 +31,14 @@ public class Router<R, K, V> implements View<K, V> {
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 		
-		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
-			for (Update<V> insertion : insertions) {
-				for (View<K, V> view : strategy.getViews(strategy.getRoute(insertion.getNewValue()))) {
-					view.update(insertions, updates, deletions);
-				}
-			}
-			return;
-		}
+//		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
+//			for (Update<V> insertion : insertions) {
+//				for (View<K, V> view : strategy.getViews(strategy.getRoute(insertion.getNewValue()))) {
+//					view.update(insertions, updates, deletions);
+//				}
+//			}
+//			return;
+//		}
 		
 		// split updates according to Route...
 		MultiMap routeToInsertions = new MultiValueMap();

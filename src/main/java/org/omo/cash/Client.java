@@ -1,5 +1,6 @@
 package org.omo.cash;
 
+import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
@@ -15,7 +16,6 @@ import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -149,7 +149,8 @@ public class Client {
 		
 		frame = new JFrame(this.modelName);
 		panel = new JPanel();
-		new BoxLayout(panel, BoxLayout.Y_AXIS);
+		//new BoxLayout(panel, BoxLayout.Y_AXIS);
+		panel.setLayout(new GridLayout());
 		panel.add(jview);
 		panel.setOpaque(true);
 		frame.setContentPane(panel);

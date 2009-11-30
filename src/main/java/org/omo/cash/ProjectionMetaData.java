@@ -1,22 +1,22 @@
 package org.omo.cash;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 
-import org.omo.core.OneWeekRange;
+import org.joda.time.Interval;
 import org.omo.core.Metadata;
 
 public class ProjectionMetaData implements Metadata<Integer, Projection> {
 
 	private final List<String> attributeNames;
 	
-	public ProjectionMetaData(OneWeekRange range) { 
-		attributeNames = new ArrayList<String>(2 + range.getValues().size());
+	public ProjectionMetaData(Collection<Interval> intervals) { 
+		attributeNames = new ArrayList<String>(2 + intervals.size());
 		attributeNames.add("Id");
 		attributeNames.add("Version");
-		for (Date date : range.getValues())
-			attributeNames.add(date.toString());
+		for (Interval interval : intervals)
+			attributeNames.add(interval.getStart().toString());
 	}
 	
 	@Override
