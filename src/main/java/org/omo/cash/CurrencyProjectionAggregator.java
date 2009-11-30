@@ -52,7 +52,7 @@ public class CurrencyProjectionAggregator extends AbstractModel<Integer, Project
 			}
 		}
 		for (Update<CurrencyTotal> update : updates) {
-			CurrencyTotal oldValue = update.getOldValue();
+			//CurrencyTotal oldValue = update.getOldValue();
 			CurrencyTotal newValue = update.getNewValue();
 			Date date = newValue.getId();
 			int index = dates.indexOf(date);

@@ -2,13 +2,12 @@ package org.omo.core;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CountDownLatch;
 
 import javax.swing.table.AbstractTableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import edu.emory.mathcs.backport.java.util.concurrent.CountDownLatch;
 
 public class TableModelView<K, V> extends AbstractTableModel implements View<K, V> {
 

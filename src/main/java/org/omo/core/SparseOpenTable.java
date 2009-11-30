@@ -11,22 +11,22 @@ import java.util.concurrent.ConcurrentMap;
  * @param <K>
  * @param <V>
  */
-public class SparseTable<V> implements Table<V> {
+public class SparseOpenTable<V> implements Table<V> {
 	
 	public static interface Factory<V> {
 		public V create(Integer key, ConcurrentMap<Integer, V> map);
 	}
 	
-	private final SparseTable.Factory<V> factory;
+	private final SparseOpenTable.Factory<V> factory;
 	private final ConcurrentMap<Integer, V> map;
 	
-	public SparseTable(ConcurrentMap<Integer, V> map, SparseTable.Factory<V> factory) {
+	public SparseOpenTable(ConcurrentMap<Integer, V> map, SparseOpenTable.Factory<V> factory) {
 		this.factory = factory;
 		this.map = map;
 	}
 	
 	
-	public V get(Integer key) {
+	public V get(int key) {
 		V value = map.get(key);
 		if (value == null) {
 			// pay careful attention here - plenty of scope for error...
@@ -38,11 +38,11 @@ public class SparseTable<V> implements Table<V> {
 		return value;
 	}
 	
-	public V put(Integer key, V value) {
+	public V put(int key, V value) {
 		return map.put(key, value);
 	}
 
-	public V rem(Integer key, V value) {
+	public V rem(int key, V value) {
 		boolean removed = map.remove(key, value);
 		return removed ? value : null;
 		

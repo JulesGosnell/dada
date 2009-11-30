@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.omo.core.CompactTable;
+import org.omo.core.CompactOpenTable;
 import org.omo.core.Table;
 import org.omo.core.View;
 import org.omo.core.Router.Strategy;
@@ -19,7 +19,7 @@ public class CurrencyRoutingStrategy implements Strategy<Integer, Trade> {
 		for (View<Integer, Trade> view : views) {
 			tmp.add(Collections.singleton(view));
 		}
-		routeToViews = new CompactTable<Collection<View<Integer,Trade>>>(tmp, null);
+		routeToViews = new CompactOpenTable<Collection<View<Integer,Trade>>>(tmp, null);
 	}
 	
 	@Override

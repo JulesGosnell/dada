@@ -52,7 +52,7 @@ public class AccountProjectionAggregator extends AbstractModel<Integer, Projecti
 			}
 		}
 		for (Update<AccountTotal> update : updates) {
-			AccountTotal oldValue = update.getOldValue();
+			//AccountTotal oldValue = update.getOldValue();
 			AccountTotal newValue = update.getNewValue();
 			Date date = newValue.getId();
 			int index = dates.indexOf(date);

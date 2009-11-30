@@ -17,13 +17,9 @@ import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.omo.cash.Trade;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class IntervalRoutingStrategy implements Router.Strategy<Integer, Trade> {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-	
 	private final NavigableMap<Date, Integer> dateToRoute;
 	private final Collection<View<Integer, Trade>>[] routeToViews;
 	
@@ -47,7 +43,6 @@ public class IntervalRoutingStrategy implements Router.Strategy<Integer, Trade> 
 			Collection<View<Integer, Trade>> views = new ArrayList<View<Integer,Trade>>();
 			routeToViews[route] = views;
 			for (Entry<Interval, Collection<View<Integer, Trade>>> entry : dateRangeToViews.entrySet()) {
-				boolean matched = false;
 				Interval key = entry.getKey();
 				Collection<View<Integer, Trade>> value = entry.getValue();
 				if (key.contains(date)) {

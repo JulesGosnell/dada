@@ -91,7 +91,6 @@ public class Server {
 
 	private final int numTrades = 100000;
 	private final int numPartitions = 2;
-	private final int numDays = 5;
 	private final int numAccounts = 10;
 	private final int numCurrencies = 10;
 	private final int numBalances = 100;

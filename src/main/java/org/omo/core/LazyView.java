@@ -18,7 +18,7 @@ public class LazyView<K, V> implements View<K, V> {
 	private final int key;
 	private final ViewFactory<K, V> viewFactory;
 	
-	private transient View<K, V> view; // allocated lazily
+	private volatile View<K, V> view; // allocated lazily
 	
 	public LazyView(ConcurrentMap<Integer, View<K, V>> map, int key, ViewFactory<K, V> factory) {
 		this.map = map;
