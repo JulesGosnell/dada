@@ -3,7 +3,7 @@
 
 <beans>
 
-  <bean id="tradeFeed" class="org.omo.cash.TradeFeed">
+  <bean id="tradeFeed" class="org.dada.cash.TradeFeed">
 	  <constructor-arg value="TradeFeed.0"></constructor-arg>
 	  <constructor-arg value="0"></constructor-arg>
 	  <constructor-arg value="100"></constructor-arg>

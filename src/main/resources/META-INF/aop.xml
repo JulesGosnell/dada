@@ -3,12 +3,12 @@
 <aspectj>
 
   <weaver>
-    <include within="org.omo.ltw.*"/><!-- only weave classes in our application-specific packages -->
+    <include within="org.dada.ltw.*"/><!-- only weave classes in our application-specific packages -->
   </weaver>
 
   <aspects>
-    <!-- <aspect name="org.omo.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
-    <aspect name="org.omo.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
+    <!-- <aspect name="org.dada.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
+    <aspect name="org.dada.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
   </aspects>
 
   </aspectj>

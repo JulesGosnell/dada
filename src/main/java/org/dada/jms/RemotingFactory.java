@@ -1,4 +1,32 @@
-package org.omo.jms;
+/*
+ * Copyright (c) 2009, Julian Gosnell
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.dada.jms;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,7 +57,7 @@ public class RemotingFactory<T> {
 	private final SimpleMethodMapper mapper;
 	private final long timeout;
 	private final MessageProducer producer;
-	
+
 	public RemotingFactory(Session session, Class<?> interfaze, long timeout) throws JMSException {
 		this.session = session;
 		this.interfaze = interfaze;
@@ -37,25 +65,25 @@ public class RemotingFactory<T> {
 		this.timeout = timeout;
 		producer = session.createProducer(null);
 	}
-	
+
 	//--------------------------------------------------------------------
-	
+
 	public class Server implements MessageListener {
 
 		private final Logger logger;
 		private final T target;
 		private final MessageConsumer consumer;
-		private final ExecutorService executorService; 
+		private final ExecutorService executorService;
 
 		public Server(T target, Destination destination, ExecutorService executorService) throws JMSException {
 			this.target = target;
 			this.executorService = executorService;
 			logger = LoggerFactory.getLogger(Server.class);
-			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ? 
+			consumer = session.createConsumer(destination); // permanently allocates a thread... and an fd ?
 			logger.info("{}: consuming messages on: {}", System.identityHashCode(this), destination);
 			consumer.setMessageListener(this);
 		}
-		
+
 		@Override
 		public void onMessage(final Message message) {
 			//process(message);
@@ -67,7 +95,7 @@ public class RemotingFactory<T> {
 			};
 			executorService.execute(runnable);
 		}
-		
+
 		public void process(Message message) {
 			String correlationId = null;
 			Destination replyTo = null;
@@ -113,23 +141,23 @@ public class RemotingFactory<T> {
 			}
 		}
 	}
-	
+
 	//----------------------------------------------------------------------------
 
 	public T createServer(T target, Destination destination, ExecutorService executorService) throws JMSException {
 		new Server(target, destination, executorService);
 		return target;
 	}
-	
+
 	public T createSynchronousClient(Destination destination, boolean trueAsync) throws IllegalArgumentException, JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));
 	}
-	
+
 	public T createSynchronousClient(String destinationName, boolean trueAsync) throws IllegalArgumentException, JMSException {
 		return createSynchronousClient(session.createQueue(destinationName), trueAsync);
 	}
-	
+
 	public AsynchronousClient createAsynchronousClient(Destination destination, boolean trueAsync) throws JMSException {
 		return new AsynchronousClient(session, destination, interfaze, timeout, trueAsync);
 	}

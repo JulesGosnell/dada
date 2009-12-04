@@ -1,4 +1,32 @@
-package org.omo.core;
+/*
+ * Copyright (c) 2009, Julian Gosnell
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.dada.core;
 
 import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
@@ -25,12 +53,12 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.omo.jms.RemotingFactory;
+import org.dada.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Client {
-	
+
 	private final static Logger LOG = LoggerFactory.getLogger(Client.class);
 	private final static ExecutorService executorService = Executors.newFixedThreadPool(20);
 
@@ -75,7 +103,7 @@ public class Client {
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..
-		Registration<Object, Object> registration = serverProxy.registerView(clientServer); 
+		Registration<Object, Object> registration = serverProxy.registerView(clientServer);
 		Collection<Object> models = registration.getData();
 		if (models != null) {
 			guiModel.setMetadata(registration.getMetadata());
@@ -90,7 +118,7 @@ public class Client {
 
 		jview = new JView(guiModel);
 		table = jview.getTable();
-		
+
 		ListSelectionModel selectionModel = table.getSelectionModel();
 		selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
@@ -104,12 +132,12 @@ public class Client {
 			}
 		});
 		table.addMouseListener(new MouseListener() {
-			
+
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				
+
 			}
-			
+
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (e.getClickCount() == 2) {
@@ -123,24 +151,24 @@ public class Client {
 					}
 				}
 			}
-			
+
 			@Override
 			public void mouseExited(MouseEvent e) {
 			}
-			
+
 			@Override
 			public void mouseEntered(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
 		});
-		
+
 		frame = new JFrame(this.modelName);
 		panel = new JPanel();
 		//new BoxLayout(panel, BoxLayout.Y_AXIS);
@@ -160,10 +188,10 @@ public class Client {
 		});
 		frame.setVisible(true);
 	}
-	
+
 	/**
 	 * @param args
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
@@ -176,7 +204,7 @@ public class Client {
 		connection.start();
 		final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		SwingUtilities.invokeAndWait(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				try {
