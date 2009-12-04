@@ -15,6 +15,11 @@
     </license>
   </licenses>
 
+  <scm>
+    <connection>scm:git:git://github.com/JulesGosnell/dada.git</connection>
+    <url>scm:git:git://github.com/JulesGosnell/dada.git</url>
+  </scm>
+
   <properties>
     <cobertura.datafile>target/cobertura.ser</cobertura.datafile>
     <cobertura.version>1.9.3</cobertura.version>
