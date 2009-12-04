@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.omo.cash;
+package org.omo.core;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;

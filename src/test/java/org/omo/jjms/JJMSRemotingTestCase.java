@@ -4,7 +4,7 @@ import java.util.concurrent.Executors;
 
 import javax.jms.ConnectionFactory;
 
-import org.omo.cash.SyncLock;
+import org.omo.core.SyncLock;
 import org.omo.jms.AbstractRemotingTestCase;
 import org.omo.jms.Unserialisable;
 

@@ -1,4 +1,4 @@
-package org.omo.cash;
+package org.omo.core;
 
 import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
@@ -25,12 +25,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.omo.core.JView;
-import org.omo.core.Model;
-import org.omo.core.Registration;
-import org.omo.core.TableModelView;
-import org.omo.core.Update;
-import org.omo.core.View;
 import org.omo.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

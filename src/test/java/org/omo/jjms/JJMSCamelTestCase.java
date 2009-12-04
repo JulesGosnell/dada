@@ -2,7 +2,7 @@ package org.omo.jjms;
 
 import javax.jms.ConnectionFactory;
 
-import org.omo.cash.SyncLock;
+import org.omo.core.SyncLock;
 import org.omo.jms.AbstractCamelTestCase;
 
 import EDU.oswego.cs.dl.util.concurrent.NullSync;

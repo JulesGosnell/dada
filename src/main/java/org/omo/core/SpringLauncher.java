@@ -1,4 +1,4 @@
-package org.omo.cash;
+package org.omo.core;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

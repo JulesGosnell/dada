@@ -46,6 +46,7 @@ import org.omo.core.Router;
 import org.omo.core.SimpleModelView;
 import org.omo.core.SparseOpenTable;
 import org.omo.core.StringMetadata;
+import org.omo.core.SyncLock;
 import org.omo.core.Table;
 import org.omo.core.Update;
 import org.omo.core.View;
