@@ -12,7 +12,7 @@ import org.omo.core.Router.Strategy;
 
 public class CurrencyRoutingStrategy implements Strategy<Integer, Trade> {
 
-	private final Table<Collection<View<Integer, Trade>>> routeToViews;
+	private final Table<Integer, Collection<View<Integer, Trade>>> routeToViews;
 	
 	public CurrencyRoutingStrategy(Collection<View<Integer, Trade>> views) {
 		List<Collection<View<Integer, Trade>>> tmp = new ArrayList<Collection<View<Integer, Trade>>>();

@@ -11,6 +11,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,6 +25,7 @@ import javax.jms.Session;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.aspectj.weaver.NewConstructorTypeMunger;
 import org.joda.time.DateMidnight;
 import org.joda.time.Interval;
 import org.joda.time.Period;
@@ -41,7 +44,9 @@ import org.omo.core.Range;
 import org.omo.core.Registration;
 import org.omo.core.Router;
 import org.omo.core.SimpleModelView;
+import org.omo.core.SparseOpenTable;
 import org.omo.core.StringMetadata;
+import org.omo.core.Table;
 import org.omo.core.Update;
 import org.omo.core.View;
 import org.omo.core.MapModelView.Adaptor;
@@ -89,7 +94,8 @@ public class Server {
 
 	private final DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd");
 
-	private final int numTrades = 100000;
+	private final boolean async = false;
+	private final int numTrades = 1000;
 	private final int numPartitions = 2;
 	private final int numAccounts = 10;
 	private final int numCurrencies = 10;
@@ -145,7 +151,7 @@ public class Server {
 
 		// we'' randomize trade dates out over the next week...
 		// adding TradeFeedr
-		IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
+		final IntrospectiveMetadata<Integer, Trade> tradeMetadata = new IntrospectiveMetadata<Integer, Trade>(Trade.class, "Id");
 		String tradeFeedName = serverName + ".TradeFeed";
 		List<Interval> intervals = createProjection();
 		Date min = intervals.get(0).getStart().toDate();
@@ -160,31 +166,63 @@ public class Server {
 			List<View<Integer, Trade>> partitions = new ArrayList<View<Integer, Trade>>();
 			for (int p = 0; p < numPartitions; p++) {
 
-				String partitionName = serverName + ".Trade.Partition=" + p;
+				final String partitionName = serverName + ".Trade.Partition=" + p;
 				ModelView<Integer, Trade> partition = new SimpleModelView<Integer, Trade>(partitionName, tradeMetadata);
 				partitions.add(partition);
 				export(partition, true, false);
 
 				Map<Interval, Collection<View<Integer, Trade>>> dateRangeToViews = new HashMap<Interval, Collection<View<Integer,Trade>>>();
 				for (Interval interval : intervals) {
-					String dayName = partitionName + ".ValueDate="+ dateFormat.format(interval.getStart().toDate());
+					final Date d = interval.getStart().toDate();
+					String dayName = partitionName + ".ValueDate="+ dateFormat.format(d);
 					ModelView<Integer, Trade> day = new SimpleModelView<Integer, Trade>(dayName, tradeMetadata);
 					dateRangeToViews.put(interval, Collections.singleton((View<Integer, Trade>) day));
 					export(day, true, false);
 
 					Collection<View<Integer, Trade>> currencyModels = new ArrayList<View<Integer,Trade>>(numCurrencies);
 					for (int c = 0; c < numCurrencies; c++) {
-						String currencyName = dayName + ".Currency=" + c;
+						final int cu = c;
+						final String currencyName = dayName + ".Currency=" + c;
 						ModelView<Integer, Trade> currency = new SimpleModelView<Integer, Trade>(currencyName, tradeMetadata);
 
-						Collection<View<Integer, Trade>> accountModels = new ArrayList<View<Integer,Trade>>(numAccounts);
-						for (int a = 0; a < numAccounts; a++) {
-							String accountName = currencyName + ".Account=" + a;
-							ModelView<Integer, Trade> account = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
-							accountModels.add(account);
-							export(account, true, false);
-						}
-						Router.Strategy<Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(accountModels);
+						// aggregate this total into a model of date:total of this account by currency/partition
+						// (this is then "pivoted and sum-ed into a projection)
+						SparseOpenTable.Factory<Integer, Collection<View<Date,AccountTotal>>> accountTotalsFactory = new SparseOpenTable.Factory<Integer, Collection<View<Date,AccountTotal>>>() {
+							@Override
+							public Collection<View<Date, AccountTotal>> create(Integer key, ConcurrentMap<Integer, Collection<View<Date, AccountTotal>>> map) throws Exception {
+								String accountTotalName = partitionName + ".Currency=" + cu + ".Account=" + key + ".Total";
+								Metadata<Date, AccountTotal> accountTotalMetadata = new AccountTotalMetadata();
+								SimpleModelView<Date, AccountTotal> accountTotal = new SimpleModelView<Date, AccountTotal>(accountTotalName, accountTotalMetadata);
+								export(accountTotal, true, true);
+								return Collections.singleton((View<Date, AccountTotal>)accountTotal);
+							}
+						};
+							
+						final Table<Integer, Collection<View<Date, AccountTotal>>> accountTotalsTable = new SparseOpenTable<Integer, Collection<View<Date,AccountTotal>>>(new ConcurrentHashMap<Integer, Collection<View<Date, AccountTotal>>>(), accountTotalsFactory);
+						
+						SparseOpenTable.Factory<Integer, Collection<View<Integer,Trade>>> factory = new SparseOpenTable.Factory<Integer, Collection<View<Integer,Trade>>>() {
+							@Override
+							public Collection<View<Integer, Trade>> create(Integer key, ConcurrentMap<Integer, Collection<View<Integer, Trade>>> map) throws Exception {
+								String accountName = currencyName + ".Account=" + key;
+								ModelView<Integer, Trade> account = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
+								export(account, true, true);
+
+								// aggregate all trades in this model into a total...
+								String aggregatorName = accountName + ".Total";
+								AccountAmountAggregator aggregator = new AccountAmountAggregator(aggregatorName, d, key);
+								view(accountName, aggregator);
+								export(aggregator, true, true);
+
+								Collection<View<Date, AccountTotal>> accountTotals = accountTotalsTable.get(key);
+								for (View<Date, AccountTotal> accountTotal : accountTotals) {
+									view2(aggregatorName, accountTotal);
+									//accountTotal.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, key, new BigDecimal(0))));
+								}
+
+								return Collections.singleton((View<Integer, Trade>)account);
+							}
+						};
+						Router.Strategy<Integer, Trade> accountRoutingStrategy = new AccountRoutingStrategy(factory);
 						Router<Integer, Trade> accountRouter = new Router<Integer, Trade>(accountRoutingStrategy);
 
 						currencyModels.add(currency);
@@ -375,17 +413,19 @@ public class Server {
 					List<Update<AccountTotal>> accountTotals = new ArrayList<Update<AccountTotal>>(intervals.size());
 					for (Interval interval : intervals) {
 						Date d = interval.getStart().toDate();
-						String modelName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c + ".Account=" + a;
-						String aggregatorName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c + ".Account=" + a + ".Total";
-						AccountAmountAggregator aggregator = new AccountAmountAggregator(aggregatorName, d, a);
-						aggregator.registerView(accountTotal);
-						SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
+						//String modelName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c + ".Account=" + a;
+						//String aggregatorName = partitionName + ".ValueDate=" + dateFormat.format(d) + ".Currency=" + c + ".Account=" + a + ".Total";
+						//AccountAmountAggregator aggregator = new AccountAmountAggregator(aggregatorName, d, a);
+//						aggregator.registerView(accountTotal);
+						//SimpleModelView<Integer, Trade> model = (SimpleModelView<Integer, Trade>) nameToModel.get(modelName);
 						accountTotals.add(new Update<AccountTotal>(null, new AccountTotal(d, 0, a, new BigDecimal(0))));
-						Registration<Integer, Trade> registration = model.registerView(aggregator);
-						Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
-						for (Trade datum : registration.getData())
-							insertions.add(new Update<Trade>(null, datum));
-						aggregator.update(insertions, new ArrayList<Update<Trade>>(), new ArrayList<Update<Trade>>());
+						//if (model!=null) { // tmp
+						//	Registration<Integer, Trade> registration = model.registerView(aggregator);
+						//	Collection<Update<Trade>> insertions = new ArrayList<Update<Trade>>();
+						//	for (Trade datum : registration.getData())
+						//		insertions.add(new Update<Trade>(null, datum));
+						//	aggregator.update(insertions, new ArrayList<Update<Trade>>(), new ArrayList<Update<Trade>>());
+						//}
 					}
 					accountTotal.update(accountTotals, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
 
@@ -409,16 +449,16 @@ public class Server {
 				}
 				// Trades for a given Account for a given Day/Period (aggregated across
 				// all Partitions)
-				for (int a = 0; a < numAccounts; a++) {
-					String accountPrefix = serverName + ".Trade";
-					String accountSuffix = ".ValueDate=" + dateFormat.format(d)+ ".Currency=" + c + ".Account=" + a;
-					String accountName = accountPrefix + accountSuffix;
-					SimpleModelView<Integer, Trade> accountModel = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
-					export(accountModel, true, false);
-					for (int p = 0; p < numPartitions; p++) {
-						view(accountPrefix + ".Partition=" + p + accountSuffix, accountModel);
-					}
-				}
+//				for (int a = 0; a < numAccounts; a++) {
+//					String accountPrefix = serverName + ".Trade";
+//					String accountSuffix = ".ValueDate=" + dateFormat.format(d)+ ".Currency=" + c + ".Account=" + a;
+//					String accountName = accountPrefix + accountSuffix;
+//					SimpleModelView<Integer, Trade> accountModel = new SimpleModelView<Integer, Trade>(accountName, tradeMetadata);
+//					export(accountModel, true, false);
+//					for (int p = 0; p < numPartitions; p++) {
+//						view(accountPrefix + ".Partition=" + p + accountSuffix, accountModel);
+//					}
+//				}
 			}
 		}
 		LOG.info("internal structure completed in {} millis", System.currentTimeMillis() - start);
@@ -443,10 +483,33 @@ public class Server {
 			model.start();
 	}
 
+	protected void view2(String modelName, View<Date, AccountTotal> view) throws IllegalArgumentException, JMSException {
+		Model<Date, AccountTotal> model;
+		View<Date, AccountTotal> v;
+//		if (async) {
+//			model = internalTradeRemotingFactory.createSynchronousClient(modelName, true);
+//			Destination clientDestination = internalSession.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
+//			RemotingFactory<View<Date, AccountTotal>> serverFactory = new RemotingFactory<View<Date, AccountTotal>>(internalSession, View.class, timeout);
+//			serverFactory.createServer(view, clientDestination, executorService);
+//			v = serverFactory.createSynchronousClient(clientDestination, true);
+//		} else {
+			model = (Model<Date, AccountTotal>)nameToModel.get(modelName);
+			v = view;
+//		}
+
+		Registration<Date, AccountTotal> registration = model.registerView(v);
+		Collection<AccountTotal> data = registration.getData();
+		if (data.size() > 0) {
+			Collection<Update<AccountTotal>> insertions = new ArrayList<Update<AccountTotal>>();
+			for (AccountTotal trade : data)
+				insertions.add(new Update<AccountTotal>(null, trade));
+			view.update(insertions, new ArrayList<Update<AccountTotal>>(), new ArrayList<Update<AccountTotal>>());
+		}
+	}
+
 	protected void view(String modelName, View<Integer, Trade> view) throws IllegalArgumentException, JMSException {
 		Model<Integer, Trade> model;
 		View<Integer, Trade> v;
-		boolean async = false;
 		if (async) {
 			model = internalTradeRemotingFactory.createSynchronousClient(modelName, true);
 			Destination clientDestination = internalSession.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
@@ -454,7 +517,7 @@ public class Server {
 			serverFactory.createServer(view, clientDestination, executorService);
 			v = serverFactory.createSynchronousClient(clientDestination, true);
 		} else {
-			model = (Model<Integer, Trade>) nameToModel.get(modelName);
+			model = (Model<Integer, Trade>)nameToModel.get(modelName);
 			v = view;
 		}
 
@@ -530,28 +593,28 @@ public class Server {
 		DateMidnight midnightToday = new DateMidnight();
 		DateMidnight midnight = midnightToday;
 		
-		for (int days = 0; days < 7; days++)
-			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.days(1))));
-		for (int weeks = 0; weeks < 2; weeks++)
-			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.weeks(1))));
-		for (int months = 0; months < 1; months++)
-			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.months(1))));
-		Collections.reverse(intervals);
+//		for (int days = 0; days < 7; days++)
+//			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.days(1))));
+//		for (int weeks = 0; weeks < 2; weeks++)
+//			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.weeks(1))));
+//		for (int months = 0; months < 1; months++)
+//			intervals.add(reverseInterval(midnight, midnight = midnight.minus(Period.months(1))));
+//		Collections.reverse(intervals);
+//		
+//		midnight = midnightToday;
 		
-		midnight = midnightToday;
-		
-		for (int days = 0; days < 14; days++) 
+		for (int days = 0; days < /* 1 */ 4; days++) 
 			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.days(1))));
-		for (int weeks = 0; weeks < 2; weeks++)
-			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.weeks(1))));
-		for (int qtrs = 0; qtrs < 3; qtrs++)
-			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.months(3))));
-		for (int years = 0; years < 4; years++)
-			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(1))));
-		for (int pentades = 0; pentades < 1; pentades++)
-			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(5))));
-		for (int decades = 0; decades < 4; decades++)
-			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(10))));
+//		for (int weeks = 0; weeks < 2; weeks++)
+//			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.weeks(1))));
+//		for (int qtrs = 0; qtrs < 3; qtrs++)
+//			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.months(3))));
+//		for (int years = 0; years < 4; years++)
+//			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(1))));
+//		for (int pentades = 0; pentades < 1; pentades++)
+//			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(5))));
+//		for (int decades = 0; decades < 4; decades++)
+//			intervals.add(new Interval(midnight, midnight = midnight.plus(Period.years(10))));
 
 		return intervals;
 	}

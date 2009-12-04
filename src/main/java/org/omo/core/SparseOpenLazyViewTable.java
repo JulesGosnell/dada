@@ -11,13 +11,13 @@ import java.util.concurrent.ConcurrentMap;
  * @param <K>
  * @param <V>
  */
-public class SparseOpenLazyViewTable<K, V> extends SparseOpenTable<View<K, V>> {
+public class SparseOpenLazyViewTable<K, V> extends SparseOpenTable<K, View<K, V>> {
 
-	public SparseOpenLazyViewTable(final ConcurrentMap<Integer, View<K, V>> map, final ViewFactory<K, V> factory) {
+	public SparseOpenLazyViewTable(final ConcurrentMap<K, View<K, V>> map, final ViewFactory<K, V> factory) {
 		super(
 				map,
-				new SparseOpenTable.Factory<View<K, V>>() {
-					public View<K, V> create(Integer key, ConcurrentMap<Integer, View<K, V>> map) {
+				new SparseOpenTable.Factory<K, View<K, V>>() {
+					public View<K, V> create(K key, ConcurrentMap<K, View<K, V>> map) {
 						return new LazyView<K, V>(map, key, factory);
 					}
 				}

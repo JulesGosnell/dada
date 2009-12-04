@@ -14,13 +14,13 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class LazyView<K, V> implements View<K, V> {
 	
-	private final ConcurrentMap<Integer, View<K, V>> map;
-	private final int key;
+	private final ConcurrentMap<K, View<K, V>> map;
+	private final K key;
 	private final ViewFactory<K, V> viewFactory;
 	
 	private volatile View<K, V> view; // allocated lazily
 	
-	public LazyView(ConcurrentMap<Integer, View<K, V>> map, int key, ViewFactory<K, V> factory) {
+	public LazyView(ConcurrentMap<K, View<K, V>> map, K key, ViewFactory<K, V> factory) {
 		this.map = map;
 		this.key = key;
 		this.viewFactory = factory;

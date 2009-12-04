@@ -12,7 +12,7 @@ import java.util.List;
  * @param <K>
  * @param <V>
  */
-public class CompactOpenTable<V> implements Table<V> {
+public class CompactOpenTable<V> implements Table<Integer, V> {
 	
 	public static interface Factory<V> {
 		public V create(Integer key, Collection<V> views);
@@ -27,7 +27,7 @@ public class CompactOpenTable<V> implements Table<V> {
 	}
 	
 	
-	public V get(int key) {
+	public V get(Integer key) {
 		V value = values.get(key);
 		if (value == null) {
 			// pay careful attention here - plenty of scope for error...
@@ -36,11 +36,11 @@ public class CompactOpenTable<V> implements Table<V> {
 		return value;
 	}
 	
-	public V put(int key, V value) {
+	public V put(Integer key, V value) {
 		return values.set(key, value);
 	}
 
-	public V rem(int key, V value) {
+	public V rem(Integer key, V value) {
 		values.remove(key);
 		throw new UnsupportedOperationException("NYI");
 		// TODO: check...

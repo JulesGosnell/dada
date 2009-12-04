@@ -11,13 +11,10 @@ import org.omo.core.Router.Strategy;
 
 public class AccountRoutingStrategy implements Strategy<Integer, Trade> {
 
-	private final Table<Collection<View<Integer, Trade>>> routeToViews = new SparseOpenTable<Collection<View<Integer,Trade>>>(new ConcurrentHashMap<Integer, Collection<View<Integer, Trade>>>(), null);
+	private final Table<Integer, Collection<View<Integer, Trade>>> routeToViews;
 	
-	public AccountRoutingStrategy(Collection<View<Integer, Trade>> views) {
-		int i = 0;
-		for (View<Integer, Trade> view : views) {
-			this.routeToViews.put(i++, Collections.singleton(view));
-		}
+	public AccountRoutingStrategy(SparseOpenTable.Factory<Integer, Collection<View<Integer,Trade>>> factory) {
+		routeToViews = new SparseOpenTable<Integer, Collection<View<Integer,Trade>>>(new ConcurrentHashMap<Integer, Collection<View<Integer, Trade>>>(), factory);
 	}
 	
 	@Override

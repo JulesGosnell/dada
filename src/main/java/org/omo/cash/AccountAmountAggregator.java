@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.omo.core.AbstractModel;
+import org.omo.core.Metadata;
 import org.omo.core.Update;
 import org.omo.core.View;
 import org.slf4j.Logger;
@@ -27,7 +28,34 @@ public class AccountAmountAggregator extends AbstractModel<Date, AccountTotal> i
 	private int version; // TODO: needs to come from our Model, so if we go, it is not lost...
 	
 	public AccountAmountAggregator(String name, Date date, int account) {
-		super(name, null);
+		super(name, new Metadata<Date, AccountTotal>(){
+
+			@Override
+			public List<String> getAttributeNames() {
+				List<String> attributeNames = new ArrayList<String>();
+				for (String string : new String[]{"Date", "Version", "Amount"})
+					attributeNames.add(string);
+				return attributeNames;
+			}
+
+			@Override
+			public Object getAttributeValue(AccountTotal value, int index) {
+				switch (index) {
+				case 0:
+					return value.getId();
+				case 1:
+					return value.getVersion();
+				case 2:
+					return value.getAmount();
+				default:
+					return null;
+				}
+			}
+
+			@Override
+			public Date getKey(AccountTotal value) {
+				return value.getId();
+			}});
 		this.date = date;
 		this.account = account;
 	}
