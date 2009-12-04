@@ -16,8 +16,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/JulesGosnell/dada.git</connection>
-    <url>scm:git:git://github.com/JulesGosnell/dada.git</url>
+    <connection>scm:git:git@github.com:JulesGosnell/dada.git</connection>
+    <url>scm:git:git@github.com:JulesGosnell/dada.git</url>
+    <developerConnection>scm:git:git@github.com:JulesGosnell/dada.git</developerConnection>
   </scm>
 
   <properties>
