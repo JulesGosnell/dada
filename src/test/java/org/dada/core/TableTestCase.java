@@ -28,17 +28,27 @@
  */
 package org.dada.core;
 
-
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import junit.framework.TestCase;
 
-public class PerformanceTestCase extends TestCase {
+import org.dada.core.CompactOpenTable.Factory;
 
-	public void testDates() {
-		long now = System.currentTimeMillis();
-		for (int i=0; i<10000000;i++)
-			new Date();
-		System.out.println(System.currentTimeMillis()-now);
+public class TableTestCase extends TestCase {
+
+	public void testTable() {
+		
+		CompactOpenTable.Factory<String> factory = new Factory<String>() {
+
+			@Override
+			public String create(Integer key, Collection<String> views) {
+				return "" + key;
+			}
+		};
+		
+		Table<Integer, String> table = new CompactOpenTable<String>(new ArrayList<String>(), factory);
+		
+		
 	}
 }
