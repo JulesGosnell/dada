@@ -272,7 +272,17 @@
                   <arg value="--destination"/>
                   <arg value="target/site/cobertura"/>
                   <arg value="--format"/>
-                  <arg value="${cobertura.format}"/>
+                  <arg value="html"/>
+                  <arg value="src/main/java"/>
+                </java>
+                <java classname="net.sourceforge.cobertura.reporting.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="target/site/cobertura"/>
+                  <arg value="--format"/>
+                  <arg value="xml"/>
                   <arg value="src/main/java"/>
                 </java>
               </tasks>
