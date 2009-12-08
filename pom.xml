@@ -15,6 +15,12 @@
     </license>
   </licenses>
 
+  <scm>
+    <connection>scm:git:git@github.com:JulesGosnell/dada.git</connection>
+    <url>scm:git:git@github.com:JulesGosnell/dada.git</url>
+    <developerConnection>scm:git:git@github.com:JulesGosnell/dada.git</developerConnection>
+  </scm>
+
   <properties>
     <cobertura.datafile>target/cobertura.ser</cobertura.datafile>
     <cobertura.version>1.9.3</cobertura.version>
@@ -324,7 +330,7 @@
             <additionalClasspathElement>target/classes</additionalClasspathElement>
           </additionalClasspathElements>
           <forkMode>once</forkMode>
-	  <argLine>-javaagent:/home/jules/.m2/repository/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
+	  <argLine>-javaagent:${user.home}/.m2/repository/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/Abstract*TestCase.java</exclude>
