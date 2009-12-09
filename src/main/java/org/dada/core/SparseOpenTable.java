@@ -62,16 +62,17 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 	public V get(K key) {
 		V value = map.get(key);
 		if (value == null) {
-			// pay careful attention here - plenty of scope for error...
-			V newValue = null;
+			// N.B. race condition here - pay attention...
 			try {
-				newValue = factory.create(key, map);
+			        V newValue = factory.create(key, map); // create potential new entry
+				V oldValue = map.putIfAbsent(key, newValue); // insert it IFF still not present
+				if (oldValue == null)
+				    return newValue; // we won the race - we become new value
+				else
+				    return oldValue; // we lost the race - we will be thrown away
 			} catch (Exception e) {
 				LOG.error("unable to create new Table item", e);
 			}
-			V oldValue = map.putIfAbsent(key, newValue);
-			value = oldValue == null ? newValue : oldValue;
-			// N.B. newValue may lose race and be thrown away - so be careful
 		}
 		return value;
 	}

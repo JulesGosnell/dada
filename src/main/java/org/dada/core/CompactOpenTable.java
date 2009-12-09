@@ -37,7 +37,6 @@ import java.util.List;
  *
  * @author jules
  *
- * @param <K>
  * @param <V>
  */
 public class CompactOpenTable<V> implements Table<Integer, V> {

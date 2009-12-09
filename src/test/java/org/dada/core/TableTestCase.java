@@ -30,25 +30,97 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 
 import junit.framework.TestCase;
 
-import org.dada.core.CompactOpenTable.Factory;
-
 public class TableTestCase extends TestCase {
 
-	public void testTable() {
-		
-		CompactOpenTable.Factory<String> factory = new Factory<String>() {
+	public void doNottestCompactOpenTable() {
+
+		CompactOpenTable.Factory<String> factory = new CompactOpenTable.Factory<String>() {
 
 			@Override
 			public String create(Integer key, Collection<String> views) {
 				return "" + key;
 			}
 		};
-		
+
 		Table<Integer, String> table = new CompactOpenTable<String>(new ArrayList<String>(), factory);
-		
-		
+
+		testTable(table);
+	}
+
+	public void testSparseOpenTable() {
+
+		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
+
+			// TODO: map should not be passed as a param here - but rather to ctor, if needed...
+			@Override
+			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
+				if (key < 0)
+					throw new UnsupportedOperationException("NYI");
+				else
+					return "" + key;
+			}
+		};
+
+		Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
+
+		testTable(table);
+	}
+
+	protected boolean lose;
+
+//	public void testSparseOpenTableRaceCondition() {
+//
+//		final CountDownLatch latch = new CountDownLatch(1);
+//
+//		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
+//			@Override
+//			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
+//				if (lose)
+//					latch.await();
+//				return "" + key;
+//			}
+//		};
+//
+//		final Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
+//
+//		Runnable putter = new Runnable() {
+//			@Override
+//			public void run() {
+//				table.get(0);
+//			}
+//		};
+//
+//		Thread loser = new Thread(putter);
+//		Thread winner = new Thread(putter);
+//
+//		lose = true;
+//		loser.start();
+//		// aarrgh !!
+//		winner.start();
+//		winner.join();
+//		latch.countDown();
+//		loser.join();
+//
+//	}
+
+	public void testTable(Table<Integer, String> table) {
+
+		assertTrue(table.get(0).equals("0"));
+
+		String one = "1";
+		table.put(1, one);
+		assertTrue(table.get(1) == one);
+
+		assertTrue(table.get(-1) == null);
+
+		String minusOne = "-1";
+		table.put(-1, minusOne);
+		assertTrue(table.get(-1) == minusOne);
 	}
 }
