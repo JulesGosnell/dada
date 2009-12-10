@@ -30,6 +30,9 @@ package org.dada.core;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * If asked for a value that is not present create one using given factory, add it to our map and return
  * it - all in a thread-safe manner.
@@ -40,28 +43,78 @@ import java.util.List;
  */
 public class CompactOpenTable<V> implements Table<Integer, V> {
 
-	private final Factory<Integer, V> factory;
-	private final List<V> values;
+	public static interface ResizeStrategy {
+		int getNewSize(int oldSize, int newKey);
+	}
+	
+	private static final Logger LOG = LoggerFactory.getLogger(CompactOpenTable.class);
 
+	private final Factory<Integer, V> factory;
+	private final ResizeStrategy resizer;
+	
+	private V[] values;
+
+	@Deprecated
 	public CompactOpenTable(List<V> values, Factory<Integer, V> factory) {
-		this.factory = factory;
-		this.values = values;
+		this(values, factory, new ResizeStrategy() {
+			@Override
+			public int getNewSize(int oldSize, int newKey) {
+				return newKey; // very dumb - user should provide something more sophisticated
+			}
+		});
 	}
 
-
+	@SuppressWarnings("unchecked")
+	public CompactOpenTable(List<V> values, Factory<Integer, V> factory, ResizeStrategy resizer) {
+		this.factory = factory;
+		this.values = (V[])values.toArray();
+		this.resizer = resizer;
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected void resize(Integer key) {
+		// we need to resize to accommodate the new item that we are about
+		// to create...
+		V[] newValues = (V[])new Object[resizer.getNewSize(values.length, key)];
+		System.arraycopy(values, 0, newValues, 0, values.length);
+		values = newValues;
+	}
+	
 	@Override
 	public V get(Integer key) {
-		V value = values.get(key);
-		if (value == null) {
-			// pay careful attention here - plenty of scope for error...
-			throw new UnsupportedOperationException("NYI");
+		synchronized (this) {
+			V value = null;
+			if (key < values.length) {
+				value = values[key];
+			} else {
+				resize(key);
+			}
+			if (value == null) {
+				try {
+					value = (values[key] = factory.create(key));
+				} catch (Exception e) {
+					LOG.error("unable to create new Table item", e);
+				}
+			}
+			return value;
 		}
-		return value;
 	}
 
 	@Override
-	public V put(Integer key, V value) {
-		return values.set(key, value);
+	public V put(Integer key, V newValue) {
+		synchronized (this) {
+			V oldValue;
+			if (key >= values.length) {
+				resize(key);
+				oldValue =null;
+			} else {
+				oldValue = values[key];
+			}
+
+			values[key] = newValue;
+
+			return oldValue;
+		}
 	}
 
 //	@Override

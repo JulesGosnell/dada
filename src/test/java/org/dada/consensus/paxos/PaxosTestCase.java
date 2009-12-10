@@ -44,6 +44,7 @@ import junit.framework.TestCase;
  */
 public class PaxosTestCase extends TestCase {
 
+	@SuppressWarnings("unchecked")
 	public void testProposal() throws IOException, ClassNotFoundException {
 		// does it construct correctly ?
 		int number = 9;

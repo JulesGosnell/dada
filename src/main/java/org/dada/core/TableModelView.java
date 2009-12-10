@@ -83,9 +83,9 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 				fireTableRowsInserted(index, index);
 			}
 		}
-		for (Update<V> deletion : deletions) {
+
+		if (deletions.size() > 0)
 			throw new UnsupportedOperationException("deletion - NYI");
-		}
 	}
 
 	protected String columnNames[] = new String[]{"id", "version"};
@@ -105,9 +105,10 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 		return map.size();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		V value = (V)map.values().toArray()[rowIndex]; // yikes !!
+		V value = (V)map.values().toArray()[rowIndex]; // TODO: yikes !!
 		return getMetadata().getAttributeValue(value, columnIndex);
 	}
 

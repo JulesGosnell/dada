@@ -45,6 +45,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 		super(name, metadata);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Collection<V> getValues() {
 		return ((PersistentTreeMap)maps.getCurrent()).values();
@@ -52,6 +53,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 
 	// Model.Lifecycle
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 		// copy these aggressively for the moment - later they should be copy-on-write or persistent...

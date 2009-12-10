@@ -48,6 +48,7 @@ public abstract class AbstractIntervalRoutingStrategy<V> implements Router.Strat
 	private final NavigableMap<Date, Integer> dateToRoute;
 	private final Collection<View<Integer, V>>[] routeToViews;
 
+	@SuppressWarnings("unchecked")
 	public AbstractIntervalRoutingStrategy(Map<Interval, Collection<View<Integer, V>>> intervalToViews) {
 		NavigableSet<DateTime> dates = new TreeSet<DateTime>();
 		// aggregate period edges...
@@ -62,7 +63,7 @@ public abstract class AbstractIntervalRoutingStrategy<V> implements Router.Strat
 		// map edges to routes...
 		int route = 0;
 		dateToRoute = new TreeMap<Date, Integer>();
-		routeToViews = new Collection[dates.size()];
+		routeToViews = new Collection[dates.size()]; // unchecked :-(
 		for (DateTime date : dates) {
 			dateToRoute.put(date.toDate(), route);
 			Collection<View<Integer, V>> views = new ArrayList<View<Integer,V>>();

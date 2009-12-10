@@ -38,17 +38,23 @@ import org.dada.core.Table.Factory;
 
 public class TableTestCase extends TestCase {
 
-	public void doNottestCompactOpenTable() {
+	public void testCompactOpenTable() {
 
 		Factory<Integer, String> factory = new Factory<Integer, String>() {
-
 			@Override
-			public String create(Integer key) {
-				return "" + key;
+			public String create(Integer key) throws Exception {
+				if (key == 0)
+					throw new UnsupportedOperationException("NYI");
+				else
+					return "" + key;
 			}
 		};
 
-		Table<Integer, String> table = new CompactOpenTable<String>(new ArrayList<String>(), factory);
+		ArrayList<String> values = new ArrayList<String>();
+		values.add(null);
+		values.add(null);
+		values.add(null);
+		Table<Integer, String> table = new CompactOpenTable<String>(values, factory);
 
 		testTable(table);
 	}
@@ -58,7 +64,7 @@ public class TableTestCase extends TestCase {
 		Factory<Integer, String> factory = new Factory<Integer, String>() {
 			@Override
 			public String create(Integer key) throws Exception {
-				if (key < 0)
+				if (key == 0)
 					throw new UnsupportedOperationException("NYI");
 				else
 					return "" + key;
@@ -129,16 +135,15 @@ public class TableTestCase extends TestCase {
 
 	public void testTable(Table<Integer, String> table) {
 
-		assertTrue(table.get(0).equals("0"));
+		// factory failure...
+		assertTrue(table.get(0) == null);
 
-		String one = "1";
-		table.put(1, one);
-		assertTrue(table.get(1) == one);
+		// factory creation of unused key
+		assertTrue(table.get(1).equals("1"));
 
-		assertTrue(table.get(-1) == null);
-
-		String minusOne = "-1";
-		table.put(-1, minusOne);
-		assertTrue(table.get(-1) == minusOne);
+		// put and get of same reference
+		String two = "2";
+		table.put(2, two);
+		assertTrue(table.get(2) == two);
 	}
 }

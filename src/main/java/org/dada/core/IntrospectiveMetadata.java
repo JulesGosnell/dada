@@ -60,6 +60,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public V getAttributeValue(V value, int index) {
 		try {

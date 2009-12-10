@@ -38,9 +38,10 @@ public class PartitioningStrategy<K,V extends Datum<Integer>> implements Strateg
 	private final Collection<View<K, V>>[] views;
 	private final int numViews;
 
+	@SuppressWarnings("unchecked")
 	public PartitioningStrategy(Collection<View<K, V>> views) {
 		numViews = views.size();
-		this.views = new Collection[numViews];
+		this.views = new Collection[numViews]; // unchecked :-(
 		int i = 0;
 		for (View<K, V> partition : views)
 			this.views[i++] = Collections.singleton(partition);

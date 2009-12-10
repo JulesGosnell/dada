@@ -149,6 +149,7 @@ public class RemotingFactory<T> {
 		return target;
 	}
 
+	@SuppressWarnings("unchecked")
 	public T createSynchronousClient(Destination destination, boolean trueAsync) throws IllegalArgumentException, JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));

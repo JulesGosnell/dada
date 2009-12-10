@@ -69,6 +69,7 @@ public class RouterTestCase extends TestCase {
 
 		protected final Collection<View<Integer, IntegerDatum>>[] views;
 
+		@SuppressWarnings("unchecked")
 		public SignRoutingStrategy(View<Integer, IntegerDatum> negative, View<Integer, IntegerDatum> positive) {
 			this.views = new Collection[]{Collections.singleton(negative), Collections.singleton(positive), Collections.emptyList()};
 		}

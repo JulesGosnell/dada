@@ -47,6 +47,7 @@ public class SimpleMethodMapper implements MethodMapper<Integer> {
 		initialise();
 	}
 
+	@SuppressWarnings("unused") // deserialisation
 	private SimpleMethodMapper() {
 		// assumes interfaze is already set up...
 		initialise();

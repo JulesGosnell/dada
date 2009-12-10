@@ -56,6 +56,7 @@ public class Router<K, V> implements View<K, V> {
 
 	private Collection<Update<V>> empty = new ArrayList<Update<V>>(0);
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 

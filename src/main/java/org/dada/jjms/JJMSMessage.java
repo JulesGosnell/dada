@@ -173,6 +173,7 @@ public class JJMSMessage implements Message {
 	}
 
 	@Override
+	@SuppressWarnings(value = {"all"}) // cannot find a more precise clas of warning to suppress...
 	public Enumeration getPropertyNames() throws JMSException {
 		return new Enumeration<String>() {
 
