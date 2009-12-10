@@ -179,6 +179,7 @@ public class Client {
 		frame.pack();
 		//frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosing(WindowEvent event) {
 				LOG.info("Closing: "+Client.this.modelName);
 				serverProxy.deregisterView(clientServer);

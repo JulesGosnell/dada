@@ -51,6 +51,7 @@ public class JJMSMessage implements Message {
 	private Destination jmsReplyTo;
 	private final Map<String, Object> properties = new HashMap<String, Object>(); // TODO: allocate lazily
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ">";
 	}

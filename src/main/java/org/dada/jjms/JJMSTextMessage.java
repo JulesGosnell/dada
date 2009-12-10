@@ -35,6 +35,7 @@ public class JJMSTextMessage extends JJMSMessage implements TextMessage {
 
 	private String text;
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + text + ">";
 	}

@@ -105,6 +105,7 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 		}
 	}
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + name + ">";
 	}

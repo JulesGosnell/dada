@@ -48,6 +48,7 @@ public class Results implements Serializable {
 		return exception;
 	}
 
+	@Override
 	public String toString() {
 		return "<"+getClass().getSimpleName()+": "+value+">";
 	}

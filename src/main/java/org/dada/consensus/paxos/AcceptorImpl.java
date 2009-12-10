@@ -37,6 +37,7 @@ public class AcceptorImpl<V> implements Acceptor<V> {
 	/* (non-Javadoc)
 	 * @see uk.org.gosnell.consensus.paxos.Acceptor#prepare(int)
 	 */
+	@Override
 	public synchronized int prepare(int number) {
 		if (number > this.number) {
 			this.number = number;
@@ -49,6 +50,7 @@ public class AcceptorImpl<V> implements Acceptor<V> {
 	/* (non-Javadoc)
 	 * @see uk.org.gosnell.consensus.paxos.Acceptor#accept(uk.org.gosnell.consensus.paxos.Proposal)
 	 */
+	@Override
 	public synchronized boolean accept(Proposal<V> proposal) {
 		int number = proposal.getNumber();
 		if (number >= this.number) {
@@ -63,6 +65,7 @@ public class AcceptorImpl<V> implements Acceptor<V> {
 	/* (non-Javadoc)
 	 * @see uk.org.gosnell.consensus.paxos.Acceptor#getNumber()
 	 */
+	@Override
 	public int getNumber() {
 		return number;
 	}
@@ -70,6 +73,7 @@ public class AcceptorImpl<V> implements Acceptor<V> {
 	/* (non-Javadoc)
 	 * @see uk.org.gosnell.consensus.paxos.Acceptor#getProposal()
 	 */
+	@Override
 	public Proposal<V> getProposal() {
 		return proposal;
 	}

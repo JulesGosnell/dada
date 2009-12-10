@@ -45,6 +45,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 		super(name, metadata);
 	}
 
+	@Override
 	public Collection<V> getValues() {
 		return ((PersistentTreeMap)maps.getCurrent()).values();
 	}

@@ -50,7 +50,8 @@ public class Proposal<V> implements Serializable {
 		return value;
 	}
 
-	 public boolean equals(Object that) {
+	 @Override
+	public boolean equals(Object that) {
 		   return EqualsBuilder.reflectionEquals(this, that);
 	 }
 

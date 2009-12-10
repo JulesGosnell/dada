@@ -66,6 +66,7 @@ public class ORMTestCase extends TestCase {
 			return idToPerson.get(personToFather.get(id));
 		}
 
+		@Override
 		public Person getMother() {
 			return idToPerson.get(personToMother.get(id));
 		}

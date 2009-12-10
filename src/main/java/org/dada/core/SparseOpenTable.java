@@ -59,6 +59,7 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 	}
 
 
+	@Override
 	public V get(K key) {
 		V value = map.get(key);
 		if (value == null) {
@@ -77,10 +78,12 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 		return value;
 	}
 
+	@Override
 	public V put(K key, V value) {
 		return map.put(key, value);
 	}
 
+	@Override
 	public V rem(K key, V value) {
 		boolean removed = map.remove(key, value);
 		return removed ? value : null;

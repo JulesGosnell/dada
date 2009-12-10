@@ -45,11 +45,13 @@ public class SimpleModelViewTestCase extends TestCase {
 
 	private SimpleModelView<Integer, Datum<Integer>> view;
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		view = new SimpleModelView<Integer, Datum<Integer>>(null, null);
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		view = null;
 		super.tearDown();

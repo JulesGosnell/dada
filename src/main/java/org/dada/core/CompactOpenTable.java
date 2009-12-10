@@ -54,6 +54,7 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 	}
 
 
+	@Override
 	public V get(Integer key) {
 		V value = values.get(key);
 		if (value == null) {
@@ -63,10 +64,12 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 		return value;
 	}
 
+	@Override
 	public V put(Integer key, V value) {
 		return values.set(key, value);
 	}
 
+	@Override
 	public V rem(Integer key, V value) {
 		values.remove(key);
 		throw new UnsupportedOperationException("NYI");

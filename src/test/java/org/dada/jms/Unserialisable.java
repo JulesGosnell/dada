@@ -35,6 +35,7 @@ import java.io.Serializable;
 public class Unserialisable implements Serializable {
 	private String serialisable = "unserialisable";
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + serialisable + ">";
 	}

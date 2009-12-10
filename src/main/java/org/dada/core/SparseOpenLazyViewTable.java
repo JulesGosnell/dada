@@ -45,6 +45,7 @@ public class SparseOpenLazyViewTable<K, V> extends SparseOpenTable<K, View<K, V>
 		super(
 				map,
 				new SparseOpenTable.Factory<K, View<K, V>>() {
+					@Override
 					public View<K, V> create(K key, ConcurrentMap<K, View<K, V>> map) {
 						return new LazyView<K, V>(map, key, factory);
 					}

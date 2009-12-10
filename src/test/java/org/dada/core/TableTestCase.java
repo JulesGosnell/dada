@@ -72,42 +72,62 @@ public class TableTestCase extends TestCase {
 		testTable(table);
 	}
 
-	protected boolean lose;
+	public static class Getter implements Runnable {
 
-//	public void testSparseOpenTableRaceCondition() {
-//
-//		final CountDownLatch latch = new CountDownLatch(1);
-//
-//		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
-//			@Override
-//			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
-//				if (lose)
-//					latch.await();
-//				return "" + key;
-//			}
-//		};
-//
-//		final Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
-//
-//		Runnable putter = new Runnable() {
-//			@Override
-//			public void run() {
-//				table.get(0);
-//			}
-//		};
-//
-//		Thread loser = new Thread(putter);
-//		Thread winner = new Thread(putter);
-//
-//		lose = true;
-//		loser.start();
-//		// aarrgh !!
-//		winner.start();
-//		winner.join();
-//		latch.countDown();
-//		loser.join();
-//
-//	}
+		private final Integer key;
+		private final Table<Integer, String> table;
+		
+		private String value;
+		
+		public Getter(Integer key, Table<Integer, String> table) {
+			this.key = key;
+			this.table = table;
+		}
+		
+		@Override
+		public void run() {
+			value = table.get(key);
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	public void testSparseOpenTableRaceCondition() throws Exception {
+
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
+			@Override
+			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
+				latch.await();
+				return "" + key;
+			}
+		};
+
+		final Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
+
+		Getter getter1 = new Getter(0, table);
+		Getter getter2 = new Getter(0, table);
+
+		Thread thread1 = new Thread(getter1);
+		Thread thread2 = new Thread(getter2);
+
+		// line up two threads on latch in factory.create - one will lose the race
+		// excercising that code path...
+		thread1.start();
+		thread2.start();
+		// let them run...
+		latch.countDown();
+		
+		thread1.join();
+		thread2.join();
+		
+		String value1 = getter1.getValue();
+		String value2 = getter2.getValue();
+		assertTrue(value1.equals("0") && value2.equals("0"));
+	}
 
 	public void testTable(Table<Integer, String> table) {
 

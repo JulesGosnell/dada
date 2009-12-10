@@ -65,6 +65,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 		ois.defaultReadObject();
 	}
 
+	@Override
 	public void onMessage(Message message) {
 		try {
 			String correlationID = message.getJMSCorrelationID();
@@ -131,10 +132,12 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 
 	}
 
+	@Override
 	public String toString() {
 		return "<"+getClass().getSimpleName()+": "+destination+">";
 	}
 
+	@Override
 	public boolean equals(Object object) {
 		// strip off proxy if necessary
 		Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;

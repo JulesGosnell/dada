@@ -44,7 +44,8 @@ public class CamelInvocationHandler implements InvocationHandler {
         this.methodInfoCache = methodInfoCache;
     }
 
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    @Override
+	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     	// hack - catch e.g. toString() and run locally..
     	if (method.getDeclaringClass().equals(Object.class)) {
     		System.out.println("running " + method.getName() + " locally");

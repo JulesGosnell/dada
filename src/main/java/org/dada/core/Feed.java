@@ -110,6 +110,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 
 	// Model
 
+	@Override
 	protected Collection<V> getData() {
 		return new ArrayList<V>(vs.values());
 	}

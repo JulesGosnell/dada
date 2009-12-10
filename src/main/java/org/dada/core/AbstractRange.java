@@ -38,10 +38,12 @@ public abstract class AbstractRange<V> implements Range<V> {
 		this.max = max;
 	}
 
+	@Override
 	public V getMin() {
 		return min;
 	}
 
+	@Override
 	public V getMax() {
 		return max;
 	}

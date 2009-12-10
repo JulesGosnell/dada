@@ -62,9 +62,11 @@ public class ConsensusTestCase extends TestCase {
 	};
 
 	public static class PaxosImpl implements Paxos {
+		@Override
 		public int foo() { return 1;}
 	};
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		connectionFactory = new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false&broker.useJmx=false");
@@ -76,6 +78,7 @@ public class ConsensusTestCase extends TestCase {
 		remotingFactory = new RemotingFactory<Paxos>(session, Paxos.class, timeout);
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		session.close();
 		session = null;

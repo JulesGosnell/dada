@@ -46,6 +46,7 @@ public class JJMSObjectMessage extends JJMSMessage implements ObjectMessage {
 		this.object = object;
 	}
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + "#" + System.identityHashCode(this) + ":" + jmsCorrelationId + ": " + object + ">";
 	}

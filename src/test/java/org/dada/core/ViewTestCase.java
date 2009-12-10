@@ -40,12 +40,14 @@ import junit.framework.TestCase;
 
 public class ViewTestCase extends TestCase {
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, "Id");
 		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, "Id");
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}

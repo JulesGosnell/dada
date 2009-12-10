@@ -66,6 +66,7 @@ public abstract class AbstractCamelTestCase extends TestCase {
 
 	public abstract ConnectionFactory getConnectionFactory();
 
+	@Override
 	protected void setUp() throws Exception {
 		logger.info("start test");
 		super.setUp();
@@ -78,7 +79,8 @@ public abstract class AbstractCamelTestCase extends TestCase {
 		connectionFactory = new CachingConnectionFactory(getConnectionFactory());
 		camelContext.addComponent("test-jms", JmsComponent.jmsComponentAutoAcknowledge(connectionFactory));
 		camelContext.addRoutes(new RouteBuilder() {
-		    public void configure() {
+		    @Override
+			public void configure() {
 		        from("test-jms:queue:test.queue").to("bean:Peer");
 		    }
 		});
@@ -93,6 +95,7 @@ public abstract class AbstractCamelTestCase extends TestCase {
 
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		camelContext.stop();
 		super.tearDown();

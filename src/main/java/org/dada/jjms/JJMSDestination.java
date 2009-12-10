@@ -70,6 +70,7 @@ public abstract class JJMSDestination implements Destination {
 		return getName();
 	}
 
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ":" + System.identityHashCode(this) + ":" + name + ">";
 	}
