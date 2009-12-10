@@ -51,12 +51,14 @@ public class TableTestCase extends TestCase {
 		};
 
 		ArrayList<String> values = new ArrayList<String>();
-		values.add(null);
-		values.add(null);
-		values.add(null);
 		Table<Integer, String> table = new CompactOpenTable<String>(values, factory);
 
 		testTable(table);
+		
+		// force a resize on put...
+		String three = "3";
+		assertTrue(table.put(3, three) == null);
+		assertTrue(table.get(3) == three);
 	}
 
 	public void testSparseOpenTable() {
@@ -145,5 +147,11 @@ public class TableTestCase extends TestCase {
 		String two = "2";
 		table.put(2, two);
 		assertTrue(table.get(2) == two);
+		
+		// overwrite existing value
+		String two2 = "two";
+		table.put(2, two2);
+		assertTrue(table.get(2) == two2);
+		
 	}
 }

@@ -59,7 +59,7 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 		this(values, factory, new ResizeStrategy() {
 			@Override
 			public int getNewSize(int oldSize, int newKey) {
-				return newKey; // very dumb - user should provide something more sophisticated
+				return newKey + 1; // very dumb - user should provide something more sophisticated
 			}
 		});
 	}
@@ -82,8 +82,8 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 	
 	@Override
 	public V get(Integer key) {
+		V value = null;
 		synchronized (this) {
-			V value = null;
 			if (key < values.length) {
 				value = values[key];
 			} else {
@@ -96,14 +96,14 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 					LOG.error("unable to create new Table item", e);
 				}
 			}
-			return value;
 		}
+		return value;
 	}
 
 	@Override
 	public V put(Integer key, V newValue) {
+		V oldValue;
 		synchronized (this) {
-			V oldValue;
 			if (key >= values.length) {
 				resize(key);
 				oldValue =null;
@@ -112,9 +112,8 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 			}
 
 			values[key] = newValue;
-
-			return oldValue;
 		}
+		return oldValue;
 	}
 
 //	@Override
