@@ -124,7 +124,7 @@ public class TableTestCase extends TestCase {
 		
 		String value1 = getter1.getValue();
 		String value2 = getter2.getValue();
-		assertTrue(value1.equals("0") && value2.equals("0"));
+		assertTrue(value1.equals("0") && value2.equals("0") && value1 == value2);
 	}
 
 	public void testTable(Table<Integer, String> table) {
