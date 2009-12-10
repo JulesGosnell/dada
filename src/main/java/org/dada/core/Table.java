@@ -29,6 +29,11 @@
 package org.dada.core;
 
 public interface Table<K, V> {
+	
+	public static interface Factory<K, V> {
+		public V create(K key) throws Exception;
+	}
+	
 	V get(K key);
 	V put(K key, V value);
 	//V rem(K key, V value);

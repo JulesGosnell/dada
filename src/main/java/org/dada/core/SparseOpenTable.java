@@ -46,14 +46,10 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SparseOpenTable.class);
 
-	public static interface Factory<K, V> {
-		public V create(K key) throws Exception;
-	}
-
-	private final SparseOpenTable.Factory<K, V> factory;
+	private final Factory<K, V> factory;
 	private final ConcurrentMap<K, V> map;
 
-	public SparseOpenTable(ConcurrentMap<K, V> map, SparseOpenTable.Factory<K, V> factory) {
+	public SparseOpenTable(ConcurrentMap<K, V> map, Factory<K, V> factory) {
 		this.factory = factory;
 		this.map = map;
 	}

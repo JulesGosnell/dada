@@ -28,7 +28,6 @@
  */
 package org.dada.core;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -41,14 +40,10 @@ import java.util.List;
  */
 public class CompactOpenTable<V> implements Table<Integer, V> {
 
-	public static interface Factory<V> {
-		public V create(Integer key, Collection<V> views);
-	}
-
-	private final CompactOpenTable.Factory<V> factory;
+	private final Factory<Integer, V> factory;
 	private final List<V> values;
 
-	public CompactOpenTable(List<V> values, CompactOpenTable.Factory<V> factory) {
+	public CompactOpenTable(List<V> values, Factory<Integer, V> factory) {
 		this.factory = factory;
 		this.values = values;
 	}

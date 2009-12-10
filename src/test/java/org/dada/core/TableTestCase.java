@@ -29,21 +29,21 @@
 package org.dada.core;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 
 import junit.framework.TestCase;
+
+import org.dada.core.Table.Factory;
 
 public class TableTestCase extends TestCase {
 
 	public void doNottestCompactOpenTable() {
 
-		CompactOpenTable.Factory<String> factory = new CompactOpenTable.Factory<String>() {
+		Factory<Integer, String> factory = new Factory<Integer, String>() {
 
 			@Override
-			public String create(Integer key, Collection<String> views) {
+			public String create(Integer key) {
 				return "" + key;
 			}
 		};
@@ -55,9 +55,7 @@ public class TableTestCase extends TestCase {
 
 	public void testSparseOpenTable() {
 
-		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
-
-			// TODO: map should not be passed as a param here - but rather to ctor, if needed...
+		Factory<Integer, String> factory = new Factory<Integer, String>() {
 			@Override
 			public String create(Integer key) throws Exception {
 				if (key < 0)
