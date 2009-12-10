@@ -83,10 +83,10 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 		return map.put(key, value);
 	}
 
-	@Override
-	public V rem(K key, V value) {
-		boolean removed = map.remove(key, value);
-		return removed ? value : null;
-
-	}
+//	@Override
+//	public V rem(K key, V value) {
+//		boolean removed = map.remove(key, value);
+//		return removed ? value : null;
+//
+//	}
 }

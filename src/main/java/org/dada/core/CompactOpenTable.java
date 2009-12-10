@@ -69,11 +69,11 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 		return values.set(key, value);
 	}
 
-	@Override
-	public V rem(Integer key, V value) {
-		values.remove(key);
-		throw new UnsupportedOperationException("NYI");
-		// TODO: check...
-		//return value;
-	}
+//	@Override
+//	public V rem(Integer key, V value) {
+//		values.remove(key);
+//		throw new UnsupportedOperationException("NYI");
+//		// TODO: check...
+//		//return value;
+//	}
 }
