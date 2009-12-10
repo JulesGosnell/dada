@@ -59,7 +59,7 @@ public class TableTestCase extends TestCase {
 
 			// TODO: map should not be passed as a param here - but rather to ctor, if needed...
 			@Override
-			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
+			public String create(Integer key) throws Exception {
 				if (key < 0)
 					throw new UnsupportedOperationException("NYI");
 				else
@@ -100,7 +100,7 @@ public class TableTestCase extends TestCase {
 
 		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
 			@Override
-			public String create(Integer key, ConcurrentMap<Integer, String> map) throws Exception {
+			public String create(Integer key) throws Exception {
 				latch.await();
 				return "" + key;
 			}

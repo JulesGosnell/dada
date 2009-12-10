@@ -47,7 +47,7 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 	private static final Logger LOG = LoggerFactory.getLogger(SparseOpenTable.class);
 
 	public static interface Factory<K, V> {
-		public V create(K key, ConcurrentMap<K, V> map) throws Exception;
+		public V create(K key) throws Exception;
 	}
 
 	private final SparseOpenTable.Factory<K, V> factory;
@@ -65,7 +65,7 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 		if (value == null) {
 			// N.B. race condition here - pay attention...
 			try {
-			        V newValue = factory.create(key, map); // create potential new entry
+			        V newValue = factory.create(key); // create potential new entry
 				V oldValue = map.putIfAbsent(key, newValue); // insert it IFF still not present
 				if (oldValue == null)
 				    return newValue; // we won the race - we become new value
