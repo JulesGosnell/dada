@@ -47,7 +47,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Collection<V> getValues() {
+	public Collection<V> getData() {
 		return ((PersistentTreeMap)maps.getCurrent()).values();
 	}
 

@@ -50,7 +50,7 @@ public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V
 
 	// Model
 	@Override
-	protected Collection<V> getData() {
+	public Collection<V> getData() {
 		return new ArrayList<V>(map.values());
 	}
 
@@ -73,7 +73,7 @@ public class MapModelView<K, V> extends AbstractModel<K, V> implements View<K, V
 				map.put(adaptor.getKey(newValue), newValue);
 			}
 		}
-		notifyUpdates(insertions, updates, deletions);
+		notifyUpdate(insertions, updates, deletions);
 	}
 
 }

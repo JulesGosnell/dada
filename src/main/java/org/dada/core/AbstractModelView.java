@@ -28,24 +28,20 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+// TODO: do we need this anymore ?
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
-
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
-	protected final String name;
-	protected final Metadata<K, V> metadata;
-	private final Object viewsLock = new Object();
-	protected volatile List<View<K, V>> views = new ArrayList<View<K,V>>();
+/**
+ * Abstract base for Model/Views where input and output types are the same.
+ * 
+ * @author jules
+ *
+ * @param <K>
+ * @param <V>
+ */
+public abstract class AbstractModelView<K, V> extends AbstractModel<K, V> implements ModelView<K, V> {
 
 	public AbstractModelView(String name, Metadata<K, V> metadata) {
-		this.name = name;
-		this.metadata = metadata;
+		super(name, metadata);
 	}
 
 	@Override
@@ -54,60 +50,6 @@ public abstract class AbstractModelView<K, V> implements ModelView<K, V> {
 
 	@Override
 	public void stop() {
-	}
-
-	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	public abstract Collection<V> getValues();
-
-	@Override
-	public Registration<K, V> registerView(View<K, V> view) {
-		synchronized (viewsLock) {
-			//views = (IPersistentSet)views.cons(view);
-			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
-			newViews.add(view);
-			views = newViews;
-			logger.debug("{}: registered view: {}", name, view);
-		}
-		Collection<V> values = getValues();
-		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
-	}
-
-	@Override
-	public boolean deregisterView(View<K, V> view) {
-		try {
-			synchronized (viewsLock) {
-				//views = views.disjoin(view);
-				List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
-				newViews.remove(view);
-				views = newViews;
-				logger.debug("" + this + " deregistered view:" + view + " -> " + views);
-			}
-		} catch (Exception e) {
-		    logger.error("unable to deregister view: {}", view);
-		}
-		return true;
-	}
-
-	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		List<View<K, V>> snapshot = views;
-		for (View<K, V> view : snapshot) {
-			view.update(insertions, updates, deletions);
-		}
-	}
-
-	@Override
-	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + name + ">";
 	}
 
 }

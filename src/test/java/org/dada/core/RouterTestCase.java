@@ -134,10 +134,10 @@ public class RouterTestCase extends TestCase {
 
 		router.update(insertions, new ArrayList<Update<IntegerDatum>>(), new ArrayList<Update<IntegerDatum>>());
 
-		assertTrue(negative.getValues().containsAll(negativeData));
-		assertTrue(negative.getValues().size() == negativeData.size());
-		assertTrue(positive.getValues().containsAll(positiveData));
-		assertTrue(positive.getValues().size() == positiveData.size());
+		assertTrue(negative.getData().containsAll(negativeData));
+		assertTrue(negative.getData().size() == negativeData.size());
+		assertTrue(positive.getData().containsAll(positiveData));
+		assertTrue(positive.getData().size() == positiveData.size());
 
 		// 'amend' into...
 		IntegerDatum d4v1 = new IntegerDatum(d4v0.getId(), d4v0.getVersion()+1, d4v0.getInteger()-1);
@@ -148,12 +148,12 @@ public class RouterTestCase extends TestCase {
 
 		router.update(new ArrayList<Update<IntegerDatum>>(), updates, new ArrayList<Update<IntegerDatum>>());
 
-		assertTrue(negative.getValues().containsAll(negativeData));
-		assertTrue(negative.getValues().contains(d4v1));
-		assertTrue(negative.getValues().size() == negativeData.size()+1);
-		assertTrue(positive.getValues().containsAll(positiveData));
-		assertTrue(positive.getValues().contains(d5v1));
-		assertTrue(positive.getValues().size() == positiveData.size()+1);
+		assertTrue(negative.getData().containsAll(negativeData));
+		assertTrue(negative.getData().contains(d4v1));
+		assertTrue(negative.getData().size() == negativeData.size()+1);
+		assertTrue(positive.getData().containsAll(positiveData));
+		assertTrue(positive.getData().contains(d5v1));
+		assertTrue(positive.getData().size() == positiveData.size()+1);
 
 		// 'amend' away - to another partition
 		IntegerDatum d4v2 = new IntegerDatum(d4v1.getId(), d4v1.getVersion()+1, d4v1.getInteger()*-1);
@@ -164,12 +164,12 @@ public class RouterTestCase extends TestCase {
 
 		router.update(new ArrayList<Update<IntegerDatum>>(), updates2, new ArrayList<Update<IntegerDatum>>());
 
-		assertTrue(negative.getValues().containsAll(negativeData));
-		assertTrue(negative.getValues().contains(d5v2));
-		assertTrue(negative.getValues().size() == negativeData.size()+1);
-		assertTrue(positive.getValues().containsAll(positiveData));
-		assertTrue(positive.getValues().contains(d4v2));
-		assertTrue(positive.getValues().size() == positiveData.size()+1);
+		assertTrue(negative.getData().containsAll(negativeData));
+		assertTrue(negative.getData().contains(d5v2));
+		assertTrue(negative.getData().size() == negativeData.size()+1);
+		assertTrue(positive.getData().containsAll(positiveData));
+		assertTrue(positive.getData().contains(d4v2));
+		assertTrue(positive.getData().size() == positiveData.size()+1);
 
 		// 'amend' away - to nowhere
 		IntegerDatum d4v3 = new IntegerDatum(d4v2.getId(), d4v2.getVersion()+1, 0);
@@ -180,14 +180,14 @@ public class RouterTestCase extends TestCase {
 
 		router.update(new ArrayList<Update<IntegerDatum>>(), updates3, new ArrayList<Update<IntegerDatum>>());
 
-		assertTrue(!negative.getValues().contains(d4v3));
-		assertTrue(!negative.getValues().contains(d5v3));
-		assertTrue(negative.getValues().containsAll(negativeData));
-		assertTrue(negative.getValues().size() == negativeData.size());
-		assertTrue(!positive.getValues().contains(d4v3));
-		assertTrue(!positive.getValues().contains(d5v3));
-		assertTrue(positive.getValues().containsAll(positiveData));
-		assertTrue(positive.getValues().size() == positiveData.size());
+		assertTrue(!negative.getData().contains(d4v3));
+		assertTrue(!negative.getData().contains(d5v3));
+		assertTrue(negative.getData().containsAll(negativeData));
+		assertTrue(negative.getData().size() == negativeData.size());
+		assertTrue(!positive.getData().contains(d4v3));
+		assertTrue(!positive.getData().contains(d5v3));
+		assertTrue(positive.getData().containsAll(positiveData));
+		assertTrue(positive.getData().size() == positiveData.size());
 
 	}
 }

@@ -46,7 +46,7 @@ public class AbstractModelTestCase extends TestCase {
 		AbstractModel<Integer, Datum<Integer>> model = new AbstractModel<Integer, Datum<Integer>>(name, metadata) {
 
 			@Override
-			protected Collection<Datum<Integer>> getData() {
+			public Collection<Datum<Integer>> getData() {
 				return data;
 			}
 
@@ -64,6 +64,7 @@ public class AbstractModelTestCase extends TestCase {
 		};
 		
 		assertTrue(model.getName() == name);
+		assertTrue(model.getMetadata() == metadata);
 		
 		// deregistration of non-existant view
 		model.deregisterView(null);
@@ -84,9 +85,10 @@ public class AbstractModelTestCase extends TestCase {
 
 		Registration<Integer, Datum<Integer>> registration = model.registerView(goodView);
 		assertTrue(registration.getMetadata() == metadata);
-		assertTrue(registration.getData() == data);
+		assertTrue(registration.getData().size() == 1);
+		assertTrue(registration.getData().contains(datum));
 		
-		model.notifyUpdates(empty, empty, empty);
+		model.notifyUpdate(empty, empty, empty);
 		
 		model.deregisterView(goodView);
 
@@ -101,7 +103,7 @@ public class AbstractModelTestCase extends TestCase {
 		};
 		
 		model.registerView(badView);
-		model.notifyUpdates(empty, empty, empty);
+		model.notifyUpdate(empty, empty, empty);
 		model.deregisterView(badView);
 		
 		// TODO: demonstrate that badly behaved view does not prevent updates being received by well behaved view...

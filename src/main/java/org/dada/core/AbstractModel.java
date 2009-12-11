@@ -30,21 +30,29 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Abstract base for Models.
+ * Supports concepts of data, metadata, views and view notification.
+ * 
+ * @author jules
+ *
+ * @param <K>
+ * @param <V>
+ */
 public abstract class AbstractModel<K, V> implements Model<K, V> {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected final String name;
-
-	protected final Collection<View<K, V>> views = new ArrayList<View<K, V>>();
-
 	protected final Metadata<K, V> metadata;
+	private final Object viewsLock = new Object();
 
-	protected abstract Collection<V> getData();
+	protected volatile List<View<K, V>> views = new ArrayList<View<K,V>>();
 
 	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -56,40 +64,50 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return name;
 	}
 
-	@Override
-	public Registration<K, V> registerView(View<K, V> view) {
-		logger.debug("registering view: {}", view);
-		synchronized (views) {
-			views.add(view);
-		}
-		return new Registration<K, V>(getMetadata(), getData());
-	}
-
-	private Metadata<K, V> getMetadata() {
+	public abstract Collection<V> getData();
+	
+	public Metadata<K, V> getMetadata() {
 		return metadata;
 	}
 
 	@Override
-	public boolean deregisterView(View<K, V> view) {
-		boolean success;
-		synchronized (views) {
-			success = views.remove(view);
+	public Registration<K, V> registerView(View<K, V> view) {
+		synchronized (viewsLock) {
+			//views = (IPersistentSet)views.cons(view);
+			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			newViews.add(view);
+			views = newViews;
+			logger.debug("{}: registered view: {}", name, view);
 		}
-		if (success)
-			logger.debug("deregistered view: {}", view);
-		else
-			logger.warn("failed to deregister view: {}", view);
-
-		return success;
+		Collection<V> values = getData();
+		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
 	}
 
-	protected void notifyUpdates(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		for (View<K, V> view : views)
+	@Override
+	public boolean deregisterView(View<K, V> view) {
+		synchronized (viewsLock) {
+			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			newViews.remove(view);
+			views = newViews;
+			logger.debug("" + this + " deregistered view:" + view + " -> " + views);
+		}
+		return true;
+	}
+
+	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+		List<View<K, V>> snapshot = views;
+		for (View<K, V> view : snapshot) {
 			try {
 				view.update(insertions, updates, deletions);
-			} catch (RuntimeException e) {
-				logger.error("view notification failed: {} <- {}", view, updates);
-				logger.error("", e);
+			} catch (Throwable t) {
+				logger.error("error during view notification: {}", view, t);
 			}
+		}
 	}
+
+	@Override
+	public String toString() {
+		return "<" + getClass().getSimpleName() + ": " + name + ">";
+	}
+
 }

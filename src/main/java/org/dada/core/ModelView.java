@@ -28,6 +28,15 @@
  */
 package org.dada.core;
 
+
+/**
+ * A Model and a View whose input and output types are the same.
+ * 
+ * @author jules
+ *
+ * @param <K>
+ * @param <V>
+ */
 public interface ModelView<K, V> extends View <K, V>, Model<K, V> {
 
 }

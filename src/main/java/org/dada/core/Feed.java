@@ -62,7 +62,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
 			logger.trace("{}: new version: {}", name, newValue);
-			notifyUpdates(empty, Collections.singleton(new Update<V>(oldValue, newValue)), empty);
+			notifyUpdate(empty, Collections.singleton(new Update<V>(oldValue, newValue)), empty);
 		}
 	};
 
@@ -94,7 +94,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 		}
 		logger.info("notifying {} values...", newValues.size());
 		long start = System.currentTimeMillis();
-		notifyUpdates(insertions, empty, empty);
+		notifyUpdate(insertions, empty, empty);
 		//for (Update<V> insertion : insertions)
 		//	notifyUpdates(Collections.singleton(insertion), empty, empty);
 		long end = System.currentTimeMillis();
@@ -111,7 +111,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	// Model
 
 	@Override
-	protected Collection<V> getData() {
+	public Collection<V> getData() {
 		return new ArrayList<V>(vs.values());
 	}
 
