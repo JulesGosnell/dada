@@ -31,6 +31,7 @@ package org.dada.core;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
+// TODO - key should be parameter to create, not ctor...
 /**
  * Pretend to be a View and, when prodded, create a real one, delegate all extant invocations onto it
  * and replace ourselves in an upstream ConcurrentMap with it...
@@ -46,7 +47,7 @@ public class LazyView<K, V> implements View<K, V> {
 	private final K key;
 	private final ViewFactory<K, V> viewFactory;
 
-	private volatile View<K, V> view; // allocated lazily
+	private volatile View<K, V> view; // allocated lazily - MUST be volatile - see below
 
 	public LazyView(ConcurrentMap<K, View<K, V>> map, K key, ViewFactory<K, V> factory) {
 		this.map = map;
@@ -55,13 +56,18 @@ public class LazyView<K, V> implements View<K, V> {
 	}
 
 	private synchronized void init() {
-		view = viewFactory.create();
-		map.replace(key, this, view);
+		// IMPORTANT: double checked locking - OK because 'view' is volatile... - requires >=1.5 JVM
+		synchronized (this) {
+			if (view == null) {
+				view = viewFactory.create();
+				map.replace(key, this, view);
+			}
+		}
 	}
 
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		if (view == null) init();
+		if (view == null) init(); // check VOLATILE field without locking - see comment above
 		view.update(insertions, updates, deletions);
 	}
 
