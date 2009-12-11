@@ -42,12 +42,12 @@ import javax.jms.TemporaryQueue;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.dada.jms.AbstractClient;
-import org.dada.jms.AbstractRemotingTestCase;
+import org.dada.jms.RemotingAbstractTestCase;
 import org.dada.jms.Peer;
 import org.dada.jms.PeerImpl;
 import org.dada.jms.RemotingFactory;
 
-public class AMQRemotingTestCase extends AbstractRemotingTestCase {
+public class AMQRemotingTestCase extends RemotingAbstractTestCase {
 
 	@Override
 	protected ConnectionFactory getConnnectionFactory() {

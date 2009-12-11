@@ -98,6 +98,7 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 			}
 		}
 		return value;
+
 	}
 
 	@Override

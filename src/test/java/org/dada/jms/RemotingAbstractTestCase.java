@@ -55,7 +55,7 @@ import org.dada.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractRemotingTestCase extends TestCase {
+public abstract class RemotingAbstractTestCase extends TestCase {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 	protected final ExecutorService executorservice = Executors.newFixedThreadPool(10);

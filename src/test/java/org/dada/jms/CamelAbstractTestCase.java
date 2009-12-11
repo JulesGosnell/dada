@@ -51,7 +51,7 @@ import org.springframework.jms.connection.CachingConnectionFactory;
 // TODO: add 'final' to all interface signatures to tell Camel that these params are OUT only
 // TODO: replace our JMS remoting with Camel's...
 
-public abstract class AbstractCamelTestCase extends TestCase {
+public abstract class CamelAbstractTestCase extends TestCase {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

@@ -34,12 +34,12 @@ import javax.jms.ConnectionFactory;
 
 import org.dada.core.SyncLock;
 import org.dada.jjms.JJMSConnectionFactory;
-import org.dada.jms.AbstractRemotingTestCase;
+import org.dada.jms.RemotingAbstractTestCase;
 import org.dada.jms.Unserialisable;
 
 import EDU.oswego.cs.dl.util.concurrent.NullSync;
 
-public class JJMSRemotingTestCase extends AbstractRemotingTestCase {
+public class JJMSRemotingTestCase extends RemotingAbstractTestCase {
 
 	@Override
 	protected ConnectionFactory getConnnectionFactory() {

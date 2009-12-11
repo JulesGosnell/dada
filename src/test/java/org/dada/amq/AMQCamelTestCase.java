@@ -31,9 +31,9 @@ package org.dada.amq;
 import javax.jms.ConnectionFactory;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.dada.jms.AbstractCamelTestCase;
+import org.dada.jms.CamelAbstractTestCase;
 
-public class AMQCamelTestCase extends AbstractCamelTestCase {
+public class AMQCamelTestCase extends CamelAbstractTestCase {
 
 	@Override
 	public ConnectionFactory getConnectionFactory() {

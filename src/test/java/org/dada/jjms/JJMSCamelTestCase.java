@@ -32,11 +32,11 @@ import javax.jms.ConnectionFactory;
 
 import org.dada.core.SyncLock;
 import org.dada.jjms.JJMSConnectionFactory;
-import org.dada.jms.AbstractCamelTestCase;
+import org.dada.jms.CamelAbstractTestCase;
 
 import EDU.oswego.cs.dl.util.concurrent.NullSync;
 
-public class JJMSCamelTestCase extends AbstractCamelTestCase {
+public class JJMSCamelTestCase extends CamelAbstractTestCase {
 
 	@Override
 	public ConnectionFactory getConnectionFactory() {

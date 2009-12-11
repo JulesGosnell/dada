@@ -120,7 +120,7 @@ public class SimpleModelViewTestCase extends TestCase {
 		}
 	}
 
-	public void NOtestAggregator() {
+	public void DONOTtestAggregator() {
 		IdAggregator aggregator = new IdAggregator();
 		view.registerView(aggregator);
 
