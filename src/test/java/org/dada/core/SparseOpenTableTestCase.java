@@ -28,41 +28,15 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import junit.framework.TestCase;
-
 import org.dada.core.Table.Factory;
 
-public class TableTestCase extends TestCase {
-
-	public void testCompactOpenTable() {
-
-		Factory<Integer, String> factory = new Factory<Integer, String>() {
-			@Override
-			public String create(Integer key) throws Exception {
-				if (key == 0)
-					throw new UnsupportedOperationException("NYI");
-				else
-					return "" + key;
-			}
-		};
-
-		ArrayList<String> values = new ArrayList<String>();
-		Table<Integer, String> table = new CompactOpenTable<String>(values, factory);
-
-		testTable(table);
-		
-		// force a resize on put...
-		String three = "3";
-		assertTrue(table.put(3, three) == null);
-		assertTrue(table.get(3) == three);
-	}
+public class SparseOpenTableTestCase extends TableAbstractTestCase {
 
 	public void testSparseOpenTable() {
-
+	
 		Factory<Integer, String> factory = new Factory<Integer, String>() {
 			@Override
 			public String create(Integer key) throws Exception {
@@ -72,38 +46,16 @@ public class TableTestCase extends TestCase {
 					return "" + key;
 			}
 		};
-
+	
 		Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
-
+	
 		testTable(table);
-	}
-
-	public static class Getter implements Runnable {
-
-		private final Integer key;
-		private final Table<Integer, String> table;
-		
-		private String value;
-		
-		public Getter(Integer key, Table<Integer, String> table) {
-			this.key = key;
-			this.table = table;
-		}
-		
-		@Override
-		public void run() {
-			value = table.get(key);
-		}
-
-		public String getValue() {
-			return value;
-		}
 	}
 
 	public void testSparseOpenTableRaceCondition() throws Exception {
-
+	
 		final CountDownLatch latch = new CountDownLatch(1);
-
+	
 		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
 			@Override
 			public String create(Integer key) throws Exception {
@@ -111,15 +63,15 @@ public class TableTestCase extends TestCase {
 				return "" + key;
 			}
 		};
-
+	
 		final Table<Integer, String> table = new SparseOpenTable<Integer, String>(new ConcurrentHashMap<Integer, String>(), factory);
-
+	
 		Getter getter1 = new Getter(0, table);
 		Getter getter2 = new Getter(0, table);
-
+	
 		Thread thread1 = new Thread(getter1);
 		Thread thread2 = new Thread(getter2);
-
+	
 		// line up two threads on latch in factory.create - one will lose the race
 		// exercising that code path...
 		thread1.start();
@@ -135,23 +87,4 @@ public class TableTestCase extends TestCase {
 		assertTrue(value1.equals("0") && value2.equals("0") && value1 == value2);
 	}
 
-	public void testTable(Table<Integer, String> table) {
-
-		// factory failure...
-		assertTrue(table.get(0) == null);
-
-		// factory creation of unused key
-		assertTrue(table.get(1).equals("1"));
-
-		// put and get of same reference
-		String two = "2";
-		table.put(2, two);
-		assertTrue(table.get(2) == two);
-		
-		// overwrite existing value
-		String two2 = "two";
-		table.put(2, two2);
-		assertTrue(table.get(2) == two2);
-		
-	}
 }
