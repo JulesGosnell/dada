@@ -30,7 +30,6 @@ package org.dada.core;
 
 import java.util.ArrayList;
 
-import org.dada.core.Table.Factory;
 
 public class CompactOpenTableTestCase extends TableAbstractTestCase {
 

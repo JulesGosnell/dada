@@ -28,8 +28,6 @@
  */
 package org.dada.core;
 
-// TODO: should inherit from common Factory<K, V> interface
-
-public interface ViewFactory<K, V> {
-	View<K, V> create(K key);
+public interface Factory<K, V> {
+	public V create(K key) throws Exception;
 }

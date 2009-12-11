@@ -31,6 +31,9 @@ package org.dada.core;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // TODO - key should be parameter to create, not ctor...
 /**
  * Pretend to be a View and, when prodded, create a real one, delegate all extant invocations onto it
@@ -43,24 +46,28 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class LazyView<K, V> implements View<K, V> {
 
+	private static final Logger LOG = LoggerFactory.getLogger(CompactOpenTable.class);
+
 	private final ConcurrentMap<K, View<K, V>> map;
 	private final K key;
-	private final ViewFactory<K, V> viewFactory;
+	private final Factory<K, View<K, V>> factory;
 
 	private volatile View<K, V> view; // allocated lazily - MUST be volatile - see below
 
-	public LazyView(ConcurrentMap<K, View<K, V>> map, K key, ViewFactory<K, V> factory) {
+	public LazyView(ConcurrentMap<K, View<K, V>> map, K key, Factory<K, View<K, V>> factory) {
 		this.map = map;
 		this.key = key;
-		this.viewFactory = factory;
+		this.factory = factory;
 	}
 
 	private synchronized void init() {
-		// IMPORTANT: double checked locking - OK because 'view' is volatile... - requires >=1.5 JVM
-		synchronized (this) {
-			if (view == null) {
-				view = viewFactory.create(key);
+		// IMPORTANT: double checked locking (method is sync) - OK because 'view' is volatile... - requires >=1.5 JVM
+		if (view == null) {
+			try {
+				view = factory.create(key);
 				map.replace(key, this, view);
+			} catch (Throwable t) {
+				LOG.error("problem creating new View: {}", key, t);
 			}
 		}
 	}

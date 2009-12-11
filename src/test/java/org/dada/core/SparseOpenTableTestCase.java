@@ -31,7 +31,6 @@ package org.dada.core;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.dada.core.Table.Factory;
 
 public class SparseOpenTableTestCase extends TableAbstractTestCase {
 
@@ -56,7 +55,7 @@ public class SparseOpenTableTestCase extends TableAbstractTestCase {
 	
 		final CountDownLatch latch = new CountDownLatch(1);
 	
-		SparseOpenTable.Factory<Integer, String> factory = new SparseOpenTable.Factory<Integer, String>() {
+		Factory<Integer, String> factory = new Factory<Integer, String>() {
 			@Override
 			public String create(Integer key) throws Exception {
 				latch.await();

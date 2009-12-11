@@ -23,7 +23,7 @@ public class LazyViewTestCase extends TestCase {
 			}
 		};
 		
-		ViewFactory<Integer, Datum<Integer>> factory = new ViewFactory<Integer, Datum<Integer>>() {
+		Factory<Integer, View<Integer, Datum<Integer>>> factory = new Factory<Integer, View<Integer, Datum<Integer>>>() {
 			
 			@Override
 			public View<Integer, Datum<Integer>> create(Integer key) {
