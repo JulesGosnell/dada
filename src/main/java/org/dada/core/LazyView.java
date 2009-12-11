@@ -59,7 +59,7 @@ public class LazyView<K, V> implements View<K, V> {
 		// IMPORTANT: double checked locking - OK because 'view' is volatile... - requires >=1.5 JVM
 		synchronized (this) {
 			if (view == null) {
-				view = viewFactory.create();
+				view = viewFactory.create(key);
 				map.replace(key, this, view);
 			}
 		}
