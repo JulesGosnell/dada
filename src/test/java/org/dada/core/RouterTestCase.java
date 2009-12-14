@@ -1,24 +1,15 @@
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.dada.core.Router.Strategy;
-
 import junit.framework.TestCase;
+
+import org.dada.core.Router.Strategy;
 
 public class RouterTestCase extends TestCase {
 
-	public void testMutable() {
-		test(true);
-	}
-	
-	public void testImmutable() {
-		test(false);
-	}
-	
-	public void test(final boolean mutable) {
+	public void testRouteOnImmutableAttribute() {
 		View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
 			
 			@Override
@@ -30,16 +21,16 @@ public class RouterTestCase extends TestCase {
 		
 		final Collection<View<Integer, Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Integer, Datum<Integer>> strategy = new Strategy<Integer, Datum<Integer>>() {
+		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
-				return mutable;
+				return false;
 			}
 
 			@Override
 			public int getRoute(Datum<Integer> value) {
-				return 0;
+				return value.getId();
 			}
 
 			@Override
@@ -48,7 +39,7 @@ public class RouterTestCase extends TestCase {
 			}
 		};
 
-		View<Integer, Datum<Integer>> router = new Router<Integer, Datum<Integer>>(strategy);
+		View<Integer, Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -81,5 +72,72 @@ public class RouterTestCase extends TestCase {
 		Update<Datum<Integer>> deletion = new Update<Datum<Integer>>(v1, v2);
 		Collection<Update<Datum<Integer>>> deletions = Collections.singleton(deletion);
 		router.update(nil, nil, deletions);
+	}
+
+	public void testRouteOnmutableAttribute() {
+		View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
+			
+			@Override
+			public void update(Collection<Update<Datum<Integer>>> insertions,
+					Collection<Update<Datum<Integer>>> updates,
+					Collection<Update<Datum<Integer>>> deletions) {
+			}
+		};
+		
+		final Collection<View<Integer, Datum<Integer>>> views =Collections.singleton(view);
+		
+		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
+
+			@Override
+			public boolean getMutable() {
+				return true;
+			}
+
+			@Override
+			public int getRoute(Datum<Integer> value) {
+				return value.getVersion();
+			}
+
+			@Override
+			public Collection<View<Integer, Datum<Integer>>> getViews(int route) {
+				return views;
+			}
+		};
+
+		View<Integer, Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
+
+		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
+
+		DatumImpl<Integer> v0 = new DatumImpl<Integer>(0, 0) {
+			@Override
+			public int compareTo(Datum<Integer> o) {
+				throw new UnsupportedOperationException("NYI");
+			}
+		};
+		Update<Datum<Integer>> insertion = new Update<Datum<Integer>>(null, v0);
+		Collection<Update<Datum<Integer>>> insertions = Collections.singleton(insertion);
+		router.update(insertions, nil, nil);
+
+		DatumImpl<Integer> v1 = new DatumImpl<Integer>(0, 1) {
+			@Override
+			public int compareTo(Datum<Integer> o) {
+				throw new UnsupportedOperationException("NYI");
+			}
+		};
+		Update<Datum<Integer>> update = new Update<Datum<Integer>>(v0, v1);
+		Collection<Update<Datum<Integer>>> updates = Collections.singleton(update);
+		router.update(nil, updates, nil);
+		
+		{
+		DatumImpl<Integer> v11 = new DatumImpl<Integer>(1, 1) {
+			@Override
+			public int compareTo(Datum<Integer> o) {
+				throw new UnsupportedOperationException("NYI");
+			}
+		};
+		Update<Datum<Integer>> update1 = new Update<Datum<Integer>>(v0, v11);
+		Collection<Update<Datum<Integer>>> updates1 = Collections.singleton(update1);
+		router.update(nil, updates1, nil);
+		}
 	}
 }

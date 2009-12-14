@@ -81,7 +81,11 @@ public class Router<K, V> implements View<K, V> {
 		for (Update<V> update : updates) {
 			int newRoute = strategy.getRoute(update.getNewValue());
 			int oldRoute;
-			if (mutable && (oldRoute = strategy.getRoute(update.getOldValue())) != newRoute) {
+			if (mutable &&
+				// the boolean test does not add any further constraint - it simply heads off a more expensive
+				// test if possible - therefore we cannot produce coverage for the case where an immutable
+				// attribute is mutated...
+				(oldRoute = strategy.getRoute(update.getOldValue())) != newRoute) {
 				routeToInsertions.put(newRoute, update);
 				routeToDeletions.put(oldRoute, update);
 			} else {
@@ -103,7 +107,9 @@ public class Router<K, V> implements View<K, V> {
 			Collection<Update<V>> updatesOut = (Collection<Update<V>>)routeToUpdates.get(route);
 			Collection<Update<V>> deletionsOut = (Collection<Update<V>>)routeToDeletions.get(route);
 			for (View<K, V> view : strategy.getViews(route)) {
-				view.update(insertionsOut==null?empty:insertionsOut, updatesOut==null?empty:updatesOut, deletionsOut==null?empty:deletionsOut);
+				view.update(insertionsOut==null?empty:insertionsOut,
+							updatesOut==null?empty:updatesOut,
+							deletionsOut==null?empty:deletionsOut);
 			}
 		}
 	}
