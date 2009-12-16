@@ -28,6 +28,7 @@
  */
 package org.dada.core;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +69,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			Method method = clazz.getMethod("get"+attributeNames.get(index), (Class<?>[])null);
 			return (V)method.invoke(value, (Object[])null);
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw (e instanceof RuntimeException) ? (RuntimeException)e: new RuntimeException(e);  
 		}
 	}
 
