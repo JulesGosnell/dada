@@ -144,6 +144,11 @@ public class RemotingFactory<T> {
 
 	//----------------------------------------------------------------------------
 
+	public T createServer(T target, String name, ExecutorService executorService) throws JMSException {
+		new Server(target, session.createQueue(name), executorService);
+		return target;
+	}
+
 	public T createServer(T target, Destination destination, ExecutorService executorService) throws JMSException {
 		new Server(target, destination, executorService);
 		return target;

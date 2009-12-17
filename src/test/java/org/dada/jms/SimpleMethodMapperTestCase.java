@@ -32,16 +32,15 @@ import java.lang.reflect.Method;
 
 import junit.framework.TestCase;
 
-import org.dada.core.Model;
-import org.dada.jms.MethodMapper;
-import org.dada.jms.SimpleMethodMapper;
+import org.dada.core.MetaModel;
 
 public class SimpleMethodMapperTestCase extends TestCase {
 
 	public void testMapping() {
-		MethodMapper<Integer> mapper = new SimpleMethodMapper(Model.class);
+		Class<MetaModel> interfaze = MetaModel.class; // MetaModel has inheritance, name overloading etc...
+		MethodMapper<Integer> mapper = new SimpleMethodMapper(interfaze);
 
-		for (Method method : Model.class.getMethods()) {
+		for (Method method : interfaze.getMethods()) {
 			assertTrue(method.equals(mapper.getMethod(mapper.getKey(method))));
 		}
 	}
