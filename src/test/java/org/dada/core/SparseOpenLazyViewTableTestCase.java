@@ -7,7 +7,14 @@ import junit.framework.TestCase;
 public class SparseOpenLazyViewTableTestCase extends TestCase {
 
 	public void test() {
-		//new SparseOpenLazyViewTable<Integer, View<Integer, Datum<Integer>>>(new ConcurrentHashMap<Integer, View<Integer, Datum<Integer>>>, new Factory<Integer, View<Datum<Integer>>>() {
-		//});
+		ConcurrentHashMap<Integer, View<Integer, Datum<Integer>>> map = new ConcurrentHashMap<Integer, View<Integer, Datum<Integer>>>();
+		
+		Factory<Integer, View<Integer, Datum<Integer>>> factory = new Factory<Integer, View<Integer, Datum<Integer>>>() {
+			@Override
+			public View<Integer, Datum<Integer>> create(Integer key)throws Exception {
+				throw new UnsupportedOperationException("NYI");
+			}
+		};
+		new SparseOpenLazyViewTable<Integer, Datum<Integer>>(map, factory);
 	}
 }
