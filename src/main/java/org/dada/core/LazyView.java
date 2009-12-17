@@ -60,22 +60,22 @@ public class LazyView<K, V> implements View<K, V> {
 		this.factory = factory;
 	}
 
-	private synchronized void init() {
+	protected synchronized void init() throws Exception {
 		// IMPORTANT: double checked locking (method is sync) - OK because 'view' is volatile... - requires >=1.5 JVM
 		if (view == null) {
-			try {
-				view = factory.create(key);
-				map.replace(key, this, view);
-			} catch (Throwable t) {
-				LOG.error("problem creating new View: {}", key, t);
-			}
+			view = factory.create(key);
+			map.replace(key, this, view);
 		}
 	}
 
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		if (view == null) init(); // check VOLATILE field without locking - see comment above
-		view.update(insertions, updates, deletions);
+		try {
+			if (view == null) init(); // check VOLATILE field without locking - see comment above
+			view.update(insertions, updates, deletions);
+		} catch (Exception e) {
+			LOG.error("problem creating new View: {}", key, e);
+		}
 	}
 
 }
