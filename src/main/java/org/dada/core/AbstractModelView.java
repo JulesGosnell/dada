@@ -44,12 +44,4 @@ public abstract class AbstractModelView<K, V> extends AbstractModel<K, V> implem
 		super(name, metadata);
 	}
 
-	@Override
-	public void start() {
-	}
-
-	@Override
-	public void stop() {
-	}
-
 }

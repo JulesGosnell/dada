@@ -103,12 +103,4 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		notifyUpdate(nil, updatesOut, nil);
 	}
 
-	@Override
-	public void start() {
-	}
-
-	@Override
-	public void stop() {
-	}
-
 }

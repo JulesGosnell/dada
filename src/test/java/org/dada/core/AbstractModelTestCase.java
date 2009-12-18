@@ -49,18 +49,6 @@ public class AbstractModelTestCase extends TestCase {
 			public Collection<Datum<Integer>> getData() {
 				return data;
 			}
-
-			@Override
-			public void start() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public void stop() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
 		};
 		
 		assertTrue(model.getName() == name);

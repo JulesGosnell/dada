@@ -56,14 +56,6 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public void start() {
-	}
-
-	@Override
-	public void stop() {
-	}
-
-	@Override
 	public void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> updates, Collection<Update<Model<Object, Object>>> deletions) {
 		for (Update<Model<Object, Object>> insertion : insertions) {
 			Model<Object, Object> model = insertion.getNewValue();

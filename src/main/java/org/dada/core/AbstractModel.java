@@ -106,6 +106,14 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	@Override
+	public void start() {
+	}
+
+	@Override
+	public void stop() {
+	}
+
+	@Override
 	public String toString() {
 		return "<" + getClass().getSimpleName() + ": " + name + ">";
 	}
