@@ -42,14 +42,14 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		VO create(KO outputKey, int version, KI inputKey, BigDecimal amount);
 	}
 	
-	private final Collection<Update<VO>> empty = new ArrayList<Update<VO>>();
+	private final Collection<Update<VO>> nil = new ArrayList<Update<VO>>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final KI inputKey;
 	private final KO outputKey;
 	private final Factory<KO, VO, KI> factory;
 	
 	private int version;
-	private BigDecimal aggregate = BigDecimal.ZERO;
+	private BigDecimal amount = BigDecimal.ZERO;
 	
 	public AbstractAmountAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, Factory<KO, VO, KI> factory) {
 		super(name, metadata);
@@ -58,8 +58,7 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		this.factory = factory;
 	}
 
-	protected abstract BigDecimal getInputAmount(VI value);
-	protected abstract BigDecimal getOutputAmount(VO value);
+	protected abstract BigDecimal getAmount(VI value);
 	
 	@Override
 	public Collection<VO> getData() {
@@ -67,7 +66,7 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		BigDecimal snapshotAmount;
 		synchronized (this) {
 			snapshotVersion = version;
-			snapshotAmount = aggregate;
+			snapshotAmount = amount;
 		}
 		return Collections.singleton(factory.create(outputKey, snapshotVersion, inputKey, snapshotAmount));
 	}
@@ -77,31 +76,31 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		BigDecimal delta = BigDecimal.ZERO;
 		for (Update<VI> insertion : insertions) {
 			VI newValue = insertion.getNewValue();
-			BigDecimal amount = getInputAmount(newValue);
-			if (amount == null)
+			BigDecimal insertionAmount = getAmount(newValue);
+			if (insertionAmount == null)
 				logger.warn("null amount: {}", newValue);
 			else
-				delta = delta.add(amount);
+				delta = delta.add(insertionAmount);
 		}
 		for (Update<VI> update : updates) {
-			delta.subtract(getInputAmount(update.getOldValue()));
-			delta.add(getInputAmount(update.getNewValue()));
+			delta.subtract(getAmount(update.getOldValue()));
+			delta.add(getAmount(update.getNewValue()));
 		}
 		for (Update<VI> update : updates) {
-			delta.subtract(getInputAmount(update.getOldValue()));
+			delta.subtract(getAmount(update.getOldValue()));
 		}
 		int oldVersion, newVersion;
-		BigDecimal oldAggregate, newAggregate;
+		BigDecimal oldAmount, newAmount;
 		synchronized (this) {
 			oldVersion = version;
-			oldAggregate = aggregate;
+			oldAmount = amount;
 			newVersion = ++version;
-			newAggregate = (aggregate = aggregate.add(delta));
+			newAmount = (amount = amount.add(delta));
 		}
-		VO oldValue = factory.create(outputKey, oldVersion, inputKey, oldAggregate);
-		VO newValue = factory.create(outputKey, newVersion, inputKey, newAggregate);
+		VO oldValue = factory.create(outputKey, oldVersion, inputKey, oldAmount);
+		VO newValue = factory.create(outputKey, newVersion, inputKey, newAmount);
 		Collection<Update<VO>> updatesOut = Collections.singleton(new Update<VO>(oldValue, newValue));
-		notifyUpdate(empty, updatesOut, empty);
+		notifyUpdate(nil, updatesOut, nil);
 	}
 
 	@Override
