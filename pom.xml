@@ -37,6 +37,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>jmock</groupId>
+      <artifactId>jmock</artifactId>
+      <version>20031129.200437</version>
+      <scope>test</scope>
+    </dependency> 
+    <dependency>
       <groupId>net.sourceforge.cobertura</groupId>
       <artifactId>cobertura</artifactId>
       <version>${cobertura.version}</version>
