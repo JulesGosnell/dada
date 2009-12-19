@@ -38,9 +38,15 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>jmock</groupId>
+      <groupId>org.jmock</groupId>
       <artifactId>jmock</artifactId>
-      <version>20031129.200437</version>
+      <version>2.5.1</version>
+      <scope>test</scope>
+    </dependency> 
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock-junit3</artifactId>
+      <version>2.5.1</version>
       <scope>test</scope>
     </dependency> 
     <dependency>
@@ -284,7 +290,7 @@
             <additionalClasspathElement>target/classes</additionalClasspathElement>
           </additionalClasspathElements>
           <forkMode>once</forkMode>
-	  <argLine>-javaagent:${user.home}/.m2/repository/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
+	  <argLine>-javaagent:${settings.localRepository}/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/*AbstractTestCase.java</exclude>
