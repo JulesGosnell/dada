@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.core;
+package org.dada.demo;
 
 import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
@@ -53,6 +53,10 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.dada.core.Model;
+import org.dada.core.Registration;
+import org.dada.core.Update;
+import org.dada.core.View;
 import org.dada.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

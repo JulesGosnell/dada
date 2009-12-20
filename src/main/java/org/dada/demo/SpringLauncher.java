@@ -26,20 +26,19 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.core;
+package org.dada.demo;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-public class Launcher {
+public class SpringLauncher {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
-		ApplicationContext context = new ClassPathXmlApplicationContext("common-context.xml");
-		Object bean = context.getBean("session");
+		ApplicationContext ctx = new ClassPathXmlApplicationContext("application-context.xml");
+		Object bean = ctx.getBean("bean");
 		System.out.println(bean);
 	}
 

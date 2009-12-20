@@ -26,14 +26,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.core;
+package org.dada.jms;
 
 import java.util.concurrent.ExecutorService;
 
 import javax.jms.JMSException;
 import javax.jms.Session;
 
-import org.dada.jms.RemotingFactory;
+import org.dada.core.Model;
+import org.dada.core.Transport;
 
 // TODO - This abstraction wraps an earlier one - we should collapse and simplify the two...
 // TODO - share code between JMS and Asynchronous Transports (trueAsync, Invocation)

@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.core;
+package org.dada.demo;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +35,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.dada.core.AbstractModel;
+import org.dada.core.Metadata;
+import org.dada.core.Range;
+import org.dada.core.Update;
 
 public class Feed<K, V> extends AbstractModel<K, V> {
 

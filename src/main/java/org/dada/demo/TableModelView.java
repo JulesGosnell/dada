@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.core;
+package org.dada.demo;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -34,6 +34,9 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.swing.table.AbstractTableModel;
 
+import org.dada.core.Metadata;
+import org.dada.core.Update;
+import org.dada.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
