@@ -28,19 +28,55 @@
  */
 package org.dada.core;
 
+import java.util.concurrent.ExecutorService;
+
+import javax.jms.JMSException;
+import javax.jms.Session;
+
+import org.dada.jms.RemotingFactory;
+
+// TODO - This abstraction wraps an earlier one - we should collapse and simplify the two...
+// TODO - share code between JMS and Asynchronous Transports (trueAsync, Invocation)
+
 /**
- * A Transport that will transparently pass invocations over JMS.
+ * A Transport that will transparently pass invocations forwards/backwards over a JMS provider.
  * 
  * @author jules
  *
  * @param <T>
  */
-public class JMSTransport<T> implements Transport<T> {
+public class JMSTransport<T extends Model<?, ?>> implements Transport<T> {
 
+	private final Session session;
+	private final RemotingFactory<T> factory;
+	private final boolean trueAsync;
+	private final ExecutorService executorService;
+	
+	public JMSTransport(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout) throws JMSException {
+		this.session = session;
+		this.factory = new RemotingFactory<T>(session, interfaze, timeout); // TODO - support multiple interfaces
+		this.executorService = executorService;
+		this.trueAsync = trueAsync;
+	}
+	
 	@Override
-	public T decouple(T target) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+	public T decouple(T target) {	
+		String name = target.getName();
+		try {
+			server(target, name);
+			return client(name);
+		} catch (Exception e) {
+			// soften exception..
+			throw new RuntimeException("problem decoupling client/server over JMS", e);
+		}
+	}
+
+	public T client(String endPoint) throws Exception {
+		return factory.createSynchronousClient(endPoint, trueAsync);
+	}
+	
+	public void server(T model, String endPoint) throws Exception {
+		factory.createServer(model, session.createQueue(endPoint), executorService);
 	}
 
 }
