@@ -26,7 +26,6 @@
     <cobertura.version>1.9.3</cobertura.version>
     <cobertura.format>html</cobertura.format>
     <spring.version>2.5.6.SEC01</spring.version>
-    <camel.version>2.0.0</camel.version>
   </properties>
 
   <dependencies>
@@ -91,21 +90,6 @@
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
       <version>5.3.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>${camel.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jencks</groupId>
-      <artifactId>jencks</artifactId>
-    <version>2.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-jms</artifactId>
-      <version>${camel.version}</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -294,7 +278,6 @@
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/*AbstractTestCase.java</exclude>
-            <exclude>**/*CamelTestCase.java</exclude>  <!-- TODO: need to hack Camel -->
           </excludes>
           <systemProperties>
             <property>
