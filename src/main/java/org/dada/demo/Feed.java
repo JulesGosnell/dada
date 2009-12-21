@@ -64,7 +64,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 
 		@Override
 		public void run() {
-			int index = ((int)(ks.size() * Math.random()) - 1);
+			int index = (int)((ks.size() -1) * Math.random());
 			K id  = ks.get(index);
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);
