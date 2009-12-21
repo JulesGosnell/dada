@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -54,6 +55,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	}
 
 	protected final Map<K, V> vs = new HashMap<K, V>();
+	protected final List<K> ks = new ArrayList<K>(); 
 	protected final Range<K> range;
 	protected final long delay;
 	protected final Strategy<K, V> strategy;
@@ -62,7 +64,8 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 
 		@Override
 		public void run() {
-			K id = range.random();
+			int index = ((int)(ks.size() * Math.random()) - 1);
+			K id  = ks.get(index);
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);
 			vs.put(strategy.getKey(newValue), newValue);
@@ -97,6 +100,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 			vs.put(strategy.getKey(newValue), newValue);
 			insertions.add(new Update<V>(null, newValue));
 		}
+		ks.addAll(vs.keySet());
 		logger.info("notifying {} values...", newValues.size());
 		long start = System.currentTimeMillis();
 		notifyUpdate(insertions, empty, empty);
