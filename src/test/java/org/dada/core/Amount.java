@@ -30,26 +30,17 @@ package org.dada.core;
 
 import java.math.BigDecimal;
 
-import junit.framework.TestCase;
+public class Amount extends IntegerDatum {
 
-public class AbstractAmountMetadataTestCase extends TestCase {
-
-	public void test() {
-		Metadata<Integer, Amount> metadata = new AbstractAmountMetadata<Integer, Amount>("Key", "Amount") {
-			@Override
-			protected BigDecimal getAmount(Amount value) {
-				return value.getAmount();
-			}
-		};
-		
-		BigDecimal one = new BigDecimal("1.0");
-		Amount amount = new Amount(1, 0, one);
-		
-		assertTrue(metadata.getAttributeNames().size() == 3);
-		assertTrue(metadata.getKey(amount) == 1);
-		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
-		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));
-		assertTrue(metadata.getAttributeValue(amount, 2).equals(one));
-		assertTrue(metadata.getAttributeValue(amount, 3) == null);
+	private final BigDecimal amount;
+	
+	public Amount(int id, int version, BigDecimal amount) {
+		super(id, version);
+		this.amount = amount;
 	}
+
+	public BigDecimal getAmount() {
+		return amount;
+	}
+	
 }

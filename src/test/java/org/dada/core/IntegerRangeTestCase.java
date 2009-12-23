@@ -28,28 +28,32 @@
  */
 package org.dada.core;
 
-import java.math.BigDecimal;
+import java.util.Collection;
 
 import junit.framework.TestCase;
 
-public class AbstractAmountMetadataTestCase extends TestCase {
+public class IntegerRangeTestCase extends TestCase {
 
 	public void test() {
-		Metadata<Integer, Amount> metadata = new AbstractAmountMetadata<Integer, Amount>("Key", "Amount") {
-			@Override
-			protected BigDecimal getAmount(Amount value) {
-				return value.getAmount();
-			}
-		};
 		
-		BigDecimal one = new BigDecimal("1.0");
-		Amount amount = new Amount(1, 0, one);
+		int min = 0;
+		int max = 10;
+		IntegerRange range = new IntegerRange(min, max);
+		assertTrue(range.getMin() == min);
+		assertTrue(range.getMax() == max);
+		Collection<Integer> values = range.getValues();
 		
-		assertTrue(metadata.getAttributeNames().size() == 3);
-		assertTrue(metadata.getKey(amount) == 1);
-		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
-		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));
-		assertTrue(metadata.getAttributeValue(amount, 2).equals(one));
-		assertTrue(metadata.getAttributeValue(amount, 3) == null);
+		for (int i = min; i < max; i++)
+			assertTrue(values.contains(i));
+
+		int size = max - min;
+		assertTrue(values.size() == size);
+		assertTrue(range.size() == size);
+		
+		for (int i = 0; i < 100; i++) {
+			int r = range.random();
+			assertTrue(r >= min);
+			assertTrue(r < max);
+		}
 	}
 }

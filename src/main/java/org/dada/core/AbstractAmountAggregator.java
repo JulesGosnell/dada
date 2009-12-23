@@ -77,10 +77,7 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		for (Update<VI> insertion : insertions) {
 			VI newValue = insertion.getNewValue();
 			BigDecimal insertionAmount = getAmount(newValue);
-			if (insertionAmount == null)
-				logger.warn("null amount: {}", newValue);
-			else
-				delta = delta.add(insertionAmount);
+			delta = delta.add(insertionAmount);
 		}
 		for (Update<VI> update : updates) {
 			delta.subtract(getAmount(update.getOldValue()));
