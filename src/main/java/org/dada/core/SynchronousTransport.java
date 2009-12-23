@@ -43,4 +43,10 @@ public class SynchronousTransport<T> implements Transport<T> {
 		return target;
 	}
 
+	@Override
+	public void server(T target, String endPoint) throws Exception {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }

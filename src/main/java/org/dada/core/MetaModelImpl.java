@@ -5,24 +5,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
-import org.dada.jms.RemotingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<String, Model<Object, Object>> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private final RemotingFactory<Model<Object, Object>> remotingFactory;
-	private final ExecutorService executorService;
+	private final Transport<Model<Object, Object>> transport;
 	private final Set<String> exportedModelNames = new HashSet<String>();
 	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object,Object>>();
 	
-	public MetaModelImpl(String name, Metadata<String, String> metadata, RemotingFactory<Model<Object, Object>> remotingFactory, ExecutorService executorService) {
+	public MetaModelImpl(String name, Metadata<String, String> metadata, Transport<Model<Object, Object>> transport) {
 		super(name, metadata);
-		this.remotingFactory = remotingFactory;
-		this.executorService = executorService;
+		this.transport = transport;
 		exportedModelNames.add(name); // assume that we are exported - TODO - clean up using Transport interface
 	}
 
@@ -36,6 +32,8 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		Model<Object, Object> model = nameToModel.get(modelName);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
+		// TODO - what about tidying up Transport resources ? Their allocation should be done
+		// on a first-in-turns-on-lights, last-out-turns-off-lights basis...
 	}
 
 	@Override
@@ -44,7 +42,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		try {
 			if (!exportedModelNames.contains(modelName)) {
 				logger.info("exporting Model: {}", model);
-				remotingFactory.createServer(model, modelName, executorService);
+				transport.server(model, modelName);
 				exportedModelNames.add(modelName);
 			}
 			logger.info("registering View ({}) with Model ({})", view, model);
@@ -66,7 +64,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 			nameToModel.put(model.getName(), model);
 		}
 		for (Update<Model<Object, Object>> deletion : deletions) {
-			Model<Object, Object> model = deletion.getNewValue();
+			Model<Object, Object> model = deletion.getOldValue();
 			nameToModel.remove(model.getName());
 		}
 	}

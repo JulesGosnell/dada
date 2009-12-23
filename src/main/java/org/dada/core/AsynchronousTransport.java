@@ -103,4 +103,10 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
 	}
 
+	@Override
+	public void server(T target, String endPoint) throws Exception {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }

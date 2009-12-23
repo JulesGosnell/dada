@@ -39,5 +39,7 @@ package org.dada.core;
 public interface Transport<T> {
 
 	T decouple(T target);
+
+	void server(T target, String endPoint) throws Exception;
 	
 }
