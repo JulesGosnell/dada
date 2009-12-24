@@ -42,12 +42,11 @@ import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class AsynchronousTransportTestCase extends MockObjectTestCase {
 
-	public static interface Test {
+	public static interface Target {
 		
 		void asyncVoidTest();
 		void asyncExceptionTest() throws Exception;
 		boolean syncTest();
-		
 	}
 	
 	public void testException() {
@@ -121,15 +120,15 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 			}
 		};
 
-		final Test test = (Test)mock(Test.class);
+		final Target target = (Target)mock(Target.class);
 
-		Transport<Test> transport = new AsynchronousTransport<Test>(new Class<?>[]{Test.class}, executorService);
-		Test proxy = transport.decouple(test);
+		Transport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
+		Target proxy = transport.decouple(target);
 		
         // call a method on target that throws an exception
         checking(new Expectations(){{
         	try {
-        		one(test).asyncExceptionTest();
+        		one(target).asyncExceptionTest();
         		will(throwException(new UnsupportedOperationException()));
         	} catch (Exception e) {
         		// ignore
@@ -145,34 +144,46 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
         }
 	}
 	
-	public void test() {
+	public void test() throws Exception {
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
-		final Test test = (Test)mock(Test.class);
+		final Target target = (Target)mock(Target.class);
 
-		Transport<Test> transport = new AsynchronousTransport<Test>(new Class<?>[]{Test.class}, executorService);
-		Test proxy = transport.decouple(test);
+		Transport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
+		Target proxy = transport.decouple(target);
 
-		// sync call should be dispatched directly onto test
+		// sync call - dispatched directly onto test
+		
         checking(new Expectations(){{
-            one(test).syncTest();
+            one(target).syncTest();
         }});
 		
         proxy.syncTest();
         
-        // async call should be dispatched onto executor service
+        // async call - dispatched onto executor service
         checking(new Expectations(){{
             one(executorService).execute(with(any(Runnable.class)));
         }});
 		
         proxy.asyncVoidTest();
 
-// TODO - fix this
-//        // calling a method defined on Object on the proxy, should be dispatched directly on target
-//        checking(new Expectations(){{
-//            one(test).toString();
-//        }});
-		
-        String string = proxy.toString();
+        // server
+        
+        try { transport.server(target, "test"); fail();} catch (UnsupportedOperationException e){}
         
 	}
+	
+//	interface Empty {
+//	}
+//	
+//	public void testMethodsDeclaredOnObject() {
+//	
+//		final String string = "toString";
+//		Empty target = new Empty() {
+//			@Override
+//			String toString() {
+//				return string;
+//			}
+//		}
+//		
+//	}
 }

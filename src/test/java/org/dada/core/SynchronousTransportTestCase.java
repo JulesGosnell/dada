@@ -32,8 +32,15 @@ import junit.framework.TestCase;
 
 public class SynchronousTransportTestCase extends TestCase {
 
-	public void test() {
+	public void test() throws Exception {
+
 		String string = "test me";
-		assertTrue(new SynchronousTransport<String>().decouple(string) == string);
+		Transport<String> transport = new SynchronousTransport<String>();
+
+		// decouple
+		assertTrue(transport.decouple(string) == string);
+		
+		// server
+		try {transport.server(string, string); fail();} catch (UnsupportedOperationException e){};
 	}
 }
