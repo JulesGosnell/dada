@@ -57,7 +57,7 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		this.executorService = executorService;
 	}
 
-	private class Invocation implements Runnable {
+	protected class Invocation implements Runnable {
 
 		private final T target;
 		private final Method method;
@@ -90,14 +90,22 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		InvocationHandler handler = new InvocationHandler() {
 			@Override
 			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-				if (method.getReturnType() == Void.TYPE && !method.getDeclaringClass().equals(Object.class)) {
+				
+				log.error("{} declaring class: {}", method.getName(), method.getDeclaringClass().getCanonicalName());
+				
+				if (method.getReturnType() == Void.TYPE) {
 					// async invocation
 					executorService.execute(new Invocation(target, method, args));
 					return null;
 				} else {
 					// sync invocation
-					return method.invoke(target, args);
+					return method.invoke(method.getDeclaringClass().equals(Object.class) ? this : target, args);
 				}
+			}
+			
+			@Override
+			public String toString() {
+				return "<" + getClass().getEnclosingClass().getSimpleName() + "." + getClass().getInterfaces()[0].getSimpleName() + ">";
 			}
 		};
 		return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
@@ -109,4 +117,9 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		throw new UnsupportedOperationException("NYI");
 	}
 
+	// used to expose Invocation to test harness
+	protected Invocation createInvocation(T target, Method method, Object[] args) {
+		return new Invocation(target, method, args);
+	}
+	
 }

@@ -28,14 +28,7 @@
  */
 package org.dada.core;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
@@ -43,147 +36,50 @@ import org.jmock.integration.junit3.MockObjectTestCase;
 public class AsynchronousTransportTestCase extends MockObjectTestCase {
 
 	public static interface Target {
-		
-		void asyncVoidTest();
-		void asyncExceptionTest() throws Exception;
-		boolean syncTest();
-	}
-	
-	public void testException() {
-		// How do we define a mock object that calls a method on something passed to it...
-		
-		final ExecutorService executorService = new ExecutorService() {
-			
-			@Override
-			public void execute(Runnable command) {
-				command.run();
-			}
-			
-			@Override
-			public <T> Future<T> submit(Runnable task, T result) {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public Future<?> submit(Runnable task) {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public <T> Future<T> submit(Callable<T> task) {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public List<Runnable> shutdownNow() {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public void shutdown() {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public boolean isTerminated() {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public boolean isShutdown() {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-				throw new UnsupportedOperationException("NYI");
-			}
-			
-			@Override
-			public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-				throw new UnsupportedOperationException("NYI");
-			}
-		};
-
-		final Target target = (Target)mock(Target.class);
-
-		Transport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
-		Target proxy = transport.decouple(target);
-		
-        // call a method on target that throws an exception
-        checking(new Expectations(){{
-        	try {
-        		one(target).asyncExceptionTest();
-        		will(throwException(new UnsupportedOperationException()));
-        	} catch (Exception e) {
-        		// ignore
-        	}
-        }});
-        
-        try {
-        	proxy.asyncExceptionTest();
-        	// since the exception is expected to be thrown on another thread, it is caught, reported and swallowed...
-        	assertTrue(true);
-        } catch (Exception e) {
-        	assertTrue(false);
-        }
+		void async();
+		boolean sync();
 	}
 	
 	public void test() throws Exception {
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
 		final Target target = (Target)mock(Target.class);
 
-		Transport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
+		AsynchronousTransport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
 		Target proxy = transport.decouple(target);
 
 		// sync call - dispatched directly onto test
 		
         checking(new Expectations(){{
-            one(target).syncTest();
+            one(target).sync();
         }});
 		
-        proxy.syncTest();
+        proxy.sync();
         
         // async call - dispatched onto executor service
+
         checking(new Expectations(){{
             one(executorService).execute(with(any(Runnable.class)));
         }});
 		
-        proxy.asyncVoidTest();
+        proxy.async();
 
         // server
         
         try { transport.server(target, "test"); fail();} catch (UnsupportedOperationException e){}
         
+		// method declared on Object - dispatched directly on proxy
+
+        assertTrue(!proxy.toString().equals(target.toString()));
+        
+        // broken invocation
+
+        checking(new Expectations(){{
+        	one(target).async();
+        	will(throwException(new UnsupportedOperationException()));
+        }});
+
+        AsynchronousTransport<Target>.Invocation invocation = transport.createInvocation(target, target.getClass().getMethod("async", (Class<?>[])null), null);
+        invocation.run();
 	}
 	
-//	interface Empty {
-//	}
-//	
-//	public void testMethodsDeclaredOnObject() {
-//	
-//		final String string = "toString";
-//		Empty target = new Empty() {
-//			@Override
-//			String toString() {
-//				return string;
-//			}
-//		}
-//		
-//	}
 }
