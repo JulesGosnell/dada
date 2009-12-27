@@ -59,124 +59,68 @@ public class SimpleModelViewTestCase extends TestCase {
 
 	public void testView() {
 
+		ArrayList<Update<Datum<Integer>>> nil = new ArrayList<Update<Datum<Integer>>>(); // useful value
+
+		// Model/View is empty
+		Collection<Datum<Integer>> data = view.getData();
+
 		assertTrue(view.maps.current.count() == 0);
 		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(data.isEmpty());
+	
+		// empty update
 
+		view.update(nil, nil, nil);
+		
+		assertTrue(view.maps.current.count() == 0);
+		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(data.isEmpty());
+	
 		// simple insertion
+		
 		Datum<Integer> datum0 = new IntegerDatum(0, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), nil, nil);
 
 		assertTrue(view.maps.current.count() == 1);
 		assertTrue(view.maps.current.valAt(0) == datum0);
 		assertTrue(view.maps.historic.count() == 0);
 
-		// update existing current value
-		Datum<Integer> datum1 = new IntegerDatum(0, 1);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum1)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		// update non-existant/contiguous val - where is version 0 ?
+		
+		IntegerDatum datum1v1 = new IntegerDatum(1, 1);
+		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v1)), nil);
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum1);
+		assertTrue(view.maps.current.count() == 2);
+		assertTrue(view.maps.current.valAt(1) == datum1v1);
 		assertTrue(view.maps.historic.count() == 0);
 
-		// out of sequence updates
-		Datum<Integer> datum2 = new IntegerDatum(0, 2);
-		Datum<Integer> datum3 = new IntegerDatum(0, 3);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum3)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		// update existing value with contiguous version
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum3);
+		Datum<Integer> datum1v2 = new IntegerDatum(1, 2);
+		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v2)), nil);
+
+		assertTrue(view.maps.current.count() == 2);
+		assertTrue(view.maps.current.valAt(1) == datum1v2);
+		assertTrue(view.maps.historic.count() == 0);
+		
+		// update existing val with previous version - should be ignored
+		
+		Datum<Integer> datum1v0 = new IntegerDatum(1, 0);
+		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v0)), nil);
+
+		assertTrue(view.maps.current.count() == 2);
+		assertTrue(view.maps.current.valAt(1) == datum1v2);
 		assertTrue(view.maps.historic.count() == 0);
 
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum2)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
+		// deletion of existing val
+		
+		Datum<Integer> datum1v3 = new IntegerDatum(1, 3);
+		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v3)));
 
 		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum3);
-		assertTrue(view.maps.historic.count() == 0);
-
-		Datum<Integer> datum8 = new IntegerDatum(0, 8);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum8)), new ArrayList<Update<Datum<Integer>>>(), new ArrayList<Update<Datum<Integer>>>());
-
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum8);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(!view.maps.current.containsKey(1));
+		assertTrue(view.maps.historic.count() == 1);
+		assertTrue(view.maps.historic.valAt(1) == datum1v3);
 	}
 
-	class IdAggregator implements View<Integer, Datum<Integer>> {
-
-		int total = 0;
-
-		public Integer getTotal() {
-			return total;
-		}
-
-		@Override
-		public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
-			for (Update<Datum<Integer>> insertion : insertions)
-				total += insertion.getNewValue().getId();
-			for (Update<Datum<Integer>> update : updates)
-				total += update.getNewValue().getId() - update.getOldValue().getId();
-			for (Update<Datum<Integer>> deletion : deletions)
-				total -= deletion.getOldValue().getId();
-		}
-	}
-
-	public void DONOTtestAggregator() {
-		IdAggregator aggregator = new IdAggregator();
-		view.registerView(aggregator);
-
-		assertTrue(view.maps.historic.count() == 0);
-		assertTrue(aggregator.getTotal() == 0);
-
-		// simple insertion
-		Datum<Integer> datum0 = new IntegerDatum(0, 0);
-		ArrayList<Update<Datum<Integer>>> empty = new ArrayList<Update<Datum<Integer>>>();
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), empty, empty);
-		assertTrue(view.maps.historic.count() == 0);
-		assertTrue(aggregator.getTotal() == 0);
-
-		// update existing current value
-		Datum<Integer> datum1 = new IntegerDatum(0, 1);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum1)), empty, empty);
-		assertTrue(aggregator.getTotal() == 0);
-
-		// out of sequence updates
-		Datum<Integer> datum2 = new IntegerDatum(0, 2);
-		Datum<Integer> datum3 = new IntegerDatum(0, 3);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum3)), empty, empty);
-		assertTrue(aggregator.getTotal() == 0);
-
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum2)), empty, empty);
-		assertTrue(aggregator.getTotal() == 0);
-
-		Datum<Integer> datum8 = new IntegerDatum(0, 8);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum8)), empty, empty);
-		assertTrue(aggregator.getTotal() == 0);
-
-		// insert 2nd value
-		Datum<Integer> datum9 = new IntegerDatum(1, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum9)), empty, empty);
-		assertTrue(aggregator.getTotal() == 1);
-
-		// insert 3rd value
-		Datum<Integer> datum10 = new IntegerDatum(2, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum10)), empty, empty);
-		assertTrue(aggregator.getTotal() == 3);
-
-		Datum<Integer> datum12 = new IntegerDatum(2, 2);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum12)), empty, empty);
-		assertTrue(aggregator.getTotal() == 3);
-
-		// register an aggregator
-		IdAggregator aggregator2 = new IdAggregator();
-		Registration<Integer, Datum<Integer>> registration = view.registerView(aggregator2);
-		Collection<Update<Datum<Integer>>> insertions = empty;
-		for (Datum<Integer> datum : registration.getData())
-			insertions.add(new Update<Datum<Integer>>(null, datum));
-		aggregator2.update(insertions, empty, empty);
-		assertTrue(aggregator2.getTotal() == 3);
-
-		Datum<Integer> datum13 = new IntegerDatum(3, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum13)), empty, empty);
-		assertTrue(aggregator.getTotal() == 6);
-	}
 }
