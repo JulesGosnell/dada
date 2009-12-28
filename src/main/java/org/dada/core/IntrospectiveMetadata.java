@@ -32,31 +32,32 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: Methods are not Serializable !
+
 public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
 	private final Class<?> clazz;
 	private final List<String> attributeNames;
-	private int keyIndex;
+	private final int keyIndex;
 	//private final List<Method> getters;
 
 	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws SecurityException, NoSuchMethodException {
 		this.clazz = clazz;
-		keyName = "get"+keyName;
 		attributeNames = new ArrayList<String>();
 		//getters = new ArrayList<Method>();
 		for (Method method : clazz.getMethods()) {
 			// is it a getter ?
-			String name = method.getName();
+			String methodName = method.getName();
 			Class<?>[] parameterTypes = method.getParameterTypes();
-			if (name.startsWith("get") &&
-				!method.getDeclaringClass().equals(Object.class) &&
-				(parameterTypes==null || parameterTypes.length==0)) {
-				if (name.equals(keyName))
-					keyIndex = attributeNames.size();
-				attributeNames.add(name.substring(3));
-				//getters.add(method);
+			if (!method.getDeclaringClass().equals(Object.class)) { // excludes getClass()...
+				if (methodName.startsWith("get") && parameterTypes.length==0) {
+					String attributeName = methodName.substring(3);
+					attributeNames.add(attributeName);
+					//getters.add(method);
+				}
 			}
 		}
+		keyIndex = attributeNames.indexOf(keyName);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -67,7 +68,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			Method method = clazz.getMethod("get"+attributeNames.get(index), (Class<?>[])null);
 			return (V)method.invoke(value, (Object[])null);
 		} catch (Exception e) {
-			throw (e instanceof RuntimeException) ? (RuntimeException)e: new RuntimeException(e);  
+			throw new RuntimeException(e);  
 		}
 	}
 
@@ -78,11 +79,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
 	@Override
 	public K getKey(V value) {
-		try {
-			return (K)getAttributeValue(value, keyIndex);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		return (K)getAttributeValue(value, keyIndex);
 	}
 
 }
