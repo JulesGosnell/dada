@@ -60,9 +60,16 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 		Collection<Update<V>> insertionsOut = new ArrayList<Update<V>>(insertions.size());
 		Collection<Update<V>> updatesOut = new ArrayList<Update<V>>(updates.size());
 		Collection<Update<V>> deletionsOut = new ArrayList<Update<V>>(deletions.size());
-		if (logger.isDebugEnabled())
-			logger.debug("{}: update: insertions={}, updates={}, deletions={}", new Object[]{name, insertions.size(), updates.size(), deletions.size()});
 
+		if (logger.isDebugEnabled()) {
+			// TODO: I've read all the threads on slf4j/varargs and it appears that there is still no support
+			// for logging a variable number of params without having to allocate an Object[] !
+			// This will continue to blight my coverage results until sl4j sort this out. why not just include
+			// an slf4j-varargs jar with an extended api and a different VarargsLoggerFactory...
+			Object[] args = {name, insertions.size(), updates.size(), deletions.size()};
+			logger.debug("{}: update: insertions={}, updates={}, deletions={}", args);
+		}
+		
 		// TODO: lose later
 		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
 			logger.warn("wasteful message: 0 size update", new RuntimeException());
@@ -73,6 +80,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			final IPersistentMap originalHistoric = snapshot.getHistoric();
 			IPersistentMap current = originalCurrent;
 			IPersistentMap historic = originalHistoric;
+			boolean changed = false;
 			for (Update<V> insertion : insertions) {
 				V newValue = insertion.getNewValue();
 				K key = newValue.getId();
@@ -80,6 +88,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
 					current = current.assoc(key, newValue);
 					insertionsOut.add(insertion);
+					changed = true;
 				} else {
 					logger.trace("ignoring insertion: {} is more recent than {}", currentValue, newValue);
 				}
@@ -91,9 +100,11 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
 					current = current.assoc(newValue.getId(), newValue);
 					updatesOut.add(update);
+					changed = true;
 				} else {
 					logger.trace("ignoring update: {} is more recent than {}", currentValue, newValue);
-				}			}
+				}
+			}
 			for (Update<V> deletion : deletions) {
 				V newValue = deletion.getNewValue();
 				K key = newValue.getId();
@@ -102,17 +113,19 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 					try {
 						current = current.without(key);
 					} catch (Exception e) {
+						// TODO: difficult to cover this bit of code - needs some thought...
 						logger.warn("unable to perform deletion: {}", key, e);
 					}
 					historic = historic.assoc(newValue.getId(), newValue);
 					deletionsOut.add(deletion);
+					changed = true;
 				} else {
 					logger.trace("ignoring deletion: {} is more recent than {} or did not exist", currentValue, newValue);
 				}
 			}
 
 			// have we made any updates - commit them...
-			if (current != originalCurrent || historic!=originalHistoric)
+			if (changed)
 				maps = new Maps(current, historic);
 		} // end of sync block
 

@@ -26,6 +26,7 @@
     <cobertura.version>1.9.3</cobertura.version>
     <cobertura.format>html</cobertura.format>
     <spring.version>2.5.6.SEC01</spring.version>
+    <slf4j.version>1.5.10</slf4j.version>
   </properties>
 
   <dependencies>
@@ -55,11 +56,16 @@
       <scope>test</scope>
     </dependency>
     <!-- compile/runtime deps -->
+    <dependency> <!-- scope should be test -->
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-core</artifactId>
+      <version>5.3.0</version>
+    </dependency>
     <!-- we're going to log via slf4j/commons-logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jcl</artifactId>
-      <version>1.5.9-RC0</version>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -85,11 +91,6 @@
       <groupId>org.apache.xbean</groupId>
       <artifactId>xbean-spring</artifactId>
       <version>3.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-core</artifactId>
-      <version>5.3.0</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -284,6 +285,10 @@
               <name>net.sourceforge.cobertura.datafile</name>
               <value>${cobertura.datafile}</value>
             </property>
+	    <property> <!-- activate all logging statements during testing/coverage -->
+	      <name>org.apache.commons.logging.simplelog.log.org.dada</name>
+	      <value>trace</value>
+	    </property>
           </systemProperties>
         </configuration>
       </plugin>

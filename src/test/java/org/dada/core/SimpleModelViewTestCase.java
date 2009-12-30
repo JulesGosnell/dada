@@ -32,13 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.dada.core.Datum;
-import org.dada.core.IntegerDatum;
-import org.dada.core.Registration;
-import org.dada.core.SimpleModelView;
-import org.dada.core.Update;
-import org.dada.core.View;
-
 import junit.framework.TestCase;
 
 public class SimpleModelViewTestCase extends TestCase {
@@ -77,14 +70,32 @@ public class SimpleModelViewTestCase extends TestCase {
 		assertTrue(data.isEmpty());
 	
 		// simple insertion
-		
-		Datum<Integer> datum0 = new IntegerDatum(0, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0)), nil, nil);
+
+		Datum<Integer> datum0v1 = new IntegerDatum(0, 1);
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v1)), nil, nil);
 
 		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum0);
+		assertTrue(view.maps.current.valAt(0) == datum0v1);
 		assertTrue(view.maps.historic.count() == 0);
 
+		// out of order insertion - should be update but we need to exercise code...
+		
+		Datum<Integer> datum0v0 = new IntegerDatum(0, 0);
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v0)), nil, nil);
+
+		assertTrue(view.maps.current.count() == 1);
+		assertTrue(view.maps.current.valAt(0) == datum0v1);
+		assertTrue(view.maps.historic.count() == 0);
+		
+		// correctly ordered insertion - should be update but we need to exercise code...
+		
+		Datum<Integer> datum0v2 = new IntegerDatum(0, 2);
+		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v2)), nil, nil);
+
+		assertTrue(view.maps.current.count() == 1);
+		assertTrue(view.maps.current.valAt(0) == datum0v2);
+		assertTrue(view.maps.historic.count() == 0);
+		
 		// update non-existant/contiguous val - where is version 0 ?
 		
 		IntegerDatum datum1v1 = new IntegerDatum(1, 1);
@@ -112,6 +123,14 @@ public class SimpleModelViewTestCase extends TestCase {
 		assertTrue(view.maps.current.valAt(1) == datum1v2);
 		assertTrue(view.maps.historic.count() == 0);
 
+		// out of order deletion of existing val
+		
+		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v1)));
+
+		assertTrue(view.maps.current.count() == 2);
+		assertTrue(view.maps.current.valAt(1) == datum1v2);
+		assertTrue(view.maps.historic.count() == 0);
+
 		// deletion of existing val
 		
 		Datum<Integer> datum1v3 = new IntegerDatum(1, 3);
@@ -121,6 +140,18 @@ public class SimpleModelViewTestCase extends TestCase {
 		assertTrue(!view.maps.current.containsKey(1));
 		assertTrue(view.maps.historic.count() == 1);
 		assertTrue(view.maps.historic.valAt(1) == datum1v3);
+
+		// deletion of non-existing val
+		
+		Datum<Integer> datum2v0 = new IntegerDatum(2, 0);
+		Datum<Integer> datum2v1 = new IntegerDatum(2, 1);
+		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum2v0, datum2v1)));
+
+		assertTrue(view.maps.current.count() == 1);
+		assertTrue(!view.maps.current.containsKey(2));
+		// TODO: is this  a bug ? do we care ?
+		// assertTrue(view.maps.historic.count() == 2);
+		// assertTrue(view.maps.historic.valAt(2) == datum2v1);
 	}
 
 }
