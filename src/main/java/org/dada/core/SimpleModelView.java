@@ -34,7 +34,8 @@ import java.util.Collection;
 import clojure.lang.IPersistentMap;
 import clojure.lang.PersistentTreeMap;
 
-// TODO: collect together insertions and deliver to aggregator in single collection...
+// TODO
+// I don't like this class - it is too complicated...
 
 public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
 

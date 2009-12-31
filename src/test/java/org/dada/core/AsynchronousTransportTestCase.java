@@ -63,6 +63,10 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 		
         proxy.async();
 
+        // client
+        
+        try { transport.client("test"); fail();} catch (UnsupportedOperationException e){}
+        
         // server
         
         try { transport.server(target, "test"); fail();} catch (UnsupportedOperationException e){}

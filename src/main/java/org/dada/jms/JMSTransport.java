@@ -72,6 +72,7 @@ public class JMSTransport<T extends Model<?, ?>> implements Transport<T> {
 		}
 	}
 
+	@Override
 	public T client(String endPoint) throws Exception {
 		return factory.createSynchronousClient(endPoint, trueAsync);
 	}

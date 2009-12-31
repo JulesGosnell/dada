@@ -40,6 +40,9 @@ public class SynchronousTransportTestCase extends TestCase {
 		// decouple
 		assertTrue(transport.decouple(string) == string);
 		
+		// client
+		try {transport.client(string); fail();} catch (UnsupportedOperationException e){};
+
 		// server
 		try {transport.server(string, string); fail();} catch (UnsupportedOperationException e){};
 	}

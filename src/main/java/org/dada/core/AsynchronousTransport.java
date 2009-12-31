@@ -112,6 +112,12 @@ public class AsynchronousTransport<T> implements Transport<T> {
 	}
 
 	@Override
+	public T client(String endPoint) throws Exception {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+	
+	@Override
 	public void server(T target, String endPoint) throws Exception {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
@@ -121,5 +127,5 @@ public class AsynchronousTransport<T> implements Transport<T> {
 	protected Invocation createInvocation(T target, Method method, Object[] args) {
 		return new Invocation(target, method, args);
 	}
-	
+
 }
