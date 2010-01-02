@@ -58,12 +58,9 @@ public class RelationalAspect {
 		String fieldName = fieldName(pjp);
 		Map<Integer, Integer> table = ensureTable(fieldName);
 		Identifiable target = (Identifiable)pjp.getTarget();
-        try {
-        	Identifiable value = (Identifiable)pjp.proceed();
-            LOG.info("get: " + target + "." + fieldName + " = " + value);
-            return value;
-        } finally {
-        }
+		Identifiable value = (Identifiable)pjp.proceed();
+		LOG.info("get: " + target + "." + fieldName + " = " + value);
+		return value;
     }
 
 	private String fieldName(ProceedingJoinPoint pjp) {
@@ -85,10 +82,11 @@ public class RelationalAspect {
     }
 
     @Pointcut("execution(public org.dada.ltw.Identifiable+ org.dada.ltw.Identifiable+.get*())")
-    public void getters(){
+    public void getters() {
     }
 
     @Pointcut("execution(public void org.dada.ltw.Identifiable+.set*(org.dada.ltw.Identifiable+))")
-    public void setters(){
+    public void setters() {
     }
+
 }

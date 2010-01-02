@@ -1,14 +1,14 @@
-<!DOCTYPE aspectj PUBLIC
-        "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
-<aspectj>
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
 
+<aspectj>
+  
   <weaver>
     <include within="org.dada.ltw.*"/><!-- only weave classes in our application-specific packages -->
   </weaver>
-
+  
   <aspects>
-    <!-- <aspect name="org.dada.ltw.ProfilingAspect"/> -->   <!-- weave in just this aspect -->
-    <aspect name="org.dada.ltw.RelationalAspect"/>    <!-- weave in just this aspect -->
+    <aspect name="org.dada.ltw.ProfilingAspect"/>
+    <aspect name="org.dada.ltw.RelationalAspect"/>
   </aspects>
-
-  </aspectj>
+  
+</aspectj>
