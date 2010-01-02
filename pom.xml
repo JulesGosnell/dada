@@ -27,6 +27,7 @@
     <cobertura.format>html</cobertura.format>
     <spring.version>2.5.6.SEC01</spring.version>
     <slf4j.version>1.5.10</slf4j.version>
+    <maven.compile.debug>true</maven.compile.debug>
   </properties>
 
   <dependencies>
@@ -161,8 +162,6 @@
                   <arg value="${cobertura.datafile}"/>
                   <arg value="--destination"/>
                   <arg value="target/cobertura-classes"/>
-                  <arg value="--ignore"/>
-                  <arg value="org.dada.ltw.*Aspect*"/>
                   <arg value="target/classes"/>
                 </java>
               </tasks>
