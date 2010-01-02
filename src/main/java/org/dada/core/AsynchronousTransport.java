@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,10 +52,12 @@ public class AsynchronousTransport<T> implements Transport<T> {
 	
 	private final ExecutorService executorService;
 	private final Class<?>[] interfaces;
+	private final Lock lock;
 	
-	public AsynchronousTransport(Class<?>[] interfaces, ExecutorService executorService) {
+	public AsynchronousTransport(Class<?>[] interfaces, ExecutorService executorService, Lock lock) {
 		this.interfaces = interfaces;
 		this.executorService = executorService;
+		this.lock = lock;
 	}
 
 	protected class Invocation implements Runnable {
@@ -64,6 +67,7 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		private final Object[] args;
 		
 		protected Invocation(T target, Method method, Object[] args) {
+			lock.lock();
 			this.target = target;
 			this.method = method;
 			this.args = args;
@@ -73,8 +77,10 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		public void run() {
 			try {
 				method.invoke(target, args);
-			} catch (Exception e) {
-				log.error("problem during async invocation ({})", this, e);
+			} catch (Throwable t) {
+				log.error("problem during async invocation ({})", this, t);
+			} finally {
+				lock.unlock();
 			}
 		}
 		
@@ -90,9 +96,6 @@ public class AsynchronousTransport<T> implements Transport<T> {
 		InvocationHandler handler = new InvocationHandler() {
 			@Override
 			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-				
-				log.error("{} declaring class: {}", method.getName(), method.getDeclaringClass().getCanonicalName());
-				
 				if (method.getReturnType() == Void.TYPE) {
 					// async invocation
 					executorService.execute(new Invocation(target, method, args));

@@ -28,7 +28,9 @@
  */
 package org.dada.core;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
 
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
@@ -43,8 +45,9 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 	public void test() throws Exception {
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
 		final Target target = (Target)mock(Target.class);
-
-		AsynchronousTransport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService);
+		final Lock lock = (Lock)mock(Lock.class);
+		
+		AsynchronousTransport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService, lock);
 		Target proxy = transport.decouple(target);
 
 		// sync call - dispatched directly onto test
@@ -59,6 +62,8 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 
         checking(new Expectations(){{
             one(executorService).execute(with(any(Runnable.class)));
+            one(lock).lock();
+            //one(lock).unlock(); // never unlocked because invocation is not made...
         }});
 		
         proxy.async();
@@ -78,11 +83,15 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
         // broken invocation
 
         checking(new Expectations(){{
+            one(lock).lock();
         	one(target).async();
         	will(throwException(new UnsupportedOperationException()));
+            one(lock).unlock();
         }});
 
-        AsynchronousTransport<Target>.Invocation invocation = transport.createInvocation(target, target.getClass().getMethod("async", (Class<?>[])null), null);
+        Method method = target.getClass().getMethod("async", (Class<?>[])null);
+        Object[] args = null;
+		AsynchronousTransport<Target>.Invocation invocation = transport.createInvocation(target, method, args);
         invocation.run();
 	}
 	
