@@ -41,8 +41,8 @@ public class ProfilingAspect {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProfilingAspect.class);
 
-	@Around("methodsToBeProfiled()")
-    public Object profile(ProceedingJoinPoint pjp) throws Throwable {
+	@Around("profilePointcut()")
+    public Object profileAdvice(ProceedingJoinPoint pjp) throws Throwable {
         StopWatch sw = new StopWatch(getClass().getSimpleName());
         try {
             sw.start(pjp.getSignature().getName());
@@ -54,7 +54,6 @@ public class ProfilingAspect {
     }
 
 	@Pointcut("execution(public * org.dada.ltw..*.*(..))")
-    public void methodsToBeProfiled() {
-    }
+    public void profilePointcut() {}
     
 }

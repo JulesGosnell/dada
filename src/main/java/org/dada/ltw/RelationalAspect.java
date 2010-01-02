@@ -53,8 +53,8 @@ public class RelationalAspect {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationalAspect.class);
 
-	@Around("getters()")
-    public Object adviseGetter(ProceedingJoinPoint pjp) throws Throwable {
+	@Around("getterPointcut()")
+    public Object getterAdvice(ProceedingJoinPoint pjp) throws Throwable {
 		String fieldName = fieldName(pjp);
 		Map<Integer, Integer> table = ensureTable(fieldName);
 		Identifiable target = (Identifiable)pjp.getTarget();
@@ -67,8 +67,8 @@ public class RelationalAspect {
 		return pjp.getSignature().getName().substring(3);
 	}
 
-	@Around("setters()")
-    public Object adviseSetter(ProceedingJoinPoint pjp) throws Throwable {
+	@Around("setterPointcut()")
+    public Object setterAdvice(ProceedingJoinPoint pjp) throws Throwable {
 		Identifiable target = (Identifiable)pjp.getTarget();
 		Identifiable value = (Identifiable)pjp.getArgs()[0];
         try {
@@ -82,11 +82,9 @@ public class RelationalAspect {
     }
 
     @Pointcut("execution(public org.dada.ltw.Identifiable+ org.dada.ltw.Identifiable+.get*())")
-    public void getters() {
-    }
+    public void getterPointcut() {}
 
     @Pointcut("execution(public void org.dada.ltw.Identifiable+.set*(org.dada.ltw.Identifiable+))")
-    public void setters() {
-    }
+    public void setterPointcut() {}
 
 }
