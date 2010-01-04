@@ -46,23 +46,29 @@ import org.dada.core.ServiceFactory;
  *
  * @param <T>
  */
-public class JMSServiceFactory<T extends Model<?, ?>> implements ServiceFactory<T> {
+public class JMSServiceFactory<T> implements ServiceFactory<T> {
 
+	public static interface Namer<T> {
+		String getName(T named);
+	}
+	
 	private final Session session;
 	private final RemotingFactory<T> factory;
 	private final boolean trueAsync;
 	private final ExecutorService executorService;
+	private final Namer<T> namer;
 	
-	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout) throws JMSException {
+	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout, Namer<T> namer) throws JMSException {
 		this.session = session;
 		this.factory = new RemotingFactory<T>(session, interfaze, timeout); // TODO - support multiple interfaces
 		this.executorService = executorService;
 		this.trueAsync = trueAsync;
+		this.namer = namer;
 	}
 	
 	@Override
 	public T decouple(T target) {	
-		String name = target.getName();
+		String name = namer.getName(target);
 		try {
 			server(target, name);
 			return client(name);
