@@ -27,6 +27,9 @@
     <cobertura.format>html</cobertura.format>
     <spring.version>2.5.6.SEC01</spring.version>
     <slf4j.version>1.5.10</slf4j.version>
+    <jmock.version>2.5.1</jmock.version>
+    <junit.version>3.8.1</junit.version>
+    <java.version>1.6</java.version>
     <maven.compile.debug>true</maven.compile.debug>
   </properties>
 
@@ -35,19 +38,19 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock</artifactId>
-      <version>2.5.1</version>
+      <version>${jmock.version}</version>
       <scope>test</scope>
     </dependency> 
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock-junit3</artifactId>
-      <version>2.5.1</version>
+      <version>${jmock.version}</version>
       <scope>test</scope>
     </dependency> 
     <dependency>
@@ -136,8 +139,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-	  <source>1.6</source>
-          <target>1.6</target>
+	  <source>${java.version}</source>
+          <target>${java.version}</target>
         </configuration>
       </plugin>
       <plugin>
@@ -365,7 +368,7 @@
 	<version>2.4</version>
 	<configuration>
 	  <linkXref>true</linkXref>
-	  <targetJdk>1.6</targetJdk>
+	  <targetJdk>${java.version}</targetJdk>
 	</configuration>
       </plugin>
 
