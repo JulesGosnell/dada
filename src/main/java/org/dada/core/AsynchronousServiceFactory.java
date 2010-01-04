@@ -39,22 +39,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Transport that returns a proxy for its target, invocations upon which are queued and executed on another thread.
+ * A ServiceFactory that returns a proxy for its target, invocations upon which are queued and executed on another thread.
  * It may be sensible to execute invocations returning values directly on the calling Thread.
  *  
  * @author jules
  *
  * @param <T>
  */
-public class AsynchronousTransport<T> implements Transport<T> {
+public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 
-	private final Logger log = LoggerFactory.getLogger(AsynchronousTransport.class);
+	private final Logger log = LoggerFactory.getLogger(AsynchronousServiceFactory.class);
 	
 	private final ExecutorService executorService;
 	private final Class<?>[] interfaces;
 	private final Lock lock;
 	
-	public AsynchronousTransport(Class<?>[] interfaces, ExecutorService executorService, Lock lock) {
+	public AsynchronousServiceFactory(Class<?>[] interfaces, ExecutorService executorService, Lock lock) {
 		this.interfaces = interfaces;
 		this.executorService = executorService;
 		this.lock = lock;

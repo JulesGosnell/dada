@@ -26,60 +26,33 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.dada.jms;
-
-import java.util.concurrent.ExecutorService;
-
-import javax.jms.JMSException;
-import javax.jms.Session;
-
-import org.dada.core.Model;
-import org.dada.core.Transport;
-
-// TODO - This abstraction wraps an earlier one - we should collapse and simplify the two...
-// TODO - share code between JMS and Asynchronous Transports (trueAsync, Invocation)
+package org.dada.core;
 
 /**
- * A Transport that will transparently pass invocations forwards/backwards over a JMS provider.
- * 
  * @author jules
+ * 
+ * This effectively a dummy ServiceFactory. It returns its target, so any invocations on the return value are dispatched
+ * synchronously directly on the target at no extra cost... Useful for testing.
  *
  * @param <T>
  */
-public class JMSTransport<T extends Model<?, ?>> implements Transport<T> {
+public class SynchronousServiceFactory<T> implements ServiceFactory<T> {
 
-	private final Session session;
-	private final RemotingFactory<T> factory;
-	private final boolean trueAsync;
-	private final ExecutorService executorService;
-	
-	public JMSTransport(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout) throws JMSException {
-		this.session = session;
-		this.factory = new RemotingFactory<T>(session, interfaze, timeout); // TODO - support multiple interfaces
-		this.executorService = executorService;
-		this.trueAsync = trueAsync;
-	}
-	
 	@Override
-	public T decouple(T target) {	
-		String name = target.getName();
-		try {
-			server(target, name);
-			return client(name);
-		} catch (Exception e) {
-			// soften exception..
-			throw new RuntimeException("problem decoupling client/server over JMS", e);
-		}
+	public T decouple(T target) {
+		return target;
 	}
 
 	@Override
 	public T client(String endPoint) throws Exception {
-		return factory.createSynchronousClient(endPoint, trueAsync);
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
 	}
-	
+
 	@Override
-	public void server(T model, String endPoint) throws Exception {
-		factory.createServer(model, session.createQueue(endPoint), executorService);
+	public void server(T target, String endPoint) throws Exception {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
 	}
 
 }

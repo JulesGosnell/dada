@@ -28,31 +28,22 @@
  */
 package org.dada.core;
 
-/**
- * @author jules
- * 
- * This effectively a dummy Transport. It returns its target, so any invocations on the return value are dispatched
- * synchronously directly on the target at no extra cost... Useful for testing.
- *
- * @param <T>
- */
-public class SynchronousTransport<T> implements Transport<T> {
+import junit.framework.TestCase;
 
-	@Override
-	public T decouple(T target) {
-		return target;
+public class SynchronousServiceFactoryTestCase extends TestCase {
+
+	public void test() throws Exception {
+
+		String string = "test me";
+		ServiceFactory<String> serviceFactory = new SynchronousServiceFactory<String>();
+
+		// decouple
+		assertTrue(serviceFactory.decouple(string) == string);
+		
+		// client
+		try {serviceFactory.client(string); fail();} catch (UnsupportedOperationException e){};
+
+		// server
+		try {serviceFactory.server(string, string); fail();} catch (UnsupportedOperationException e){};
 	}
-
-	@Override
-	public T client(String endPoint) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
-	public void server(T target, String endPoint) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
-	}
-
 }

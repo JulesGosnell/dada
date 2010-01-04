@@ -28,22 +28,20 @@
  */
 package org.dada.core;
 
-import junit.framework.TestCase;
+/**
+ * An abstraction through which a target object may be decoupled from a calling object/thread
+ * in various useful ways.
+ * 
+ * @author jules
+ *
+ * @param <T>
+ */
+public interface ServiceFactory<T> {
 
-public class SynchronousTransportTestCase extends TestCase {
+	T decouple(T target);
 
-	public void test() throws Exception {
+	T client(String endPoint) throws Exception;
+	
+	void server(T target, String endPoint) throws Exception;
 
-		String string = "test me";
-		Transport<String> transport = new SynchronousTransport<String>();
-
-		// decouple
-		assertTrue(transport.decouple(string) == string);
-		
-		// client
-		try {transport.client(string); fail();} catch (UnsupportedOperationException e){};
-
-		// server
-		try {transport.server(string, string); fail();} catch (UnsupportedOperationException e){};
-	}
 }

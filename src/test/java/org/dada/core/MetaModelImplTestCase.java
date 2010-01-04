@@ -41,9 +41,9 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
 		
 		String name = "Metamodel";
 		Metadata<String, String> metadata = null;
-		final Transport<Model<Object, Object>> transport = mock(Transport.class);
+		final ServiceFactory<Model<Object, Object>> serviceFactory = mock(ServiceFactory.class);
 		
-		MetaModelImpl metaModel = new MetaModelImpl(name, metadata, transport);
+		MetaModelImpl metaModel = new MetaModelImpl(name, metadata, serviceFactory);
 		
 		final Model<Object, Object> model = mock(Model.class);
 		final String modelName = "MyModel";
@@ -72,7 +72,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
         // register a view - unsuccessfully 
 
         checking(new Expectations(){{
-        	one(transport).server(model, modelName);
+        	one(serviceFactory).server(model, modelName);
         	will(throwException(new UnsupportedOperationException()));
         }});
         
@@ -81,7 +81,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
         // register a view - successfully
 
         checking(new Expectations(){{
-        	one(transport).server(model, modelName);
+        	one(serviceFactory).server(model, modelName);
         	will(returnValue(null));
             one(model).registerView(view);
             will(returnValue(registration));

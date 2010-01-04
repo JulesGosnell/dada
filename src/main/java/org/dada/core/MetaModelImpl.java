@@ -40,14 +40,14 @@ import org.slf4j.LoggerFactory;
 public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<String, Model<Object, Object>> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private final Transport<Model<Object, Object>> transport;
+	private final ServiceFactory<Model<Object, Object>> serviceFactory;
 	private final Set<String> exportedModelNames = new HashSet<String>();
 	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object,Object>>();
 	
-	public MetaModelImpl(String name, Metadata<String, String> metadata, Transport<Model<Object, Object>> transport) {
+	public MetaModelImpl(String name, Metadata<String, String> metadata, ServiceFactory<Model<Object, Object>> serviceFactory) {
 		super(name, metadata);
-		this.transport = transport;
-		exportedModelNames.add(name); // assume that we are exported - TODO - clean up using Transport interface
+		this.serviceFactory = serviceFactory;
+		exportedModelNames.add(name); // assume that we are exported - TODO - clean up using ServiceFactory interface
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		Model<Object, Object> model = nameToModel.get(modelName);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
-		// TODO - what about tidying up Transport resources ? Their allocation should be done
+		// TODO - what about tidying up ServiceFactory resources ? Their allocation should be done
 		// on a first-in-turns-on-lights, last-out-turns-off-lights basis...
 	}
 
@@ -70,7 +70,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		try {
 			if (!exportedModelNames.contains(modelName)) {
 				logger.info("exporting Model: {}", model);
-				transport.server(model, modelName);
+				serviceFactory.server(model, modelName);
 				exportedModelNames.add(modelName);
 			}
 			logger.info("registering View ({}) with Model ({})", view, model);

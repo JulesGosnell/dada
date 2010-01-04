@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
-public class AsynchronousTransportTestCase extends MockObjectTestCase {
+public class AsynchronousServiceFactoryTestCase extends MockObjectTestCase {
 
 	public static interface Target {
 		void async();
@@ -47,8 +47,8 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 		final Target target = (Target)mock(Target.class);
 		final Lock lock = (Lock)mock(Lock.class);
 		
-		AsynchronousTransport<Target> transport = new AsynchronousTransport<Target>(new Class<?>[]{Target.class}, executorService, lock);
-		Target proxy = transport.decouple(target);
+		AsynchronousServiceFactory<Target> serviceFactory = new AsynchronousServiceFactory<Target>(new Class<?>[]{Target.class}, executorService, lock);
+		Target proxy = serviceFactory.decouple(target);
 
 		// sync call - dispatched directly onto test
 		
@@ -70,11 +70,11 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 
         // client
         
-        try { transport.client("test"); fail();} catch (UnsupportedOperationException e){}
+        try { serviceFactory.client("test"); fail();} catch (UnsupportedOperationException e){}
         
         // server
         
-        try { transport.server(target, "test"); fail();} catch (UnsupportedOperationException e){}
+        try { serviceFactory.server(target, "test"); fail();} catch (UnsupportedOperationException e){}
         
 		// method declared on Object - dispatched directly on proxy
 
@@ -91,7 +91,7 @@ public class AsynchronousTransportTestCase extends MockObjectTestCase {
 
         Method method = target.getClass().getMethod("async", (Class<?>[])null);
         Object[] args = null;
-		AsynchronousTransport<Target>.Invocation invocation = transport.createInvocation(target, method, args);
+		AsynchronousServiceFactory<Target>.Invocation invocation = serviceFactory.createInvocation(target, method, args);
         invocation.run();
 	}
 	
