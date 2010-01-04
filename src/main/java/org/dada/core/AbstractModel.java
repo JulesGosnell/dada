@@ -30,7 +30,6 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	protected final Metadata<K, V> metadata;
 	private final Object viewsLock = new Object();
 
-	protected volatile List<View<K, V>> views = new ArrayList<View<K,V>>();
+	protected volatile Collection<View<K, V>> views = new ArrayList<View<K,V>>();
 
 	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -74,7 +73,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	public Registration<K, V> registerView(View<K, V> view) {
 		synchronized (viewsLock) {
 			//views = (IPersistentSet)views.cons(view);
-			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			Collection<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 			newViews.add(view);
 			views = newViews;
 			logger.debug("{}: registered view: {}", name, view);
@@ -86,7 +85,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	@Override
 	public boolean deregisterView(View<K, V> view) {
 		synchronized (viewsLock) {
-			List<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			Collection<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
 			newViews.remove(view);
 			views = newViews;
 			logger.debug("" + this + " deregistered view:" + view + " -> " + views);
@@ -95,7 +94,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		List<View<K, V>> snapshot = views;
+		Collection<View<K, V>> snapshot = views;
 		for (View<K, V> view : snapshot) {
 			try {
 				view.update(insertions, updates, deletions);
