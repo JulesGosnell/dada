@@ -30,10 +30,10 @@ package org.dada.jms;
 
 import java.util.concurrent.ExecutorService;
 
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
-import org.dada.core.Model;
 import org.dada.core.ServiceFactory;
 
 // TODO - This abstraction wraps an earlier one - we should collapse and simplify the two...
@@ -48,27 +48,33 @@ import org.dada.core.ServiceFactory;
  */
 public class JMSServiceFactory<T> implements ServiceFactory<T> {
 
-	public static interface Namer<T> {
-		String getName(T named);
+	public static interface NamingStrategy<T> {
+		String getName(T target);
+	}
+	
+	public static interface DestinationFactory {
+		Destination createDestination(Session session, String endPoint);
 	}
 	
 	private final Session session;
 	private final RemotingFactory<T> factory;
 	private final boolean trueAsync;
 	private final ExecutorService executorService;
-	private final Namer<T> namer;
+	private final NamingStrategy<T> namingStrategy;
+	private final DestinationFactory destinationFactory;
 	
-	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout, Namer<T> namer) throws JMSException {
+	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout, NamingStrategy<T> namingStrategy, DestinationFactory destinationFactory) throws JMSException {
 		this.session = session;
 		this.factory = new RemotingFactory<T>(session, interfaze, timeout); // TODO - support multiple interfaces
 		this.executorService = executorService;
 		this.trueAsync = trueAsync;
-		this.namer = namer;
+		this.namingStrategy = namingStrategy;
+		this.destinationFactory = destinationFactory;
 	}
 	
 	@Override
 	public T decouple(T target) {	
-		String name = namer.getName(target);
+		String name = namingStrategy.getName(target);
 		try {
 			server(target, name);
 			return client(name);
@@ -85,7 +91,7 @@ public class JMSServiceFactory<T> implements ServiceFactory<T> {
 	
 	@Override
 	public void server(T model, String endPoint) throws Exception {
-		factory.createServer(model, session.createQueue(endPoint), executorService);
+		factory.createServer(model, destinationFactory.createDestination(session, endPoint), executorService);
 	}
 
 }

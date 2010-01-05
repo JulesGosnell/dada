@@ -37,6 +37,11 @@ import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class AsynchronousServiceFactoryTestCase extends MockObjectTestCase {
 
+	public static interface Target {
+		void async();
+		boolean sync();
+	}
+	
 	public void test() throws Exception {
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
 		final Target target = (Target)mock(Target.class);

@@ -38,45 +38,48 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import org.dada.core.ServiceFactory;
-import org.dada.core.Target;
-import org.dada.jms.JMSServiceFactory.Namer;
+import org.dada.jms.JMSServiceFactory.DestinationFactory;
+import org.dada.jms.JMSServiceFactory.NamingStrategy;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 
+	public static interface Target {};
+	
 	public void test() throws Exception {
 		
 		final Session session = (Session)mock(Session.class);
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
 		boolean trueAsync = true;
 		long timeout = 1000L;
-		final Namer<Target> namer = (Namer<Target>)mock(Namer.class);
+		final NamingStrategy<Target> namingStrategy = (NamingStrategy<Target>)mock(NamingStrategy.class);
+		final DestinationFactory destinationFactory = (DestinationFactory)mock(DestinationFactory.class);
 
 		checking(new Expectations(){{
             one(session).createProducer(with(any(Destination.class)));
             will(returnValue(null));            
         }});
 
-		ServiceFactory<Target> serviceFactory = new JMSServiceFactory<Target>(session, Target.class, executorService, trueAsync, timeout, namer);
+		ServiceFactory<Target> serviceFactory = new JMSServiceFactory<Target>(session, Target.class, executorService, trueAsync, timeout, namingStrategy, destinationFactory);
 		final Target target = (Target)mock(Target.class);
 
-		final Queue serverQueue = (Queue)mock(Queue.class, "serverQueue");
+		final Destination serverDestination = (Destination)mock(Destination.class, "serverDestination");
 		final MessageConsumer serverConsumer = (MessageConsumer)mock(MessageConsumer.class, "serverConsumer");
 		final Queue clientQueue = (Queue)mock(Queue.class, "clientQueue");
 		final MessageProducer clientProducer = (MessageProducer)mock(MessageProducer.class, "clientProducer");
 		final Queue clientServerQueue = (Queue)mock(Queue.class, "clientServerQueue");
 		final MessageConsumer clientServerConsumer = (MessageConsumer)mock(MessageConsumer.class, "clientServerConsumer");
+		final String endPoint = "Test";
 		
 		// TODO: does this make sense ?
 		checking(new Expectations(){{
-            String name = "Test";
-            one(namer).getName(with(target));
-			will(returnValue(name));  
+            one(namingStrategy).getName(with(target));
+			will(returnValue(endPoint));  
 			// set up server side
-            one(session).createQueue(name);
-			will(returnValue(serverQueue));
-            one(session).createConsumer(with(serverQueue));
+            one(destinationFactory).createDestination(session, endPoint);
+			will(returnValue(serverDestination));
+            one(session).createConsumer(with(serverDestination));
             will(returnValue(serverConsumer));
             one(serverConsumer).setMessageListener(with(any(MessageListener.class)));
             // set up client side
@@ -95,11 +98,10 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 
 		// broken client
 		checking(new Expectations(){{
-            String name = "Test";
-            one(namer).getName(with(target));
-			will(returnValue(name));  
+            one(namingStrategy).getName(with(target));
+			will(returnValue(endPoint));  
 			// set up server side
-            one(session).createQueue(name);
+            one(destinationFactory).createDestination(session, endPoint);
             will(throwException(new UnsupportedOperationException()));
         }});
         
