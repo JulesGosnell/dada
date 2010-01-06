@@ -56,7 +56,7 @@ public class RelationalAspect {
 	@Around("getterPointcut()")
     public Object getterAdvice(ProceedingJoinPoint pjp) throws Throwable {
 		String fieldName = fieldName(pjp);
-		Map<Integer, Integer> table = ensureTable(fieldName);
+		//Map<Integer, Integer> table = ensureTable(fieldName);
 		Identifiable target = (Identifiable)pjp.getTarget();
 		Identifiable value = (Identifiable)pjp.proceed();
 		LOG.info("get: " + target + "." + fieldName + " = " + value);

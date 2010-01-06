@@ -49,12 +49,10 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			// is it a getter ?
 			String methodName = method.getName();
 			Class<?>[] parameterTypes = method.getParameterTypes();
-			if (!method.getDeclaringClass().equals(Object.class)) { // excludes getClass()...
-				if (methodName.startsWith("get") && parameterTypes.length==0) {
-					String attributeName = methodName.substring(3);
-					attributeNames.add(attributeName);
-					//getters.add(method);
-				}
+			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith("get") && parameterTypes.length==0) {
+				String attributeName = methodName.substring(3);
+				attributeNames.add(attributeName);
+				//getters.add(method);
 			}
 		}
 		keyIndex = attributeNames.indexOf(keyName);

@@ -31,8 +31,6 @@ package org.dada.core;
 import java.util.Collection;
 import java.util.Date;
 
-import org.dada.core.AbstractRange;
-
 public class DateRange extends AbstractRange<Date> {
 
 	public DateRange(Date min, Date max) {

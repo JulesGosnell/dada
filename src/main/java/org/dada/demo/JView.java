@@ -45,10 +45,8 @@ public class JView extends JScrollPane {
 
 		@Override
 		public boolean getScrollableTracksViewportWidth() {
-			if (autoResizeMode != AUTO_RESIZE_OFF) {
-				if (getParent() instanceof JViewport) {
-					return (((JViewport)getParent()).getWidth() > getPreferredSize().width);
-				}
+			if (autoResizeMode != AUTO_RESIZE_OFF && getParent() instanceof JViewport) {
+				return (((JViewport)getParent()).getWidth() > getPreferredSize().width);
 			}
 			return false;
 		}
