@@ -67,7 +67,7 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 	@SuppressWarnings("unchecked")
 	public CompactOpenTable(List<V> values, Factory<Integer, V> factory, ResizeStrategy resizer) {
 		this.factory = factory;
-		this.values = (V[])values.toArray();
+		this.values = (V[])values.toArray((V[])new Object[values.size()]);
 		this.resizer = resizer;
 	}
 	
