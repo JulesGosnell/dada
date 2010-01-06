@@ -46,13 +46,13 @@
       <artifactId>jmock</artifactId>
       <version>${jmock.version}</version>
       <scope>test</scope>
-    </dependency> 
+    </dependency>
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock-junit3</artifactId>
       <version>${jmock.version}</version>
       <scope>test</scope>
-    </dependency> 
+    </dependency>
     <dependency>
       <groupId>net.sourceforge.cobertura</groupId>
       <artifactId>cobertura</artifactId>
@@ -75,7 +75,7 @@
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
       <version>1.1.1</version>
-    </dependency> 
+    </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
@@ -375,7 +375,10 @@
       <plugin>
 	<groupId>org.codehaus.mojo</groupId>
 	<artifactId>findbugs-maven-plugin</artifactId>
-	<version>2.1</version>
+	<version>2.3</version>
+        <configuration>
+          <xmlOutput>true</xmlOutput>
+        </configuration>
       </plugin>
 
       <!--
