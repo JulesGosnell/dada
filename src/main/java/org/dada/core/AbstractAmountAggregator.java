@@ -33,9 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO extends Datum<KO>> extends AbstractModel<KO, VO> implements View<KI, VI> {
 
 	public interface Factory<KO, VO,KI> {
@@ -43,7 +40,6 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 	}
 	
 	private final Collection<Update<VO>> nil = new ArrayList<Update<VO>>();
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final KI inputKey;
 	private final KO outputKey;
 	private final Factory<KO, VO, KI> factory;
@@ -80,11 +76,11 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 			delta = delta.add(insertionAmount);
 		}
 		for (Update<VI> update : updates) {
-			delta.subtract(getAmount(update.getOldValue()));
-			delta.add(getAmount(update.getNewValue()));
+			delta = delta.subtract(getAmount(update.getOldValue()));
+			delta = delta.add(getAmount(update.getNewValue()));
 		}
 		for (Update<VI> update : updates) {
-			delta.subtract(getAmount(update.getOldValue()));
+			delta = delta.subtract(getAmount(update.getOldValue()));
 		}
 		int oldVersion, newVersion;
 		BigDecimal oldAmount, newAmount;
