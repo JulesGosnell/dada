@@ -4,4 +4,6 @@
 
 <suppressions>
   <suppress checks="Javadoc.*" files=".*\.java" />
+  <suppress checks="LineLength" files=".*\.java" />
+  <suppress checks="FinalParameters" files=".*\.java" />  <!-- TODO: review -->
 </suppressions>
