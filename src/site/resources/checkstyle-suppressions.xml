@@ -3,7 +3,12 @@
 <!DOCTYPE suppressions PUBLIC "-//Puppy Crawl//DTD Suppressions 1.0//EN" "http://www.puppycrawl.com/dtds/suppressions_1_0.dtd">
 
 <suppressions>
+
   <suppress checks="Javadoc.*" files=".*\.java" />
   <suppress checks="LineLength" files=".*\.java" />
-  <suppress checks="FinalParameters" files=".*\.java" />  <!-- TODO: review -->
+
+  <!-- TODO: review these decisions later ...-->
+  <suppress checks="FinalParameters" files=".*\.java" />
+  <suppress checks="TodoComment" files=".*\.java" />
+
 </suppressions>
