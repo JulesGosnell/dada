@@ -40,13 +40,13 @@ public abstract class AbstractAmountMetadata<K, V extends Datum<K>> implements M
 			strings.add(string);
 		return strings;
 	}
-	
+
 	private final List<String> attributeNames;
 
 	public AbstractAmountMetadata(String keyName, String amountName) {
 		attributeNames = makeStringList(keyName, "Version", amountName);
 	}
-	
+
 	@Override
 	public List<String> getAttributeNames() {
 		return attributeNames;
@@ -70,6 +70,6 @@ public abstract class AbstractAmountMetadata<K, V extends Datum<K>> implements M
 	public K getKey(V value) {
 		return value.getId();
 	}
-	
+
 	protected abstract BigDecimal getAmount(V value);
 }

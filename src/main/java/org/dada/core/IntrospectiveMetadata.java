@@ -49,7 +49,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			// is it a getter ?
 			String methodName = method.getName();
 			Class<?>[] parameterTypes = method.getParameterTypes();
-			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith("get") && parameterTypes.length==0) {
+			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith("get") && parameterTypes.length == 0) {
 				String attributeName = methodName.substring(3);
 				attributeNames.add(attributeName);
 				//getters.add(method);
@@ -63,10 +63,10 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	public V getAttributeValue(V value, int index) {
 		try {
 			//Method method = getters.get(index);
-			Method method = clazz.getMethod("get"+attributeNames.get(index), (Class<?>[])null);
-			return (V)method.invoke(value, (Object[])null);
+			Method method = clazz.getMethod("get" + attributeNames.get(index), (Class<?>[]) null);
+			return (V) method.invoke(value, (Object[]) null);
 		} catch (Exception e) {
-			throw new RuntimeException(e);  
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -77,7 +77,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
 	@Override
 	public K getKey(V value) {
-		return (K)getAttributeValue(value, keyIndex);
+		return (K) getAttributeValue(value, keyIndex);
 	}
 
 }

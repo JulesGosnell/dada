@@ -30,12 +30,12 @@ package org.dada.consensus.paxos;
 
 public interface Acceptor<V> {
 
-	public abstract int prepare(int newNumber);
+	int prepare(int newNumber);
 
-	public abstract boolean accept(Proposal<V> newProposal);
+	boolean accept(Proposal<V> newProposal);
 
-	public abstract int getNumber();
+	int getNumber();
 
-	public abstract Proposal<V> getProposal();
+	Proposal<V> getProposal();
 
 }

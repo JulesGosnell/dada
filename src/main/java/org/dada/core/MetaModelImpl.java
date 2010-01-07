@@ -42,8 +42,8 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ServiceFactory<Model<Object, Object>> serviceFactory;
 	private final Set<String> exportedModelNames = new HashSet<String>();
-	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object,Object>>();
-	
+	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object, Object>>();
+
 	public MetaModelImpl(String name, Metadata<String, String> metadata, ServiceFactory<Model<Object, Object>> serviceFactory) {
 		super(name, metadata);
 		this.serviceFactory = serviceFactory;

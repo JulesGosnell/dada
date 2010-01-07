@@ -46,12 +46,12 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 	public static interface ResizeStrategy {
 		int getNewSize(int oldSize, int newKey);
 	}
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(CompactOpenTable.class);
 
 	private final Factory<Integer, V> factory;
 	private final ResizeStrategy resizer;
-	
+
 	private V[] values;
 
 	@Deprecated
@@ -67,19 +67,19 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 	@SuppressWarnings("unchecked")
 	public CompactOpenTable(List<V> values, Factory<Integer, V> factory, ResizeStrategy resizer) {
 		this.factory = factory;
-		this.values = (V[])values.toArray((V[])new Object[values.size()]);
+		this.values = (V[]) values.toArray((V[]) new Object[values.size()]);
 		this.resizer = resizer;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	protected void resize(Integer key) {
 		// we need to resize to accommodate the new item that we are about
 		// to create...
-		V[] newValues = (V[])new Object[resizer.getNewSize(values.length, key)];
+		V[] newValues = (V[]) new Object[resizer.getNewSize(values.length, key)];
 		System.arraycopy(values, 0, newValues, 0, values.length);
 		values = newValues;
 	}
-	
+
 	@Override
 	public V get(Integer key) {
 		V value = null;
@@ -107,7 +107,7 @@ public class CompactOpenTable<V> implements Table<Integer, V> {
 		synchronized (this) {
 			if (key >= values.length) {
 				resize(key);
-				oldValue =null;
+				oldValue = null;
 			} else {
 				oldValue = values[key];
 			}

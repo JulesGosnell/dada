@@ -35,18 +35,18 @@ import java.util.Collections;
 
 public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO extends Datum<KO>> extends AbstractModel<KO, VO> implements View<KI, VI> {
 
-	public interface Factory<KO, VO,KI> {
+	public interface Factory<KO, VO, KI> {
 		VO create(KO outputKey, int version, KI inputKey, BigDecimal amount);
 	}
-	
+
 	private final Collection<Update<VO>> nil = new ArrayList<Update<VO>>();
 	private final KI inputKey;
 	private final KO outputKey;
 	private final Factory<KO, VO, KI> factory;
-	
+
 	private int version;
 	private BigDecimal amount = BigDecimal.ZERO;
-	
+
 	public AbstractAmountAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, Factory<KO, VO, KI> factory) {
 		super(name, metadata);
 		this.inputKey = inputKey;
@@ -55,7 +55,7 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 	}
 
 	protected abstract BigDecimal getAmount(VI value);
-	
+
 	@Override
 	public Collection<VO> getData() {
 		int snapshotVersion;

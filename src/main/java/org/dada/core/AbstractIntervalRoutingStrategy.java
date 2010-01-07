@@ -66,7 +66,7 @@ public abstract class AbstractIntervalRoutingStrategy<V> implements Router.Strat
 		routeToViews = new Collection[dates.size()]; // unchecked :-(
 		for (DateTime date : dates) {
 			dateToRoute.put(date.toDate(), route);
-			Collection<View<Integer, V>> views = new ArrayList<View<Integer,V>>();
+			Collection<View<Integer, V>> views = new ArrayList<View<Integer, V>>();
 			routeToViews[route] = views;
 			for (Entry<Interval, Collection<View<Integer, V>>> entry : intervalToViews.entrySet()) {
 				Interval key = entry.getKey();

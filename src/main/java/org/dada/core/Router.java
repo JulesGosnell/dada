@@ -72,7 +72,7 @@ public class Router<K, V> implements View<K, V> {
 		// split updates according to Route...
 		MultiMap routeToInsertions = new MultiValueMap();
 		MultiMap routeToUpdates = new MultiValueMap();
-		MultiMap routeToDeletions= new MultiValueMap();
+		MultiMap routeToDeletions = new MultiValueMap();
 
 		for (Update<V> insertion : insertions) {
 			int route = strategy.getRoute(insertion.getNewValue());
@@ -103,13 +103,13 @@ public class Router<K, V> implements View<K, V> {
 		routes.addAll(routeToUpdates.keySet());
 		routes.addAll(routeToDeletions.keySet());
 		for (int route : routes) {
-			Collection<Update<V>> insertionsOut = (Collection<Update<V>>)routeToInsertions.get(route);
-			Collection<Update<V>> updatesOut = (Collection<Update<V>>)routeToUpdates.get(route);
-			Collection<Update<V>> deletionsOut = (Collection<Update<V>>)routeToDeletions.get(route);
+			Collection<Update<V>> insertionsOut = (Collection<Update<V>>) routeToInsertions.get(route);
+			Collection<Update<V>> updatesOut = (Collection<Update<V>>) routeToUpdates.get(route);
+			Collection<Update<V>> deletionsOut = (Collection<Update<V>>) routeToDeletions.get(route);
 			for (View<K, V> view : strategy.getViews(route)) {
-				view.update(insertionsOut==null?empty:insertionsOut,
-							updatesOut==null?empty:updatesOut,
-							deletionsOut==null?empty:deletionsOut);
+				view.update(insertionsOut == null ? empty:insertionsOut,
+							updatesOut == null ? empty:updatesOut,
+							deletionsOut == null ? empty:deletionsOut);
 			}
 		}
 	}

@@ -29,5 +29,5 @@
 package org.dada.core;
 
 public interface Factory<K, V> {
-	public V create(K key) throws Exception;
+	V create(K key) throws Exception;
 }

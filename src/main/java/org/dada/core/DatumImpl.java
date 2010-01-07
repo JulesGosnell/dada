@@ -50,7 +50,7 @@ public abstract class DatumImpl<K> implements Datum<K> {
 
 	@Override
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + id + "[" + version +"]>";
+		return "<" + getClass().getSimpleName() + ": " + id + "[" + version + "]>";
 	}
 
 }

@@ -50,7 +50,7 @@ public class DateRange extends AbstractRange<Date> {
 
 	@Override
 	public Date random() {
-		return new Date(min.getTime() + (long)(Math.random() * (max.getTime() - min.getTime())));
+		return new Date(min.getTime() + (long) (Math.random() * (max.getTime() - min.getTime())));
 	}
 
 	@Override
