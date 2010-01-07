@@ -65,7 +65,15 @@ public class AsynchronousClient extends AbstractClient {
 
 	@Override
 	public void onMessage(Message message) {
-	    try{logger.info("RECEIVING: {} <- {}", message, message.getJMSDestination());}catch(Exception e){logger.error("", e);} // TODO: log guard ?
+		
+		if (logger.isInfoEnabled()) { // TODO: yeugh !
+			try { 
+				logger.info("RECEIVING: {} <- {}", message, message.getJMSDestination());
+			} catch (Exception e) {
+				logger.error("", e);
+			}
+		}
+	    	
 		try {
 			String correlationID = message.getJMSCorrelationID();
 			AsyncInvocationListener listener = correlationIdToListener.remove(correlationID); // one-shot - parameterize

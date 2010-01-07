@@ -63,8 +63,9 @@ import org.slf4j.LoggerFactory;
 
 public class Client {
 
+	private static final int ONE_MINUTE = 60000;
 	private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-	private static final ExecutorService executorService = Executors.newFixedThreadPool(20);
+	private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(20); // TODO: why is this static ?
 
 	private final String serverName;
 	private final String modelName;
@@ -103,7 +104,7 @@ public class Client {
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
-		serverFactory.createServer(guiModel, clientDestination, executorService);
+		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..
@@ -116,7 +117,7 @@ public class Client {
 				insertions.add(new Update<Object>(null, model));
 			guiModel.update(insertions, new ArrayList<Update<Object>>(), new ArrayList<Update<Object>>());
 		} else
-			LOG.warn("null model content returned");
+			LOG.warn("null MODEL content returned");
 		LOG.info("Client ready: " + clientDestination);
 
 		jview = new JView(guiModel);
@@ -212,7 +213,7 @@ public class Client {
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, serverName + ".MetaModel", session, 60000, true);
+					new Client(serverName, serverName + ".MetaModel", session, ONE_MINUTE, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

@@ -47,6 +47,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractClient implements MessageListener, Serializable {
 
+	protected static final ThreadLocal<Session> CURRENT_SESSION = new ThreadLocal<Session>(); // TODO: encapsulate
+
 	protected long timeout;
 	protected Class<?> interfaze;
 	protected Destination destination;
@@ -103,14 +105,12 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		}
 	}
 
-	protected static final ThreadLocal<Session> currentSession = new ThreadLocal<Session>(); // TODO: encapsulate
-
 	public static void setCurrentSession(Session session) {
-		currentSession.set(session);
+		CURRENT_SESSION.set(session);
 	}
 
 	public static Session getCurrentSession() {
-		return currentSession.get();
+		return CURRENT_SESSION.get();
 	}
 
 

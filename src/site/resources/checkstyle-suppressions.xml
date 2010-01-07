@@ -13,8 +13,10 @@
   <suppress checks="FileTabCharacter" files=".*\.java" />  <!-- need an Eclipse config -->
   <suppress checks="RegexpSingleline" files=".*\.java" />  <!-- need an Eclipse config -->
   <suppress checks="DesignForExtension" files=".*\.java" />  <!-- why ? -->
-  <suppress checks="VisibilityModifier" files=".*\.java" />
-  <suppress checks="HiddenField" files=".*\.java" />
-  <suppress checks="NeedBraces" files=".*\.java" />
+  <suppress checks="VisibilityModifier" files=".*\.java" />  <!-- TODO: my jury is out on this -->
+  <suppress checks="HiddenField" files=".*\.java" />  <!-- TODO: investigate -->
+  <suppress checks="NeedBraces" files=".*\.java" />  <!-- I'm lazy -->
+  <suppress checks="AvoidInlineConditionals" files=".*\.java" />  <!-- this is a more functional/immutable way of programming -->
+  <suppress checks="InnerAssignment" files=".*\.java" />  <!-- I like inner assignments -->
 
 </suppressions>

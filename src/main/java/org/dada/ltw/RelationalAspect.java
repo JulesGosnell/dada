@@ -41,12 +41,13 @@ import org.slf4j.LoggerFactory;
 @Aspect
 public class RelationalAspect {
 
-	public static final Map<String, Map<Integer, Integer>> model = new HashMap<String, Map<Integer, Integer>>();
+	private static final int ACCESSOR_FIELD_LENGTH = 3;
+	public static final Map<String, Map<Integer, Integer>> MODEL = new HashMap<String, Map<Integer, Integer>>();
 
 	protected Map<Integer, Integer> ensureTable(String fieldName) {
-		Map<Integer, Integer> table = model.get(fieldName);
+		Map<Integer, Integer> table = MODEL.get(fieldName);
 		if (table == null) {
-			model.put(fieldName, table = new HashMap<Integer, Integer>());
+			MODEL.put(fieldName, table = new HashMap<Integer, Integer>());
 		}
 		return table;
 	}
@@ -64,7 +65,7 @@ public class RelationalAspect {
     }
 
 	private String fieldName(ProceedingJoinPoint pjp) {
-		return pjp.getSignature().getName().substring(3);
+		return pjp.getSignature().getName().substring(ACCESSOR_FIELD_LENGTH);
 	}
 
 	@Around("setterPointcut()")

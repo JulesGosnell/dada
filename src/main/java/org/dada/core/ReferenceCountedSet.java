@@ -46,7 +46,7 @@ import java.util.Set;
  */
 public class ReferenceCountedSet<T> implements Set<T> {
 
-	private static Integer ZERO = 0;
+	private static final Integer ZERO = 0;
 
 	private Map<T, Integer> map = new HashMap<T, Integer>();
 
