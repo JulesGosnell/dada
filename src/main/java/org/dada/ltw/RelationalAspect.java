@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 @Aspect
 public class RelationalAspect {
 
-	public static Map<String, Map<Integer, Integer>> model = new HashMap<String, Map<Integer,Integer>>();
+	public static final Map<String, Map<Integer, Integer>> model = new HashMap<String, Map<Integer,Integer>>();
 
 	protected Map<Integer, Integer> ensureTable(String fieldName) {
 		Map<Integer, Integer> table = model.get(fieldName);
