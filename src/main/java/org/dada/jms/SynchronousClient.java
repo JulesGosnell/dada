@@ -140,7 +140,18 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 	@Override
 	public boolean equals(Object object) {
 		// strip off proxy if necessary
-		Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;
-		return (that instanceof SynchronousClient && this.destination.equals(((SynchronousClient)that).destination));
+		if (object == null) {
+			return false;
+		} else {
+			Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;
+			return (that instanceof SynchronousClient && this.destination.equals(((SynchronousClient)that).destination));
+		}
 	}
+	
+	@Override
+	public  int hashCode() {
+		// we need to define hashCode as well as equals to keep findbugs happy...
+		return destination.hashCode();
+	}
+	
 }

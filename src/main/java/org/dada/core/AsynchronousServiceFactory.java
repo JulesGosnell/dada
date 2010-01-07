@@ -55,7 +55,7 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 	private final Lock lock;
 	
 	public AsynchronousServiceFactory(Class<?>[] interfaces, ExecutorService executorService, Lock lock) {
-		this.interfaces = interfaces;
+		this.interfaces = Arrays.copyOf(interfaces, interfaces.length);
 		this.executorService = executorService;
 		this.lock = lock;
 	}
