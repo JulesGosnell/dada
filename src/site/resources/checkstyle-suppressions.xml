@@ -10,5 +10,6 @@
   <!-- TODO: review these decisions later ...-->
   <suppress checks="FinalParameters" files=".*\.java" />
   <suppress checks="TodoComment" files=".*\.java" />
+  <suppress checks="FileTabCharacter" files=".*\.java" />  <!-- need an Eclipse config -->
 
 </suppressions>
