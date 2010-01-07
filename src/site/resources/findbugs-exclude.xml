@@ -1,0 +1,13 @@
+
+<!-- see: http://findbugs.sourceforge.net/manual/filter.html  -->
+
+<FindBugsFilter>
+
+     <!-- excluded because copying everything in and out would be too slow. -->
+     <Match><Bug pattern="EI_EXPOSE_REP"/></Match>
+     <Match><Bug pattern="EI_EXPOSE_REP2"/></Match>
+
+     <!-- excluded because I've not got round to considering serialisation and versioning yet. -->
+     <Match><Bug pattern="SE_NO_SERIALVERSIONID"/></Match>
+
+</FindBugsFilter>
