@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 public class SynchronousClient extends AbstractClient implements InvocationHandler, Serializable {
 
-	private final static Logger LOGGER = LoggerFactory.getLogger(SynchronousClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SynchronousClient.class);
 	private /* final */ transient Map<String, Exchanger<Results>> correlationIdToResults;
 
 	public SynchronousClient(Session session, Destination destination, Class<?> interfaze, long timeout, boolean trueAsync) throws JMSException {
@@ -73,12 +73,12 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			if (exchanger == null) {
 			       LOGGER.warn("{}: no exchanger for message: {}", System.identityHashCode(this), message);
 			} else {
-				ObjectMessage response = (ObjectMessage)message;
-				Results results = (Results)response.getObject();
+				ObjectMessage response = (ObjectMessage) message;
+				Results results = (Results) response.getObject();
 				LOGGER.trace("RECEIVING: {} <- {}", results, message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
-		} catch(JMSException e) {
+		} catch (JMSException e) {
 		        LOGGER.warn("problem unpacking message: ", message);
 		} catch (InterruptedException e) {
 			// TODO: how should we deal with this...
@@ -118,7 +118,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 				Results results = exchanger.exchange(null, timeout, TimeUnit.MILLISECONDS);
 				Object value = results.getValue();
 				if (results.isException())
-					throw (Exception)value;
+					throw (Exception) value;
 				else
 					return value;
 			} catch (TimeoutException e) {
@@ -134,7 +134,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 
 	@Override
 	public String toString() {
-		return "<"+getClass().getSimpleName()+": "+destination+">";
+		return "<" + getClass().getSimpleName() + ": " + destination + ">";
 	}
 
 	@Override
@@ -143,15 +143,15 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 		if (object == null) {
 			return false;
 		} else {
-			Object that = Proxy.isProxyClass(object.getClass())?Proxy.getInvocationHandler(object):object;
-			return (that instanceof SynchronousClient && this.destination.equals(((SynchronousClient)that).destination));
+			Object that = Proxy.isProxyClass(object.getClass()) ? Proxy.getInvocationHandler(object) : object;
+			return (that instanceof SynchronousClient && this.destination.equals(((SynchronousClient) that).destination));
 		}
 	}
-	
+
 	@Override
 	public  int hashCode() {
 		// we need to define hashCode as well as equals to keep findbugs happy...
 		return destination.hashCode();
 	}
-	
+
 }

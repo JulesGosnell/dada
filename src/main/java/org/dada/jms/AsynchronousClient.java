@@ -72,11 +72,11 @@ public class AsynchronousClient extends AbstractClient {
 			if (listener == null) {
 				logger.warn("no listener for message: {}", message);
 			} else {
-				ObjectMessage response = (ObjectMessage)message;
-				Results results = (Results)response.getObject();
+				ObjectMessage response = (ObjectMessage) message;
+				Results results = (Results) response.getObject();
 				Object value = results.getValue();
 				if (results.isException()) {
-					listener.onError((Exception)value);
+					listener.onError((Exception) value);
 				} else {
 					listener.onResult(value);
 				}

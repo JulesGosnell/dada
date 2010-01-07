@@ -54,6 +54,7 @@ public class ProfilingAspect {
     }
 
 	@Pointcut("execution(public * org.dada.ltw..*.*(..))")
-    public void profilePointcut() {}
-    
+    public void profilePointcut() {
+    }
+
 }

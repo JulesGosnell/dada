@@ -41,7 +41,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final int keyIndex;
 	//private final List<Method> getters;
 
-	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws SecurityException, NoSuchMethodException {
+	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws NoSuchMethodException {
 		this.clazz = clazz;
 		attributeNames = new ArrayList<String>();
 		//getters = new ArrayList<Method>();

@@ -41,11 +41,11 @@ import org.slf4j.LoggerFactory;
 @Aspect
 public class RelationalAspect {
 
-	public static final Map<String, Map<Integer, Integer>> model = new HashMap<String, Map<Integer,Integer>>();
+	public static final Map<String, Map<Integer, Integer>> model = new HashMap<String, Map<Integer, Integer>>();
 
 	protected Map<Integer, Integer> ensureTable(String fieldName) {
 		Map<Integer, Integer> table = model.get(fieldName);
-		if (table==null) {
+		if (table == null) {
 			model.put(fieldName, table = new HashMap<Integer, Integer>());
 		}
 		return table;
@@ -57,8 +57,8 @@ public class RelationalAspect {
     public Object getterAdvice(ProceedingJoinPoint pjp) throws Throwable {
 		String fieldName = fieldName(pjp);
 		//Map<Integer, Integer> table = ensureTable(fieldName);
-		Identifiable target = (Identifiable)pjp.getTarget();
-		Identifiable value = (Identifiable)pjp.proceed();
+		Identifiable target = (Identifiable) pjp.getTarget();
+		Identifiable value = (Identifiable) pjp.proceed();
 		LOG.info("get: " + target + "." + fieldName + " = " + value);
 		return value;
     }
@@ -69,22 +69,24 @@ public class RelationalAspect {
 
 	@Around("setterPointcut()")
     public Object setterAdvice(ProceedingJoinPoint pjp) throws Throwable {
-		Identifiable target = (Identifiable)pjp.getTarget();
-		Identifiable value = (Identifiable)pjp.getArgs()[0];
+		Identifiable target = (Identifiable) pjp.getTarget();
+		Identifiable value = (Identifiable) pjp.getArgs()[0];
         try {
     		String fieldName = fieldName(pjp);
     		Map<Integer, Integer> table = ensureTable(fieldName);
 			table.put(target.getId(), value.getId());
             return pjp.proceed();
         } finally {
-            LOG.info("set: " + target + "." + fieldName(pjp)+" = "+value);
+            LOG.info("set: " + target + "." + fieldName(pjp) + " = " + value);
         }
     }
 
     @Pointcut("execution(public org.dada.ltw.Identifiable+ org.dada.ltw.Identifiable+.get*())")
-    public void getterPointcut() {}
+    public void getterPointcut() {
+    }
 
     @Pointcut("execution(public void org.dada.ltw.Identifiable+.set*(org.dada.ltw.Identifiable+))")
-    public void setterPointcut() {}
+    public void setterPointcut() {
+    }
 
 }

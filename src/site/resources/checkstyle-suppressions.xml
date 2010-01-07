@@ -14,5 +14,7 @@
   <suppress checks="RegexpSingleline" files=".*\.java" />  <!-- need an Eclipse config -->
   <suppress checks="DesignForExtension" files=".*\.java" />  <!-- why ? -->
   <suppress checks="VisibilityModifier" files=".*\.java" />
+  <suppress checks="HiddenField" files=".*\.java" />
+  <suppress checks="NeedBraces" files=".*\.java" />
 
 </suppressions>

@@ -30,10 +30,10 @@ package org.dada.ltw;
 
 public interface Person extends Identifiable {
 
-	public Person getFather();
-	public void setFather(Person father);
-	public Person getMother();
-	public void setMother(Person mother);
+	Person getFather();
+	void setFather(Person father);
+	Person getMother();
+	void setMother(Person mother);
 
 
 }

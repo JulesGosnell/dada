@@ -105,11 +105,11 @@ public class RemotingFactory<T> {
 			try {
 				correlationId = message.getJMSCorrelationID();
 				replyTo = message.getJMSReplyTo();
-				ObjectMessage request = (ObjectMessage)message;
+				ObjectMessage request = (ObjectMessage) message;
 				AbstractClient.setCurrentSession(session);
-				Invocation invocation = (Invocation)request.getObject();
+				Invocation invocation = (Invocation) request.getObject();
 				int methodIndex = invocation.getMethodIndex();
-				Object args[] = invocation.getArgs();
+				Object[] args = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
 				logger.trace("RECEIVING: {} <- {}", method, message.getJMSDestination());
 				result = method.invoke(Server.this.target, args);
@@ -125,7 +125,7 @@ public class RemotingFactory<T> {
 			}
 
 			if (isException)
-				logger.warn("returning exception", (Throwable)result);
+				logger.warn("returning exception", (Throwable) result);
 			if (correlationId != null && replyTo != null) {
 				ObjectMessage response = null;
 				try {
@@ -133,7 +133,7 @@ public class RemotingFactory<T> {
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
 					response.setObject(results);
-					logger.trace("RESPONDING: {} -> {}",results, replyTo);
+					logger.trace("RESPONDING: {} -> {}", results, replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
 				        logger.warn("problem replying to message: {}", response, e);
@@ -155,12 +155,12 @@ public class RemotingFactory<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public T createSynchronousClient(Destination destination, boolean trueAsync) throws IllegalArgumentException, JMSException {
+	public T createSynchronousClient(Destination destination, boolean trueAsync) throws JMSException {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		return (T)Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));
+		return (T) Proxy.newProxyInstance(contextClassLoader, new Class[]{interfaze}, new SynchronousClient(session, destination, interfaze, timeout, true));
 	}
 
-	public T createSynchronousClient(String destinationName, boolean trueAsync) throws IllegalArgumentException, JMSException {
+	public T createSynchronousClient(String destinationName, boolean trueAsync) throws JMSException {
 		return createSynchronousClient(session.createQueue(destinationName), trueAsync);
 	}
 

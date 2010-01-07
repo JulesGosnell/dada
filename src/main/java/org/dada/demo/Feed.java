@@ -55,7 +55,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 	}
 
 	protected final Map<K, V> vs = new HashMap<K, V>();
-	protected final List<K> ks = new ArrayList<K>(); 
+	protected final List<K> ks = new ArrayList<K>();
 	protected final Range<K> range;
 	protected final long delay;
 	protected final Strategy<K, V> strategy;
@@ -64,7 +64,7 @@ public class Feed<K, V> extends AbstractModel<K, V> {
 
 		@Override
 		public void run() {
-			int index = (int)((ks.size() -1) * Math.random());
+			int index = (int) ((ks.size() - 1) * Math.random());
 			K id  = ks.get(index);
 			V oldValue = vs.get(id);
 			V newValue = strategy.createNewVersion(oldValue);

@@ -92,8 +92,8 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 	//@Override
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		Session session = getCurrentSession();
-		Destination destination = (Destination)ois.readObject();
-		Class<?> interfaze= (Class<?>)ois.readObject();
+		Destination destination = (Destination) ois.readObject();
+		Class<?> interfaze = (Class<?>) ois.readObject();
 		long timeout = ois.readLong();
 		boolean trueAsync = ois.readBoolean();
 		try {
@@ -103,7 +103,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		}
 	}
 
-	protected final static ThreadLocal<Session> currentSession = new ThreadLocal<Session>(); // TODO: encapsulate
+	protected static final ThreadLocal<Session> currentSession = new ThreadLocal<Session>(); // TODO: encapsulate
 
 	public static void setCurrentSession(Session session) {
 		currentSession.set(session);
