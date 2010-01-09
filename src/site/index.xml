@@ -1,0 +1,18 @@
+
+DADA is essentially a set of components for building a highly
+concurrent and distributed graph of interconnected Models and Views.
+
+A typical pattern would comprise a Feed Model viewed by a number Views
+the other side of which are more Models viewd by more Views etc...
+
+Updates can be filtered efficiently into specific Views through the
+use of another type of View called a Router. Routers support the
+thread-safe on-demand creation of Views when relevant data ariive.
+
+Views may be invm with their Model or transparently remoted via a JMS
+provider.
+
+DADA is intended to be used in highly scalable applications and can
+handle thousands of updates a second.
+
+
