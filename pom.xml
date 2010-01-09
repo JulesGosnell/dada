@@ -33,7 +33,12 @@
     <maven.compile.debug>true</maven.compile.debug>
   </properties>
 
-  <dependencies>
+  <ciManagement>
+    <system>Hudson</system>
+    <url>http://ouroboros.dnsalias.net/hudson</url>
+  </ciManagement>
+
+ <dependencies>
     <!-- test deps -->
     <dependency>
       <groupId>junit</groupId>
