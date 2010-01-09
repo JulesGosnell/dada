@@ -18,7 +18,7 @@
   <scm>
     <connection>scm:git:git@github.com:JulesGosnell/dada.git</connection>
     <url>http://github.com/JulesGosnell/dada.git</url>
-    <developerConnection>git://github.com/JulesGosnell/dada.git</developerConnection>
+    <developerConnection>http://github.com/JulesGosnell/dada.git</developerConnection>
   </scm>
 
   <properties>
