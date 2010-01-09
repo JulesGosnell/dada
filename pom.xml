@@ -17,8 +17,8 @@
 
   <scm>
     <connection>scm:git:git@github.com:JulesGosnell/dada.git</connection>
-    <url>http://github.com/JulesGosnell/dada.git</url>
-    <developerConnection>http://github.com/JulesGosnell/dada.git</developerConnection>
+    <developerConnection>scm:git:git://github.com/JulesGosnell/dada.git</developerConnection>
+    <url>http://github.com/JulesGosnell/dada/tree/master</url>
   </scm>
 
   <properties>
