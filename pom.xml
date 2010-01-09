@@ -38,6 +38,20 @@
     <url>http://ouroboros.dnsalias.net/hudson</url>
   </ciManagement>
 
+  <developers>
+    <developer>
+      <id>jules</id>
+      <name>Jules Gosnell</name>
+      <email>jules_gosnell@yahoo.com</email>
+      <url>http://ouroboros.dnsalias.net/hudson/job/dada/site/</url>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <timezone>0</timezone>
+    </developer>
+  </developers>
+
  <dependencies>
     <!-- test deps -->
     <dependency>
