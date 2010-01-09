@@ -39,17 +39,17 @@ import java.util.Set;
 /**
  * A Set<T> which reference counts elements in and out - i.e. an element must be removed as many times as it
  * has been inserted before it will actually be removed.
- * 
+ *
  * @author jules
  *
  * @param <T>
  */
 public class ReferenceCountedSet<T> implements Set<T> {
 
-	private static Integer ZERO = 0;
-	
+	private static final Integer ZERO = 0;
+
 	private Map<T, Integer> map = new HashMap<T, Integer>();
-	
+
 	@Override
 	public int size() {
 		return map.size();
@@ -105,7 +105,7 @@ public class ReferenceCountedSet<T> implements Set<T> {
 					map.remove(o);
 					return true;
 				} else {
-					map.put((T)o, count - 1);
+					map.put((T) o, count - 1);
 					return false;
 				}
 			}
@@ -145,5 +145,5 @@ public class ReferenceCountedSet<T> implements Set<T> {
 	public void clear() {
 		map.clear();
 	}
-	
+
 }

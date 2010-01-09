@@ -68,14 +68,13 @@ public class SimpleMethodMapper implements MethodMapper<Integer> {
 	}
 
 	protected String makeKey(Method method) {
-		String key = method.getGenericReturnType().toString()+" "+method.getName()+"("+arrayToString(method.getParameterTypes())+") "+arrayToString(method.getExceptionTypes());
-		return key;
+		return method.getGenericReturnType().toString() + " " + method.getName() + "(" + arrayToString(method.getParameterTypes()) + ") " + arrayToString(method.getExceptionTypes());
 	}
 
 	protected String arrayToString(Object[] array) {
 		StringBuffer buffer = new StringBuffer();
-		for (int i = 0; i<array.length; i++) {
-			if (i!=0)
+		for (int i = 0; i < array.length; i++) {
+			if (i != 0)
 				buffer.append(", ");
 			buffer.append(array[i].toString());
 		}

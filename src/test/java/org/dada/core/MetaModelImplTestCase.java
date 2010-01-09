@@ -98,7 +98,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
 
         assertTrue(metaModel.deregisterView(modelName, view));
 
-        // register/deregister 2nd view on model - exercises slightly different code path...
+        // register/deregister 2nd view on MODEL - exercises slightly different code path...
 
         checking(new Expectations(){{
             one(model).registerView(view);

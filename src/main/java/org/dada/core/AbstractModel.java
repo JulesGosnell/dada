@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract base for Models.
  * Supports concepts of data, metadata, views and view notification.
- * 
+ *
  * @author jules
  *
  * @param <K>
@@ -51,7 +51,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	protected final Metadata<K, V> metadata;
 	private final Object viewsLock = new Object();
 
-	protected volatile Collection<View<K, V>> views = new ArrayList<View<K,V>>();
+	protected volatile Collection<View<K, V>> views = new ArrayList<View<K, V>>();
 
 	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -64,7 +64,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	public abstract Collection<V> getData();
-	
+
 	public Metadata<K, V> getMetadata() {
 		return metadata;
 	}
@@ -73,7 +73,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	public Registration<K, V> registerView(View<K, V> view) {
 		synchronized (viewsLock) {
 			//views = (IPersistentSet)views.cons(view);
-			Collection<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			Collection<View<K, V>> newViews = new ArrayList<View<K, V>>(views);
 			newViews.add(view);
 			views = newViews;
 			logger.debug("{}: registered view: {}", name, view);
@@ -85,7 +85,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	@Override
 	public boolean deregisterView(View<K, V> view) {
 		synchronized (viewsLock) {
-			Collection<View<K, V>> newViews = new ArrayList<View<K,V>>(views);
+			Collection<View<K, V>> newViews = new ArrayList<View<K, V>>(views);
 			newViews.remove(view);
 			views = newViews;
 			logger.debug("" + this + " deregistered view:" + view + " -> " + views);

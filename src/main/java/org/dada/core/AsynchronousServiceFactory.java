@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A ServiceFactory that returns a proxy for its target, invocations upon which are queued and executed on another thread.
  * It may be sensible to execute invocations returning values directly on the calling Thread.
- *  
+ *
  * @author jules
  *
  * @param <T>
@@ -49,11 +49,11 @@ import org.slf4j.LoggerFactory;
 public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 
 	private final Logger log = LoggerFactory.getLogger(AsynchronousServiceFactory.class);
-	
+
 	private final ExecutorService executorService;
 	private final Class<?>[] interfaces;
 	private final Lock lock;
-	
+
 	public AsynchronousServiceFactory(Class<?>[] interfaces, ExecutorService executorService, Lock lock) {
 		this.interfaces = Arrays.copyOf(interfaces, interfaces.length);
 		this.executorService = executorService;
@@ -65,14 +65,14 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 		private final T target;
 		private final Method method;
 		private final Object[] args;
-		
+
 		protected Invocation(T target, Method method, Object[] args) {
 			lock.lock();
 			this.target = target;
 			this.method = method;
 			this.args = args;
 		}
-		
+
 		@Override
 		public void run() {
 			try {
@@ -83,13 +83,13 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 				lock.unlock();
 			}
 		}
-		
+
 		@Override
 		public String toString() {
 			return "<" + getClass().getSimpleName() + ":" + target + "." + method + ": " + Arrays.toString(args) + ">";
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public T decouple(final T target) {
@@ -105,13 +105,13 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 					return method.invoke(method.getDeclaringClass().equals(Object.class) ? this : target, args);
 				}
 			}
-			
+
 			@Override
 			public String toString() {
 				return "<" + getClass().getEnclosingClass().getSimpleName() + "." + getClass().getInterfaces()[0].getSimpleName() + ">";
 			}
 		};
-		return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
+		return (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
 	}
 
 	@Override
@@ -119,7 +119,7 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
-	
+
 	@Override
 	public void server(T target, String endPoint) throws Exception {
 		// TODO Auto-generated method stub

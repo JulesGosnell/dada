@@ -37,7 +37,7 @@ import clojure.lang.PersistentTreeMap;
 // TODO
 // I don't like this class - it is too complicated...
 
-public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,V> {
+public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K, V> {
 
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
@@ -49,7 +49,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 	@SuppressWarnings("unchecked")
 	@Override
 	public Collection<V> getData() {
-		return ((PersistentTreeMap)maps.getCurrent()).values();
+		return ((PersistentTreeMap) maps.getCurrent()).values();
 	}
 
 	// Model.Lifecycle
@@ -70,7 +70,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			Object[] args = {name, insertions.size(), updates.size(), deletions.size()};
 			logger.debug("{}: update: insertions={}, updates={}, deletions={}", args);
 		}
-		
+
 		// TODO: lose later
 		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
 			logger.warn("wasteful message: 0 size update", new RuntimeException());
@@ -85,7 +85,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			for (Update<V> insertion : insertions) {
 				V newValue = insertion.getNewValue();
 				K key = newValue.getId();
-				V currentValue = (V)current.valAt(key);
+				V currentValue = (V) current.valAt(key);
 				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
 					current = current.assoc(key, newValue);
 					insertionsOut.add(insertion);
@@ -97,7 +97,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			for (Update<V> update : updates) {
 				V newValue = update.getNewValue();
 				K key = newValue.getId();
-				V currentValue = (V)current.valAt(key);
+				V currentValue = (V) current.valAt(key);
 				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
 					current = current.assoc(newValue.getId(), newValue);
 					updatesOut.add(update);
@@ -109,7 +109,7 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			for (Update<V> deletion : deletions) {
 				V newValue = deletion.getNewValue();
 				K key = newValue.getId();
-				V currentValue = (V)current.valAt(key);
+				V currentValue = (V) current.valAt(key);
 				if (currentValue != null && currentValue.getVersion() < newValue.getVersion()) {
 					try {
 						current = current.without(key);

@@ -63,8 +63,9 @@ import org.slf4j.LoggerFactory;
 
 public class Client {
 
-	private final static Logger LOG = LoggerFactory.getLogger(Client.class);
-	private final static ExecutorService executorService = Executors.newFixedThreadPool(20);
+	private static final int ONE_MINUTE = 60000;
+	private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+	private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(20); // TODO: why is this static ?
 
 	private final String serverName;
 	private final String modelName;
@@ -103,7 +104,7 @@ public class Client {
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
-		serverFactory.createServer(guiModel, clientDestination, executorService);
+		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..
@@ -113,12 +114,11 @@ public class Client {
 			guiModel.setMetadata(registration.getMetadata());
 			Collection<Update<Object>> insertions = new ArrayList<Update<Object>>();
 			for (Object model : models)
-				insertions.add(new Update<Object>(null ,model));
+				insertions.add(new Update<Object>(null, model));
 			guiModel.update(insertions, new ArrayList<Update<Object>>(), new ArrayList<Update<Object>>());
-		}
-		else
-			LOG.warn("null model content returned");
-		LOG.info("Client ready: "+clientDestination);
+		} else
+			LOG.warn("null MODEL content returned");
+		LOG.info("Client ready: " + clientDestination);
 
 		jview = new JView(guiModel);
 		table = jview.getTable();
@@ -130,7 +130,7 @@ public class Client {
 			public void valueChanged(ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting()) {
 					int row = table.getSelectedRow();
-					LOG.trace("SELECTION CHANGED: "+row);
+					LOG.trace("SELECTION CHANGED: " + row);
 					selected = row;
 				}
 			}
@@ -145,8 +145,8 @@ public class Client {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					String targetModelName = (String)guiModel.getValueAt(selected, 0);
-					LOG.info("Opening: "+targetModelName);
+					String targetModelName = (String) guiModel.getValueAt(selected, 0);
+					LOG.info("Opening: " + targetModelName);
 					try {
 						new Client(Client.this.serverName, targetModelName, Client.this.session, Client.this.timeout, false);
 					} catch (JMSException e1) {
@@ -185,7 +185,7 @@ public class Client {
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent event) {
-				LOG.info("Closing: "+Client.this.modelName);
+				LOG.info("Closing: " + Client.this.modelName);
 				serverProxy.deregisterView(clientServer);
 				if (Client.this.topLevel)
 					System.exit(0);
@@ -203,7 +203,7 @@ public class Client {
 		final String serverName = (args.length == 0 ? "Server" : args[0]);
 		//String url = "peer://" + serverName + "/broker0?broker.persistent=false&useJmx=false";
 		String url = "tcp://localhost:61616";
-		LOG.info("Broker URL: " +url);
+		LOG.info("Broker URL: " + url);
 		final ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		final Connection connection = connectionFactory.createConnection();
 		connection.start();
@@ -213,7 +213,7 @@ public class Client {
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, serverName+".MetaModel", session, 60000, true);
+					new Client(serverName, serverName + ".MetaModel", session, ONE_MINUTE, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

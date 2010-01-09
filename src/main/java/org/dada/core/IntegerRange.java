@@ -39,13 +39,13 @@ public class IntegerRange extends AbstractRange<Integer> {
 
 	@Override
 	public Integer random() {
-		return (int)((Math.random()*(max-min)))+min;
+		return (int) ((Math.random() * (max - min))) + min;
 	}
 
 	@Override
 	public Collection<Integer> getValues() {
-		Collection<Integer> result = new ArrayList<Integer>(max-min);
-		for (int i=min; i<max; i++)
+		Collection<Integer> result = new ArrayList<Integer>(max - min);
+		for (int i = min; i < max; i++)
 			result.add(i);
 		return result;
 	}

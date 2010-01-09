@@ -80,7 +80,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 			V newValue = update.getNewValue();
 			K key = metadata.getKey(newValue);
 			V oldValue = map.get(key);
-			if (oldValue != null /* || oldValue.getV */ ) {
+			if (oldValue != null /* || oldValue.getV */) {
 				map.put(key, newValue);
 				int index = map.headMap(key).size();
 				fireTableRowsInserted(index, index);
@@ -91,7 +91,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 			throw new UnsupportedOperationException("deletion - NYI");
 	}
 
-	protected String columnNames[] = new String[]{"id", "version"};
+	protected String[] columnNames = new String[]{"id", "version"};
 
 	@Override
 	public String getColumnName(int columnIndex) {
@@ -111,7 +111,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		V value = (V)map.values().toArray()[rowIndex]; // TODO: yikes !!
+		V value = (V) map.values().toArray()[rowIndex]; // TODO: yikes !!
 		return getMetadata().getAttributeValue(value, columnIndex);
 	}
 

@@ -29,7 +29,7 @@
 package org.dada.ltw;
 
 
-public class PersonImpl extends IdentifiableImpl implements Person{
+public class PersonImpl extends IdentifiableImpl implements Person {
 
 	private Person father;
 	private Person mother;

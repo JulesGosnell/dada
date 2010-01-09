@@ -10,7 +10,7 @@ public class AbstractModelTestCase extends TestCase {
 
 	public void testAbstractModel() {
 		
-		String name = "model";
+		String name = "MODEL";
 
 		Datum<Integer> datum = new DatumImpl<Integer>(0, 0) {
 

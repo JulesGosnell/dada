@@ -46,7 +46,7 @@ public class JView extends JScrollPane {
 		@Override
 		public boolean getScrollableTracksViewportWidth() {
 			if (autoResizeMode != AUTO_RESIZE_OFF && getParent() instanceof JViewport) {
-				return (((JViewport)getParent()).getWidth() > getPreferredSize().width);
+				return (((JViewport) getParent()).getWidth() > getPreferredSize().width);
 			}
 			return false;
 		}
@@ -56,7 +56,7 @@ public class JView extends JScrollPane {
 	public JView(TableModel model) {
 		super(new MyJTable(model));
 		this.model = model;
-		table = (JTable)((JComponent)getComponent(0)).getComponent(0); // is it really this hard ?
+		table = (JTable) ((JComponent) getComponent(0)).getComponent(0); // is it really this hard ?
 		//table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		//Dimension oldSize = table.getPreferredScrollableViewportSize();
 		//Dimension preferredSize = table.getPreferredSize();
