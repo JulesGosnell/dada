@@ -29,7 +29,7 @@ thread-safe on-demand creation of Views when relevant data ariive.
       <p/>
 
 ModelViews may be Aggregators - i.e. they may view a number of other
-Models and aggregate the data they reeive from these - perhaps
+Models and aggregate the data they receive from these - perhaps
 e.g. totalling up amounts...
 
 
