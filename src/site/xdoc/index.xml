@@ -24,7 +24,7 @@ the other side of which are more Models viewed by more Views etc...
 
 Updates can be filtered efficiently into specific Views through the
 use of another type of View called a Router. Routers support the
-thread-safe on-demand creation of Views when relevant data ariive.
+thread-safe on-demand creation of Views when relevant data arrive.
 
       <p/>
 
