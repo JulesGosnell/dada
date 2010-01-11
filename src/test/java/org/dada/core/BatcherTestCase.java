@@ -31,6 +31,8 @@ package org.dada.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Destination;
 
@@ -38,49 +40,43 @@ import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class BatcherTestCase extends MockObjectTestCase {
+
+	private final Collection<Update<Datum<Integer>>> nil = new ArrayList<Update<Datum<Integer>>>();
 	
-//	public void testDelayInducedFlush() {
-//
-//		final View<Integer, Datum<Integer>> view = (View)mock(View.class);
-//		Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
-//		views.add(view);
-//
-//		// test delay-induced flush
-//		int maxSize = 1000000;
-//		long maxDelay = 0;
-//		Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
-//		
-//		Datum<Integer> datum = new IntegerDatum(0, 0);
-//		final Collection<Update<Datum<Integer>>> insertions = Collections.singleton(new Update<Datum<Integer>>(null, datum));
-//		final Collection<Update<Datum<Integer>>> nil = new ArrayList<Update<Datum<Integer>>>();
-//
-//		checking(new Expectations(){{
-//            one(view).update(insertions, nil, nil);
-//        }});
-//		
-//		batcher.update(insertions, nil, nil);
-//	}
-	
+
 	public void testSizeInducedFlush() {
 
+		View<Integer, Datum<Integer>> view0 = new View<Integer, Datum<Integer>>() {
+			@Override
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			}
+		};
+		
 		final View<Integer, Datum<Integer>> view = (View)mock(View.class);
 		Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
 		views.add(view);
+		views.add(view0);
 
 		int maxSize = 1;
 		long maxDelay = 1000000;
 		Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
 		
-		final Collection<Update<Datum<Integer>>> nil = new ArrayList<Update<Datum<Integer>>>();
-
 		Datum<Integer> datum0 = new IntegerDatum(0, 0);
+		Update<Datum<Integer>> update0 = new Update<Datum<Integer>>(null, datum0);
 		Datum<Integer> datum1 = new IntegerDatum(1, 0);
+		Update<Datum<Integer>> update1 = new Update<Datum<Integer>>(null, datum1);
+		Datum<Integer> datum2 = new IntegerDatum(2, 0);
+		Update<Datum<Integer>> update2 = new Update<Datum<Integer>>(null, datum2);
+
+		// empty update...
+		
+		batcher.update(nil, nil, nil);	
 
 		// pass straight through...
 
 		final Collection<Update<Datum<Integer>>> insertions = new ArrayList<Update<Datum<Integer>>>();
-		insertions.add(new Update<Datum<Integer>>(null, datum0));
-		insertions.add(new Update<Datum<Integer>>(null, datum1));
+		insertions.add(update0);
+		insertions.add(update1);
 
 		checking(new Expectations(){{
 			one(view).update(insertions, nil, nil);
@@ -88,18 +84,63 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 		batcher.update(insertions, nil, nil);	
 
-		// overflow...
+		// pass straight through, picking up outstanding batch content...
+		
+		final Collection<Update<Datum<Integer>>> insertions1 = new ArrayList<Update<Datum<Integer>>>();
+		insertions1.add(update0);
+		batcher.update(insertions1, nil, nil);	
 
-		Collection<Update<Datum<Integer>>> insertions1 = Collections.singleton(new Update<Datum<Integer>>(null, datum0));
-		batcher.update(insertions1, nil, nil);
+		final Collection<Update<Datum<Integer>>> insertions2 = new ArrayList<Update<Datum<Integer>>>();
+		insertions2.add(update1);
+		insertions2.add(update2);
+
+		checking(new Expectations(){{
+			one(view).update(with(any(Collection.class)), with(any(Collection.class)), with(any(Collection.class))); // I want to check the contents...
+		}});
+
+		batcher.update(insertions2, nil, nil);
+
+		// accumulate and overflow...
+
+		Collection<Update<Datum<Integer>>> insertions3 = Collections.singleton(update0);
+		batcher.update(insertions3, nil, nil);
 
 		checking(new Expectations(){{
 			one(view).update(with(any(Collection.class)), with(any(Collection.class)), with(any(Collection.class)));
 		}});
 
-		Collection<Update<Datum<Integer>>> insertions2 = Collections.singleton(new Update<Datum<Integer>>(null, datum1));
-		batcher.update(insertions2, nil, nil);
-
+		batcher.update(insertions3, nil, nil);
+		
+		// timer based flush...
 	}
 
+	public void testTimeInducedFlush() throws Exception {
+
+		final Datum<Integer> datum0 = new IntegerDatum(0, 0);
+		final Update<Datum<Integer>> update0 = new Update<Datum<Integer>>(null, datum0);
+		final Collection<Update<Datum<Integer>>> insertions3 = Collections.singleton(update0);
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		final Thread thread = Thread.currentThread();
+		final View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
+			@Override
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+				assertTrue(insertions.size() == 1);
+				assertFalse(Thread.currentThread().equals(thread)); // triggered by timer...
+				latch.countDown();
+			}
+		};
+		
+		final Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
+		views.add(view);
+
+		final int maxSize = 1000000;
+		final long maxDelay = 1;
+		final Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
+
+		batcher.update(insertions3, nil, nil);
+		
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+	}
 }

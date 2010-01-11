@@ -43,13 +43,8 @@ public class Batcher<K, V> implements View<K, V> {
 
 	private final Timer timer = new Timer(true);
 	
-	private final TimerTask task = new TimerTask() {
-		@Override
-		public void run() {
-			flush();
-		}
-	};
-
+	private TimerTask task = null;
+	
 	private Collection<Update<V>> newInsertions;
 	private Collection<Update<V>> newUpdates;
 	private Collection<Update<V>> newDeletions;
@@ -65,6 +60,9 @@ public class Batcher<K, V> implements View<K, V> {
 
 	@Override
 	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
+			return;
+		
 		boolean empty = newInsertions.isEmpty() && newUpdates.isEmpty() && newDeletions.isEmpty();
 		
 		if (insertions.size() + updates.size() + deletions.size() > maxSize) {
@@ -85,7 +83,13 @@ public class Batcher<K, V> implements View<K, V> {
 			} else {
 				// otherwise, if we had no outstanding data, set a timeout
 				if (empty) {
-					timer.schedule(task, maxDelay);
+					timer.schedule(task = new TimerTask() {
+						@Override
+						public void run() {
+							flush();
+						}
+					}
+					, maxDelay);
 				}
 			}
 		}
@@ -99,7 +103,10 @@ public class Batcher<K, V> implements View<K, V> {
 		newUpdates = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 
-		timer.cancel();		
+		if (task != null) {
+			task.cancel();
+			task = null;
+		}
 	}
 	
 	protected void add(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
