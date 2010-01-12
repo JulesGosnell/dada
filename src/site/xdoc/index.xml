@@ -11,39 +11,73 @@
       
       <p/>
 
-DADA is essentially a set of Java components for building a highly
-concurrent and distributed graph of interconnected MVC Models and
-Views.
+      DADA is essentially a set of Java components for building a
+      highly concurrent and distributed graph of interconnected MVC
+      Models and Views.
 
       <p/>
 
-A typical pattern would comprise a Feed Model viewed by a number Views
-the other side of which are more Models viewed by more Views etc...
+      Events are fed into the system as updates to interested Models.
 
       <p/>
 
-Updates can be filtered efficiently into specific Views through the
-use of another type of View called a Router. Routers support the
-thread-safe on-demand creation of Views when relevant data arrive.
+      Models encapsulate state. They maintain a set of interested Views
+      and notify them of changes to this state.
 
       <p/>
 
-ModelViews may be Aggregators - i.e. they may view a number of other
-Models and aggregate the data they receive from these - perhaps
-e.g. totalling up amounts...
-
+      Views may view a Model, in which case they receive updates
+      notifying them about changes to the Model's state.
 
       <p/>
 
-Views may be InVM with their Model or transparently remoted via a JMS
-provider.
+      A component may implement both View and Model interfaces. It may
+      simply receive inputs and produce outputs on a one-to-one basis,
+      or on any basis that it sees fit. Its inputs and outputs may be
+      of the same type or it may transform its inputs into a different
+      output type.
+
+      <p/>
+      
+      Routers (a type of View) may be used to decouple a Model from a
+      set of Views and encapsulate logic to efficiently route incoming
+      events to particular members of this set based on pluggable
+      strategies.
+      
+      <p/>
+
+      Aggregators (a type of Model/View) may be used to transform and
+      collapse incoming data into e.g. a current total.
 
       <p/>
 
-DADA is intended to be used in highly scalable applications and can
-handle thousands of updates a second.
+      A MetaModel provides interested Views with information about the
+      creation and destruction of the system's Models.
 
       <p/>
+
+      Components may be connected to each other directly for
+      synchronous, serial, local interaction, or proxied for
+      transparent asynchronous, concurrent, remotable interactions.
+
+      <p/>
+
+      With this basic set of components and some implementations to
+      fit your problem domain and middleware, it is possible to
+      produce highly scalable, distributed, resilient applications,
+      partitioning, transforming, aggregating, slicing, dicing and
+      displaying very large dynamic datasets in real time.
+
+      <p/>
+
+      DADA makes`use of IOC, pluggable interfaces, factories and
+      strategies and generics for strict typing throughout,
+      prioritises concurrency issues and tries to remain small,
+      simple, flexible, performant and clean. A substantial testsuite
+      ensures the quality of the code and the whole project is rebuilt
+      and unit tested on a number of modern JVMs (Sun, OpenJDK, IBM
+      and BEA 6 &amp; 7 32/64 bit on Solaris and Linux) on every
+      checkin.
 
     </section>
   </body>
