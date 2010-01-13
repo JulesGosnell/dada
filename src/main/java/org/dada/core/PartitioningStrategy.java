@@ -33,13 +33,15 @@ import java.util.Collections;
 
 import org.dada.core.Router.Strategy;
 
-public class PartitioningStrategy<K, V extends Datum<Integer>> implements Strategy<K, V> {
+public class PartitioningStrategy<K, V> implements Strategy<K, V> {
 
+	private final Getter<Integer, V> getter;
 	private final Collection<View<K, V>>[] views;
 	private final int numViews;
 
 	@SuppressWarnings("unchecked")
-	public PartitioningStrategy(Collection<View<K, V>> views) {
+	public PartitioningStrategy(Getter<Integer, V> getter, Collection<View<K, V>> views) {
+		this.getter = getter;
 		numViews = views.size();
 		this.views = new Collection[numViews]; // unchecked :-(
 		int i = 0;
@@ -54,7 +56,7 @@ public class PartitioningStrategy<K, V extends Datum<Integer>> implements Strate
 
 	@Override
 	public int getRoute(V value) {
-		return value.getId() % numViews;
+		return getter.get(value) % numViews;
 	}
 
 	@Override

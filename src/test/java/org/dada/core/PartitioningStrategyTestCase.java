@@ -20,7 +20,13 @@ public class PartitioningStrategyTestCase extends TestCase {
 		views.add(view0);
 		TestView view1 = new TestView(); 
 		views.add(view1);
-		PartitioningStrategy<Integer, Datum<Integer>> strategy = new PartitioningStrategy<Integer, Datum<Integer>>(views);
+		Getter<Integer, Datum<Integer>> getter = new Getter<Integer, Datum<Integer>>() {
+			@Override
+			public Integer get(Datum<Integer> value) {
+				return value.getId();
+			}
+		};
+		PartitioningStrategy<Integer, Datum<Integer>> strategy = new PartitioningStrategy<Integer, Datum<Integer>>(getter, views);
 		
 		assertFalse(strategy.getMutable());
 		assertTrue(strategy.getRoute(new IntegerDatum(0, 0)) == 0);
