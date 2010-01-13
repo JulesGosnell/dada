@@ -34,9 +34,9 @@ import java.util.Collection;
 
 import junit.framework.TestCase;
 
-import org.dada.core.AbstractAmountAggregator.Factory;
+import org.dada.core.BigDecimalAggregator.Factory;
 
-public class AbstractAmountAggregatorTestCase extends TestCase {
+public class BigDecimalAggregatorTestCase extends TestCase {
 
 	public void test() throws Exception {
 		String name = "Aggregator";
@@ -51,13 +51,15 @@ public class AbstractAmountAggregatorTestCase extends TestCase {
 				return new Amount(outputKey, version, amount);
 			}
 		};
-
-		AbstractAmountAggregator<Integer, Amount, Integer, Amount> aggregator = new AbstractAmountAggregator<Integer, Amount, Integer, Amount>(name, inputKey, outputKey, metadata, factory) {
+		
+		Getter<BigDecimal, Amount> getter = new Getter<BigDecimal, Amount>() {
 			@Override
-			protected BigDecimal getAmount(Amount value) {
+			public BigDecimal get(Amount value) {
 				return value.getAmount();
 			}
 		};
+
+		BigDecimalAggregator<Integer, Amount, Integer, Amount> aggregator = new BigDecimalAggregator<Integer, Amount, Integer, Amount>(name, inputKey, outputKey, metadata, factory, getter);
 
 		Collection<Amount> before = aggregator.getData();
 		assertTrue(before.size() == 1);

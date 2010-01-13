@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO extends Datum<KO>> extends AbstractModel<KO, VO> implements View<KI, VI> {
+public class BigDecimalAggregator<KI, VI, KO, VO> extends AbstractModel<KO, VO> implements View<KI, VI> {
 
 	public interface Factory<KO, VO, KI> {
 		VO create(KO outputKey, int version, KI inputKey, BigDecimal amount);
@@ -43,18 +43,18 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 	private final KI inputKey;
 	private final KO outputKey;
 	private final Factory<KO, VO, KI> factory;
+	private final Getter<BigDecimal, VI> getter;
 
 	private int version;
 	private BigDecimal amount = BigDecimal.ZERO;
 
-	public AbstractAmountAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, Factory<KO, VO, KI> factory) {
+	public BigDecimalAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, Factory<KO, VO, KI> factory, Getter<BigDecimal, VI> getter) {
 		super(name, metadata);
 		this.inputKey = inputKey;
 		this.outputKey = outputKey;
 		this.factory = factory;
+		this.getter = getter;
 	}
-
-	protected abstract BigDecimal getAmount(VI value);
 
 	@Override
 	public Collection<VO> getData() {
@@ -72,15 +72,15 @@ public abstract class AbstractAmountAggregator<KI, VI extends Datum<KI>, KO, VO 
 		BigDecimal delta = BigDecimal.ZERO;
 		for (Update<VI> insertion : insertions) {
 			VI newValue = insertion.getNewValue();
-			BigDecimal insertionAmount = getAmount(newValue);
+			BigDecimal insertionAmount = getter.get(newValue);
 			delta = delta.add(insertionAmount);
 		}
 		for (Update<VI> update : updates) {
-			delta = delta.subtract(getAmount(update.getOldValue()));
-			delta = delta.add(getAmount(update.getNewValue()));
+			delta = delta.subtract(getter.get(update.getOldValue()));
+			delta = delta.add(getter.get(update.getNewValue()));
 		}
 		for (Update<VI> update : updates) {
-			delta = delta.subtract(getAmount(update.getOldValue()));
+			delta = delta.subtract(getter.get(update.getOldValue()));
 		}
 		int oldVersion, newVersion;
 		BigDecimal oldAmount, newAmount;
