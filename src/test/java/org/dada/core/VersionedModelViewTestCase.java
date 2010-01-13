@@ -34,14 +34,16 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
-public class SimpleModelViewTestCase extends TestCase {
+public class VersionedModelViewTestCase extends TestCase {
 
-	private SimpleModelView<Integer, Datum<Integer>> view;
+	private VersionedModelView<Integer, Datum<Integer>> view;
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		view = new SimpleModelView<Integer, Datum<Integer>>(null, null);
+		Getter<Integer, Datum<Integer>> idGetter = new Getter<Integer, Datum<Integer>>() {@Override public Integer get(Datum<Integer> value) {return value.getId();}};
+		Getter<Integer, Datum<Integer>> versionGetter = new Getter<Integer, Datum<Integer>>() {@Override public Integer get(Datum<Integer> value) {return value.getVersion();}};
+		view = new VersionedModelView<Integer, Datum<Integer>>(null, null, idGetter, versionGetter);
 	}
 
 	@Override

@@ -33,14 +33,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.dada.core.Datum;
-import org.dada.core.DatumImpl;
-import org.dada.core.Router;
-import org.dada.core.SimpleModelView;
-import org.dada.core.Update;
-import org.dada.core.View;
-
 import junit.framework.TestCase;
+
 
 
 public class RouterAbstractTestCase extends TestCase {
@@ -93,8 +87,20 @@ public class RouterAbstractTestCase extends TestCase {
 
 	public void testRouter() {
 
-		SimpleModelView<Integer, IntegerDatum> negative = new SimpleModelView<Integer, IntegerDatum>("Negative", null);
-		SimpleModelView<Integer, IntegerDatum> positive = new SimpleModelView<Integer, IntegerDatum>("Positive", null);
+		Getter<Integer, IntegerDatum> idGetter = new Getter<Integer, IntegerDatum>() {
+			@Override
+			public Integer get(IntegerDatum value) {
+				return value.getId();
+			}
+		};
+		Getter<Integer, IntegerDatum> versionGetter = new Getter<Integer, IntegerDatum>() {
+			@Override
+			public Integer get(IntegerDatum value) {
+				return value.getVersion();
+			}
+		};
+		VersionedModelView<Integer, IntegerDatum> negative = new VersionedModelView<Integer, IntegerDatum>("Negative", null, idGetter, versionGetter);
+		VersionedModelView<Integer, IntegerDatum> positive = new VersionedModelView<Integer, IntegerDatum>("Positive", null, idGetter, versionGetter);
 
 		View<Integer, IntegerDatum> router = new Router<Integer, IntegerDatum>(new SignRoutingStrategy(negative, positive));
 

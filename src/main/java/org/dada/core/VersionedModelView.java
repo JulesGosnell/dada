@@ -37,13 +37,19 @@ import clojure.lang.PersistentTreeMap;
 // TODO
 // I don't like this class - it is too complicated...
 
-public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K, V> {
+public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 
+	private final Getter<K, V> keyGetter;
+	private final Getter<Integer, V> versionGetter;
+	
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
 
-	public SimpleModelView(String name, Metadata<K, V> metadata) {
+	
+	public VersionedModelView(String name, Metadata<K, V> metadata, Getter<K, V> keyGetter, Getter<Integer, V> versionGetter) {
 		super(name, metadata);
+		this.keyGetter = keyGetter;
+		this.versionGetter = versionGetter;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -84,9 +90,9 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			boolean changed = false;
 			for (Update<V> insertion : insertions) {
 				V newValue = insertion.getNewValue();
-				K key = newValue.getId();
+				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
-				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
+				if (currentValue == null || versionGetter.get(currentValue) < versionGetter.get(newValue)) {
 					current = current.assoc(key, newValue);
 					insertionsOut.add(insertion);
 					changed = true;
@@ -96,10 +102,10 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			}
 			for (Update<V> update : updates) {
 				V newValue = update.getNewValue();
-				K key = newValue.getId();
+				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
-				if (currentValue == null || currentValue.getVersion() < newValue.getVersion()) {
-					current = current.assoc(newValue.getId(), newValue);
+				if (currentValue == null || versionGetter.get(currentValue) < versionGetter.get(newValue)) {
+					current = current.assoc(keyGetter.get(newValue), newValue);
 					updatesOut.add(update);
 					changed = true;
 				} else {
@@ -108,16 +114,16 @@ public class SimpleModelView<K, V extends Datum<K>> extends AbstractModelView<K,
 			}
 			for (Update<V> deletion : deletions) {
 				V newValue = deletion.getNewValue();
-				K key = newValue.getId();
+				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
-				if (currentValue != null && currentValue.getVersion() < newValue.getVersion()) {
+				if (currentValue != null && versionGetter.get(currentValue) < versionGetter.get(newValue)) {
 					try {
 						current = current.without(key);
 					} catch (Exception e) {
 						// TODO: difficult to cover this bit of code - needs some thought...
 						logger.warn("unable to perform deletion: {}", key, e);
 					}
-					historic = historic.assoc(newValue.getId(), newValue);
+					historic = historic.assoc(keyGetter.get(newValue), newValue);
 					deletionsOut.add(deletion);
 					changed = true;
 				} else {
