@@ -39,28 +39,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Aspect
-public class RelationalAspect {
+public class AccessorTracingAspect {
 
 	private static final int ACCESSOR_FIELD_LENGTH = 3;
-	public static final Map<String, Map<Integer, Integer>> MODEL = new HashMap<String, Map<Integer, Integer>>();
 
-	protected Map<Integer, Integer> ensureTable(String fieldName) {
-		Map<Integer, Integer> table = MODEL.get(fieldName);
-		if (table == null) {
-			MODEL.put(fieldName, table = new HashMap<Integer, Integer>());
-		}
-		return table;
-	}
-
-    private static final Logger LOG = LoggerFactory.getLogger(RelationalAspect.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AccessorTracingAspect.class);
 
 	@Around("getterPointcut()")
     public Object getterAdvice(ProceedingJoinPoint pjp) throws Throwable {
-		String fieldName = fieldName(pjp);
-		//Map<Integer, Integer> table = ensureTable(fieldName);
-		Identifiable target = (Identifiable) pjp.getTarget();
-		Identifiable value = (Identifiable) pjp.proceed();
-		LOG.info("get: " + target + "." + fieldName + " = " + value);
+		Object value = pjp.proceed();
+		LOG.info("get: " + pjp.getTarget()+ "." + fieldName(pjp)+ " = " + value);
 		return value;
     }
 
@@ -70,15 +58,10 @@ public class RelationalAspect {
 
 	@Around("setterPointcut()")
     public Object setterAdvice(ProceedingJoinPoint pjp) throws Throwable {
-		Identifiable target = (Identifiable) pjp.getTarget();
-		Identifiable value = (Identifiable) pjp.getArgs()[0];
         try {
-    		String fieldName = fieldName(pjp);
-    		Map<Integer, Integer> table = ensureTable(fieldName);
-			table.put(target.getId(), value.getId());
             return pjp.proceed();
         } finally {
-            LOG.info("set: " + target + "." + fieldName(pjp) + " = " + value);
+            LOG.info("set: " + pjp.getTarget() + "." + fieldName(pjp) + " = " + pjp.getArgs()[0]);
         }
     }
 

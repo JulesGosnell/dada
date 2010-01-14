@@ -8,7 +8,7 @@
   
   <aspects>
     <aspect name="org.dada.ltw.ProfilingAspect"/>
-    <aspect name="org.dada.ltw.RelationalAspect"/>
+    <aspect name="org.dada.ltw.AccessorTracingAspect"/>
   </aspects>
   
 </aspectj>
