@@ -38,7 +38,7 @@ import org.dada.core.Router.Strategy;
 import org.jmock.integration.junit3.MockObjectTestCase;
 import org.joda.time.Interval;
 
-public class AbstractIntervalRoutingStrategyTestCase extends MockObjectTestCase {
+public class DateRoutingStrategyTestCase extends MockObjectTestCase {
 
 	private static class Event {
 		private final Date date;
@@ -67,17 +67,7 @@ public class AbstractIntervalRoutingStrategyTestCase extends MockObjectTestCase 
 		
 		map.put(interval, views);
 		
-		Strategy<Integer, Event> strategy = new AbstractIntervalRoutingStrategy<Event>(map) {
-			@Override
-			public boolean getMutable() {
-				return true;
-			}
-
-			@Override
-			public int getRoute(Event value) {
-				return getRoute(value.getDate());
-			}
-		};
+		Strategy<Integer, Event> strategy = new DateRoutingStrategy<Event>(map, new Getter<Long, Event>() {@Override public Long get(Event value) {return value.getDate().getTime();}}, true);
 		
 		Event before = new Event(new Date(startInstant - 1));
 		Event onTime = new Event(new Date(startInstant));
