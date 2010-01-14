@@ -28,57 +28,42 @@
  */
 package org.dada.slf4j;
 
-/**
- * Borne out of desperation since it seems crazy that SLF4J still does not appear to support a varargs syntax...
- *
- * @author jules
- *
- */
-public class Logger {
+import org.jmock.Expectations;
+import org.jmock.integration.junit3.MockObjectTestCase;
 
-	private final org.slf4j.Logger logger;
+public class LoggerTestCase extends MockObjectTestCase {
+	
+	public void test() {
+		final org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+		final Logger logger = new Logger(slf4jLogger);
 
-	protected Logger(org.slf4j.Logger logger) {
-		this.logger = logger;
-	}
-
-	public void trace(String string, Object... objects) {
-		logger.trace(string, objects);
-	}
-
-	public void trace(String string, Throwable throwable) {
+		final String string = "string";
+		final Object object = new Object();
+		final Throwable throwable = new Throwable();
+		
+		checking(new Expectations(){{
+            Object[] objects = new Object[]{object};
+			one(slf4jLogger).trace(string, objects);
+            one(slf4jLogger).trace(string, throwable);
+			one(slf4jLogger).debug(string, objects);
+            one(slf4jLogger).debug(string, throwable);
+			one(slf4jLogger).info(string, objects);
+            one(slf4jLogger).info(string, throwable);
+			one(slf4jLogger).warn(string, objects);
+            one(slf4jLogger).warn(string, throwable);
+			one(slf4jLogger).error(string, objects);
+            one(slf4jLogger).error(string, throwable);
+        }});
+		
+		logger.trace(string, object);
 		logger.trace(string, throwable);
-	}
-
-	public void debug(String string, Object... objects) {
-		logger.debug(string, objects);
-	}
-
-	public void debug(String string, Throwable throwable) {
+		logger.debug(string, object);
 		logger.debug(string, throwable);
-	}
-
-	public void info(String string, Object... objects) {
-		logger.info(string, objects);
-	}
-
-	public void info(String string, Throwable throwable) {
+		logger.info(string, object);
 		logger.info(string, throwable);
-	}
-
-	public void warn(String string, Object... objects) {
-		logger.warn(string, objects);
-	}
-
-	public void warn(String string, Throwable throwable) {
+		logger.warn(string, object);
 		logger.warn(string, throwable);
-	}
-
-	public void error(String string, Object... objects) {
-		logger.error(string, objects);
-	}
-
-	public void error(String string, Throwable throwable) {
+		logger.error(string, object);
 		logger.error(string, throwable);
 	}
 
