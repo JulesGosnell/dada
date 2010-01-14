@@ -28,28 +28,35 @@
  */
 package org.dada.core;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-import junit.framework.TestCase;
+public class GetterMetadata<K, V> implements Metadata<K, V> {
 
-public class AbstractAmountMetadataTestCase extends TestCase {
+	private final List<String> attributeNames;
+	private final Getter<K, V> keyGetter;
+	private final Getter<Object, Object>[] getters;
 
-	public void test() {
-		Metadata<Integer, Amount> metadata = new AbstractAmountMetadata<Integer, Amount>("Key", "Amount") {
-			@Override
-			protected BigDecimal getAmount(Amount value) {
-				return value.getAmount();
-			}
-		};
-		
-		BigDecimal one = new BigDecimal("1.0");
-		Amount amount = new Amount(1, 0, one);
-		
-		assertTrue(metadata.getAttributeNames().size() == 3);
-		assertTrue(metadata.getKey(amount) == 1);
-		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
-		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));
-		assertTrue(metadata.getAttributeValue(amount, 2).equals(one));
-		assertTrue(metadata.getAttributeValue(amount, 3) == null);
+	public GetterMetadata(Collection<String> attributeNames, Collection<Getter<?, ?>> getters) {
+		this.attributeNames = new ArrayList<String>(attributeNames);
+		this.getters = getters.toArray(new Getter[getters.size()]);
+		this.keyGetter = (Getter<K, V>)this.getters[0];
 	}
+
+	@Override
+	public List<String> getAttributeNames() {
+		return attributeNames;
+	}
+
+	@Override
+	public Object getAttributeValue(V value, int index) {
+		return getters[index].get(value);
+	}
+
+	@Override
+	public K getKey(V value) {
+		return keyGetter.get(value);
+	}
+
 }

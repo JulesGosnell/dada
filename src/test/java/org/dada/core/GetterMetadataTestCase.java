@@ -29,47 +29,38 @@
 package org.dada.core;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collection;
 
-public abstract class AbstractAmountMetadata<K, V extends Datum<K>> implements Metadata<K, V> {
+import junit.framework.TestCase;
 
-	private static List<String> makeStringList(String... array) {
-		List<String> strings = new ArrayList<String>(array.length);
-		for (String string : array)
-			strings.add(string);
-		return strings;
-	}
+public class GetterMetadataTestCase extends TestCase {
 
-	private final List<String> attributeNames;
+	public void test() {
 
-	public AbstractAmountMetadata(String keyName, String amountName) {
-		attributeNames = makeStringList(keyName, "Version", amountName);
-	}
+		Getter<?, ?> idGetter = new Getter<Integer, Amount>() {@Override public Integer get(Amount value) {return value.getId();}};
+		Getter<?, ?> versionGetter = new Getter<Integer, Amount>() {@Override public Integer get(Amount value) {return value.getVersion();}};
+		Getter<?, ?> amountGetter = new Getter<BigDecimal, Amount>() {@Override public BigDecimal get(Amount value) {return value.getAmount();}};
 
-	@Override
-	public List<String> getAttributeNames() {
-		return attributeNames;
-	}
+		Collection<String> attributeNames = Arrays.asList("Id", "Version", "Amount");
+		Collection<Getter<?, ?>> getters = Arrays.asList(idGetter, versionGetter, amountGetter);
 
-	@Override
-	public Object getAttributeValue(V value, int index) {
-		switch (index) {
-		case 0:
-			return value.getId();
-		case 1:
-			return value.getVersion();
-		case 2:
-			return getAmount(value);
-		default:
-			return null;
+		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(attributeNames, getters) ;
+
+		BigDecimal one = new BigDecimal("1.0");
+		Amount amount = new Amount(1, 0, one);
+
+		assertTrue(metadata.getAttributeNames().size() == 3);
+		assertTrue(metadata.getKey(amount) == 1);
+		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
+		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));
+		assertTrue(metadata.getAttributeValue(amount, 2).equals(one));
+
+		try {
+			metadata.getAttributeValue(amount, 3);
+			fail();
+		} catch (RuntimeException e) {
+			assertTrue(true);
 		}
 	}
-
-	@Override
-	public K getKey(V value) {
-		return value.getId();
-	}
-
-	protected abstract BigDecimal getAmount(V value);
 }
