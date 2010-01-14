@@ -36,7 +36,7 @@ public interface View<K, V> {
 	 * An insertion is a potential move from outside into a View and a deletion vice versa.
 	 * An update is a new version with the same id/key.
 	 * We provide the old and new version, so that the Partitioner can notify the correct partitions and a View
-	 * can display a Datum that has move out, using its last known value (so you can link to its new View and follow the trail).
+	 * can display a item that has moved out, using its last known value (so you can link to its new View and follow the trail).
 	 *
 	 * @param insertions
 	 * @param updates
