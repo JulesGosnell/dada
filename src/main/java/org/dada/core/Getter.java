@@ -29,6 +29,8 @@
 
 package org.dada.core;
 
-public interface Getter<K, V> {
+import java.io.Serializable;
+
+public interface Getter<K, V> extends Serializable {
 	K get(V value);
 }
