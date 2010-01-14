@@ -34,6 +34,7 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
+import org.dada.core.Getter;
 import org.dada.core.ServiceFactory;
 
 // TODO - This abstraction wraps an earlier one - we should collapse and simplify the two...
@@ -48,10 +49,6 @@ import org.dada.core.ServiceFactory;
  */
 public class JMSServiceFactory<T> implements ServiceFactory<T> {
 
-	public static interface NamingStrategy<T> {
-		String getName(T target);
-	}
-	
 	public static interface DestinationFactory {
 		Destination createDestination(Session session, String endPoint);
 	}
@@ -60,21 +57,21 @@ public class JMSServiceFactory<T> implements ServiceFactory<T> {
 	private final RemotingFactory<T> factory;
 	private final boolean trueAsync;
 	private final ExecutorService executorService;
-	private final NamingStrategy<T> namingStrategy;
+	private final Getter<String, T> nameGetter;
 	private final DestinationFactory destinationFactory;
 	
-	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout, NamingStrategy<T> namingStrategy, DestinationFactory destinationFactory) throws JMSException {
+	public JMSServiceFactory(Session session, Class<?> interfaze, ExecutorService executorService, boolean trueAsync, long timeout, Getter<String, T> nameGetter, DestinationFactory destinationFactory) throws JMSException {
 		this.session = session;
 		this.factory = new RemotingFactory<T>(session, interfaze, timeout); // TODO - support multiple interfaces
 		this.executorService = executorService;
 		this.trueAsync = trueAsync;
-		this.namingStrategy = namingStrategy;
+		this.nameGetter = nameGetter;
 		this.destinationFactory = destinationFactory;
 	}
 	
 	@Override
 	public T decouple(T target) {	
-		String name = namingStrategy.getName(target);
+		String name = nameGetter.get(target);
 		try {
 			server(target, name);
 			return client(name);

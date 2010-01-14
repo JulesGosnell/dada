@@ -37,9 +37,9 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.dada.core.Getter;
 import org.dada.core.ServiceFactory;
 import org.dada.jms.JMSServiceFactory.DestinationFactory;
-import org.dada.jms.JMSServiceFactory.NamingStrategy;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
@@ -53,7 +53,7 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 		final ExecutorService executorService = (ExecutorService)mock(ExecutorService.class);
 		boolean trueAsync = true;
 		long timeout = 1000L;
-		final NamingStrategy<Target> namingStrategy = (NamingStrategy<Target>)mock(NamingStrategy.class);
+		final Getter<String, Target> namingStrategy = (Getter<String, Target>)mock(Getter.class);
 		final DestinationFactory destinationFactory = (DestinationFactory)mock(DestinationFactory.class);
 
 		checking(new Expectations(){{
@@ -74,7 +74,7 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 		
 		// TODO: does this make sense ?
 		checking(new Expectations(){{
-            one(namingStrategy).getName(with(target));
+            one(namingStrategy).get(with(target));
 			will(returnValue(endPoint));  
 			// set up server side
             one(destinationFactory).createDestination(session, endPoint);
@@ -98,7 +98,7 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 
 		// broken client
 		checking(new Expectations(){{
-            one(namingStrategy).getName(with(target));
+            one(namingStrategy).get(with(target));
 			will(returnValue(endPoint));  
 			// set up server side
             one(destinationFactory).createDestination(session, endPoint);
