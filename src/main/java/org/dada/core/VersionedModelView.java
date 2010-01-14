@@ -68,14 +68,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 		Collection<Update<V>> updatesOut = new ArrayList<Update<V>>(updates.size());
 		Collection<Update<V>> deletionsOut = new ArrayList<Update<V>>(deletions.size());
 
-		if (logger.isDebugEnabled()) {
-			// TODO: I've read all the threads on slf4j/varargs and it appears that there is still no support
-			// for logging a variable number of params without having to allocate an Object[] !
-			// This will continue to blight my coverage results until sl4j sort this out. why not just include
-			// an slf4j-varargs jar with an extended api and a different VarargsLoggerFactory...
-			Object[] args = {name, insertions.size(), updates.size(), deletions.size()};
-			logger.debug("{}: update: insertions={}, updates={}, deletions={}", args);
-		}
+		logger.debug("{}: update: insertions={}, updates={}, deletions={}", name, insertions.size(), updates.size(), deletions.size());
 
 		// TODO: lose later
 		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
