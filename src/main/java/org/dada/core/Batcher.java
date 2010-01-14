@@ -103,10 +103,8 @@ public class Batcher<K, V> implements View<K, V> {
 		newUpdates = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 
-		if (task != null) {
-			task.cancel();
-			task = null;
-		}
+		task.cancel();
+		task = null;
 	}
 	
 	protected void add(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
