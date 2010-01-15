@@ -33,10 +33,15 @@ import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // TODO: a little naive, but lets go with it...
 
 public class Batcher<K, V> implements View<K, V> {
 
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+	
 	private final int maxSize;
 	private final long maxDelay;
 	private final Collection<View<K, V>> views;
@@ -60,32 +65,38 @@ public class Batcher<K, V> implements View<K, V> {
 
 	@Override
 	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
+		if (insertions.size() + updates.size() + deletions.size() == 0)
 			return;
 		
-		boolean empty = newInsertions.isEmpty() && newUpdates.isEmpty() && newDeletions.isEmpty();
+		boolean empty = newInsertions.size() + newUpdates.size() + newDeletions.size() == 0;
 		
 		if (insertions.size() + updates.size() + deletions.size() > maxSize) {
 			if (empty) {
 				// no data standing by and enough incoming to be passed straight through...
+				logger.trace("pass update through");
 				notifyViews(insertions, updates, deletions);
 			} else {
 				// merge with outstanding data and send upstream...
+				logger.trace("aggregate update and flush");
 				add(insertions, updates, deletions);
 				flush();
 			}
 		} else {
 			// merge with outstanding data
+			logger.trace("aggregate update");
 			add(insertions, updates, deletions);
 			// if big enough send upstream...	
 			if (newInsertions.size() + newUpdates.size() + newDeletions.size() > maxSize) {
+				logger.trace("size induced flush");
 				flush();
 			} else {
 				// otherwise, if we had no outstanding data, set a timeout
 				if (empty) {
+					logger.trace("scheduling flush in {} millis", maxDelay);
 					timer.schedule(task = new TimerTask() {
 						@Override
 						public void run() {
+							logger.trace("timer induced flush");
 							flush();
 						}
 					}
@@ -103,6 +114,7 @@ public class Batcher<K, V> implements View<K, V> {
 		newUpdates = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 
+		logger.trace("cancelling timer");
 		task.cancel();
 		task = null;
 	}

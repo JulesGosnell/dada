@@ -44,16 +44,9 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 	public void testSizeInducedFlush() {
 
-		View<Integer, Datum<Integer>> view0 = new View<Integer, Datum<Integer>>() {
-			@Override
-			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
-			}
-		};
-		
 		final View<Integer, Datum<Integer>> view = (View)mock(View.class);
 		Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
 		views.add(view);
-		views.add(view0);
 
 		int maxSize = 1;
 		long maxDelay = 1000000;
@@ -108,22 +101,24 @@ public class BatcherTestCase extends MockObjectTestCase {
 		}});
 
 		batcher.update(insertions3, nil, nil);
-		
-		// timer based flush...
 	}
 
-	public void testTimeInducedFlush() throws Exception {
+	public void testTimerInducedFlush() throws Exception {
 
 		final Datum<Integer> datum0 = new IntegerDatum(0, 0);
 		final Update<Datum<Integer>> update0 = new Update<Datum<Integer>>(null, datum0);
-		final Collection<Update<Datum<Integer>>> insertions3 = Collections.singleton(update0);
+		final Collection<Update<Datum<Integer>>> insertions0 = Collections.singleton(update0);
+
+		final Datum<Integer> datum1 = new IntegerDatum(1, 0);
+		final Update<Datum<Integer>> update1 = new Update<Datum<Integer>>(null, datum1);
+		final Collection<Update<Datum<Integer>>> insertions1 = Collections.singleton(update1);
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final Thread thread = Thread.currentThread();
 		final View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
-				assertTrue(insertions.size() == 1);
+				assertTrue(insertions.size() == 2);
 				assertFalse(Thread.currentThread().equals(thread)); // triggered by timer...
 				latch.countDown();
 			}
@@ -133,12 +128,12 @@ public class BatcherTestCase extends MockObjectTestCase {
 		views.add(view);
 
 		final int maxSize = 1000000;
-		final long maxDelay = 1;
+		final long maxDelay = 1000;
 		final Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
 
-		batcher.update(insertions3, nil, nil);
+		batcher.update(insertions0, nil, nil);
+		batcher.update(insertions1, nil, nil);
 		
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-
+		assertTrue(latch.await(100, TimeUnit.SECONDS));
 	}
 }
