@@ -38,6 +38,14 @@
     <url>http://ouroboros.dnsalias.net/hudson</url>
   </ciManagement>
 
+  <distributionManagement>
+    <repository>
+      <id>ouroboros</id>
+      <name>Jules' Home Repository</name>
+      <url>http://ouroboros.dnsalias.net/artifactory/libs-snapshots-local</url>
+    </repository>
+  </distributionManagement>
+
   <developers>
     <developer>
       <id>jules</id>
