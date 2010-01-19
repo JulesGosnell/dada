@@ -22,9 +22,10 @@
   </scm>
 
   <properties>
-    <cobertura.datafile>target/cobertura.ser</cobertura.datafile>
+    <cobertura.datafile>target/cobertura/cobertura.ser</cobertura.datafile>
+    <cobertura.classes>target/generated-classes/cobertura</cobertura.classes>
+    <cobertura.site>target/site/cobertura</cobertura.site>
     <cobertura.version>1.9.3</cobertura.version>
-    <cobertura.format>html</cobertura.format>
     <spring.version>2.5.6.SEC01</spring.version>
     <slf4j.version>1.5.10</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
@@ -109,6 +110,11 @@
       <artifactId>activemq-core</artifactId>
       <version>5.3.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.xbean</groupId>
+      <artifactId>xbean-spring</artifactId>
+      <version>3.6</version>
+    </dependency>
     <!-- we're going to log via slf4j/commons-logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -136,26 +142,6 @@
       <version>1.3.4</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.xbean</groupId>
-      <artifactId>xbean-spring</artifactId>
-      <version>3.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>clojure</artifactId>
-      <version>${clojure.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>clojure-contrib</artifactId>
-      <version>${clojure.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <version>1.6</version>
-    </dependency>
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <version>${spring.version}</version>
@@ -180,18 +166,36 @@
       <artifactId>aspectjweaver</artifactId>  <!-- seems to include aspectjrt -->
       <version>1.6.7</version>
     </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>1.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>${clojure.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure-contrib</artifactId>
+      <version>${clojure.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+	<version>2.0.2</version>
         <configuration>
 	  <source>${java.version}</source>
           <target>${java.version}</target>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
@@ -200,8 +204,11 @@
 	  <ajdtVersion>none</ajdtVersion>  <!-- prevent aspectj jars from being stripped out of Eclipse classpath -->
         </configuration>
       </plugin>
+
       <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+	<version>1.3</version>
         <executions>
           <execution>
             <id>cobertura-instrument</id>
@@ -213,7 +220,7 @@
                   <arg value="--datafile"/>
                   <arg value="${cobertura.datafile}"/>
                   <arg value="--destination"/>
-                  <arg value="target/cobertura-classes"/>
+                  <arg value="${cobertura.classes}"/>
                   <arg value="target/classes"/>
                 </java>
               </tasks>
@@ -256,7 +263,7 @@
                   <arg value="--datafile"/>
                   <arg value="${cobertura.datafile}"/>
                   <arg value="--destination"/>
-                  <arg value="target/site/cobertura"/>
+                  <arg value="${cobertura.site}"/>
                   <arg value="--format"/>
                   <arg value="html"/>
                   <arg value="src/main/java"/>
@@ -266,7 +273,7 @@
                   <arg value="--datafile"/>
                   <arg value="${cobertura.datafile}"/>
                   <arg value="--destination"/>
-                  <arg value="target/site/cobertura"/>
+                  <arg value="${cobertura.site}"/>
                   <arg value="--format"/>
                   <arg value="xml"/>
                   <arg value="src/main/java"/>
@@ -317,11 +324,13 @@
           </dependency>
         </dependencies>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+	<version>2.4.3</version>
         <configuration>
-          <classesDirectory>target/cobertura-classes</classesDirectory>
+          <classesDirectory>${cobertura.classes}</classesDirectory>
           <additionalClasspathElements>
             <additionalClasspathElement>target/classes</additionalClasspathElement>
           </additionalClasspathElements>
@@ -343,6 +352,7 @@
           </systemProperties>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -368,9 +378,11 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-source-plugin</artifactId>
+	<version>2.0.4</version>
 	<executions>
 	  <execution>
 	    <id>attach-sources</id>
@@ -380,6 +392,7 @@
 	  </execution>
 	</executions>
       </plugin>
+
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-javadoc-plugin</artifactId>
@@ -393,6 +406,7 @@
 	  </execution>
 	</executions>
       </plugin>
+
     </plugins>
   </build>
 
