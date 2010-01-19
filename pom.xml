@@ -224,10 +224,10 @@
           </execution>
           <execution>
             <id>cobertura-check</id>
-            <phase>never-test</phase>
+            <phase>test</phase>
             <configuration>
               <tasks name="cobertura-check">
-                <java classname="net.sourceforge.cobertura.check.Main" fork="yes" failonerror="true">
+                <java classname="net.sourceforge.cobertura.check.Main" fork="yes" failonerror="false">  <!-- TODO -->
                   <classpath refid="maven.plugin.classpath"/>
                   <arg value="--datafile"/>
                   <arg value="${cobertura.datafile}"/>
@@ -383,6 +383,7 @@
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-javadoc-plugin</artifactId>
+	<version>2.6.1</version>
 	<executions>
 	  <execution>
 	    <id>attach-javadocs</id>
@@ -397,6 +398,12 @@
 
   <reporting>
     <plugins>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-javadoc-plugin</artifactId>
+	<version>2.6.1</version>
+      </plugin>
 
       <plugin>
         <groupId>com.googlecode.maven-overview-plugin</groupId>
