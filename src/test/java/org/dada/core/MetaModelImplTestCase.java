@@ -119,6 +119,8 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
         checking(new Expectations(){{
 			one(model).getName();
             will(returnValue(modelName));
+			one(model).getName();
+            will(returnValue(modelName));            
         }});
         
 		metaModel.update(nil, Collections.singleton(new Update<Model<Object, Object>>(model, model)), nil);

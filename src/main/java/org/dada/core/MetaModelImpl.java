@@ -28,7 +28,9 @@
  */
 package org.dada.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -83,18 +85,50 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 
 	@Override
 	public void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> updates, Collection<Update<Model<Object, Object>>> deletions) {
-		for (Update<Model<Object, Object>> insertion : insertions) {
-			Model<Object, Object> model = insertion.getNewValue();
-			nameToModel.put(model.getName(), model);
+		Collection<Update<String>> i;
+		if (!insertions.isEmpty()) {
+			i = new ArrayList<Update<String>>(insertions.size());
+			for (Update<Model<Object, Object>> insertion : insertions) {
+				Model<Object, Object> model = insertion.getNewValue();
+				String modelName = model.getName();
+				nameToModel.put(modelName, model);
+				i.add(new Update<String>(null ,modelName));
+			}
+		} else {
+			i = Collections.emptyList();
 		}
-		for (Update<Model<Object, Object>> update : updates) {
-			Model<Object, Object> model = update.getNewValue();
-			nameToModel.put(model.getName(), model);
+
+		Collection<Update<String>> u;
+		if (!updates.isEmpty()) {
+			u = new ArrayList<Update<String>>(updates.size());
+			for (Update<Model<Object, Object>> update : updates) {
+				Model<Object, Object> oldModel = update.getOldValue();
+				Model<Object, Object> newModel = update.getNewValue();
+				String oldModelName = oldModel.getName();
+				String newModelName = newModel.getName();
+				nameToModel.remove(oldModelName);
+				nameToModel.put(newModelName, newModel);
+				u.add(new Update<String>(oldModelName, newModelName));
+			}
+		} else {
+			u = Collections.emptyList();
 		}
-		for (Update<Model<Object, Object>> deletion : deletions) {
-			Model<Object, Object> model = deletion.getOldValue();
-			nameToModel.remove(model.getName());
+
+		Collection<Update<String>> d;
+		if (!deletions.isEmpty()) {
+			d = new ArrayList<Update<String>>(deletions.size());
+			for (Update<Model<Object, Object>> deletion : deletions) {
+				Model<Object, Object> model = deletion.getOldValue();
+				String modelName = model.getName();
+				nameToModel.remove(modelName);
+				d.add(new Update<String>(modelName, null));
+			}
+		} else {
+			d = Collections.emptyList();
 		}
+
+		notifyUpdate(i, u, d);
+		
 	}
 
 }
