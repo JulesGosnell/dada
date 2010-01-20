@@ -53,6 +53,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.dada.core.MetaModel;
 import org.dada.core.Model;
 import org.dada.core.Registration;
 import org.dada.core.Update;
@@ -74,7 +75,7 @@ public class Client {
 	private final boolean topLevel;
 	private final TableModelView<Object, Object> guiModel;
 	private final Destination serverDestination;
-	private final RemotingFactory<Model<Object, Object>> clientFactory;
+	private final MetaModel metaModel;
 	private final Model<Object, Object> serverProxy;
 	private final Destination clientDestination;
 	private final RemotingFactory<View<Object, Object>> serverFactory;
@@ -86,7 +87,7 @@ public class Client {
 
 	private int selected  = -1;
 
-	public Client(String serverName, String modelName, Session session, int timeout, boolean topLevel) throws JMSException {
+	public Client(String serverName, MetaModel metaModel, String modelName, Session session, int timeout, boolean topLevel) throws JMSException {
 		this.serverName = serverName;
 		this.modelName = modelName;
 		this.session = session;
@@ -97,7 +98,14 @@ public class Client {
 		LOG.info("viewing: " + this.modelName);
 
 		serverDestination = session.createQueue(this.modelName);
-		clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, timeout);
+		
+		if (metaModel == null) {
+			RemotingFactory<MetaModel> remotingFactory = new RemotingFactory<MetaModel>(session, MetaModel.class, timeout);
+			this.metaModel = remotingFactory.createSynchronousClient(serverDestination, true);
+		} else {
+			this.metaModel = metaModel;
+		}
+		RemotingFactory<Model<Object, Object>> clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, timeout);
 		serverProxy = clientFactory.createSynchronousClient(serverDestination, true);
 
 		// create a Client
@@ -108,7 +116,7 @@ public class Client {
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 
 		// pass the client over to the server to attach as a listener..
-		Registration<Object, Object> registration = serverProxy.registerView(clientServer);
+		Registration<Object, Object> registration = this.metaModel.registerView(modelName, clientServer);
 		Collection<Object> models = registration.getData();
 		if (models != null) {
 			guiModel.setMetadata(registration.getMetadata());
@@ -148,7 +156,7 @@ public class Client {
 					String targetModelName = (String) guiModel.getValueAt(selected, 0);
 					LOG.info("Opening: " + targetModelName);
 					try {
-						new Client(Client.this.serverName, targetModelName, Client.this.session, Client.this.timeout, false);
+						new Client(Client.this.serverName, Client.this.metaModel, targetModelName, Client.this.session, Client.this.timeout, false);
 					} catch (JMSException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -186,7 +194,7 @@ public class Client {
 			@Override
 			public void windowClosing(WindowEvent event) {
 				LOG.info("Closing: " + Client.this.modelName);
-				serverProxy.deregisterView(clientServer);
+				Client.this.metaModel.deregisterView(Client.this.modelName, clientServer);
 				if (Client.this.topLevel)
 					System.exit(0);
 			}
@@ -213,7 +221,7 @@ public class Client {
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, serverName + ".MetaModel", session, ONE_MINUTE, true);
+					new Client(serverName, null, serverName + ".MetaModel", session, ONE_MINUTE, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

@@ -77,18 +77,31 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<K, 
 			fireTableRowsInserted(index, index);
 		}
 		for (Update<V> update : updates) {
+			V oldValue = update.getOldValue();
+			K oldKey = metadata.getKey(oldValue);
 			V newValue = update.getNewValue();
-			K key = metadata.getKey(newValue);
-			V oldValue = map.get(key);
-			if (oldValue != null /* || oldValue.getV */) {
-				map.put(key, newValue);
-				int index = map.headMap(key).size();
-				fireTableRowsInserted(index, index);
+			K newKey = metadata.getKey(newValue);
+			if (newKey.equals(oldKey)) {
+				map.put(newKey, newValue);
+				int index = map.headMap(newKey).size();
+				fireTableRowsUpdated(index, index);
+			} else {
+				map.remove(oldKey, oldValue);
+				int oldIndex = map.headMap(oldKey).size();
+				fireTableRowsDeleted(oldIndex, oldIndex);
+				map.put(newKey, newValue);
+				int newIndex = map.headMap(newKey).size();
+				fireTableRowsInserted(newIndex, newIndex);
+				// TODO: if both indeces are the same...
 			}
 		}
-
-		if (deletions.size() > 0)
-			throw new UnsupportedOperationException("deletion - NYI");
+		for (Update<V> deletion : deletions) {
+			V value = deletion.getOldValue();
+			K key = metadata.getKey(value);
+			int index = map.headMap(key).size();
+			map.remove(key, value);
+			fireTableRowsDeleted(index, index);
+		}
 	}
 
 	protected String[] columnNames = new String[]{"id", "version"};
