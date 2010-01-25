@@ -55,7 +55,7 @@ public class ClassFactoryTestCase extends TestCase {
 				{double.class.getCanonicalName(),    "field05"},
 				{boolean.class.getCanonicalName(),   "field06"},
 				{char.class.getCanonicalName(),      "field07"},
-				//{Object.class.getCanonicalName(),    "field08"},
+				{Object.class.getCanonicalName(),    "field08"},
 				{byte[].class.getCanonicalName(),    "field10"},
 				{short[].class.getCanonicalName(),   "field11"},
 				{int[].class.getCanonicalName(),     "field12"},
@@ -80,7 +80,7 @@ public class ClassFactoryTestCase extends TestCase {
 				double.class,
 				boolean.class,
 				char.class,
-				//Object.class,
+				Object.class,
 				byte[].class,
 				short[].class,
 				int[].class,
@@ -112,7 +112,7 @@ public class ClassFactoryTestCase extends TestCase {
 				Double.MAX_VALUE,
 				Boolean.TRUE,
 				Character.MAX_VALUE,
-				//object,
+				object,
 				bytes,
 				shorts,
 				ints,
@@ -133,6 +133,7 @@ public class ClassFactoryTestCase extends TestCase {
 		assertTrue(type.getMethod("getField05", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Double.MAX_VALUE));
 		assertTrue(type.getMethod("getField06", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Boolean.TRUE));
 		assertTrue(type.getMethod("getField07", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Character.MAX_VALUE));
+		assertTrue(type.getMethod("getField08", (Class<?>[]) null).invoke(instance, (Object[]) null) == object);
 		assertTrue(type.getMethod("getField10", (Class<?>[]) null).invoke(instance, (Object[]) null) == bytes);
 		assertTrue(type.getMethod("getField11", (Class<?>[]) null).invoke(instance, (Object[]) null) == shorts);
 		assertTrue(type.getMethod("getField12", (Class<?>[]) null).invoke(instance, (Object[]) null) == ints);

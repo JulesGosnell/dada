@@ -63,17 +63,27 @@ public class ClassFactory implements Opcodes {
 	private final Map<String, Integer> codeToLoadOperation = new HashMap<String, Integer>();
 	
 	{
+		codeToLoadOperation.put("B", ILOAD);
+		codeToLoadOperation.put("S", ILOAD);
+		codeToLoadOperation.put("I", ILOAD);
 		codeToLoadOperation.put("J", LLOAD);
 		codeToLoadOperation.put("F", FLOAD);
 		codeToLoadOperation.put("D", DLOAD);
+		codeToLoadOperation.put("Z", ILOAD);
+		codeToLoadOperation.put("C", ILOAD);
 	}
 	
 	private final Map<String, Integer> codeToReturnOperation = new HashMap<String, Integer>();
 	
 	{
+		codeToReturnOperation.put("B", IRETURN);
+		codeToReturnOperation.put("S", IRETURN);
+		codeToReturnOperation.put("I", IRETURN);
 		codeToReturnOperation.put("J", LRETURN);
 		codeToReturnOperation.put("F", FRETURN);
 		codeToReturnOperation.put("D", DRETURN);
+		codeToReturnOperation.put("Z", IRETURN);
+		codeToReturnOperation.put("C", IRETURN);
 	}
 	
 	private String getCodeForType(String canonicalName) {
@@ -91,21 +101,13 @@ public class ClassFactory implements Opcodes {
 	}
 
 	private Integer getLoadOperationForCode(String code) {
-		if (code.startsWith("[")) {
-			return ALOAD;
-		} else {
-			Integer operation = codeToLoadOperation.get(code);
-			return operation == null ? ILOAD : operation;
-		}
+		Integer operation = codeToLoadOperation.get(code);
+		return operation == null ? ALOAD : operation;
 	}
 
 	private Integer getReturnOperationForCode(String code) {
-		if (code.startsWith("[")) {
-			return ARETURN;
-		} else {
-			Integer operation = codeToReturnOperation.get(code);
-			return operation == null ? IRETURN: operation;
-		}
+		Integer operation = codeToReturnOperation.get(code);
+		return operation == null ? ARETURN: operation;
 	}
 
 	public byte[] create(String canonicalClassName, String[]... fields) throws Exception {
