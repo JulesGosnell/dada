@@ -32,6 +32,10 @@ import junit.framework.TestCase;
 
 public class ClassFactoryTestCase extends TestCase {
 	
+	public void testArray() {
+		System.out.println(int[].class.getComponentType());
+	}
+	
 	private static class TestClassLoader extends ClassLoader {
 		protected Class<?> defineClass(String name, byte[] bytes) {
 			return defineClass(bytes, 0, bytes.length);
@@ -43,30 +47,56 @@ public class ClassFactoryTestCase extends TestCase {
 		String canonicalClassName = "org.dada.test.ImmutableDatum";
 		
 		String[][] fields = new String[][] {
-				{"byte",    "field00"},
-				{"short",   "field01"},
-				{"int",     "field02"},
-				{"long",    "field03"},
-				{"float",   "field04"},
-				{"double",  "field05"},
-				{"boolean", "field06"},
-				{"char",    "field07"},
+				{"byte",      "field00"},
+				{"short",     "field01"},
+				{"int",       "field02"},
+				{"long",      "field03"},
+				{"float",     "field04"},
+				{"double",    "field05"},
+				{"boolean",   "field06"},
+				{"char",      "field07"},
+				{"byte[]",    "field10"},
+				{"short[]",   "field11"},
+				{"int[]",     "field12"},
+				{"long[]",    "field13"},
+				{"float[]",   "field14"},
+				{"double[]",  "field15"},
+				{"boolean[]", "field16"},
+				{"char[]",    "field17"},
 			};
 		
-		byte[] bytes = factory.create(canonicalClassName, fields);
+		byte[] bytecode = factory.create(canonicalClassName, fields);
 		TestClassLoader loader = new TestClassLoader();
-		Class<?> type = loader.defineClass(canonicalClassName, bytes);
+		Class<?> type = loader.defineClass(canonicalClassName, bytecode);
 		assertTrue(type.getCanonicalName().equals(canonicalClassName));
 		Class<?>[] parameterTypes = {
-				Byte.TYPE,
-				Short.TYPE,
-				Integer.TYPE,
-				Long.TYPE,
-				Float.TYPE,
-				Double.TYPE,
-				Boolean.TYPE,
-				Character.TYPE,
-		};
+				byte.class,
+				short.class,
+				int.class,
+				long.class,
+				float.class,
+				double.class,
+				boolean.class,
+				char.class,
+				byte[].class,
+				short[].class,
+				int[].class,
+				long[].class,
+				float[].class,
+				double[].class,
+				boolean[].class,
+				char[].class,
+				};
+		
+		byte[]    bytes    = new byte[0];
+		short[]   shorts   = new short[0];
+		int[]     ints     = new int[0];
+		long[]    longs    = new long[0];
+		float[]   floats   = new float[0];
+		double[]  doubles  = new double[0];
+		boolean[] booleans = new boolean[0];
+		char[]    chars    = new char[0];
+		
 		Object[] initArgs = {
 				Byte.MAX_VALUE,
 				Short.MAX_VALUE,
@@ -76,17 +106,33 @@ public class ClassFactoryTestCase extends TestCase {
 				Double.MAX_VALUE,
 				Boolean.TRUE,
 				Character.MAX_VALUE,
+				bytes,
+				shorts,
+				ints,
+				longs,
+				floats,
+				doubles,
+				booleans,
+				chars,
 		};
 		Object instance = type.getConstructor(parameterTypes).newInstance(initArgs);
 		
-		type.getMethod("getField00", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Byte.MAX_VALUE);
-		type.getMethod("getField01", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Short.MAX_VALUE);
-		type.getMethod("getField02", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Integer.MAX_VALUE);
-		type.getMethod("getField03", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Long.MAX_VALUE);
-		type.getMethod("getField04", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Float.MAX_VALUE);
-		type.getMethod("getField05", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Double.MAX_VALUE);
-		type.getMethod("getField06", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Boolean.TRUE);
-		type.getMethod("getField07", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Character.MAX_VALUE);
+		assertTrue(type.getMethod("getField00", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Byte.MAX_VALUE));
+		assertTrue(type.getMethod("getField01", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Short.MAX_VALUE));
+		assertTrue(type.getMethod("getField02", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Integer.MAX_VALUE));
+		assertTrue(type.getMethod("getField03", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Long.MAX_VALUE));
+		assertTrue(type.getMethod("getField04", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Float.MAX_VALUE));
+		assertTrue(type.getMethod("getField05", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Double.MAX_VALUE));
+		assertTrue(type.getMethod("getField06", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Boolean.TRUE));
+		assertTrue(type.getMethod("getField07", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Character.MAX_VALUE));
+		assertTrue(type.getMethod("getField10", (Class<?>[]) null).invoke(instance, (Object[]) null) == bytes);
+		assertTrue(type.getMethod("getField11", (Class<?>[]) null).invoke(instance, (Object[]) null) == shorts);
+		assertTrue(type.getMethod("getField12", (Class<?>[]) null).invoke(instance, (Object[]) null) == ints);
+		assertTrue(type.getMethod("getField13", (Class<?>[]) null).invoke(instance, (Object[]) null) == longs);
+		assertTrue(type.getMethod("getField14", (Class<?>[]) null).invoke(instance, (Object[]) null) == floats);
+		assertTrue(type.getMethod("getField15", (Class<?>[]) null).invoke(instance, (Object[]) null) == doubles);
+		assertTrue(type.getMethod("getField16", (Class<?>[]) null).invoke(instance, (Object[]) null) == booleans);
+		assertTrue(type.getMethod("getField17", (Class<?>[]) null).invoke(instance, (Object[]) null) == chars);
 	}
 
 }

@@ -77,9 +77,12 @@ public class ClassFactory implements Opcodes {
 	}
 	
 	private String getCodeForType(String canonicalName) {
-		String code = typeToCode.get(canonicalName);
-		return code == null ? "L" + canonicalName.replace('.', '/') + ";" : code;
-		// TODO what about arrays - prefix with '['
+		if (canonicalName.endsWith("[]")) {
+			return "[" + getCodeForType(canonicalName.substring(0, canonicalName.length() - 2));
+		} else {
+			String code = typeToCode.get(canonicalName);
+			return code == null ? "L" + canonicalName.replace('.', '/') + ";" : code;
+		}
 	}
 
 	private Integer getSizeForCode(String code) {
@@ -88,13 +91,21 @@ public class ClassFactory implements Opcodes {
 	}
 
 	private Integer getLoadOperationForCode(String code) {
-		Integer operation = codeToLoadOperation.get(code);
-		return operation == null ? ILOAD : operation;
+		if (code.startsWith("[")) {
+			return ALOAD;
+		} else {
+			Integer operation = codeToLoadOperation.get(code);
+			return operation == null ? ILOAD : operation;
+		}
 	}
 
 	private Integer getReturnOperationForCode(String code) {
-		Integer operation = codeToReturnOperation.get(code);
-		return operation == null ? IRETURN: operation;
+		if (code.startsWith("[")) {
+			return ARETURN;
+		} else {
+			Integer operation = codeToReturnOperation.get(code);
+			return operation == null ? IRETURN: operation;
+		}
 	}
 
 	public byte[] create(String canonicalClassName, String[]... fields) throws Exception {
@@ -118,6 +129,10 @@ public class ClassFactory implements Opcodes {
 			constructorArgs += propertyTypeCode;
 			// create field
 			fv = cw.visitField(ACC_PRIVATE + ACC_FINAL, propertyName, propertyTypeCode, null, null);
+			// a Collection<Integer>
+			//fv = cw.visitField(ACC_PRIVATE + ACC_FINAL, "field09", "Ljava/util/Collection;", "Ljava/util/Collection<Ljava/lang/Integer;>;", null);
+			// a Collection<Integer>[]
+			//fv = cw.visitField(ACC_PRIVATE + ACC_FINAL, "field19", "[Ljava/util/Collection;", "[Ljava/util/Collection<Ljava/lang/Integer;>;", null);
 			fv.visitEnd();
 		}
 		constructorArgs += ")V";
@@ -142,6 +157,13 @@ public class ClassFactory implements Opcodes {
 				mv.visitVarInsn(operation, iloadCounter);
 				iloadCounter += getSizeForCode(propertyTypeCode);
 				mv.visitFieldInsn(PUTFIELD, canonicalClassNameWithSlashes, propertyName, propertyTypeCode);
+				
+				// Object, Collection<Integer>
+				//mv.visitVarInsn(ALOAD, 0);
+				//mv.visitVarInsn(ALOAD, 12);
+				//mv.visitFieldInsn(PUTFIELD, "org/dada/asm/Dummy", "field09", "Ljava/util/Collection;");
+				
+				
 			}
 			Label l2 = new Label();
 			mv.visitLabel(l2);
@@ -158,6 +180,11 @@ public class ClassFactory implements Opcodes {
 				String propertyTypeCode = getCodeForType(propertyType);
 				mv.visitLocalVariable(propertyName, propertyTypeCode, null, l0, l3, counter);
 				counter += getSizeForCode(propertyTypeCode);
+				
+				//mv.visitLocalVariable("field08", "Ljava/lang/Object;", null, l0, l22, 11);
+				//mv.visitLocalVariable("field09", "Ljava/util/Collection;", "Ljava/util/Collection<Ljava/lang/Integer;>;", l0, l22, 12);
+				//mv.visitLocalVariable("field18", "[Ljava/lang/Object;", null, l0, l22, 21);
+				//mv.visitLocalVariable("field19", "[Ljava/util/Collection;", null, l0, l22, 22);
 			}
 			mv.visitMaxs(3, counter);
 			mv.visitEnd();
