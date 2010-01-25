@@ -47,22 +47,24 @@ public class ClassFactoryTestCase extends TestCase {
 		String canonicalClassName = "org.dada.test.ImmutableDatum";
 		
 		String[][] fields = new String[][] {
-				{"byte",      "field00"},
-				{"short",     "field01"},
-				{"int",       "field02"},
-				{"long",      "field03"},
-				{"float",     "field04"},
-				{"double",    "field05"},
-				{"boolean",   "field06"},
-				{"char",      "field07"},
-				{"byte[]",    "field10"},
-				{"short[]",   "field11"},
-				{"int[]",     "field12"},
-				{"long[]",    "field13"},
-				{"float[]",   "field14"},
-				{"double[]",  "field15"},
-				{"boolean[]", "field16"},
-				{"char[]",    "field17"},
+				{byte.class.getCanonicalName(),      "field00"},
+				{short.class.getCanonicalName(),     "field01"},
+				{int.class.getCanonicalName(),       "field02"},
+				{long.class.getCanonicalName(),      "field03"},
+				{float.class.getCanonicalName(),     "field04"},
+				{double.class.getCanonicalName(),    "field05"},
+				{boolean.class.getCanonicalName(),   "field06"},
+				{char.class.getCanonicalName(),      "field07"},
+				//{Object.class.getCanonicalName(),    "field08"},
+				{byte[].class.getCanonicalName(),    "field10"},
+				{short[].class.getCanonicalName(),   "field11"},
+				{int[].class.getCanonicalName(),     "field12"},
+				{long[].class.getCanonicalName(),    "field13"},
+				{float[].class.getCanonicalName(),   "field14"},
+				{double[].class.getCanonicalName(),  "field15"},
+				{boolean[].class.getCanonicalName(), "field16"},
+				{char[].class.getCanonicalName(),    "field17"},
+				{Object[].class.getCanonicalName(),  "field18"},
 			};
 		
 		byte[] bytecode = factory.create(canonicalClassName, fields);
@@ -78,6 +80,7 @@ public class ClassFactoryTestCase extends TestCase {
 				double.class,
 				boolean.class,
 				char.class,
+				//Object.class,
 				byte[].class,
 				short[].class,
 				int[].class,
@@ -86,8 +89,10 @@ public class ClassFactoryTestCase extends TestCase {
 				double[].class,
 				boolean[].class,
 				char[].class,
+				Object[].class,
 				};
 		
+		Object    object   = new Object();
 		byte[]    bytes    = new byte[0];
 		short[]   shorts   = new short[0];
 		int[]     ints     = new int[0];
@@ -96,6 +101,7 @@ public class ClassFactoryTestCase extends TestCase {
 		double[]  doubles  = new double[0];
 		boolean[] booleans = new boolean[0];
 		char[]    chars    = new char[0];
+		Object[]  objects   = new Object[0];
 		
 		Object[] initArgs = {
 				Byte.MAX_VALUE,
@@ -106,6 +112,7 @@ public class ClassFactoryTestCase extends TestCase {
 				Double.MAX_VALUE,
 				Boolean.TRUE,
 				Character.MAX_VALUE,
+				//object,
 				bytes,
 				shorts,
 				ints,
@@ -114,6 +121,7 @@ public class ClassFactoryTestCase extends TestCase {
 				doubles,
 				booleans,
 				chars,
+				objects,
 		};
 		Object instance = type.getConstructor(parameterTypes).newInstance(initArgs);
 		
@@ -133,6 +141,7 @@ public class ClassFactoryTestCase extends TestCase {
 		assertTrue(type.getMethod("getField15", (Class<?>[]) null).invoke(instance, (Object[]) null) == doubles);
 		assertTrue(type.getMethod("getField16", (Class<?>[]) null).invoke(instance, (Object[]) null) == booleans);
 		assertTrue(type.getMethod("getField17", (Class<?>[]) null).invoke(instance, (Object[]) null) == chars);
+		assertTrue(type.getMethod("getField18", (Class<?>[]) null).invoke(instance, (Object[]) null) == objects);
 	}
 
 }

@@ -43,14 +43,14 @@ public class ClassFactory implements Opcodes {
 	private final Map<String, String> typeToCode = new HashMap<String, String>();
 	
 	{
-		typeToCode.put(Byte.TYPE.getCanonicalName(),      "B");
-		typeToCode.put(Short.TYPE.getCanonicalName(),     "S");
-		typeToCode.put(Integer.TYPE.getCanonicalName(),   "I");
-		typeToCode.put(Long.TYPE.getCanonicalName(),      "J");
-		typeToCode.put(Float.TYPE.getCanonicalName(),     "F");
-		typeToCode.put(Double.TYPE.getCanonicalName(),    "D");
-		typeToCode.put(Boolean.TYPE.getCanonicalName(),   "Z");
-		typeToCode.put(Character.TYPE.getCanonicalName(), "C");
+		typeToCode.put(byte.class.getCanonicalName(),      "B");
+		typeToCode.put(short.class.getCanonicalName(),     "S");
+		typeToCode.put(int.class.getCanonicalName(),       "I");
+		typeToCode.put(long.class.getCanonicalName(),      "J");
+		typeToCode.put(float.class.getCanonicalName(),     "F");
+		typeToCode.put(double.class.getCanonicalName(),    "D");
+		typeToCode.put(boolean.class.getCanonicalName(),   "Z");
+		typeToCode.put(char.class.getCanonicalName(),      "C");
 	}
 	
 	private final Map<String, Integer> codeToSize = new HashMap<String, Integer>();
