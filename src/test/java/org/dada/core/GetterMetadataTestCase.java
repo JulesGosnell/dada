@@ -42,10 +42,11 @@ public class GetterMetadataTestCase extends TestCase {
 		Getter<?, ?> versionGetter = new Getter<Integer, Amount>() {@Override public Integer get(Amount value) {return value.getVersion();}};
 		Getter<?, ?> amountGetter = new Getter<BigDecimal, Amount>() {@Override public BigDecimal get(Amount value) {return value.getAmount();}};
 
+		Collection<Class<?>> attributeTypes= Arrays.asList((Class<?>)int.class, int.class, BigDecimal.class);
 		Collection<String> attributeNames = Arrays.asList("Id", "Version", "Amount");
 		Collection<Getter<?, ?>> getters = Arrays.asList(idGetter, versionGetter, amountGetter);
 
-		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(Amount.class, attributeNames, getters) ;
+		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(Amount.class, attributeTypes, attributeNames, getters) ;
 
 		BigDecimal one = new BigDecimal("1.0");
 		Amount amount = new Amount(1, 0, one);

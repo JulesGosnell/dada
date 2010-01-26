@@ -40,12 +40,14 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private static final int GET_LENGTH = GET.length();
 	
 	private final Class<?> clazz;
+	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
 	private final int keyIndex;
 	//private final List<Method> getters;
 
 	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws NoSuchMethodException {
 		this.clazz = clazz;
+		attributeTypes= new ArrayList<Class<?>>();
 		attributeNames = new ArrayList<String>();
 		//getters = new ArrayList<Method>();
 		for (Method method : clazz.getMethods()) {
@@ -54,6 +56,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith(GET) && parameterTypes.length == 0) {
 				String attributeName = methodName.substring(GET_LENGTH);
+				attributeTypes.add(method.getReturnType());
 				attributeNames.add(attributeName);
 				//getters.add(method);
 			}
@@ -71,6 +74,11 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public List<Class<?>> getAttributeTypes() {
+		return attributeTypes;
 	}
 
 	@Override
