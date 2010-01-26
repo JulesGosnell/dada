@@ -45,7 +45,7 @@ public class GetterMetadataTestCase extends TestCase {
 		Collection<String> attributeNames = Arrays.asList("Id", "Version", "Amount");
 		Collection<Getter<?, ?>> getters = Arrays.asList(idGetter, versionGetter, amountGetter);
 
-		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(attributeNames, getters) ;
+		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(Amount.class, attributeNames, getters) ;
 
 		BigDecimal one = new BigDecimal("1.0");
 		Amount amount = new Amount(1, 0, one);

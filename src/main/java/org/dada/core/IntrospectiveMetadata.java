@@ -83,4 +83,9 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		return (K) getAttributeValue(value, keyIndex);
 	}
 
+	@Override
+	public Class<?> getValueClass() {
+		return clazz;
+	}
+
 }

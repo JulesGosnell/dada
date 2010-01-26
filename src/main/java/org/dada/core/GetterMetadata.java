@@ -34,11 +34,13 @@ import java.util.List;
 
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
+	private final Class<?> valueClass;
 	private final List<String> attributeNames;
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, Object>[] getters;
 
-	public GetterMetadata(Collection<String> attributeNames, Collection<Getter<?, ?>> getters) {
+	public GetterMetadata(Class<?> valueClass, Collection<String> attributeNames, Collection<Getter<?, ?>> getters) {
+		this.valueClass = valueClass;
 		this.attributeNames = new ArrayList<String>(attributeNames);
 		this.getters = getters.toArray(new Getter[getters.size()]);
 		this.keyGetter = (Getter<K, V>)this.getters[0];
@@ -57,6 +59,11 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public K getKey(V value) {
 		return keyGetter.get(value);
+	}
+
+	@Override
+	public Class<?> getValueClass() {
+		return valueClass;
 	}
 
 }

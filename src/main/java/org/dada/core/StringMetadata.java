@@ -54,4 +54,9 @@ public class StringMetadata implements Metadata<String, String> {
 	public String getKey(String value) {
 		return value;
 	}
+
+	@Override
+	public Class<?> getValueClass() {
+		return String.class;
+	}
 }

@@ -69,6 +69,12 @@ public class AbstractModelTestCase extends TestCase {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("NYI");
 			}
+
+			@Override
+			public Class<?> getValueClass() {
+				// TODO Auto-generated method stub
+				throw new UnsupportedOperationException("NYI");
+			}
 		};
 
 		AbstractModel<Integer, Datum<Integer>> model = new AbstractModel<Integer, Datum<Integer>>(name, metadata) {
