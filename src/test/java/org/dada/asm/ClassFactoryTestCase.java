@@ -28,6 +28,8 @@
  */
 package org.dada.asm;
 
+import java.io.Serializable;
+
 import junit.framework.TestCase;
 
 public class ClassFactoryTestCase extends TestCase {
@@ -125,6 +127,7 @@ public class ClassFactoryTestCase extends TestCase {
 		};
 		Object instance = type.getConstructor(parameterTypes).newInstance(initArgs);
 		
+		assertTrue(instance instanceof Serializable);
 		assertTrue(type.getMethod("getField00", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Byte.MAX_VALUE));
 		assertTrue(type.getMethod("getField01", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Short.MAX_VALUE));
 		assertTrue(type.getMethod("getField02", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Integer.MAX_VALUE));

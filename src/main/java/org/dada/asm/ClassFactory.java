@@ -119,8 +119,7 @@ public class ClassFactory implements Opcodes {
 		String simpleClassName = canonicalClassName.substring(canonicalClassName.lastIndexOf('.') + 1);
 		String canonicalClassNameWithSlashes = canonicalClassName.replace('.', '/');
 		String canonicalSuperclassNameWithSlashes = Object.class.getCanonicalName().replace('.', '/');
-		cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, canonicalClassNameWithSlashes, null, canonicalSuperclassNameWithSlashes, null);
-		
+		cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, canonicalClassNameWithSlashes, null, canonicalSuperclassNameWithSlashes, new String[] { "java/io/Serializable" });
 		cw.visitSource(simpleClassName + ".java", null);
 
 		String constructorArgs = "(";
