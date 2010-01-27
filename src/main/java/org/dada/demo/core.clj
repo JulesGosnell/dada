@@ -166,7 +166,7 @@
 ;; TODO :default not a good idea - would replace nulls
 ;; TODO what about type hints on lambdas ?
 (defn expand-property [src-class src-type src-name & pvec]
-  (let [pmap (apply hash-map pvec)
+  (let [pmap (apply array-map pvec)
 	tgt-type (or (pmap :type) src-type)
 	tgt-name (or (pmap :name) src-name)
 	convert (or (pmap :convert) identity)
@@ -177,12 +177,12 @@
     [tgt-type tgt-name retriever]
     ))
 
-(defn select [src-model output-class-name output-model-name key-type key-name version-type version-name properties]
+(defn select [src-model output-class-name output-model-name key-name version-name properties]
   (let [metadata (. src-model getMetadata)
 	src-class (. metadata getValueClass)
 	src-types (. metadata getAttributeTypes)
 	src-names (. metadata getAttributeNames)
-	src-map (apply hash-map (interleave src-names src-types))
+	src-map (apply array-map (interleave src-names src-types))
 	;; list of [tgt-type tgt-name retriever]
 	dummy (print "src-map: ")
 	dummy (println src-map)
@@ -204,14 +204,22 @@
   	output-class (apply make-class class-factory output-class-name output-properties)
 	dummy (print "output-class: ")
 	dummy (println output-class)
-   	key-getter (make-proxy-getter output-class key-type key-name)
-   	version-getter (make-proxy-getter output-class version-type version-name)
+   	output-getters (apply
+			conj
+			(array-map)
+			(map
+			 (fn [property]
+			     (let [type (nth property 0)
+				   name (nth property 1)]
+			       [name (make-proxy-getter output-class type name)]))
+			 expanded-properties))
+   	key-getter (output-getters key-name)
+   	version-getter (output-getters version-name)
 	dummy (print "version-getter: ")
 	dummy (println version-getter)
-   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 0) (nth property 1))) expanded-properties)
 	dummy (print "output-getters: ")
 	dummy (println output-getters)
-	output-metadata (new GetterMetadata output-class output-types output-names output-getters)
+	output-metadata (new GetterMetadata output-class output-types output-names (vals output-getters))
 	dummy (print "output-metadata: ")
 	dummy (println output-metadata)
 	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
@@ -245,18 +253,15 @@
   (. input-model getData)
   (. input-model getMetadata)
 
-  (def 
-   view
-   (select
-    input-model
-    "org.dada.core.tmp.OutputItem"
-    "OutputModel"
-    (Integer/TYPE) "key"
-    (Integer/TYPE) "version"
-    (list
-     ["id" :name "key"]
-     ["version"]
-     ["amount" :name "money"])))
+  (def view
+       (select
+	input-model
+	"org.dada.core.tmp.OutputItem"
+	"OutputModel"
+	"key"
+	"version"
+	(list ["id" :name "key"] ["version"] ["amount" :name "money"])
+	))
   (insert metamodel view)
 
   (def item5 (make-instance input-class 3 2 2 6.0))
@@ -267,14 +272,10 @@
 	view
 	"org.dada.core.tmp.OutputItem2"
 	"OutputModel2"
-	Integer
 	"key"
-	Integer
 	"version"
-	(list
-	 ["key"]
-	 ["version"]
-	 ["money" :name "amount"])))
+	(list ["key"] ["version"] ["money" :name "amount"])
+	))
 
   )
 
