@@ -128,46 +128,6 @@
 ;;     `(proxy [Getter] [] (get [bean#] (. bean# ~method)))
 ;;     ))
 
-;; properties is a vector of property descriptions of the form:
-;; [input-type input-name output-type output-name]
-(defn select2 [input-class input-model output-item-name output-model-name key-type key-name version-type version-name properties]
-  (let [output-properties (map (fn [property] (vector (nth property 2) (nth property 3))) properties)
-   	input-getters (map (fn [property] (make-proxy-getter input-class (nth property 0) (nth property 1))) properties)
-	input-getters (map (fn [property] (make-lambda-getter input-class (nth property 0) (nth property 1))) properties)
-   	output-types (map (fn [property] (nth property 2)) properties)
-   	output-names (map (fn [property] (nth property 3)) properties)
-	class-factory  (new ClassFactory)
-  	output-class (apply make-class class-factory output-item-name output-properties)
-   	key-getter (make-proxy-getter output-class key-type key-name)
-   	version-getter (make-proxy-getter output-class version-type version-name)
-   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 2) (nth property 3))) properties)
-	output-metadata (new GetterMetadata output-class output-types output-names output-getters)
-	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
-	transformer (new
-  		     Transformer
-  		     (list view)
-  		     (proxy
-  		      [Transformer$Transform]
-  		      []
-  		      (transform [input]
-				 (print "INPUT ITEM: ")
-				 (println input)
-				 (print "OUTPUT CLASS:")
-				 (println output-class)
-				 (let 
-				     [values
-				      (map
-				       ;;(fn [getter] (. getter get input))
-				       (fn [getter] (getter input))
-				       input-getters)]
-				   (print "OUTPUT VALUES:")
-				   (println values)
-				   (apply make-instance output-class values)))
-		      ))]
-    (connect input-model transformer)
-    view)
-  )
-
 ;; should [if required] connect a transformer between model and view...
 ;; each property should be able to register a converter fn as part of the transformation...
 ;; if  properties is null, don't do a transformation etc..
@@ -205,16 +165,18 @@
 	(connect model transformer)
 	))))
 
+;; properties is a vector of property descriptions of the form:
+;; [input-name output-type output-name]
 (defn select [input-model output-item-name output-model-name key-type key-name version-type version-name properties]
-  (let [output-properties (map (fn [property] (vector (nth property 2) (nth property 3))) properties)
-   	input-names (map (fn [property] (nth property 1)) properties)
-   	output-types (map (fn [property] (nth property 2)) properties)
-   	output-names (map (fn [property] (nth property 3)) properties)
+  (let [output-properties (map (fn [property] (vector (nth property 1) (nth property 2))) properties)
+   	input-names (map (fn [property] (nth property 0)) properties)
+   	output-types (map (fn [property] (nth property 1)) properties)
+   	output-names (map (fn [property] (nth property 2)) properties)
 	class-factory  (new ClassFactory)
   	output-class (apply make-class class-factory output-item-name output-properties)
    	key-getter (make-proxy-getter output-class key-type key-name)
    	version-getter (make-proxy-getter output-class version-type version-name)
-   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 2) (nth property 3))) properties)
+   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 1) (nth property 2))) properties)
 	output-metadata (new GetterMetadata output-class output-types output-names output-getters)
 	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
 	transformer (transform input-model input-names view output-class)]
@@ -247,13 +209,13 @@
   (. input-model getData)
   (. input-model getMetadata)
 
-  (def view (select input-model "org.dada.core.tmp.OutputItem" "OutputModel" (Integer/TYPE) "key" (Integer/TYPE) "version" (list [(Integer/TYPE) "id" (Integer/TYPE) "key"][(Integer/TYPE) "version" (Integer/TYPE) "version"][(Double/TYPE) "amount" (Double/TYPE) "money"])))
+  (def view (select input-model "org.dada.core.tmp.OutputItem" "OutputModel" (Integer/TYPE) "key" (Integer/TYPE) "version" (list ["id" (Integer/TYPE) "key"]["version" (Integer/TYPE) "version"]["amount" (Double/TYPE) "money"])))
   (insert metamodel view)
 
   (def item5 (make-instance input-class 3 2 2 6.0))
   (insert input-model item5)
 
-  (def view2 (select view "org.dada.core.tmp.OutputItem2" "OutputModel2" Integer "key" Integer "version" (list [(Integer/TYPE) "key" Integer "key"][(Integer/TYPE) "version" Integer "version"][(Double/TYPE) "money" Double "amount"])))
+  (def view2 (select view "org.dada.core.tmp.OutputItem2" "OutputModel2" Integer "key" Integer "version" (list ["key" Integer "key"]["version" Integer "version"]["money" Double "amount"])))
 
   )
 
