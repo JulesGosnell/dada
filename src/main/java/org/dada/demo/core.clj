@@ -177,35 +177,42 @@
     [tgt-type tgt-name retriever]
     ))
 
+(defn make-getter-map [tgt-class fields]
+  (apply
+   conj
+   (array-map)
+   (map
+    (fn [field]
+	(let [type (nth field 0)
+	      name (nth field 1)]
+	  [name (make-proxy-getter tgt-class type name)]))
+    fields)))
+
+(defn make-fields [src-class src-map props]
+  (map (fn [prop]
+	   (let [src-name (first prop)
+		 src-type (src-map src-name)]
+	     (apply expand-property src-class src-type prop)))
+       props))
+
 (defn select [src-model tgt-class-name tgt-model-name key-name version-name props]
   (let [src-metadata (. src-model getMetadata)
 	src-class (. src-metadata getValueClass)
 	src-types (. src-metadata getAttributeTypes)
 	src-names (. src-metadata getAttributeNames)
-	src-map (apply array-map (interleave src-names src-types))
-	fields (map (fn [prop]
-			(let [src-name (first prop)
-			      src-type (src-map src-name)]
-			  (apply expand-property src-class src-type prop)))
-		    props)
-	tgt-props (map (fn [field] (vector (nth field 0) (nth field 1))) fields)
+	src-map (apply array-map (interleave src-names src-types)) ; name:type
+	fields (make-fields src-class src-map props) ; selection ([type name ...])
    	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-names (map (fn [field] (nth field 1)) fields)
+	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
 	class-factory (new ClassFactory)
   	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
-   	tgt-getters (apply
-		     conj
-		     (array-map)
-		     (map
-		      (fn [field]
-			  (let [type (nth field 0)
-				name (nth field 1)]
-			    [name (make-proxy-getter tgt-class type name)]))
-		      fields))
-   	tgt-key-getter (tgt-getters key-name)
-   	tgt-version-getter (tgt-getters version-name)
-	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names (vals tgt-getters))
-	view (new VersionedModelView tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
+   	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
+	tgt-getters (vals tgt-getter-map)
+   	tgt-key-getter (tgt-getter-map key-name)
+   	tgt-version-getter (tgt-getter-map version-name)
+	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names tgt-getters)
+	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
 	transformer (transform src-model src-class src-map fields view tgt-class)]
     view)
   )
