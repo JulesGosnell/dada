@@ -172,6 +172,19 @@
 ;; each property should be able to register a converter fn as part of the transformation...
 ;; if  properties is null, don't do a transformation etc..
 
+(defn make-transformer [getters view view-class]
+  (new
+   Transformer
+   (list view)
+   (proxy
+    [Transformer$Transform]
+    []
+    (transform 
+     [input]
+     ;; TODO: this code needs to be FAST - executed online
+     (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
+    )))
+
 (defn transform [model names view view-class]
   (let [metadata (. model getMetadata)
 	property-names (. metadata getAttributeNames)]
@@ -188,16 +201,7 @@
 	    types (map property-map names)
 	    model-class (. metadata getValueClass)
 	    getters (map (fn [type name] (make-lambda-getter model-class type name)) types names)
-	    transformer (new
-			 Transformer
-			 (list view)
-			 (proxy
-			  [Transformer$Transform]
-			  []
-			  (transform [input]
-				     ;; TODO: this code needs to be FAST - executed online
-				     (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
-			  ))]
+	    transformer (make-transformer getters view view-class)]
 	(connect model transformer)
 	))))
 
