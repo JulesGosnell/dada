@@ -172,26 +172,34 @@
 ;; each property should be able to register a converter fn as part of the transformation...
 ;; if  properties is null, don't do a transformation etc..
 
-(defn property-map [metadata]
-  )
-
-(defn transform [model names view view-class] ;; lose view class
+(defn transform [model names view view-class]
   (let [metadata (. model getMetadata)
-	model-class (. metadata getValueClass)
-	types (. metadata getAttributeTypes)
-	getters (map (fn [type name] (make-lambda-getter model-class name type)) names types)
-	transformer (new
-		     Transformer
-		     (list view)
-		     (proxy
-		      [Transformer$Transform]
-		      []
-		      (transform [input]
-				 (let [values (map (fn [getter] (getter input)) getters)]
-				   (apply make-instance view-class values)))
-		      ))]
-    (connect model transformer)
-    ))
+	property-names (. metadata getAttributeNames)]
+    (if (= names property-names)
+      ;; we are selecting all the fields in their original order - no
+      ;; need for a transformation...
+      ;; N.B. if just order has changed, could we just reorder metadata ?
+      (do
+	(connect model view)
+	view)
+      ;; we need some sort of transformation...
+      (let [property-types (. metadata getAttributeTypes)
+	    property-map (apply hash-map (interleave property-names property-types))
+	    types (map property-map names)
+	    model-class (. metadata getValueClass)
+	    getters (map (fn [type name] (make-lambda-getter model-class type name)) types names)
+	    transformer (new
+			 Transformer
+			 (list view)
+			 (proxy
+			  [Transformer$Transform]
+			  []
+			  (transform [input]
+				     ;; TODO: this code needs to be FAST - executed online
+				     (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
+			  ))]
+	(connect model transformer)
+	))))
 
 (defn select [input-model output-item-name output-model-name key-type key-name version-type version-name properties]
   (let [output-properties (map (fn [property] (vector (nth property 2) (nth property 3))) properties)
