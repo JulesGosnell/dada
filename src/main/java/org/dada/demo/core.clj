@@ -145,41 +145,77 @@
      (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
     )))
 
-(defn transform [model names view view-class]
-  (let [metadata (. model getMetadata)
-	property-names (. metadata getAttributeNames)]
-    (if (= names property-names)
-      ;; we are selecting all the fields in their original order - no
-      ;; need for a transformation...
-      ;; N.B. if just order has changed, could we just reorder metadata ?
-      (do
-	(connect model view)
-	view)
-      ;; we need some sort of transformation...
-      (let [property-types (. metadata getAttributeTypes)
-	    property-map (apply hash-map (interleave property-names property-types))
-	    types (map property-map names)
-	    model-class (. metadata getValueClass)
-	    getters (map (fn [type name] (make-lambda-getter model-class type name)) types names)
-	    transformer (make-transformer getters view view-class)]
-	(connect model transformer)
-	))))
+;; (transform input-model src-class property-map input-names view output-class)
+(defn transform [model model-class property-map expanded-properties view view-class]
+  (if (= (map (fn [x] (nth x 1)) expanded-properties) (keys property-map))
+    ;; we are selecting all the fields in their original order - no
+    ;; need for a transformation...
+    ;; N.B. if just order has changed, could we just reorder metadata ?
+    (do
+      (connect model view)
+      view)
+    ;; we need some sort of transformation...
+    (let [getters (map (fn [x] (nth x 2)) expanded-properties)
+	  transformer (make-transformer getters view view-class)]
+      (connect model transformer)
+      )))
 
 ;; properties is a vector of property descriptions of the form:
 ;; [input-name output-type output-name]
-(defn select [input-model output-item-name output-model-name key-type key-name version-type version-name properties]
-  (let [output-properties (map (fn [property] (vector (nth property 1) (nth property 2))) properties)
-   	input-names (map (fn [property] (nth property 0)) properties)
-   	output-types (map (fn [property] (nth property 1)) properties)
-   	output-names (map (fn [property] (nth property 2)) properties)
+;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
+;; TODO :default not a good idea - would replace nulls
+;; TODO what about type hints on lambdas ?
+(defn expand-property [src-class src-type src-name & pvec]
+  (let [pmap (apply hash-map pvec)
+	tgt-type (or (pmap :type) src-type)
+	tgt-name (or (pmap :name) src-name)
+	convert (or (pmap :convert) identity)
+	default (or (pmap :default) ())
+	defaulter (if (fn? default) default (fn [value] default))
+	getter (make-proxy-getter src-class src-type src-name)
+	retriever (fn [value] (convert (. getter get value)))]
+    [tgt-type tgt-name retriever]
+    ))
+
+(defn select [src-model output-class-name output-model-name key-type key-name version-type version-name properties]
+  (let [metadata (. src-model getMetadata)
+	src-class (. metadata getValueClass)
+	src-types (. metadata getAttributeTypes)
+	src-names (. metadata getAttributeNames)
+	src-map (apply hash-map (interleave src-names src-types))
+	;; list of [tgt-type tgt-name retriever]
+	dummy (print "src-map: ")
+	dummy (println src-map)
+	expanded-properties (map (fn [property]
+				     (let [src-name (first property)
+					   src-type (src-map src-name)]
+				       (apply expand-property src-class src-type property)))
+				 properties)
+	;; list of [tgt-type tgt-name]
+	output-properties (map (fn [property] (vector (nth property 0) (nth property 1))) expanded-properties)
+	dummy (print "output-properties: ")
+	dummy (println output-properties)
+	
+   	output-types (map (fn [property] (nth property 0)) expanded-properties)
+   	output-names (map (fn [property] (nth property 1)) expanded-properties)
 	class-factory  (new ClassFactory)
-  	output-class (apply make-class class-factory output-item-name output-properties)
+	dummy (print "output-class-name: ")
+	dummy (println output-class-name)
+  	output-class (apply make-class class-factory output-class-name output-properties)
+	dummy (print "output-class: ")
+	dummy (println output-class)
    	key-getter (make-proxy-getter output-class key-type key-name)
    	version-getter (make-proxy-getter output-class version-type version-name)
-   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 1) (nth property 2))) properties)
+	dummy (print "version-getter: ")
+	dummy (println version-getter)
+   	output-getters (map (fn [property] (make-proxy-getter output-class (nth property 0) (nth property 1))) expanded-properties)
+	dummy (print "output-getters: ")
+	dummy (println output-getters)
 	output-metadata (new GetterMetadata output-class output-types output-names output-getters)
+	dummy (print "output-metadata: ")
+	dummy (println output-metadata)
 	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
-	transformer (transform input-model input-names view output-class)]
+	transformer (transform src-model src-class src-map expanded-properties view output-class)]
     view)
   )
 
@@ -209,13 +245,36 @@
   (. input-model getData)
   (. input-model getMetadata)
 
-  (def view (select input-model "org.dada.core.tmp.OutputItem" "OutputModel" (Integer/TYPE) "key" (Integer/TYPE) "version" (list ["id" (Integer/TYPE) "key"]["version" (Integer/TYPE) "version"]["amount" (Double/TYPE) "money"])))
+  (def 
+   view
+   (select
+    input-model
+    "org.dada.core.tmp.OutputItem"
+    "OutputModel"
+    (Integer/TYPE) "key"
+    (Integer/TYPE) "version"
+    (list
+     ["id" :name "key"]
+     ["version"]
+     ["amount" :name "money"])))
   (insert metamodel view)
 
   (def item5 (make-instance input-class 3 2 2 6.0))
   (insert input-model item5)
 
-  (def view2 (select view "org.dada.core.tmp.OutputItem2" "OutputModel2" Integer "key" Integer "version" (list ["key" Integer "key"]["version" Integer "version"]["money" Double "amount"])))
+  (def view2
+       (select
+	view
+	"org.dada.core.tmp.OutputItem2"
+	"OutputModel2"
+	Integer
+	"key"
+	Integer
+	"version"
+	(list
+	 ["key"]
+	 ["version"]
+	 ["money" :name "amount"])))
 
   )
 
