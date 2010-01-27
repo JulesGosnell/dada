@@ -177,36 +177,36 @@
     [tgt-type tgt-name retriever]
     ))
 
-(defn select [src-model output-class-name output-model-name key-name version-name properties]
-  (let [metadata (. src-model getMetadata)
-	src-class (. metadata getValueClass)
-	src-types (. metadata getAttributeTypes)
-	src-names (. metadata getAttributeNames)
+(defn select [src-model tgt-class-name tgt-model-name key-name version-name props]
+  (let [src-metadata (. src-model getMetadata)
+	src-class (. src-metadata getValueClass)
+	src-types (. src-metadata getAttributeTypes)
+	src-names (. src-metadata getAttributeNames)
 	src-map (apply array-map (interleave src-names src-types))
-	expanded-properties (map (fn [property]
-				     (let [src-name (first property)
-					   src-type (src-map src-name)]
-				       (apply expand-property src-class src-type property)))
-				 properties)
-	output-properties (map (fn [property] (vector (nth property 0) (nth property 1))) expanded-properties)
-   	output-types (map (fn [property] (nth property 0)) expanded-properties)
-   	output-names (map (fn [property] (nth property 1)) expanded-properties)
-	class-factory  (new ClassFactory)
-  	output-class (apply make-class class-factory output-class-name output-properties)
-   	output-getters (apply
-			conj
-			(array-map)
-			(map
-			 (fn [property]
-			     (let [type (nth property 0)
-				   name (nth property 1)]
-			       [name (make-proxy-getter output-class type name)]))
-			 expanded-properties))
-   	key-getter (output-getters key-name)
-   	version-getter (output-getters version-name)
-	output-metadata (new GetterMetadata output-class output-types output-names (vals output-getters))
-	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
-	transformer (transform src-model src-class src-map expanded-properties view output-class)]
+	fields (map (fn [prop]
+			(let [src-name (first prop)
+			      src-type (src-map src-name)]
+			  (apply expand-property src-class src-type prop)))
+		    props)
+	tgt-props (map (fn [field] (vector (nth field 0) (nth field 1))) fields)
+   	tgt-types (map (fn [field] (nth field 0)) fields)
+   	tgt-names (map (fn [field] (nth field 1)) fields)
+	class-factory (new ClassFactory)
+  	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
+   	tgt-getters (apply
+		     conj
+		     (array-map)
+		     (map
+		      (fn [field]
+			  (let [type (nth field 0)
+				name (nth field 1)]
+			    [name (make-proxy-getter tgt-class type name)]))
+		      fields))
+   	tgt-key-getter (tgt-getters key-name)
+   	tgt-version-getter (tgt-getters version-name)
+	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names (vals tgt-getters))
+	view (new VersionedModelView tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
+	transformer (transform src-model src-class src-map fields view tgt-class)]
     view)
   )
 
