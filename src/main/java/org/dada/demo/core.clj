@@ -146,19 +146,15 @@
     )))
 
 ;; (transform input-model src-class property-map input-names view output-class)
-(defn transform [model model-class property-map expanded-properties view view-class]
-  (if (= (map (fn [x] (nth x 1)) expanded-properties) (keys property-map))
+(defn transform [model model-class property-map sel-getters tgt-names view view-class]
+  (if (= tgt-names (keys property-map))
     ;; we are selecting all the fields in their original order - no
     ;; need for a transformation...
     ;; N.B. if just order has changed, could we just reorder metadata ?
-    (do
-      (connect model view)
-      view)
+    (connect model view)
     ;; we need some sort of transformation...
-    (let [getters (map (fn [x] (nth x 2)) expanded-properties)
-	  transformer (make-transformer getters view view-class)]
-      (connect model transformer)
-      )))
+    (connect model (make-transformer sel-getters view view-class))
+    ))
 
 ;; properties is a vector of property descriptions of the form:
 ;; [input-name output-type output-name]
@@ -204,6 +200,7 @@
 	fields (make-fields src-class src-map props) ; selection ([type name ...])
    	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-names (map (fn [field] (nth field 1)) fields)
+   	sel-getters (map (fn [field] (nth field 2)) fields)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
 	class-factory (new ClassFactory)
   	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
@@ -213,7 +210,7 @@
    	tgt-version-getter (tgt-getter-map version-name)
 	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
-	transformer (transform src-model src-class src-map fields view tgt-class)]
+	transformer (transform src-model src-class src-map sel-getters tgt-names view tgt-class)]
     view)
   )
 
