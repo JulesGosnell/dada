@@ -183,27 +183,16 @@
 	src-types (. metadata getAttributeTypes)
 	src-names (. metadata getAttributeNames)
 	src-map (apply array-map (interleave src-names src-types))
-	;; list of [tgt-type tgt-name retriever]
-	dummy (print "src-map: ")
-	dummy (println src-map)
 	expanded-properties (map (fn [property]
 				     (let [src-name (first property)
 					   src-type (src-map src-name)]
 				       (apply expand-property src-class src-type property)))
 				 properties)
-	;; list of [tgt-type tgt-name]
 	output-properties (map (fn [property] (vector (nth property 0) (nth property 1))) expanded-properties)
-	dummy (print "output-properties: ")
-	dummy (println output-properties)
-	
    	output-types (map (fn [property] (nth property 0)) expanded-properties)
    	output-names (map (fn [property] (nth property 1)) expanded-properties)
 	class-factory  (new ClassFactory)
-	dummy (print "output-class-name: ")
-	dummy (println output-class-name)
   	output-class (apply make-class class-factory output-class-name output-properties)
-	dummy (print "output-class: ")
-	dummy (println output-class)
    	output-getters (apply
 			conj
 			(array-map)
@@ -215,13 +204,7 @@
 			 expanded-properties))
    	key-getter (output-getters key-name)
    	version-getter (output-getters version-name)
-	dummy (print "version-getter: ")
-	dummy (println version-getter)
-	dummy (print "output-getters: ")
-	dummy (println output-getters)
 	output-metadata (new GetterMetadata output-class output-types output-names (vals output-getters))
-	dummy (print "output-metadata: ")
-	dummy (println output-metadata)
 	view (new VersionedModelView output-model-name output-metadata key-getter version-getter)
 	transformer (transform src-model src-class src-map expanded-properties view output-class)]
     view)
