@@ -158,15 +158,14 @@
 ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
 ;; TODO :default not a good idea - would replace nulls
 ;; TODO what about type hints on lambdas ?
-(defn expand-property [src-class src-type src-name & pvec]
+(defn expand-property [src-class src-type src-getter src-name & pvec]
   (let [pmap (apply array-map pvec)
 	tgt-type (or (pmap :type) src-type)
 	tgt-name (or (pmap :name) src-name)
 	convert (or (pmap :convert) identity)
 	default (or (pmap :default) ())
 	defaulter (if (fn? default) default (fn [value] default))
-	getter (make-proxy-getter src-class src-type src-name)
-	retriever (fn [value] (convert (. getter get value)))]
+	retriever (fn [value] (convert (. src-getter get value)))]
     [tgt-type tgt-name retriever]
     ))
 
@@ -181,11 +180,12 @@
 	  [name (make-proxy-getter tgt-class type name)]))
     fields)))
 
-(defn make-fields [src-class src-map props]
+(defn make-fields [src-class src-type-map src-getter-map props]
   (map (fn [prop]
 	   (let [src-name (first prop)
-		 src-type (src-map src-name)]
-	     (apply expand-property src-class src-type prop)))
+		 src-type (src-type-map src-name)
+		 src-getter (src-getter-map src-name)]
+	     (apply expand-property src-class src-type src-getter prop)))
        props))
 
 (defn select [src-model key-name version-name props & pvec]
@@ -194,17 +194,16 @@
 	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
 	src-metadata (. src-model getMetadata)
 	src-class (. src-metadata getValueClass)
-	src-types (. src-metadata getAttributeTypes)
 	src-names (. src-metadata getAttributeNames)
-	src-map (apply array-map (interleave src-names src-types)) ; name:type
-	fields (make-fields src-class src-map props) ; selection ([type name ...])
-   	tgt-types (map (fn [field] (nth field 0)) fields)
-   	tgt-names (map (fn [field] (nth field 1)) fields)
+	src-types (. src-metadata getAttributeTypes)
+	src-type-map (apply array-map (interleave src-names src-types)) ; name:type
 	src-getters (. src-metadata getAttributeGetters)
+	src-getter-map (apply array-map (interleave src-names src-getters)) ; name:getter
+	fields (make-fields src-class src-type-map src-getter-map props) ; selection ([type name ...])
+   	tgt-types (map (fn [field] (nth field 0)) fields)
+	;; test to see if transform is needed should be done somewhere here...
+   	tgt-names (map (fn [field] (nth field 1)) fields)
    	sel-getters (map (fn [field] (nth field 2)) fields)
-	;; we should be able to take src-getters directly from metadata
-	;; map them to name and then
-	;;sel-getters (map (fn [name] (src-getter-map name)) tgt-names)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
 	class-factory (new ClassFactory)
   	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
@@ -214,7 +213,7 @@
    	tgt-version-getter (tgt-getter-map version-name)
 	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
-	transformer (transform src-model src-class src-map sel-getters tgt-names view tgt-class)]
+	transformer (transform src-model src-class src-type-map sel-getters tgt-names view tgt-class)]
     view)
   )
 
