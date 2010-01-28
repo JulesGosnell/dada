@@ -29,6 +29,7 @@
 package org.dada.core;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -44,7 +45,10 @@ public class GetterMetadataTestCase extends TestCase {
 
 		Collection<Class<?>> attributeTypes= Arrays.asList((Class<?>)int.class, int.class, BigDecimal.class);
 		Collection<String> attributeNames = Arrays.asList("Id", "Version", "Amount");
-		Collection<Getter<?, ?>> getters = Arrays.asList(idGetter, versionGetter, amountGetter);
+		Collection<Getter<?, Amount>> getters = new ArrayList<Getter<?,Amount>>();
+		getters.add((Getter<?, Amount>)idGetter);
+		getters.add((Getter<?, Amount>)versionGetter);
+		getters.add((Getter<?, Amount>)amountGetter);
 
 		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(Amount.class, attributeTypes, attributeNames, getters) ;
 

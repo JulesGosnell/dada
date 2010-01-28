@@ -37,11 +37,14 @@ public class StringMetadata implements Metadata<String, String> {
 
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
+	private final List<Getter<?, String>> attributeGetters;
 
 	public StringMetadata(String keyName) {
 		attributeTypes = new ArrayList<Class<?>>();
 		attributeTypes.add(String.class);
 		attributeNames = Collections.singletonList(keyName);
+		attributeGetters = new ArrayList<Getter<?,String>>();
+		attributeGetters.add(new Getter<Object, String>() {@Override public Object get(String value) {return value;}});
 	}
 
 	@Override
@@ -67,5 +70,10 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public Class<?> getValueClass() {
 		return String.class;
+	}
+
+	@Override
+	public List<Getter<?, String>> getAttributeGetters() {
+		return attributeGetters;
 	}
 }
