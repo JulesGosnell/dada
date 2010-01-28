@@ -71,9 +71,6 @@
 			       array))
 			 properties))))))
 
-;; select t0.f0 
-
-;; 
 ;; fields => [model field]
 
 (import org.dada.core.Getter)
@@ -191,8 +188,11 @@
 	     (apply expand-property src-class src-type prop)))
        props))
 
-(defn select [src-model tgt-class-name tgt-model-name key-name version-name props]
-  (let [src-metadata (. src-model getMetadata)
+(defn select [src-model key-name version-name props & pvec]
+  (let [pmap (apply array-map pvec)
+	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
+	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
+	src-metadata (. src-model getMetadata)
 	src-class (. src-metadata getValueClass)
 	src-types (. src-metadata getAttributeTypes)
 	src-names (. src-metadata getAttributeNames)
@@ -250,26 +250,15 @@
   (def view
        (select
 	input-model
-	"org.dada.core.tmp.OutputItem"
-	"OutputModel"
 	"key"
 	"version"
-	(list ["id" :name "key"] ["version"] ["amount" :name "money"])
-	))
+	(list ["id" :name "key"] ["version"] ["amount" :name "money"])))
   (insert metamodel view)
 
   (def item5 (make-instance input-class 3 2 2 6.0))
   (insert input-model item5)
 
-  (def view2
-       (select
-	view
-	"org.dada.core.tmp.OutputItem2"
-	"OutputModel2"
-	"key"
-	"version"
-	(list ["key"] ["version"] ["money" :name "amount"])
-	))
+  (def view2 (select view "key" "version" (list ["key"] ["version"] ["money" :name "amount"])))
 
   )
 
