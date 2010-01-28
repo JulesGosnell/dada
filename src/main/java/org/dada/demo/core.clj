@@ -158,7 +158,7 @@
 ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
 ;; TODO :default not a good idea - would replace nulls
 ;; TODO what about type hints on lambdas ?
-(defn expand-property [src-class src-type src-getter src-name & pvec]
+(defn expand-property [src-type src-getter src-name & pvec]
   (let [pmap (apply array-map pvec)
 	tgt-type (or (pmap :type) src-type)
 	tgt-name (or (pmap :name) src-name)
@@ -180,12 +180,12 @@
 	  [name (make-proxy-getter tgt-class type name)]))
     fields)))
 
-(defn make-fields [src-class src-type-map src-getter-map props]
+(defn make-fields [src-type-map src-getter-map props]
   (map (fn [prop]
 	   (let [src-name (first prop)
 		 src-type (src-type-map src-name)
 		 src-getter (src-getter-map src-name)]
-	     (apply expand-property src-class src-type src-getter prop)))
+	     (apply expand-property src-type src-getter prop)))
        props))
 
 (defn select [src-model key-name version-name props & pvec]
@@ -199,7 +199,7 @@
 	src-type-map (apply array-map (interleave src-names src-types)) ; name:type
 	src-getters (. src-metadata getAttributeGetters)
 	src-getter-map (apply array-map (interleave src-names src-getters)) ; name:getter
-	fields (make-fields src-class src-type-map src-getter-map props) ; selection ([type name ...])
+	fields (make-fields src-type-map src-getter-map props) ; selection ([type name ...])
    	tgt-types (map (fn [field] (nth field 0)) fields)
 	;; test to see if transform is needed should be done somewhere here...
    	tgt-names (map (fn [field] (nth field 1)) fields)
