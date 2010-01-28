@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // TODO: Methods are not Serializable !
+// TODO: tidy up
 
 public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
@@ -42,6 +43,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final Class<?> clazz;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
+	private final List<Getter<?, V>> attributeGetters;
 	private final int keyIndex;
 	//private final List<Method> getters;
 
@@ -49,8 +51,11 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		this.clazz = clazz;
 		attributeTypes= new ArrayList<Class<?>>();
 		attributeNames = new ArrayList<String>();
+		attributeGetters = new ArrayList<Getter<?,V>>();
 		//getters = new ArrayList<Method>();
+		int i = 0;
 		for (Method method : clazz.getMethods()) {
+			final int index = i++;
 			// is it a getter ?
 			String methodName = method.getName();
 			Class<?>[] parameterTypes = method.getParameterTypes();
@@ -58,6 +63,12 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 				String attributeName = methodName.substring(GET_LENGTH);
 				attributeTypes.add(method.getReturnType());
 				attributeNames.add(attributeName);
+				attributeGetters.add(new Getter<Object, V>() {
+					@Override
+					public Object get(V value) {
+						return getAttributeValue(value, index);
+					}
+				});
 				//getters.add(method);
 			}
 		}
@@ -94,6 +105,11 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public Class<?> getValueClass() {
 		return clazz;
+	}
+
+	@Override
+	public List<Getter<?, V>> getAttributeGetters() {
+		return attributeGetters;
 	}
 
 }
