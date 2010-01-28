@@ -200,7 +200,11 @@
 	fields (make-fields src-class src-map props) ; selection ([type name ...])
    	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-names (map (fn [field] (nth field 1)) fields)
+	src-getters (. src-metadata getAttributeGetters)
    	sel-getters (map (fn [field] (nth field 2)) fields)
+	;; we should be able to take src-getters directly from metadata
+	;; map them to name and then
+	;;sel-getters (map (fn [name] (src-getter-map name)) tgt-names)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
 	class-factory (new ClassFactory)
   	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
@@ -239,6 +243,9 @@
   (insert input-model item)
   (. input-model getData)
   (. input-model getMetadata)
+
+;; TODO: output item & model should be automatic unless specifically overridden..
+;; & :class xxx :model yyy
 
   (def view
        (select
