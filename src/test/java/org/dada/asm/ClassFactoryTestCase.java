@@ -69,7 +69,7 @@ public class ClassFactoryTestCase extends TestCase {
 				{Object[].class.getCanonicalName(),  "field18"},
 			};
 		
-		byte[] bytecode = factory.create(canonicalClassName, fields);
+		byte[] bytecode = factory.create(canonicalClassName, Object.class, fields);
 		TestClassLoader loader = new TestClassLoader();
 		Class<?> type = loader.defineClass(canonicalClassName, bytecode);
 		assertTrue(type.getCanonicalName().equals(canonicalClassName));
