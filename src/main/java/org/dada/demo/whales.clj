@@ -1,4 +1,4 @@
-(ns org.dada.whales
+(ns org.dada.demo.whales
     ;;(:refer org.dada.core)
     )
 
