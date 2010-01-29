@@ -1,9 +1,11 @@
-(import org.dada.core.Update)
-(import org.dada.core.Model)
-(import org.dada.core.View)
-(import org.dada.demo.Client)
-(import org.springframework.context.support.ClassPathXmlApplicationContext)
-
+(ns org.dada.core
+    (:import (clojure.lang DynamicClassLoader)
+	     (java.beans PropertyDescriptor)
+	     (org.dada.core Getter GetterMetadata Model Transformer Transformer$Transform Update VersionedModelView View)
+	     (org.dada.demo Client)
+	     (org.springframework.context.support ClassPathXmlApplicationContext)
+	     (org.dada.asm ClassFactory)))
+ 
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
   (let [context (ClassPathXmlApplicationContext. "application-context.xml")]
@@ -41,45 +43,30 @@
     #(Update. % nil)
     (.getData model))))
 
-(import '(clojure.lang DynamicClassLoader))
-
 ;; e.g.
 ;;(make-class
 ;; factory
 ;; "org.dada.tmp.Amount"
 ;; ["int" "id"] ["int" "version"] ["double" "amount"])
-(defn make-class2 [factory name & properties]
+(defn make-class [factory name superclass & properties]
   (. #^DynamicClassLoader
      (deref clojure.lang.Compiler/LOADER)
      (defineClass name 
        (.create 
 	factory
 	name
-	(into-array (map #(into-array String %) properties))))))
-
-(defn make-class [factory name & properties]
-  (. #^DynamicClassLoader
-     (deref clojure.lang.Compiler/LOADER)
-     (defineClass name 
-       (.create 
-	factory
-	name
-	(into-array (map (fn [pair] 
-			     (let [array (make-array String 2)]
-			       (aset array 0 (.getCanonicalName (first pair)))
-			       (aset array 1 (first (rest pair)))
-			       array))
-			 properties))))))
+	(. superclass getCanonicalName)
+	(if (empty? properties)
+	  nil
+	  (into-array (map (fn [pair] 
+			       (let [array (make-array String 2)]
+				 (aset array 0 (.getCanonicalName (first pair)))
+				 (aset array 1 (first (rest pair)))
+				 array))
+			   properties)))))))
 
 ;; fields => [model field]
 
-(import org.dada.core.Getter)
-(import org.dada.core.Transformer)
-(import org.dada.core.Transformer$Transform)
-(import org.dada.core.GetterMetadata)
-(import org.dada.core.VersionedModelView)
-(import org.dada.asm.ClassFactory)
-(import java.beans.PropertyDescriptor)
 
 (defn make-constructor [class & types]
   (let [ctor (symbol (str (.getCanonicalName class) "."))]
@@ -188,10 +175,15 @@
 	     (apply expand-property src-type src-getter prop)))
        props))
 
+;; TODO
+;; allow selection from a number of src-models
+;; allow selection into a number of src views
+;; allow filtering :filter <filter-fn>
+;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
+;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
+
 (defn select [src-model key-name version-name props & pvec]
   (let [pmap (apply array-map pvec)
-	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
-	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
 	src-metadata (. src-model getMetadata)
 	src-class (. src-metadata getValueClass)
 	src-names (. src-metadata getAttributeNames)
@@ -200,13 +192,16 @@
 	src-getters (. src-metadata getAttributeGetters)
 	src-getter-map (apply array-map (interleave src-names src-getters)) ; name:getter
 	fields (make-fields src-type-map src-getter-map props) ; selection ([type name ...])
-   	tgt-types (map (fn [field] (nth field 0)) fields)
 	;; test to see if transform is needed should be done somewhere here...
+	;; what is an :into param was given...none of this needs calculating...
+	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
+	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
+   	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-names (map (fn [field] (nth field 1)) fields)
    	sel-getters (map (fn [field] (nth field 2)) fields)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
 	class-factory (new ClassFactory)
-  	tgt-class (apply make-class class-factory tgt-class-name tgt-props)
+  	tgt-class (apply make-class class-factory tgt-class-name Object tgt-props)
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
 	tgt-getters (vals tgt-getter-map)
    	tgt-key-getter (tgt-getter-map key-name)
@@ -222,13 +217,9 @@
   (def metamodel (start-server "Server0"))
   (start-client "Server0")
 
-  (import org.dada.asm.ClassFactory)
-  (import org.dada.core.VersionedModelView)
-  (import org.dada.core.GetterMetadata)
- 
   (def factory (new ClassFactory))
   (def properties (list [(Integer/TYPE) "id"] [(Integer/TYPE) "version"] [(Long/TYPE) "time"] [(Double/TYPE) "amount"]))
-  (def input-class (apply make-class factory "org.dada.tmp.InputItem" properties))
+  (def input-class (apply make-class factory "org.dada.tmp.InputItem" Object properties))
   (def input-types (map (fn [property] (nth property 0)) properties))
   (def input-names (map (fn [property] (nth property 1)) properties))
   (def input-getters (map (fn [property] (make-proxy-getter input-class (nth property 0) (nth property 1))) properties))
@@ -247,11 +238,8 @@
 ;; & :class xxx :model yyy
 
   (def view
-       (select
-	input-model
-	"key"
-	"version"
-	(list ["id" :name "key"] ["version"] ["amount" :name "money"])))
+       (select input-model "key" "version"
+	       '(["id" :name "key"] ["version"] ["amount" :name "money"])))
   (insert metamodel view)
 
   (def item5 (make-instance input-class 3 2 2 6.0))
