@@ -29,6 +29,7 @@
 package org.dada.asm;
 
 import java.io.Serializable;
+import java.util.Date;
 
 import junit.framework.TestCase;
 
@@ -58,6 +59,7 @@ public class ClassFactoryTestCase extends TestCase {
 				{boolean.class.getCanonicalName(),   "field06"},
 				{char.class.getCanonicalName(),      "field07"},
 				{Object.class.getCanonicalName(),    "field08"},
+				{Date.class.getCanonicalName(),      "field09"},
 				{byte[].class.getCanonicalName(),    "field10"},
 				{short[].class.getCanonicalName(),   "field11"},
 				{int[].class.getCanonicalName(),     "field12"},
@@ -67,6 +69,7 @@ public class ClassFactoryTestCase extends TestCase {
 				{boolean[].class.getCanonicalName(), "field16"},
 				{char[].class.getCanonicalName(),    "field17"},
 				{Object[].class.getCanonicalName(),  "field18"},
+				{Date[].class.getCanonicalName(),    "field19"},
 			};
 		
 		byte[] bytecode = factory.create(canonicalClassName, Object.class, fields);
@@ -83,6 +86,7 @@ public class ClassFactoryTestCase extends TestCase {
 				boolean.class,
 				char.class,
 				Object.class,
+				Date.class,
 				byte[].class,
 				short[].class,
 				int[].class,
@@ -92,9 +96,11 @@ public class ClassFactoryTestCase extends TestCase {
 				boolean[].class,
 				char[].class,
 				Object[].class,
+				Date[].class,
 				};
 		
 		Object    object   = new Object();
+		Date      date     = new Date();
 		byte[]    bytes    = new byte[0];
 		short[]   shorts   = new short[0];
 		int[]     ints     = new int[0];
@@ -103,7 +109,8 @@ public class ClassFactoryTestCase extends TestCase {
 		double[]  doubles  = new double[0];
 		boolean[] booleans = new boolean[0];
 		char[]    chars    = new char[0];
-		Object[]  objects   = new Object[0];
+		Object[]  objects  = new Object[0];
+		Date[]    dates    = new Date[0];
 		
 		Object[] initArgs = {
 				Byte.MAX_VALUE,
@@ -115,6 +122,7 @@ public class ClassFactoryTestCase extends TestCase {
 				Boolean.TRUE,
 				Character.MAX_VALUE,
 				object,
+				date,
 				bytes,
 				shorts,
 				ints,
@@ -124,6 +132,7 @@ public class ClassFactoryTestCase extends TestCase {
 				booleans,
 				chars,
 				objects,
+				dates,
 		};
 		Object instance = type.getConstructor(parameterTypes).newInstance(initArgs);
 		
@@ -137,6 +146,7 @@ public class ClassFactoryTestCase extends TestCase {
 		assertTrue(type.getMethod("getField06", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Boolean.TRUE));
 		assertTrue(type.getMethod("getField07", (Class<?>[]) null).invoke(instance, (Object[]) null).equals(Character.MAX_VALUE));
 		assertTrue(type.getMethod("getField08", (Class<?>[]) null).invoke(instance, (Object[]) null) == object);
+		assertTrue(type.getMethod("getField09", (Class<?>[]) null).invoke(instance, (Object[]) null) == date);
 		assertTrue(type.getMethod("getField10", (Class<?>[]) null).invoke(instance, (Object[]) null) == bytes);
 		assertTrue(type.getMethod("getField11", (Class<?>[]) null).invoke(instance, (Object[]) null) == shorts);
 		assertTrue(type.getMethod("getField12", (Class<?>[]) null).invoke(instance, (Object[]) null) == ints);
@@ -146,6 +156,7 @@ public class ClassFactoryTestCase extends TestCase {
 		assertTrue(type.getMethod("getField16", (Class<?>[]) null).invoke(instance, (Object[]) null) == booleans);
 		assertTrue(type.getMethod("getField17", (Class<?>[]) null).invoke(instance, (Object[]) null) == chars);
 		assertTrue(type.getMethod("getField18", (Class<?>[]) null).invoke(instance, (Object[]) null) == objects);
+		assertTrue(type.getMethod("getField19", (Class<?>[]) null).invoke(instance, (Object[]) null) == dates);
 	}
 
 }

@@ -43,17 +43,19 @@
     #(Update. % nil)
     (.getData model))))
 
+(def *class-factory* (new ClassFactory))
+
 ;; e.g.
 ;;(make-class
 ;; factory
 ;; "org.dada.tmp.Amount"
 ;; ["int" "id"] ["int" "version"] ["double" "amount"])
-(defn make-class [factory name superclass & properties]
+(defn make-class [name superclass & properties]
   (. #^DynamicClassLoader
      (deref clojure.lang.Compiler/LOADER)
      (defineClass name 
        (.create 
-	factory
+	*class-factory*
 	name
 	 superclass
 	(if (empty? properties)
@@ -76,12 +78,6 @@
 
 (defn make-instance [class & args]
   (eval (list* 'new class args)))
-
-;; (defn make-instance [class & args]
-;;   "'new' seems to be a macro which does not evaluate its 'class'
-;; argument - so if you want to store the class in a variable and then
-;; instantiate it, use (make-instance)."
-;;   (apply 'new class args))
 
 (require '[clojure.contrib.str-utils2 :as s])
 
@@ -200,8 +196,7 @@
    	tgt-names (map (fn [field] (nth field 1)) fields)
    	sel-getters (map (fn [field] (nth field 2)) fields)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
-	class-factory (new ClassFactory)
-  	tgt-class (apply make-class class-factory tgt-class-name Object tgt-props)
+  	tgt-class (apply make-class tgt-class-name Object tgt-props)
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
 	tgt-getters (vals tgt-getter-map)
    	tgt-key-getter (tgt-getter-map key-name)
@@ -212,58 +207,4 @@
     view)
   )
 
-(do
 
-  (def metamodel (start-server "Server0"))
-  (start-client "Server0")
-
-  (def factory (new ClassFactory))
-  (def properties (list [(Integer/TYPE) "id"] [(Integer/TYPE) "version"] [(Long/TYPE) "time"] [(Double/TYPE) "amount"]))
-  (def input-class (apply make-class factory "org.dada.tmp.InputItem" Object properties))
-  (def input-types (map (fn [property] (nth property 0)) properties))
-  (def input-names (map (fn [property] (nth property 1)) properties))
-  (def input-getters (map (fn [property] (make-proxy-getter input-class (nth property 0) (nth property 1))) properties))
-  (def input-key-getter (nth input-getters 0))
-  (def input-version-getter (nth input-getters 1))
-  (def input-metadata (new GetterMetadata input-class input-types input-names input-getters))
-  (def input-model-name "InputModel")
-  (def input-model (new VersionedModelView input-model-name input-metadata input-key-getter input-version-getter))
-  (insert metamodel input-model)
-  (def item (make-instance input-class 0 1 2 3.0))
-  (insert input-model item)
-  (. input-model getData)
-  (. input-model getMetadata)
-
-;; TODO: output item & model should be automatic unless specifically overridden..
-;; & :class xxx :model yyy
-
-  (def view
-       (select input-model "key" "version"
-	       '(["id" :name "key"] ["version"] ["amount" :name "money"])))
-  (insert metamodel view)
-
-  (def item5 (make-instance input-class 3 2 2 6.0))
-  (insert input-model item5)
-
-  (def view2 (select view "key" "version" (list ["key"] ["version"] ["money" :name "amount"])))
-
-  )
-
-;; thoughts about select...
-
-;; outputs: define new column names [and types?], name of new Java type and Model
-;; inputs: define list of (Model, columns, column-mapping, (column-getter), column transform,...
-
-;;where input type and output type differ (column-mappings have been
-;;specified) connect a transformer to input-model, to prrform this.
-
-;; connect input-model/transformer to output-model
-
-;; start by transforming any models that need it
-;; ensure all transforms types concur
-;; connect all to output model
-
-
-
-
-;; retrieve value class from Metadata
