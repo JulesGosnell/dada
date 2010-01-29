@@ -82,83 +82,83 @@ public class Dummy {
 		this.field19 = field19;
 	}
 
-	public byte getField00() {
+	public final byte getField00() {
 		return field00;
 	}
 
-	public short getField01() {
+	public final short getField01() {
 		return field01;
 	}
 
-	public int getField02() {
+	public final int getField02() {
 		return field02;
 	}
 
-	public long getField03() {
+	public final long getField03() {
 		return field03;
 	}
 
-	public float getField04() {
+	public final float getField04() {
 		return field04;
 	}
 
-	public double getField05() {
+	public final double getField05() {
 		return field05;
 	}
 
-	public boolean isField06() {
+	public final boolean isField06() {
 		return field06;
 	}
 
-	public char getField07() {
+	public final char getField07() {
 		return field07;
 	}
 
-	public Object getField08() {
+	public final Object getField08() {
 		return field08;
 	}
 
-	public Collection<Integer> getField09() {
+	public final Collection<Integer> getField09() {
 		return field09;
 	}
 
-	public byte[] getField10() {
+	public final byte[] getField10() {
 		return field10;
 	}
 
-	public short[] getField11() {
+	public final short[] getField11() {
 		return field11;
 	}
 
-	public int[] getField12() {
+	public final int[] getField12() {
 		return field12;
 	}
 
-	public long[] getField13() {
+	public final long[] getField13() {
 		return field13;
 	}
 
-	public float[] getField14() {
+	public final float[] getField14() {
 		return field14;
 	}
 
-	public double[] getField15() {
+	public final double[] getField15() {
 		return field15;
 	}
 
-	public boolean[] getField16() {
+	public final boolean[] getField16() {
 		return field16;
 	}
 
-	public char[] getField17() {
+	public final char[] getField17() {
 		return field17;
 	}
 
-	public Object[] getField18() {
+	public final Object[] getField18() {
 		return field18;
 	}
 
-	public Collection<Integer>[] getField19() {
+	public final Collection<Integer>[] getField19() {
 		return field19;
 	}
 
