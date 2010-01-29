@@ -55,7 +55,7 @@
        (.create 
 	factory
 	name
-	(. superclass getCanonicalName)
+	 superclass
 	(if (empty? properties)
 	  nil
 	  (into-array (map (fn [pair] 

@@ -110,7 +110,7 @@ public class ClassFactory implements Opcodes {
 		return operation == null ? ARETURN: operation;
 	}
 
-	public byte[] create(String canonicalClassName, String[]... fields) throws Exception {
+	public byte[] create(String canonicalClassName, Class<?> superclass, String[]... fields) throws Exception {
 		ClassWriter cw = new ClassWriter(0);
 		FieldVisitor fv;
 		MethodVisitor mv;
@@ -118,7 +118,7 @@ public class ClassFactory implements Opcodes {
 		String typeCode = getCodeForType(canonicalClassName);
 		String simpleClassName = canonicalClassName.substring(canonicalClassName.lastIndexOf('.') + 1);
 		String canonicalClassNameWithSlashes = canonicalClassName.replace('.', '/');
-		String canonicalSuperclassNameWithSlashes = Object.class.getCanonicalName().replace('.', '/');
+		String canonicalSuperclassNameWithSlashes = superclass.getCanonicalName().replace('.', '/');
 		cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, canonicalClassNameWithSlashes, null, canonicalSuperclassNameWithSlashes, new String[] { "java/io/Serializable" });
 		cw.visitSource(simpleClassName + ".java", null);
 
