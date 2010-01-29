@@ -36,6 +36,11 @@
     <maven.compile.debug>true</maven.compile.debug>
   </properties>
 
+  <issueManagement>
+    <system>GitHub</system>
+    <url>http://github.com/JulesGosnell/dada/issues</url>
+  </issueManagement>
+
   <ciManagement>
     <system>Hudson</system>
     <url>http://ouroboros.dnsalias.net/hudson</url>
