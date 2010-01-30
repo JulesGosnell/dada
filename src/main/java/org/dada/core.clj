@@ -17,6 +17,9 @@
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '()))
 
+(defn insert-n [#^View view items]
+  (.update view (map (fn [item] (Update. nil item)) items) '() '()))
+
 (defn update [#^View view oldValue newValue]
   (.update view '() (list (Update. oldValue newValue)) '()))
 
