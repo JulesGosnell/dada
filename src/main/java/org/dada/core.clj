@@ -70,12 +70,21 @@
 ;; fields => [model field]
 
 
+;; might be better than runtime make instance, if we could have
+;; selected the right ctor - not used at moment...
 (defn make-constructor [class & types]
   (let [ctor (symbol (str (.getCanonicalName class) "."))]
     (fn [& args] (apply ctor args))))
 
+;; see http://groups.google.com/group/clojure/browse_thread/thread/106a2f73fb49f492#
+
+;; I'm going with directly invoking this ctor, because it seems to be
+;; calling a ctor directly on a class, although the other option calls
+;; new on a symbol... What I really want to do is come up with
+;; something that compiles down to bytecode that calls the correct
+;; ctor for the given args directly... - TODO - more thought...
 (defn make-instance [class & args]
-  (eval (list* 'new class args)))
+  (clojure.lang.Reflector/invokeConstructor class (to-array args)))
 
 (require '[clojure.contrib.str-utils2 :as s])
 
