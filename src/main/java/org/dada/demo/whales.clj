@@ -90,7 +90,7 @@
   (insert *metamodel* model)
   model)
 
-;; create 1000 whales and insert them into model - one by one
+;; create 10,000 whales and insert them into model - one by one
 (insert-n
  model
  (let [time (System/currentTimeMillis)]
