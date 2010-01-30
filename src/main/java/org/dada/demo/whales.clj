@@ -114,6 +114,6 @@
     output))
 
 ;; select whales into a new model...
-(def small (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Small"))
+(def small (fetch model "time" "version" '(["time"] ["version"] ["type"])))
 (def smaller (fetch small "time" "version" '(["time"] ["version"]) :model "Smaller"))
 

@@ -72,8 +72,6 @@
 
 (defn make-constructor [class & types]
   (let [ctor (symbol (str (.getCanonicalName class) "."))]
-    (println ctor)
-    (println types)
     (fn [& args] (apply ctor args))))
 
 (defn make-instance [class & args]
@@ -113,6 +111,8 @@
 ;; if  properties is null, don't do a transformation etc..
 
 (defn make-transformer [getters view view-class]
+  (def *getters* getters) ;; TODO - debug
+  (def *view-class* view-class)
   (new
    Transformer
    (list view)
@@ -153,15 +153,10 @@
     ))
 
 (defn make-getter-map [tgt-class fields]
-  (apply
-   conj
-   (array-map)
-   (map
-    (fn [field]
-	(let [type (nth field 0)
-	      name (nth field 1)]
-	  [name (make-proxy-getter tgt-class type name)]))
-    fields)))
+  (let [types (map first fields)
+	names (map second fields)
+	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types names)]
+    (apply array-map (interleave names getters))))
 
 (defn make-fields [src-type-map src-getter-map props]
   (map (fn [prop]
@@ -178,7 +173,7 @@
 ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
 ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
-(defn select [src-model key-name version-name props & pvec]
+(defn select [src-model src-key-name src-version-name props & pvec]
   (let [pmap (apply array-map pvec)
 	src-metadata (. src-model getMetadata)
 	src-class (. src-metadata getValueClass)
@@ -199,12 +194,15 @@
   	tgt-class (apply make-class tgt-class-name Object tgt-props)
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
 	tgt-getters (vals tgt-getter-map)
-   	tgt-key-getter (tgt-getter-map key-name)
-   	tgt-version-getter (tgt-getter-map version-name)
+   	tgt-key-getter (tgt-getter-map src-key-name)
+   	tgt-version-getter (tgt-getter-map src-version-name)
 	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
 	transformer (transform src-model src-class src-type-map sel-getters tgt-names view tgt-class)]
     view)
   )
 
+
+
+;;; TODO - tgt-getters are somehow in wrong order
 
