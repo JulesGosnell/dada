@@ -56,11 +56,6 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-
-
-(rnd types)
-
-
 ;; IDEAS
 
 ;; spotting - whale-id, time, coordinates, weight, length
@@ -95,17 +90,17 @@
   (insert *metamodel* model)
   model)
 
-
 ;; create 1000 whales and insert them into model - one by one
-(map (fn [whale] (insert model whale)) 
-     (take 1000
-	   (repeatedly
-	    #(make-instance org.dada.demo.whales.Whale 
-			    (System/currentTimeMillis)
-			    (rand-int 1000)
-			    (rnd types)
-			    32.9
-			    172))))
+(insert-n
+ model
+ (let [time (System/currentTimeMillis)]
+   (for [id (range time (+ time 10000))]
+     (make-instance org.dada.demo.whales.Whale 
+		    id
+		    0
+		    (rnd types)
+		    (rand-int 33) ;; 32.9 metres
+		    (rand-int 172))))) ;; 172 metric tons
 
 ;; syntactic sugar
 (defn fetch [& args]
@@ -114,6 +109,5 @@
     output))
 
 ;; select whales into a new model...
-(def small (fetch model "time" "version" '(["time"] ["version"] ["type"])))
+(def small (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Small"))
 (def smaller (fetch small "time" "version" '(["time"] ["version"]) :model "Smaller"))
-
