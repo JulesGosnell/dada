@@ -1,0 +1,24 @@
+#!/bin/sh
+
+file=.clojure-classpath.txt
+
+if [ pom.xml -nt $file ]
+then
+    rm -f $file
+fi
+
+if [ ! -f $file ]
+then
+    mvn dependency:build-classpath -Dmdep.outputFile=$file --offline
+fi
+
+CLASSPATH=\
+src/test/java:\
+src/main/java:\
+src/main/resources:\
+target/classes:\
+`cat $file`
+
+echo $CLASSPATH | tr : \\n
+
+exec java -cp $CLASSPATH clojure.main
