@@ -414,9 +414,15 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Main-Class>clojure.main</Main-Class>
+                    <Main-Class>org.dada.core.CLI</Main-Class>
                     <Project-Version>${project.version}</Project-Version>
                   </manifestEntries>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+		  <resource>META-INF/spring.handlers</resource>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+		  <resource>META-INF/spring.schemas</resource>
                 </transformer>
               </transformers>
             </configuration>
