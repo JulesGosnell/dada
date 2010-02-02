@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dada</groupId>
@@ -34,6 +36,9 @@
     <clojure.version>1.1.0-new-SNAPSHOT</clojure.version>
     <asm.version>3.2</asm.version>
     <maven.compile.debug>true</maven.compile.debug>
+    <surefire.jvm>java</surefire.jvm>
+    <java.agent>-javaagent:${settings.localRepository}/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</java.agent>   <!-- for Spring Aspect Load Time Weaving -->
+    <dotnet.hack>dummy</dotnet.hack>
   </properties>
 
   <issueManagement>
@@ -380,10 +385,16 @@
             <additionalClasspathElement>target/classes</additionalClasspathElement>
           </additionalClasspathElements>
           <forkMode>once</forkMode>
-	  <argLine>-javaagent:${settings.localRepository}/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</argLine>  <!-- for Spring Aspect Load Time Weaving -->
+	  <jvm>${surefire.jvm}</jvm>
+	  <argLine>${java.agent}</argLine>
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/*AbstractTestCase.java</exclude>
+	    <!-- lose these to run on mono/ikvm -->
+            <exclude>${dotnet.hack}**/ltw/*TestCase.java</exclude>  <!-- ltw not supported -->
+            <exclude>${dotnet.hack}**/DateRoutingStrategyTestCase.java</exclude>  <!-- crashes mono -->
+            <exclude>${dotnet.hack}**/ConsensusTestCase.java</exclude>  <!-- crashes ikvm -->
+            <exclude>${dotnet.hack}**/AMQRemotingTestCase.java</exclude>  <!-- crashes ikvm -->
           </excludes>
           <systemProperties>
             <property>

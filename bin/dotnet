@@ -1,0 +1,5 @@
+#!/bin/sh -x
+
+mono --version
+
+exec mono /usr/local/java/ikvm-0.42.0.3/bin/ikvm.exe $@
