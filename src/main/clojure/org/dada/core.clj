@@ -9,6 +9,7 @@
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
   (let [context (ClassPathXmlApplicationContext. "application-context.xml")]
+    (def *spring-context* context)
     (.getBean context "metaModel")))
 
 (defn start-client [#^String name]
