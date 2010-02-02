@@ -213,7 +213,7 @@
 	<artifactId>clojure-maven-plugin</artifactId>
 	<version>1.3.1</version>
 	<configuration>
-	  <clojureOptions>-Xmx128</clojureOptions>
+	  <!-- <clojureOptions>-Xmx128m</clojureOptions> -->
 	  <warnOnReflection>true</warnOnReflection>
 	  <namespaces>
             <namespace>org.dada.core</namespace>
