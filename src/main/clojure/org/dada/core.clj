@@ -1,7 +1,17 @@
 (ns org.dada.core
     (:import (clojure.lang DynamicClassLoader)
 	     (java.beans PropertyDescriptor)
-	     (org.dada.core Getter GetterMetadata Model Transformer Transformer$Transform Update VersionedModelView View)
+	     (org.dada.core
+	      FilteredView
+	      FilteredView$Filter
+	      Getter
+	      GetterMetadata
+	      Model
+	      Transformer
+	      Transformer$Transform
+	      Update
+	      VersionedModelView
+	      View)
 	     (org.dada.demo Client)
 	     (org.springframework.context.support ClassPathXmlApplicationContext)
 	     (org.dada.asm ClassFactory)))
@@ -138,6 +148,18 @@
      (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
     )))
 
+(defn make-filter [filter-fn view]
+  (FilteredView. 
+   (proxy
+    [FilteredView$Filter]
+    []
+    (filter 
+     [value]
+     ;; TODO: this code needs to be FAST - executed online
+     (filter-fn value)))
+   (list view)
+   ))
+
 ;; (transform input-model src-class property-map input-names view output-class)
 (defn transform [model model-class property-map sel-getters tgt-names view view-class]
   (if (= tgt-names (keys property-map))
@@ -182,7 +204,6 @@
 ;; TODO
 ;; allow selection from a number of src-models
 ;; allow selection into a number of src views
-;; allow filtering :filter <filter-fn>
 ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
 ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
@@ -200,6 +221,7 @@
 	;; what is an :into param was given...none of this needs calculating...
 	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
 	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
+	filter-fn (pmap :filter)
    	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-names (map (fn [field] (nth field 1)) fields)
    	sel-getters (map (fn [field] (nth field 2)) fields)
@@ -211,7 +233,10 @@
    	tgt-version-getter (tgt-getter-map src-version-name)
 	tgt-metadata (new GetterMetadata tgt-class tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
-	transformer (transform src-model src-class src-type-map sel-getters tgt-names view tgt-class)]
+	transformer (make-transformer sel-getters view tgt-class)
+	filter (make-filter filter-fn transformer)
+	]
+    (connect src-model filter)
     view)
   )
 

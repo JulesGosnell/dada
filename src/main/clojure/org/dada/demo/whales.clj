@@ -109,5 +109,7 @@
     output))
 
 ;; select whales into a new model...
-(def small (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Small"))
-(def smaller (fetch small "time" "version" '(["time"] ["version"]) :model "Smaller"))
+(def narwhals (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Narwhals2" :filter (fn [value] (= "narwhal" (. value getType)))))
+
+(def belugas (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
+
