@@ -94,13 +94,13 @@
 (insert-n
  model
  (let [time (System/currentTimeMillis)]
-   (for [id (range time (+ time 10000))]
+   (for [id (range time (+ time 1000))] ;;10,000
      (make-instance org.dada.demo.whales.Whale 
 		    id
 		    0
 		    (rnd types)
-		    (rand-int 33) ;; 32.9 metres
-		    (rand-int 172))))) ;; 172 metric tons
+		    (/ (rand-int 3290) 100) ;; 32.9 metres
+		    (/ (rand-int 172) 100))))) ;; 172 metric tons
 
 ;; syntactic sugar
 (defn fetch [& args]
@@ -109,7 +109,63 @@
     output))
 
 ;; select whales into a new model...
-(def narwhals (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Narwhals2" :filter (fn [value] (= "narwhal" (. value getType)))))
+(def narwhals (fetch model "time" "version" '(["time"] ["version"] ["type"]["weight"]) :model "Narwhals" :filter (fn [value] (= "narwhal" (. value getType)))))
 
-(def belugas (fetch model "time" "version" '(["time"] ["version"] ["type"]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
+(def belugas (fetch model "time" "version" '(["time"] ["version"] ["type"]["length"]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
 
+(import org.dada.core.AggregatedModelView)
+(import org.dada.core.AggregatedModelView$Aggregator)
+
+;; make a class to hold key, version and aggregate value...
+
+(def Length-properties 
+     (list
+      [String "type"]
+      [(Integer/TYPE) "version"]
+      [(Float/TYPE) "length"]))
+
+(def Length
+     (apply
+      make-class
+      "org.dada.demo.whales.Length" Object Length-properties))
+
+(def sum
+     (AggregatedModelView.
+      "Beluga.Length"
+      (new GetterMetadata
+	   Length
+	   (map (fn [property] (.getCanonicalName (first property))) Length-properties)
+	   (map second Length-properties)
+	   (map 
+	    (fn [property]
+		(make-proxy-getter 
+		 Length
+		 (first property)
+		 (second property)))
+	    Length-properties))
+      "beluga whale"
+      (proxy
+       [AggregatedModelView$Aggregator]
+       []
+       (initialValue []
+		     (new Float "0"))
+       (currentValue [key version value]
+		     (make-instance Length key version value))
+       (aggregate [insertions updates deletions]
+		  (- 
+		   (+
+		    (apply + (map #(.getLength (.getNewValue %)) insertions))
+		    (apply + (map #(.getLength (.getNewValue %)) updates))
+		    )
+		   (+
+		    (apply + (map #(.getLength (.getOldValue %)) updates))
+		    (apply + (map #(.getLength (.getOldValue %)) deletions))
+		    )))
+       (apply [currentValue delta]
+	      (+ currentValue delta))
+       )
+      ))
+
+(insert *metamodel* sum)
+
+(connect belugas sum)

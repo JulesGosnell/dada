@@ -29,71 +29,52 @@
 package org.dada.core;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
-public class BigDecimalAggregator<KI, VI, KO, VO> extends AbstractModel<KO, VO> implements View<KI, VI> {
+public class BigDecimalAggregator<KI, VI, KO, VO> extends AggregatedModelView<KI, VI, BigDecimal, KO, VO> {
 
 	public interface Factory<KO, VO, KI> {
 		VO create(KO outputKey, int version, KI inputKey, BigDecimal amount);
 	}
 
-	private final Collection<Update<VO>> nil = new ArrayList<Update<VO>>();
-	private final KI inputKey;
-	private final KO outputKey;
-	private final Factory<KO, VO, KI> factory;
-	private final Getter<BigDecimal, VI> getter;
+	public BigDecimalAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, final Factory<KO, VO, KI> factory, final Getter<BigDecimal, VI> getter) {
+		super(name, metadata, outputKey, new Aggregator<VI, BigDecimal, KO, VO>() {
 
-	private int version;
-	private BigDecimal amount = BigDecimal.ZERO;
+			@Override
+			public BigDecimal initialValue() {
+				return BigDecimal.ZERO;
+			}
 
-	public BigDecimalAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, Factory<KO, VO, KI> factory, Getter<BigDecimal, VI> getter) {
-		super(name, metadata);
-		this.inputKey = inputKey;
-		this.outputKey = outputKey;
-		this.factory = factory;
-		this.getter = getter;
-	}
+			@Override
+			public VO currentValue(KO key, int version, BigDecimal value) {
+				return factory.create(key, version, null, value);
+			}
 
-	@Override
-	public Collection<VO> getData() {
-		int snapshotVersion;
-		BigDecimal snapshotAmount;
-		synchronized (this) {
-			snapshotVersion = version;
-			snapshotAmount = amount;
-		}
-		return Collections.singleton(factory.create(outputKey, snapshotVersion, inputKey, snapshotAmount));
-	}
+			@Override
+			public BigDecimal aggregate(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
+				BigDecimal delta = BigDecimal.ZERO;
+				
+				for (Update<VI> insertion : insertions) {
+					VI newValue = insertion.getNewValue();
+					BigDecimal insertionAmount = getter.get(newValue);
+					delta = delta.add(insertionAmount);
+				}
+				for (Update<VI> update : updates) {
+					delta = delta.subtract(getter.get(update.getOldValue()));
+					delta = delta.add(getter.get(update.getNewValue()));
+				}
+				for (Update<VI> update : updates) {
+					delta = delta.subtract(getter.get(update.getOldValue()));
+				}
 
-	@Override
-	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
-		BigDecimal delta = BigDecimal.ZERO;
-		for (Update<VI> insertion : insertions) {
-			VI newValue = insertion.getNewValue();
-			BigDecimal insertionAmount = getter.get(newValue);
-			delta = delta.add(insertionAmount);
-		}
-		for (Update<VI> update : updates) {
-			delta = delta.subtract(getter.get(update.getOldValue()));
-			delta = delta.add(getter.get(update.getNewValue()));
-		}
-		for (Update<VI> update : updates) {
-			delta = delta.subtract(getter.get(update.getOldValue()));
-		}
-		int oldVersion, newVersion;
-		BigDecimal oldAmount, newAmount;
-		synchronized (this) {
-			oldVersion = version;
-			oldAmount = amount;
-			newVersion = ++version;
-			newAmount = (amount = amount.add(delta));
-		}
-		VO oldValue = factory.create(outputKey, oldVersion, inputKey, oldAmount);
-		VO newValue = factory.create(outputKey, newVersion, inputKey, newAmount);
-		Collection<Update<VO>> updatesOut = Collections.singleton(new Update<VO>(oldValue, newValue));
-		notifyUpdate(nil, updatesOut, nil);
+				return delta;
+			}
+
+			@Override
+			public BigDecimal apply(BigDecimal currentValue, BigDecimal delta) {
+				return currentValue.add(delta);
+			}
+		});
 	}
 
 }
