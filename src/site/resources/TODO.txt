@@ -1,8 +1,0 @@
-
-define and use immutable containers
-refactor Models to hold latest version of items that have been amended away
-refactor Model->View protocol
-write AggregatingModelView - use to total up partitions
-aggregate partitions somehow
-TableModelView should inherit from MapModelView
-so should FilterModelView
