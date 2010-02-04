@@ -390,8 +390,9 @@
           <testClassesDirectory>target/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/*AbstractTestCase.java</exclude>
-	    <!-- lose these to run on mono/ikvm -->
-            <exclude>${dotnet.hack}**/ltw/*TestCase.java</exclude>  <!-- ltw not supported -->
+	    <!-- if java.agent set, these will not be excluded -->
+            <exclude>${java.agent}**/ltw/*TestCase.java</exclude>
+	    <!-- lose these to run on mono/ikvm/dotnet -->
             <exclude>${dotnet.hack}**/DateRoutingStrategyTestCase.java</exclude>  <!-- crashes mono -->
             <exclude>${dotnet.hack}**/ConsensusTestCase.java</exclude>  <!-- crashes ikvm -->
             <exclude>${dotnet.hack}**/AMQRemotingTestCase.java</exclude>  <!-- crashes ikvm -->
