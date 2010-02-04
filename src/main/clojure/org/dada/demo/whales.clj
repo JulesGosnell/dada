@@ -118,54 +118,78 @@
 
 ;; make a class to hold key, version and aggregate value...
 
-(def Length-properties 
-     (list
-      [String "type"]
-      [(Integer/TYPE) "version"]
-      [(Float/TYPE) "length"]))
+(defn make-metadata [classname pktype pkname fieldtype fieldname]
+  (let [properties (list [pktype pkname] [(Integer/TYPE) "version"] [fieldtype fieldname])]
+  (new GetterMetadata
+       (apply make-class classname Object properties)
+       (map (fn [property] (.getCanonicalName (first property))) properties)
+       (map second properties)
+       (map 
+	(fn [property]
+	    (make-proxy-getter 
+	     class
+	     (first property)
+	     (second property)))
+	properties))))
 
-(def Length
-     (apply
-      make-class
-      "org.dada.demo.whales.Length" Object Length-properties))
+(defn make-aggregator [metadata modelname pkval initial-value fieldname]
+  (let [class (.getValueClass metadata)
+	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+	accessor #(.get getter %)]
+    (AggregatedModelView.
+     modelname
+     metadata
+     pkval
+     (proxy
+      [AggregatedModelView$Aggregator]
+      []
+      (initialValue []
+		    initial-value)
+      (currentValue [key version value]
+		    (make-instance class key version value))
+      (aggregate [insertions updates deletions]
+		 (- 
+		  (+
+		   (apply + (map #(accessor (.getNewValue %)) insertions))
+		   (apply + (map #(accessor (.getNewValue %)) updates))
+		   )
+		  (+
+		   (apply + (map #(accessor (.getOldValue %)) updates))
+		   (apply + (map #(accessor (.getOldValue %)) deletions))
+		   )))
+      (apply [currentValue delta]
+	     (+ currentValue delta))
+      )
+     )))
 
-(def sum
-     (AggregatedModelView.
-      "Beluga.Length"
-      (new GetterMetadata
-	   Length
-	   (map (fn [property] (.getCanonicalName (first property))) Length-properties)
-	   (map second Length-properties)
-	   (map 
-	    (fn [property]
-		(make-proxy-getter 
-		 Length
-		 (first property)
-		 (second property)))
-	    Length-properties))
-      "beluga whale"
-      (proxy
-       [AggregatedModelView$Aggregator]
-       []
-       (initialValue []
-		     (new Float "0"))
-       (currentValue [key version value]
-		     (make-instance Length key version value))
-       (aggregate [insertions updates deletions]
-		  (- 
-		   (+
-		    (apply + (map #(.getLength (.getNewValue %)) insertions))
-		    (apply + (map #(.getLength (.getNewValue %)) updates))
-		    )
-		   (+
-		    (apply + (map #(.getLength (.getOldValue %)) updates))
-		    (apply + (map #(.getLength (.getOldValue %)) deletions))
-		    )))
-       (apply [currentValue delta]
-	      (+ currentValue delta))
-       )
-      ))
+;; classname - "org.dada.demo.whales.Length"
+;; modelname - "Beluga.Length"
+;; pktype - String
+;; pkname - "type"
+;; pkval - "beluga whale"
+;; fieldtype - (Float/TYPE)
+;; fieldname - "length"
+;; initial-value - (new Float "0")
+;; accessor - .getLength
+
+;; make-metadata [classname pktype pkname fieldtype fieldname]
+;; make-aggregator [metadata modelname pkval initial-value fieldname]
+(def
+ sum
+ (let [fieldtype (Float/TYPE) ;; could get this from metadata
+       fieldname "length"
+       initialvalue (new Float "0")
+       packagename "org.dada.demo.whales" 
+       classname (str packagename "." "Length")
+       metadata (make-metadata classname String "type" fieldtype fieldname)]
+   (make-aggregator metadata "Beluga.Length" "beluga whale" initialvalue fieldname)
+   ))
 
 (insert *metamodel* sum)
 
 (connect belugas sum)
+
+
+;; extract output class from aggregate and create an aggregator per type of whale
+;; collect all aggregators together for length and weight
+;; pivot them into a single Model
