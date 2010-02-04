@@ -132,7 +132,7 @@
 	     (second property)))
 	properties))))
 
-(defn make-aggregator [metadata modelname pkval initial-value fieldname]
+(defn make-sum-aggregator [metadata modelname pkval initial-value fieldname]
   (let [class (.getValueClass metadata)
 	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
 	accessor #(.get getter %)]
@@ -162,6 +162,69 @@
       )
      )))
 
+(defn make-count-aggregator [metadata modelname pkval initial-value fieldname]
+  (let [class (.getValueClass metadata)
+	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+	accessor #(.get getter %)]
+    (AggregatedModelView.
+     modelname
+     metadata
+     pkval
+     (proxy
+      [AggregatedModelView$Aggregator]
+      []
+      (initialValue []
+		    initial-value)
+      (currentValue [key version value]
+		    (make-instance class key version value))
+      (aggregate [insertions updates deletions]
+		 (- (count insertions) (count deletions)))
+      (apply [currentValue delta]
+	     (+ currentValue delta))
+      )
+     )))
+
+(defn make-average-aggregator [metadata modelname pkval initial-value fieldname]
+  (let [class (.getValueClass metadata)
+	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+	accessor #(.get getter %)]
+    (AggregatedModelView.
+     modelname
+     metadata
+     pkval
+     (proxy
+      [AggregatedModelView$Aggregator]
+      []
+      (initialValue []
+		    initial-value)
+      (currentValue [key version value]
+		    (make-instance class key version value))
+      (aggregate [insertions updates deletions]
+		 (new
+		  org.dada.core.Average
+		  (new BigDecimal
+		       (.toString ;; TODO - aaaaarrrrrrrggggggggghhhhhh !!
+			(-	  ; total
+			 (+
+			  (apply + (map #(accessor (.getNewValue %)) insertions))
+			  (apply + (map #(accessor (.getNewValue %)) updates))
+			  )
+			 (+
+			  (apply + (map #(accessor (.getOldValue %)) updates))
+			  (apply + (map #(accessor (.getOldValue %)) deletions))
+			  ))))
+		  (- (count insertions) (count deletions)) ; denominator
+		  ))
+      (apply [currentValue deltaValue]
+	     (let [currentTotal (.getSum currentValue)
+		   currentDenominator (.getDenominator currentValue)
+		   deltaTotal (.getSum deltaValue)
+		   deltaDenominator (.getDenominator deltaValue)]
+	       (new org.dada.core.Average
+		    (.add currentTotal deltaTotal) (+ currentDenominator deltaDenominator))))
+      )
+     )))
+
 ;; classname - "org.dada.demo.whales.Length"
 ;; modelname - "Beluga.Length"
 ;; pktype - String
@@ -175,19 +238,48 @@
 ;; make-metadata [classname pktype pkname fieldtype fieldname]
 ;; make-aggregator [metadata modelname pkval initial-value fieldname]
 (def
- sum
- (let [fieldtype (Float/TYPE) ;; could get this from metadata
+ sum-aggregator
+ (let [expr "SUM(length)"
+       fieldtype (Float/TYPE) ;; could get this from metadata
        fieldname "length"
        initialvalue (new Float "0")
        packagename "org.dada.demo.whales" 
-       classname (str packagename "." "Length")
+       classname (str packagename "." expr)
        metadata (make-metadata classname String "type" fieldtype fieldname)]
-   (make-aggregator metadata "Beluga.Length" "beluga whale" initialvalue fieldname)
+   (make-sum-aggregator metadata (str "Beluga." expr) "beluga whale" initialvalue fieldname)
    ))
 
-(insert *metamodel* sum)
+(def
+ count-aggregator
+ (let [expr "COUNT(*)"
+       fieldtype (Integer/TYPE) ;; could get this from metadata
+       fieldname "count"
+       initialvalue (new Integer 0)
+       packagename "org.dada.demo.whales" 
+       classname (str packagename "." expr)
+       metadata (make-metadata classname String "type" fieldtype fieldname)]
+   (make-count-aggregator metadata (str "Beluga." expr) "beluga whale" initialvalue fieldname)
+   ))
 
-(connect belugas sum)
+(def
+ average-aggregator
+ (let [expr "AVERAGE(length)"
+       initialvalue (new org.dada.core.Average (BigDecimal/ZERO) 0)
+       fieldname "length"
+       fieldtype (type initialvalue)
+       packagename "org.dada.demo.whales" 
+       classname (str packagename "." expr)
+       metadata (make-metadata classname String "type" fieldtype fieldname)]
+   (make-average-aggregator metadata (str "Beluga." expr) "beluga whale" initialvalue fieldname)
+   ))
+
+(insert *metamodel* sum-aggregator)
+(insert *metamodel* count-aggregator)
+(insert *metamodel* average-aggregator)
+
+(connect belugas sum-aggregator)
+(connect belugas count-aggregator)
+(connect belugas average-aggregator)
 
 
 ;; extract output class from aggregate and create an aggregator per type of whale
