@@ -287,6 +287,10 @@
 ;; collect all aggregators together for length and weight
 ;; pivot them into a single Model
 
+;;----------------------------------------
+;; utils
+;;----------------------------------------
+
 (defn clone-model [model name]
  (let [metadata (.getMetadata model)
        names (. metadata getAttributeNames)
@@ -299,30 +303,91 @@
        version-getter (getter-map version)]
    (VersionedModelView. name metadata key-getter version-getter)))
 
+;;----------------------------------------
+;; filtration
+;;----------------------------------------
+
 (defn select-filter
   "apply a filter view to a model"
-  ([model filter-fn view]
+  ([model filter-fn view dummy]
    (connect model (make-filter filter-fn view))
    view)
-  ([model filter-fn]
-   (let [view-name (str (.getName model) "." (.toString filter-fn)) ;; TODO: need nicer name
+  ([model filter-fn filter-name]
+   (let [view-name (str (.getName model) "." filter-name)
 	 view (clone-model model view-name)]
-     (select-filter model filter-fn view))))
+     (select-filter model filter-fn view "dummy"))))
+
+(def blue-whales (select-filter whales #(= "blue whale" (.getType %)) "type='blue whale'"))
+(insert *metamodel* blue-whales)
+
+;;----------------------------------------
+;; aggregation
+;;----------------------------------------
+
+(def aggregator-initial-values
+     {
+     (Integer/TYPE) 0
+     Integer 0
+     (Float/TYPE) (new Float "0")
+     Float (new Float "0")
+     (Double/TYPE) (new Double "0")
+     Double (new Double "0")
+     BigDecimal (new BigDecimal "0")
+     })
+
+(defn make-aggregator [model key-name key-val aggregator attribute]
+  (let [metadata (.getMetadata model)
+	names (. metadata getAttributeNames)
+	types (. metadata getAttributeTypes)
+	type-map (apply array-map (interleave names types))
+	attribute-type (type-map attribute)
+	key key-name
+	key-type (type key-val)
+	version "version"
+	version-type (Integer/TYPE)
+	model-name (str (.getName model) "." (.toString aggregator) "(" attribute ")")
+	class-name (.toString (gensym "org.dada.demo.tmp.Aggregator"))
+	initial-value (aggregator-initial-values attribute-type)
+	metadata (make-metadata class-name key-type key attribute-type attribute)]
+
+    (make-sum-aggregator metadata model-name key-val initial-value attribute)
+  
+    ))
+
+(defn select-aggregate
+  "apply an aggregator view to a model"
+  [model key-name key-val aggregator attribute]
+  (connect model (make-aggregator model key-name key-val aggregator attribute)))
 
 
-(insert *metamodel* (select-filter whales #(= "blue whale" (.getType %))))
+(def blue-whales-sum-length (select-aggregate blue-whales "type" "blue-whale" "SUM" "length"))
 
-;; (defn select-aggregate
-;;   "apply an aggregator view to a model"
-;;   ([model aggregator view]
-;;    (connect model (make-filter filter-fn view))
-;;    view)
-;;   ([model filter-fn]
-;;    (let [view-name (str (.getName model) "." (.toString filter-fn))
-;; 	 view (clone-model model view-name "time" "version")] ;; TODO - pull time/verion from metadata
-;;      (select-filter model filter-fn view)))
+(insert *metamodel* blue-whales-sum-length)
 
-;; filter out blues...
+;;----------------------------------------
+;; combined filtration and aggregation
+;; "combined weight of all killer whales"
+;;----------------------------------------
+
+
+(let [filter-attribute-name "type"
+      filter-attribute-value "killer whale"
+      filter-attribute-accessor (make-lambda-getter Whale String filter-attribute-name)
+      aggregator-attribute-name "weight"
+      filtration (select-filter
+		  whales #(= filter-attribute-value (filter-attribute-accessor %)) (str filter-attribute-name "='" filter-attribute-value "'"))
+      aggregation (select-aggregate 
+		   filtration
+		   filter-attribute-name filter-attribute-value "SUM" aggregator-attribute-name)]
+  (insert *metamodel* filtration)
+  (insert *metamodel* aggregation))
+
+;; TODO - aggregator currently hardwired - needs to be parameterised...
+
+;;----------------------------------------
+
+  
+
 
 ;; THOUGHTS
 

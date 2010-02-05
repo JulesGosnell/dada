@@ -239,7 +239,7 @@
 	tgt-getters (vals tgt-getter-map)
    	tgt-key-getter (tgt-getter-map src-key-name)
    	tgt-version-getter (tgt-getter-map src-version-name)
-	tgt-metadata (new GetterMetadata (collection tgt-key-getter tgt-version-getter) tgt-class tgt-types tgt-names tgt-getters)
+	tgt-metadata (new GetterMetadata  tgt-class  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
 	transformer (make-transformer sel-getters view tgt-class)
 	filter (make-filter filter-fn transformer)
