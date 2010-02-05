@@ -86,13 +86,13 @@
      version-getter (nth getters 1)
      metadata (new GetterMetadata Whale types names getters)
      model-name "Whales"]
-  (def model (new VersionedModelView model-name metadata key-getter version-getter))
-  (insert *metamodel* model)
-  model)
+  (def whales (new VersionedModelView model-name metadata key-getter version-getter))
+  (insert *metamodel* whales)
+  whales)
 
 ;; create 10,000 whales and insert them into model
 (insert-n
- model
+ whales
  (let [time (System/currentTimeMillis)]
    (for [id (range time (+ time 1000))] ;;10,000
      (make-instance org.dada.demo.whales.Whale 
@@ -109,9 +109,9 @@
     output))
 
 ;; select whales into a new model...
-(def narwhals (fetch model "time" "version" '(["time"] ["version"] ["type"]["weight"]) :model "Narwhals" :filter (fn [value] (= "narwhal" (. value getType)))))
+(def narwhals (fetch whales "time" "version" '(["time"] ["version"] ["type"]["weight"]) :model "Narwhals" :filter (fn [value] (= "narwhal" (. value getType)))))
 
-(def belugas (fetch model "time" "version" '(["time"] ["version"] ["type"]["length"]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
+(def belugas (fetch whales "time" "version" '(["time"] ["version"] ["type"]["length"]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
 
 (import org.dada.core.AggregatedModelView)
 (import org.dada.core.AggregatedModelView$Aggregator)
@@ -285,3 +285,37 @@
 ;; extract output class from aggregate and create an aggregator per type of whale
 ;; collect all aggregators together for length and weight
 ;; pivot them into a single Model
+
+(defn select-filter [model filter-fn view]
+  (connect model (make-filter filter-fn view)))
+
+(defn clone-model [model name key version]
+ (let [metadata (.getMetadata model)
+       names (. metadata getAttributeNames)
+       getters (. metadata getAttributeGetters)
+       getter-map (apply array-map (interleave names getters))
+       key-getter (getter-map key)
+       version-getter (getter-map version)]
+   (println names getters)
+   (println key-getter version-getter)
+   (VersionedModelView. name metadata key-getter version-getter)))
+
+ (let [tgt-model (clone-model whales (str (.getName whales) ".Type=blue_whale") "time" "version")]
+   (insert
+    *metamodel*
+    (select-filter 
+     whales 
+     #(= "blue whale" (.getType %))
+     tgt-model)
+   ))
+
+;; filter out blues...
+
+;; THOUGHTS
+
+;; primitives: a select is a combination of : filter, transform,
+;; group, aggregate and join functions...
+
+;; a (group) is a (filter) followed by a ?homogenous/symmetric join? ???
+
+;; not sure yet about how a heterogenous/assymetric join works

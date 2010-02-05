@@ -239,8 +239,3 @@
     (connect src-model filter)
     view)
   )
-
-
-
-;;; TODO - tgt-getters are somehow in wrong order
-
