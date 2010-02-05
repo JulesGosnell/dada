@@ -286,9 +286,6 @@
 ;; collect all aggregators together for length and weight
 ;; pivot them into a single Model
 
-(defn select-filter [model filter-fn view]
-  (connect model (make-filter filter-fn view)))
-
 (defn clone-model [model name key version]
  (let [metadata (.getMetadata model)
        names (. metadata getAttributeNames)
@@ -300,14 +297,18 @@
    (println key-getter version-getter)
    (VersionedModelView. name metadata key-getter version-getter)))
 
- (let [tgt-model (clone-model whales (str (.getName whales) ".Type=blue_whale") "time" "version")]
-   (insert
-    *metamodel*
-    (select-filter 
-     whales 
-     #(= "blue whale" (.getType %))
-     tgt-model)
-   ))
+(defn select-filter
+  "apply a filter view to a model"
+  ([model filter-fn view]
+   (connect model (make-filter filter-fn view))
+   view)
+  ([model filter-fn]
+   (let [view-name (str (.getName model) "." (.toString filter-fn))
+	 view (clone-model model view-name "time" "version")] ;; TODO - pull time/verion from metadata
+     (select-filter model filter-fn view))))
+
+
+(insert *metamodel* (select-filter whales #(= "blue whale" (.getType %))))
 
 ;; filter out blues...
 
