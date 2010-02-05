@@ -31,6 +31,7 @@ package org.dada.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,9 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	private final ServiceFactory<Model<Object, Object>> serviceFactory;
 	private final Set<String> exportedModelNames = new HashSet<String>();
 	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object, Object>>();
+	private volatile QueryEngine engine;
+	private final Map<String, Model<?, ?>> queryToModel = new HashMap<String, Model<?,?>>();
+	
 
 	public MetaModelImpl(String name, Metadata<String, String> metadata, ServiceFactory<Model<Object, Object>> serviceFactory) {
 		super(name, metadata);
@@ -129,6 +133,34 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 
 		notifyUpdate(i, u, d);
 		
+	}
+	
+	public void setQueryEngine(QueryEngine engine) {
+		this.engine = engine;
+	}
+
+	@Override
+	public boolean deregisterQueryView(String query, View<Object, Object> view) {
+		synchronized (queryToModel) {
+			Model<?, ?> model = queryToModel.get(query);
+			if (model == null)
+				return false;
+			else
+				return deregisterView(model.getName(), view);
+		}
+	}
+
+	@Override
+	public Registration<Object, Object> registerQueryView(String query, View<Object, Object> view) {
+		synchronized (queryToModel) {
+			Model<?, ?> model = queryToModel.get(query);
+			if (model == null) {
+				if (engine == null)
+					throw new IllegalStateException("no query engine available");
+				queryToModel.put(query, model = engine.query(query));
+			}
+		}
+		return registerView(engine.query(query).getName(), view);
 	}
 
 }
