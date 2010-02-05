@@ -45,7 +45,8 @@
     (.getData 
      (.registerView model view)))
    '()
-   '()))
+   '())
+  view)
 
 (defn disconnect [#^Model model #^View view]
   (.deregisterView model view)
@@ -55,7 +56,8 @@
    '()
    (map
     #(Update. % nil)
-    (.getData model))))
+    (.getData model)))
+  view)
 
 (def *class-factory* (new ClassFactory))
 
