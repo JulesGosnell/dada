@@ -35,14 +35,16 @@ import java.util.List;
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
 	private final Class<?> valueClass;
+	private final Collection<String> keyAttributeNames;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
 	private final List<Getter<?, V>> attributeGetters;
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
 
-	public GetterMetadata(Class<?> valueClass, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
+	public GetterMetadata(Class<?> valueClass, Collection<String> keyAttributeNames, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
 		this.valueClass = valueClass;
+		this.keyAttributeNames = keyAttributeNames;
 		this.attributeTypes = new ArrayList<Class<?>>(attributeTypes);
 		this.attributeNames = new ArrayList<String>(attributeNames);
 		this.attributeGetters = new ArrayList<Getter<?, V>>(getters);
@@ -78,6 +80,11 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public List<Getter<?, V>> getAttributeGetters() {
 		return attributeGetters;
+	}
+
+	@Override
+	public Collection<String> getKeyAttributeNames() {
+		return keyAttributeNames;
 	}
 
 }

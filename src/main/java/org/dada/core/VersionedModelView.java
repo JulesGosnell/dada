@@ -45,7 +45,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 	private final Object mapsLock = new Object(); // only needed by writers ...
 	public volatile Maps maps = new Maps(PersistentTreeMap.EMPTY, PersistentTreeMap.EMPTY); // TODO: encapsulate
 
-	
+	// TODO: keyGetter, versionGetter should be retrieved from Metadata
 	public VersionedModelView(String name, Metadata<K, V> metadata, Getter<K, V> keyGetter, Getter<Integer, V> versionGetter) {
 		super(name, metadata);
 		this.keyGetter = keyGetter;

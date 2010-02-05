@@ -29,11 +29,13 @@
 package org.dada.core;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
 
 	K getKey(V value);
+	Collection<String> getKeyAttributeNames();
 	Object getAttributeValue(V value, int index);
 	List<Getter<?, V>> getAttributeGetters();
 	List<String> getAttributeNames();

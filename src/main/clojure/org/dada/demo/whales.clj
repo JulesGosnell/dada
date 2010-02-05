@@ -84,7 +84,7 @@
      getters (map (fn [property] (make-proxy-getter Whale (nth property 0) (nth property 1))) properties)
      key-getter (nth getters 0)
      version-getter (nth getters 1)
-     metadata (new GetterMetadata Whale types names getters)
+     metadata (new GetterMetadata Whale (collection "time" "version") types names getters)
      model-name "Whales"]
   (def whales (new VersionedModelView model-name metadata key-getter version-getter))
   (insert *metamodel* whales)
@@ -122,6 +122,7 @@
   (let [properties (list [pktype pkname] [(Integer/TYPE) "version"] [fieldtype fieldname])]
   (new GetterMetadata
        (apply make-class classname Object properties)
+       (collection pkname "version")
        (map (fn [property] (.getCanonicalName (first property))) properties)
        (map second properties)
        (map 
@@ -286,15 +287,16 @@
 ;; collect all aggregators together for length and weight
 ;; pivot them into a single Model
 
-(defn clone-model [model name key version]
+(defn clone-model [model name]
  (let [metadata (.getMetadata model)
        names (. metadata getAttributeNames)
        getters (. metadata getAttributeGetters)
        getter-map (apply array-map (interleave names getters))
+       keys (. metadata getKeyAttributeNames)
+       key (first keys)
        key-getter (getter-map key)
+       version (second keys)
        version-getter (getter-map version)]
-   (println names getters)
-   (println key-getter version-getter)
    (VersionedModelView. name metadata key-getter version-getter)))
 
 (defn select-filter
@@ -303,12 +305,22 @@
    (connect model (make-filter filter-fn view))
    view)
   ([model filter-fn]
-   (let [view-name (str (.getName model) "." (.toString filter-fn))
-	 view (clone-model model view-name "time" "version")] ;; TODO - pull time/verion from metadata
+   (let [view-name (str (.getName model) "." (.toString filter-fn)) ;; TODO: need nicer name
+	 view (clone-model model view-name)]
      (select-filter model filter-fn view))))
 
 
 (insert *metamodel* (select-filter whales #(= "blue whale" (.getType %))))
+
+;; (defn select-aggregate
+;;   "apply an aggregator view to a model"
+;;   ([model aggregator view]
+;;    (connect model (make-filter filter-fn view))
+;;    view)
+;;   ([model filter-fn]
+;;    (let [view-name (str (.getName model) "." (.toString filter-fn))
+;; 	 view (clone-model model view-name "time" "version")] ;; TODO - pull time/verion from metadata
+;;      (select-filter model filter-fn view)))
 
 ;; filter out blues...
 

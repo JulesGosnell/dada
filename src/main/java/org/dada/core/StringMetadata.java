@@ -29,17 +29,20 @@
 package org.dada.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 
 public class StringMetadata implements Metadata<String, String> {
 
+	private final Collection<String> keyAttributeNames;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
 	private final List<Getter<?, String>> attributeGetters;
 
 	public StringMetadata(String keyName) {
+		keyAttributeNames = Collections.singleton(keyName); 
 		attributeTypes = new ArrayList<Class<?>>();
 		attributeTypes.add(String.class);
 		attributeNames = Collections.singletonList(keyName);
@@ -75,5 +78,10 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public List<Getter<?, String>> getAttributeGetters() {
 		return attributeGetters;
+	}
+
+	@Override
+	public Collection<String> getKeyAttributeNames() {
+		return keyAttributeNames;
 	}
 }

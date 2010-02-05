@@ -30,6 +30,8 @@ package org.dada.core;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 // TODO: Methods are not Serializable !
@@ -41,6 +43,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private static final int GET_LENGTH = GET.length();
 	
 	private final Class<?> clazz;
+	private final Collection<String> keyAttributeNames;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
 	private final List<Getter<?, V>> attributeGetters;
@@ -49,6 +52,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
 	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws NoSuchMethodException {
 		this.clazz = clazz;
+		this.keyAttributeNames = Collections.singleton(keyName);
 		attributeTypes= new ArrayList<Class<?>>();
 		attributeNames = new ArrayList<String>();
 		attributeGetters = new ArrayList<Getter<?,V>>();
@@ -110,6 +114,11 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public List<Getter<?, V>> getAttributeGetters() {
 		return attributeGetters;
+	}
+
+	@Override
+	public Collection<String> getKeyAttributeNames() {
+		return keyAttributeNames;
 	}
 
 }
