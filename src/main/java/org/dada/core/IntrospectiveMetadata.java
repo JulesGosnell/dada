@@ -125,4 +125,9 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		return creator.create(args);
 	}
 
+	@Override
+	public Creator<V> getCreator() {
+		return creator;
+	}
+
 }

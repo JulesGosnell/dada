@@ -40,6 +40,7 @@ public class StringMetadata implements Metadata<String, String> {
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
 	private final List<Getter<?, String>> attributeGetters;
+	private final Creator<String> creator;
 
 	public StringMetadata(String keyName) {
 		keyAttributeNames = Collections.singleton(keyName); 
@@ -48,6 +49,7 @@ public class StringMetadata implements Metadata<String, String> {
 		attributeNames = Collections.singletonList(keyName);
 		attributeGetters = new ArrayList<Getter<?,String>>();
 		attributeGetters.add(new Getter<Object, String>() {@Override public Object get(String value) {return value;}});
+		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
 	}
 
 	@Override
@@ -83,5 +85,10 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public String create(Object... args) {
 		return (String)args[0];
+	}
+
+	@Override
+	public Creator<String> getCreator() {
+		return creator;
 	}
 }

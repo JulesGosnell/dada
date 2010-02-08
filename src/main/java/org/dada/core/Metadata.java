@@ -35,6 +35,7 @@ import java.util.List;
 public interface Metadata<K, V> extends Serializable {
 
 	V create(Object... args);
+	Creator<V> getCreator();
 	K getKey(V value);
 	Collection<String> getKeyAttributeNames();
 	Object getAttributeValue(V value, int index);

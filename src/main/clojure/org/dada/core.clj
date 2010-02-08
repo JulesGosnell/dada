@@ -3,6 +3,7 @@
 	     (java.util ArrayList)
 	     (java.beans PropertyDescriptor)
 	     (org.dada.core
+	      Creator
 	      FilteredView
 	      FilteredView$Filter
 	      Getter
@@ -218,7 +219,6 @@
 (defn select [src-model src-key-name src-version-name props & pvec]
   (let [pmap (apply array-map pvec)
 	src-metadata (. src-model getMetadata)
-	src-class (. src-metadata getValueClass)
 	src-names (. src-metadata getAttributeNames)
 	src-types (. src-metadata getAttributeTypes)
 	src-type-map (apply array-map (interleave src-names src-types)) ; name:type
@@ -235,11 +235,12 @@
    	sel-getters (map (fn [field] (nth field 2)) fields)
 	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
   	tgt-class (apply make-class tgt-class-name Object tgt-props)
+	tgt-creator (proxy [Creator] [] (create [& args] (apply make-instance tgt-class args)))
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
 	tgt-getters (vals tgt-getter-map)
    	tgt-key-getter (tgt-getter-map src-key-name)
    	tgt-version-getter (tgt-getter-map src-version-name)
-	tgt-metadata (new GetterMetadata  tgt-class  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
+	tgt-metadata (new GetterMetadata  tgt-creator  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
 	transformer (make-transformer sel-getters view tgt-class)
 	filter (make-filter filter-fn transformer)

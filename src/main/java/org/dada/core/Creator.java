@@ -28,7 +28,9 @@
  */
 package org.dada.core;
 
-public interface Creator<V> {
+import java.io.Serializable;
+
+public interface Creator<V> extends Serializable {
 
 	V create(Object... args);
 }

@@ -2,7 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use [org.dada.core])
- (:import [org.dada.core Getter GetterMetadata VersionedModelView])
+ (:import [org.dada.core Average Creator Getter GetterMetadata VersionedModelView])
  )
 
 ;; TODO - this will have to wait until we have an extended ClassFactory
@@ -84,7 +84,8 @@
      getters (map (fn [property] (make-proxy-getter Whale (nth property 0) (nth property 1))) properties)
      key-getter (nth getters 0)
      version-getter (nth getters 1)
-     metadata (new GetterMetadata Whale (collection "time" "version") types names getters)
+     creator (proxy [Creator] [] (create [args] (apply make-instance Whale args)))
+     metadata (new GetterMetadata creator (collection "time" "version") types names getters)
      model-name "Whales"]
   (def whales (new VersionedModelView model-name metadata key-getter version-getter))
   (insert *metamodel* whales)
@@ -119,9 +120,10 @@
 ;; make a class to hold key, version and aggregate value...
 
 (defn make-metadata [classname pktype pkname fieldtype fieldname]
-  (let [properties (list [pktype pkname] [(Integer/TYPE) "version"] [fieldtype fieldname])]
+  (let [properties (list [pktype pkname] [(Integer/TYPE) "version"] [fieldtype fieldname])
+	class (apply make-class classname Object properties)]
   (new GetterMetadata
-       (apply make-class classname Object properties)
+       (proxy [Creator] [] (create [args] (apply make-instance class args)))
        (collection pkname "version")
        (map (fn [property] (.getCanonicalName (first property))) properties)
        (map second properties)
@@ -134,8 +136,7 @@
 	properties))))
 
 (defn make-sum-aggregator [metadata modelname pkval initial-value fieldname]
-  (let [class (.getValueClass metadata)
-	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+  (let [getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
 	accessor #(.get getter %)]
     (AggregatedModelView.
      modelname
@@ -147,7 +148,7 @@
       (initialValue []
 		    initial-value)
       (currentValue [key version value]
-		    (make-instance class key version value))
+		    (. metadata create (into-array Object (list key version value))))
       (aggregate [insertions updates deletions]
 		 (- 
 		  (+
@@ -164,8 +165,7 @@
      )))
 
 (defn make-count-aggregator [metadata modelname pkval initial-value fieldname]
-  (let [class (.getValueClass metadata)
-	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+  (let [getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
 	accessor #(.get getter %)]
     (AggregatedModelView.
      modelname
@@ -177,7 +177,7 @@
       (initialValue []
 		    initial-value)
       (currentValue [key version value]
-		    (make-instance class key version value))
+		    (. metadata create (into-array Object (list key version value))))
       (aggregate [insertions updates deletions]
 		 (- (count insertions) (count deletions)))
       (apply [currentValue delta]
@@ -186,8 +186,7 @@
      )))
 
 (defn make-average-aggregator [metadata modelname pkval initial-value fieldname]
-  (let [class (.getValueClass metadata)
-	getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
+  (let [getter ((apply array-map (interleave (.getAttributeNames metadata) (.getAttributeGetters metadata))) fieldname)
 	accessor #(.get getter %)]
     (AggregatedModelView.
      modelname
@@ -199,7 +198,7 @@
       (initialValue []
 		    initial-value)
       (currentValue [key version value]
-		    (make-instance class key version value))
+		    (. metadata create (into-array Object (list key version value))))
       (aggregate [insertions updates deletions]
 		 (new
 		  org.dada.core.Average
@@ -333,6 +332,7 @@
      (Double/TYPE) (new Double "0")
      Double (new Double "0")
      BigDecimal (new BigDecimal "0")
+     Average (new Average (new BigDecimal "0") 0)
      })
 
 (defn make-aggregator [model key-name key-val aggregator attribute]
@@ -346,13 +346,11 @@
 	version "version"
 	version-type (Integer/TYPE)
 	model-name (str (.getName model) "." (.toString aggregator) "(" attribute ")")
-	class-name (.toString (gensym "org.dada.demo.tmp.Aggregator"))
+	class-name (.toString (gensym (str "org.dada.demo.tmp.Aggregator." aggregator)))
 	initial-value (aggregator-initial-values attribute-type)
-	metadata (make-metadata class-name key-type key attribute-type attribute)]
-
-    (make-sum-aggregator metadata model-name key-val initial-value attribute)
-  
-    ))
+	metadata (make-metadata class-name key-type key attribute-type attribute)
+	aggregator-fn (eval (symbol (str "make-" aggregator "-aggregator")))]
+    (aggregator-fn metadata model-name key-val initial-value attribute)))
 
 (defn select-aggregate
   "apply an aggregator view to a model"
@@ -360,7 +358,7 @@
   (connect model (make-aggregator model key-name key-val aggregator attribute)))
 
 
-(def blue-whales-sum-length (select-aggregate blue-whales "type" "blue-whale" "SUM" "length"))
+(def blue-whales-sum-length (select-aggregate blue-whales "type" "blue whale" 'sum "length"))
 
 (insert *metamodel* blue-whales-sum-length)
 
@@ -372,17 +370,19 @@
 
 (let [filter-attribute-name "type"
       filter-attribute-value "killer whale"
-      filter-attribute-accessor (make-lambda-getter Whale String filter-attribute-name)
       aggregator-attribute-name "weight"
+      aggregator-symbol 'count ;; 'sum, 'average, 'count
+
+      filter-attribute-accessor (make-lambda-getter Whale String filter-attribute-name)
       filtration (select-filter
 		  whales #(= filter-attribute-value (filter-attribute-accessor %)) (str filter-attribute-name "='" filter-attribute-value "'"))
       aggregation (select-aggregate 
 		   filtration
-		   filter-attribute-name filter-attribute-value "SUM" aggregator-attribute-name)]
+		   filter-attribute-name filter-attribute-value aggregator-symbol aggregator-attribute-name)]
   (insert *metamodel* filtration)
   (insert *metamodel* aggregation))
 
-;; TODO - aggregator currently hardwired - needs to be parameterised...
+;; TODO - aggregated column's name and type depends on aggregator, not original column type
 
 ;;----------------------------------------
 
