@@ -43,7 +43,14 @@ public class BigDecimalAggregatorTestCase extends TestCase {
 		Integer inputKey = 1;
 		Integer outputKey = 1;
 
-		Metadata<Integer, Amount> metadata = new IntrospectiveMetadata<Integer, Amount>(Amount.class, "Id");
+		Creator<Amount> creator = new Creator<Amount>(){
+			@Override
+			public Amount create(Object... args) {
+				return new Amount((Integer)args[0], (Integer)args[1], (BigDecimal)args[2]);
+			}
+		};
+		
+		Metadata<Integer, Amount> metadata = new IntrospectiveMetadata<Integer, Amount>(Amount.class, creator, "Id");
 
 		Factory<Integer, Amount, Integer> factory = new Factory<Integer, Amount, Integer>() {
 			@Override

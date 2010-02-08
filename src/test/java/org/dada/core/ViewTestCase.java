@@ -35,6 +35,7 @@ import org.dada.core.IntrospectiveMetadata;
 import org.dada.core.Metadata;
 import org.dada.core.Update;
 import org.dada.core.View;
+import org.dada.core.IntrospectiveMetadataTestCase.Test;
 
 import junit.framework.TestCase;
 
@@ -43,8 +44,24 @@ public class ViewTestCase extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, "Id");
-		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, "Id");
+		
+		Creator<BooleanDatum> booleanDatumCreator = new Creator<BooleanDatum>(){
+
+			@Override
+			public BooleanDatum create(Object... args) {
+			return new BooleanDatum((Integer)args[0], (Boolean)args[1]);
+			}
+		};
+		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, booleanDatumCreator, "Id");
+		
+		Creator<StringDatum> stringDatumCreator = new Creator<StringDatum>(){
+
+			@Override
+			public StringDatum create(Object... args) {
+				return new StringDatum((Integer)args[0], (Boolean)args[1], (String)args[2]);
+			}
+		};
+		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, stringDatumCreator, "Id");
 	}
 
 	@Override

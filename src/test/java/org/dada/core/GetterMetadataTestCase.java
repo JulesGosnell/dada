@@ -50,7 +50,8 @@ public class GetterMetadataTestCase extends TestCase {
 		getters.add((Getter<?, Amount>)versionGetter);
 		getters.add((Getter<?, Amount>)amountGetter);
 
-		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(Amount.class, Arrays.asList(new String[]{"id", "version"}), attributeTypes, attributeNames, getters) ;
+		Creator<Amount> creator = new Creator<Amount>(){@Override public Amount create(Object... args) {return new Amount((Integer)args[0], (Integer)args[1], (BigDecimal)args[2]);}};
+		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(creator, Arrays.asList(new String[]{"id", "version"}), attributeTypes, attributeNames, getters) ;
 
 		BigDecimal one = new BigDecimal("1.0");
 		Amount amount = new Amount(1, 0, one);

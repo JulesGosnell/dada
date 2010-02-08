@@ -18,7 +18,16 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
 	
 	public void test() throws Exception {
 		
-		IntrospectiveMetadata<Integer, Test> metadata = new IntrospectiveMetadata<Integer, Test>(Test.class, "Key");
+		Creator<Test> creator = new Creator<Test>(){
+
+			@Override
+			public Test create(Object... args) {
+				// TODO Auto-generated method stub
+				throw new UnsupportedOperationException("NYI");
+			}
+		};
+		
+		IntrospectiveMetadata<Integer, Test> metadata = new IntrospectiveMetadata<Integer, Test>(Test.class, creator, "Key");
 		final Test test = mock(Test.class);
 
 		// check attribute names

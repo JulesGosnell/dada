@@ -28,6 +28,8 @@
  */
 package org.dada.core;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +45,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private static final int GET_LENGTH = GET.length();
 	
 	private final Class<?> clazz;
+	private final Creator<V> creator;
 	private final Collection<String> keyAttributeNames;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
@@ -50,8 +53,9 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final int keyIndex;
 	//private final List<Method> getters;
 
-	public IntrospectiveMetadata(Class<?> clazz, String keyName) throws NoSuchMethodException {
+	public IntrospectiveMetadata(Class<?> clazz,Creator<V> creator, String keyName) throws NoSuchMethodException {
 		this.clazz = clazz;
+		this.creator = creator;
 		this.keyAttributeNames = Collections.singleton(keyName);
 		attributeTypes= new ArrayList<Class<?>>();
 		attributeNames = new ArrayList<String>();
@@ -107,11 +111,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Class<?> getValueClass() {
-		return clazz;
-	}
-
-	@Override
 	public List<Getter<?, V>> getAttributeGetters() {
 		return attributeGetters;
 	}
@@ -119,6 +118,11 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public Collection<String> getKeyAttributeNames() {
 		return keyAttributeNames;
+	}
+
+	@Override
+	public V create(Object... args) {
+		return creator.create(args);
 	}
 
 }

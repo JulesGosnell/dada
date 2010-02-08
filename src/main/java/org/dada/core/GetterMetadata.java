@@ -34,7 +34,7 @@ import java.util.List;
 
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
-	private final Class<?> valueClass;
+	private final Creator<V> creator;
 	private final Collection<String> keyAttributeNames;
 	private final List<Class<?>> attributeTypes;
 	private final List<String> attributeNames;
@@ -42,8 +42,8 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
 
-	public GetterMetadata(Class<?> valueClass, Collection<String> keyAttributeNames, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
-		this.valueClass = valueClass;
+	public GetterMetadata(Creator<V> creator, Collection<String> keyAttributeNames, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
+		this.creator = creator;
 		this.keyAttributeNames = keyAttributeNames;
 		this.attributeTypes = new ArrayList<Class<?>>(attributeTypes);
 		this.attributeNames = new ArrayList<String>(attributeNames);
@@ -73,11 +73,6 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Class<?> getValueClass() {
-		return valueClass;
-	}
-
-	@Override
 	public List<Getter<?, V>> getAttributeGetters() {
 		return attributeGetters;
 	}
@@ -85,6 +80,11 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public Collection<String> getKeyAttributeNames() {
 		return keyAttributeNames;
+	}
+
+	@Override
+	public V create(Object... args) {
+		return creator.create(args);
 	}
 
 }

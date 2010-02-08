@@ -34,11 +34,12 @@ import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
 
+	V create(Object... args);
 	K getKey(V value);
 	Collection<String> getKeyAttributeNames();
 	Object getAttributeValue(V value, int index);
 	List<Getter<?, V>> getAttributeGetters();
 	List<String> getAttributeNames();
 	List<Class<?>> getAttributeTypes();
-	Class <?> getValueClass();
+	
 }

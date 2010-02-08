@@ -28,60 +28,7 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+public interface Creator<V> {
 
-
-public class StringMetadata implements Metadata<String, String> {
-
-	private final Collection<String> keyAttributeNames;
-	private final List<Class<?>> attributeTypes;
-	private final List<String> attributeNames;
-	private final List<Getter<?, String>> attributeGetters;
-
-	public StringMetadata(String keyName) {
-		keyAttributeNames = Collections.singleton(keyName); 
-		attributeTypes = new ArrayList<Class<?>>();
-		attributeTypes.add(String.class);
-		attributeNames = Collections.singletonList(keyName);
-		attributeGetters = new ArrayList<Getter<?,String>>();
-		attributeGetters.add(new Getter<Object, String>() {@Override public Object get(String value) {return value;}});
-	}
-
-	@Override
-	public List<Class<?>> getAttributeTypes() {
-		return attributeTypes;
-	}
-
-	@Override
-	public List<String> getAttributeNames() {
-		return attributeNames;
-	}
-
-	@Override
-	public Object getAttributeValue(String value, int index) {
-		return value;
-	}
-
-	@Override
-	public String getKey(String value) {
-		return value;
-	}
-
-	@Override
-	public List<Getter<?, String>> getAttributeGetters() {
-		return attributeGetters;
-	}
-
-	@Override
-	public Collection<String> getKeyAttributeNames() {
-		return keyAttributeNames;
-	}
-
-	@Override
-	public String create(Object... args) {
-		return (String)args[0];
-	}
+	V create(Object... args);
 }

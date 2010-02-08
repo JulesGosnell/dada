@@ -71,12 +71,6 @@ public class AbstractModelTestCase extends TestCase {
 			}
 
 			@Override
-			public Class<?> getValueClass() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
 			public List<Class<?>> getAttributeTypes() {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("NYI");
@@ -90,6 +84,12 @@ public class AbstractModelTestCase extends TestCase {
 
 			@Override
 			public Collection<String> getKeyAttributeNames() {
+				// TODO Auto-generated method stub
+				throw new UnsupportedOperationException("NYI");
+			}
+
+			@Override
+			public Datum<Integer> create(Object... args) {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("NYI");
 			}
