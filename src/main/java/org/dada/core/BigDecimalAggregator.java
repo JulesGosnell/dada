@@ -74,6 +74,11 @@ public class BigDecimalAggregator<KI, VI, KO, VO> extends AggregatedModelView<KI
 			public BigDecimal apply(BigDecimal currentValue, BigDecimal delta) {
 				return currentValue.add(delta);
 			}
+
+			@Override
+			public Class<?> initialType(Class<?> type) {
+				return BigDecimal.class;
+			}
 		});
 	}
 

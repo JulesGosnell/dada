@@ -37,6 +37,7 @@ public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO
 
 	public interface Aggregator<VI, V, KO, VO> {
 		V initialValue();
+		Class<?> initialType(Class<?> type);
 		VO currentValue(KO key, int version, V value);
 		V aggregate(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions);
 		V apply(V currentValue, V delta);
