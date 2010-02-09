@@ -41,7 +41,7 @@ import java.util.Collection;
  * @param <OK>
  * @param <OV>
  */
-public abstract class Connector<IK, IV, OK, OV> implements View<IV> {
+public abstract class Connector<IV, OV> implements View<IV> {
 
 	private final Collection<View<OV>> views;
 	

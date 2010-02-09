@@ -59,7 +59,7 @@ public class RouterAbstractTestCase extends TestCase {
 
 	}
 
-	public static class SignRoutingStrategy implements Router.Strategy<Integer, IntegerDatum> {
+	public static class SignRoutingStrategy implements Router.Strategy<IntegerDatum> {
 
 		protected final Collection<View<IntegerDatum>>[] views;
 
@@ -102,7 +102,7 @@ public class RouterAbstractTestCase extends TestCase {
 		VersionedModelView<Integer, IntegerDatum> negative = new VersionedModelView<Integer, IntegerDatum>("Negative", null, idGetter, versionGetter);
 		VersionedModelView<Integer, IntegerDatum> positive = new VersionedModelView<Integer, IntegerDatum>("Positive", null, idGetter, versionGetter);
 
-		View<IntegerDatum> router = new Router<Integer, IntegerDatum>(new SignRoutingStrategy(negative, positive));
+		View<IntegerDatum> router = new Router<IntegerDatum>(new SignRoutingStrategy(negative, positive));
 
 		IntegerDatum d0v0 = new IntegerDatum(0, 0, -4);
 		IntegerDatum d1v0 = new IntegerDatum(1, 0, -3);

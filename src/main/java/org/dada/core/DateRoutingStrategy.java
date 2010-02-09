@@ -39,7 +39,7 @@ import java.util.Map.Entry;
 
 import org.joda.time.Interval;
 
-public class DateRoutingStrategy<V> implements Router.Strategy<Integer, V> {
+public class DateRoutingStrategy<V> implements Router.Strategy<V> {
 
 	private final NavigableMap<Long, Integer> dateToRoute;
 	private final Collection<View<V>>[] routeToViews;

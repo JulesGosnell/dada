@@ -50,7 +50,7 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 		int maxSize = 1;
 		long maxDelay = 1000000;
-		Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
+		Batcher<Datum<Integer>> batcher = new Batcher<Datum<Integer>>(maxSize, maxDelay, views);
 		
 		Datum<Integer> datum0 = new IntegerDatum(0, 0);
 		Update<Datum<Integer>> update0 = new Update<Datum<Integer>>(null, datum0);
@@ -129,7 +129,7 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 		final int maxSize = 1000000;
 		final long maxDelay = 1000;
-		final Batcher<Integer, Datum<Integer>> batcher = new Batcher<Integer, Datum<Integer>>(maxSize, maxDelay, views);
+		final Batcher<Datum<Integer>> batcher = new Batcher<Datum<Integer>>(maxSize, maxDelay, views);
 
 		batcher.update(insertions0, nil, nil);
 		batcher.update(insertions1, nil, nil);

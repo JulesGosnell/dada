@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO: a little naive, but lets go with it...
 
-public class Batcher<K, V> extends Connector<K, V, K, V> {
+public class Batcher<V> extends Connector<V, V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	

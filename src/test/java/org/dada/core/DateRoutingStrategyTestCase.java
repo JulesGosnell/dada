@@ -68,7 +68,7 @@ public class DateRoutingStrategyTestCase extends MockObjectTestCase {
 		map.put(interval, views);
 		
 		boolean mutable = true;
-		Strategy<Integer, Event> strategy = new DateRoutingStrategy<Event>(map, new Getter<Long, Event>() {@Override public Long get(Event value) {return value.getDate().getTime();}}, mutable);
+		Strategy<Event> strategy = new DateRoutingStrategy<Event>(map, new Getter<Long, Event>() {@Override public Long get(Event value) {return value.getDate().getTime();}}, mutable);
 		
 		assertTrue(mutable == strategy.getMutable());
 		

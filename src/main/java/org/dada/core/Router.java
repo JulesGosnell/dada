@@ -36,20 +36,20 @@ import java.util.Set;
 import org.apache.commons.collections.MultiMap;
 import org.apache.commons.collections.map.MultiValueMap;
 
-public class Router<K, V> implements View<V> {
+public class Router<V> implements View<V> {
 
 	// TODO: if we managed the MultiMaps via this API we could optimise them
 	// to arrays when dealing with immutable attributes
-	public interface Strategy<K, V> {
+	public interface Strategy<V> {
 		boolean getMutable();
 		int getRoute(V value);
 		Collection<View<V>> getViews(int route);
 	}
 
-	private final Strategy<K, V> strategy;
+	private final Strategy<V> strategy;
 	private final boolean mutable;
 
-	public Router(Strategy<K, V> strategy) {
+	public Router(Strategy<V> strategy) {
 		this.strategy = strategy;
 		this.mutable = strategy.getMutable();
 	}

@@ -41,7 +41,7 @@ import java.util.Collection;
  * @param <OK>
  * @param <OV>
  */
-public class Transformer<IK, IV, OK, OV> extends Connector<IK, IV, OK, OV> {
+public class Transformer<IV, OV> extends Connector<IV, OV> {
 
 	public interface Transform<IV, OV> {
 		OV transform(IV value);

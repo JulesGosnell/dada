@@ -21,7 +21,7 @@ public class RouterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
+		Strategy<Datum<Integer>> idStrategy = new Strategy<Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
@@ -39,7 +39,7 @@ public class RouterTestCase extends TestCase {
 			}
 		};
 
-		View<Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> router = new Router<Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -86,7 +86,7 @@ public class RouterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
+		Strategy<Datum<Integer>> idStrategy = new Strategy<Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
@@ -104,7 +104,7 @@ public class RouterTestCase extends TestCase {
 			}
 		};
 
-		View<Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> router = new Router<Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 

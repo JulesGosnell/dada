@@ -33,7 +33,7 @@ import java.util.Collections;
 
 import org.dada.core.Router.Strategy;
 
-public class PartitioningStrategy<K, V> implements Strategy<K, V> {
+public class PartitioningStrategy<K, V> implements Strategy<V> {
 
 	private final Getter<Integer, V> getter;
 	private final Collection<View<V>>[] views;

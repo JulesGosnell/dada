@@ -34,7 +34,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilteredView<K, V> implements View<V> {
+public class FilteredView<V> implements View<V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
