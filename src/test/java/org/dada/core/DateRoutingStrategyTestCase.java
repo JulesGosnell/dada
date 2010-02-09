@@ -54,15 +54,15 @@ public class DateRoutingStrategyTestCase extends MockObjectTestCase {
 	}
 	
 	public void test() {
-		Map<Interval, Collection<View<Integer, Event>>> map = new HashMap<Interval, Collection<View<Integer,Event>>>();
+		Map<Interval, Collection<View<Event>>> map = new HashMap<Interval, Collection<View<Event>>>();
 		
 		long startInstant = System.currentTimeMillis();
 		long endInstant = startInstant + 1;
 		Interval interval = new Interval(startInstant, endInstant);
 
 		
-		Collection<View<Integer,Event>> views = new ArrayList<View<Integer,Event>>();
-		View<Integer,Event> view = mock(View.class);
+		Collection<View<Event>> views = new ArrayList<View<Event>>();
+		View<Event> view = mock(View.class);
 		views.add(view);
 		
 		map.put(interval, views);
@@ -76,7 +76,7 @@ public class DateRoutingStrategyTestCase extends MockObjectTestCase {
 		Event onTime = new Event(new Date(startInstant));
 		Event after = new Event(new Date(startInstant + 1));
 		
-		Collection<View<Integer, Event>> strategyViews = strategy.getViews(strategy.getRoute(onTime));
+		Collection<View<Event>> strategyViews = strategy.getViews(strategy.getRoute(onTime));
 		assertTrue(strategyViews.size() == 1);
 		assertTrue(strategyViews.iterator().next() == view);
 

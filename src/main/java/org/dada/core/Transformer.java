@@ -49,7 +49,7 @@ public class Transformer<IK, IV, OK, OV> extends Connector<IK, IV, OK, OV> {
 	
 	private final Transform<IV, OV> transform;
 	
-	public Transformer(Collection<View<OK, OV>> views, Transform<IV, OV> transform) {
+	public Transformer(Collection<View<OV>> views, Transform<IV, OV> transform) {
 		super(views);
 		this.transform = transform;
 	}
@@ -71,7 +71,7 @@ public class Transformer<IK, IV, OK, OV> extends Connector<IK, IV, OK, OV> {
 
 	@Override
 	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> updates, Collection<Update<IV>> deletions) {
-		for (View<OK, OV> view : getViews()) {
+		for (View<OV> view : getViews()) {
 			view.update(transform(insertions), transform(updates), transform(deletions));
 		}
 	}

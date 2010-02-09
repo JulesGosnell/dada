@@ -34,7 +34,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilteredView<K, V> implements View<K, V> {
+public class FilteredView<K, V> implements View<V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -43,9 +43,9 @@ public class FilteredView<K, V> implements View<K, V> {
 	}
 
 	private final Filter<V> filter;
-	private final Collection<View<K, V>> views;
+	private final Collection<View<V>> views;
 	
-	public FilteredView(Filter<V> filter, Collection<View<K, V>> views) {
+	public FilteredView(Filter<V> filter, Collection<View<V>> views) {
 		this.filter = filter;
 		this.views = views;
 	}
@@ -68,7 +68,7 @@ public class FilteredView<K, V> implements View<K, V> {
 				d.add(deletion);
 		}
 		
-		for (View<K, V> view: views) {
+		for (View<V> view: views) {
 			try {
 				view.update(i, u, d);
 			} catch (Throwable t) {

@@ -37,6 +37,6 @@ package org.dada.core;
  * @param <K>
  * @param <V>
  */
-public interface ModelView<K, V> extends View <K, V>, Model<K, V> {
+public interface ModelView<K, V> extends View <V>, Model<K, V> {
 
 }

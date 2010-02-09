@@ -44,17 +44,17 @@ import org.slf4j.LoggerFactory;
  * @param <K>
  * @param <V>
  */
-public class LazyView<K, V> implements View<K, V> {
+public class LazyView<K, V> implements View<V> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(CompactOpenTable.class);
 
-	private final ConcurrentMap<K, View<K, V>> map;
+	private final ConcurrentMap<K, View<V>> map;
 	private final K key;
-	private final Factory<K, View<K, V>> factory;
+	private final Factory<K, View<V>> factory;
 
-	private volatile View<K, V> view; // allocated lazily - MUST be volatile - see below
+	private volatile View<V> view; // allocated lazily - MUST be volatile - see below
 
-	public LazyView(ConcurrentMap<K, View<K, V>> map, K key, Factory<K, View<K, V>> factory) {
+	public LazyView(ConcurrentMap<K, View<V>> map, K key, Factory<K, View<V>> factory) {
 		this.map = map;
 		this.key = key;
 		this.factory = factory;

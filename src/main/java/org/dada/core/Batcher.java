@@ -53,7 +53,7 @@ public class Batcher<K, V> extends Connector<K, V, K, V> {
 	private Collection<Update<V>> newUpdates;
 	private Collection<Update<V>> newDeletions;
 
-	public Batcher(int maxSize, long maxDelay, Collection<View<K, V>> views) {
+	public Batcher(int maxSize, long maxDelay, Collection<View<V>> views) {
 		super(views);
 		this.maxSize = maxSize;
 		this.maxDelay = maxDelay;
@@ -125,7 +125,7 @@ public class Batcher<K, V> extends Connector<K, V, K, V> {
 	}
 
 	protected void notifyViews(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		for (View<K, V> view : getViews()) {
+		for (View<V> view : getViews()) {
 			view.update(insertions, updates, deletions);
 		}
 	}	

@@ -118,7 +118,7 @@ public class AbstractModelTestCase extends TestCase {
 		final Collection<Update<Datum<Integer>>> empty = Collections.emptyList();
 
 		// well-behaved view
-		View<Integer, Datum<Integer>> goodView = new View<Integer, Datum<Integer>>() {
+		View<Datum<Integer>> goodView = new View<Datum<Integer>>() {
 
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
@@ -139,7 +139,7 @@ public class AbstractModelTestCase extends TestCase {
 		model.deregisterView(goodView);
 
 		// badly behaved view
-		View<Integer, Datum<Integer>> badView = new View<Integer, Datum<Integer>>() {
+		View<Datum<Integer>> badView = new View<Datum<Integer>>() {
 
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {

@@ -30,7 +30,7 @@ package org.dada.core;
 
 import java.util.Collection;
 
-public interface View<K, V> {
+public interface View<V> {
 
 	/**
 	 * An insertion is a potential move from outside into a View and a deletion vice versa.

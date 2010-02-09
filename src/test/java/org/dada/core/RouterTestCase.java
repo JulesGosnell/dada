@@ -10,7 +10,7 @@ import org.dada.core.Router.Strategy;
 public class RouterTestCase extends TestCase {
 
 	public void testRouteOnImmutableAttribute() {
-		View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
+		View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions,
@@ -19,7 +19,7 @@ public class RouterTestCase extends TestCase {
 			}
 		};
 		
-		final Collection<View<Integer, Datum<Integer>>> views =Collections.singleton(view);
+		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
 		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
 
@@ -34,12 +34,12 @@ public class RouterTestCase extends TestCase {
 			}
 
 			@Override
-			public Collection<View<Integer, Datum<Integer>>> getViews(int route) {
+			public Collection<View<Datum<Integer>>> getViews(int route) {
 				return views;
 			}
 		};
 
-		View<Integer, Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -75,7 +75,7 @@ public class RouterTestCase extends TestCase {
 	}
 
 	public void testRouteOnmutableAttribute() {
-		View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
+		View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions,
@@ -84,7 +84,7 @@ public class RouterTestCase extends TestCase {
 			}
 		};
 		
-		final Collection<View<Integer, Datum<Integer>>> views =Collections.singleton(view);
+		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
 		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
 
@@ -99,12 +99,12 @@ public class RouterTestCase extends TestCase {
 			}
 
 			@Override
-			public Collection<View<Integer, Datum<Integer>>> getViews(int route) {
+			public Collection<View<Datum<Integer>>> getViews(int route) {
 				return views;
 			}
 		};
 
-		View<Integer, Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> router = new Router<Integer, Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 

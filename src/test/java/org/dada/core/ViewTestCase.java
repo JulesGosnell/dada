@@ -87,7 +87,7 @@ public class ViewTestCase extends TestCase {
 	protected Metadata<Integer, BooleanDatum> datumMetadata;
 	protected Metadata<Integer, StringDatum> stringDatumMetadata;
 
-	static class Counter<K, V> implements View<K, V> {
+	static class Counter<K, V> implements View<V> {
 
 		int count;
 

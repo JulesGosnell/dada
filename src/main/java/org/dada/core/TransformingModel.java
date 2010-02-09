@@ -34,7 +34,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> implements View<String, IV> {
+public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> implements View<IV> {
 
 	public interface Transformer<IV, OK, OV> {
 		OV transform(IV value);

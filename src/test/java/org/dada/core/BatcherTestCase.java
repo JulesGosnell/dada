@@ -44,8 +44,8 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 	public void testSizeInducedFlush() {
 
-		final View<Integer, Datum<Integer>> view = (View)mock(View.class);
-		Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
+		final View<Datum<Integer>> view = (View)mock(View.class);
+		Collection<View<Datum<Integer>>> views = new ArrayList<View<Datum<Integer>>>();
 		views.add(view);
 
 		int maxSize = 1;
@@ -115,7 +115,7 @@ public class BatcherTestCase extends MockObjectTestCase {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final Thread thread = Thread.currentThread();
-		final View<Integer, Datum<Integer>> view = new View<Integer, Datum<Integer>>() {
+		final View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
 				assertTrue(insertions.size() == 2);
@@ -124,7 +124,7 @@ public class BatcherTestCase extends MockObjectTestCase {
 			}
 		};
 		
-		final Collection<View<Integer, Datum<Integer>>> views = new ArrayList<View<Integer,Datum<Integer>>>();
+		final Collection<View<Datum<Integer>>> views = new ArrayList<View<Datum<Integer>>>();
 		views.add(view);
 
 		final int maxSize = 1000000;

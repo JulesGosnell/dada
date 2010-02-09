@@ -41,9 +41,9 @@ public class LazyViewTestCase extends TestCase {
 	
 	private Collection<Update<Datum<Integer>>> empty = Collections.emptyList();
 	
-	private ConcurrentMap<Integer, View<Integer, Datum<Integer>>> map = new ConcurrentHashMap<Integer, View<Integer,Datum<Integer>>>();
+	private ConcurrentMap<Integer, View<Datum<Integer>>> map = new ConcurrentHashMap<Integer, View<Datum<Integer>>>();
 	
-	private View<Integer, Datum<Integer>> realView = new View<Integer, Datum<Integer>>() {
+	private View<Datum<Integer>> realView = new View<Datum<Integer>>() {
 		@Override
 		public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
 			numUpdates++;
@@ -54,15 +54,15 @@ public class LazyViewTestCase extends TestCase {
 	public void testWorkingFactory() throws Exception {
 		Integer key = 0;
 
-		Factory<Integer, View<Integer, Datum<Integer>>> factory = new Factory<Integer, View<Integer, Datum<Integer>>>() {
+		Factory<Integer, View<Datum<Integer>>> factory = new Factory<Integer, View<Datum<Integer>>>() {
 			
 			@Override
-			public View<Integer, Datum<Integer>> create(Integer key) {
+			public View<Datum<Integer>> create(Integer key) {
 				return realView;
 			}
 		};
 		
-		View<Integer, Datum<Integer>> lazyView = new LazyView<Integer, Datum<Integer>>(map, key, factory);
+		View<Datum<Integer>> lazyView = new LazyView<Integer, Datum<Integer>>(map, key, factory);
 		map.put(key, lazyView); // IMPORTANT - Lazy View REPLACES itself in Map
 		
 		// force LazyView to initialise - replacing itself in Map
@@ -83,14 +83,14 @@ public class LazyViewTestCase extends TestCase {
 		Integer key = 0;
 
 		// what happens if the View Factory throws an Exception ?
-		Factory<Integer, View<Integer, Datum<Integer>>> factory = new Factory<Integer, View<Integer, Datum<Integer>>>() {
+		Factory<Integer, View<Datum<Integer>>> factory = new Factory<Integer, View<Datum<Integer>>>() {
 			
 			@Override
-			public View<Integer, Datum<Integer>> create(Integer key) {
+			public View<Datum<Integer>> create(Integer key) {
 				throw new RuntimeException();
 			}
 		};
-		View<Integer, Datum<Integer>> lazyView = new LazyView<Integer, Datum<Integer>>(map, key, factory);
+		View<Datum<Integer>> lazyView = new LazyView<Integer, Datum<Integer>>(map, key, factory);
 
 		assertTrue(numUpdates == 0);
 		lazyView.update(empty, empty, empty);

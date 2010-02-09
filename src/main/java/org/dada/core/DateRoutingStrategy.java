@@ -42,14 +42,14 @@ import org.joda.time.Interval;
 public class DateRoutingStrategy<V> implements Router.Strategy<Integer, V> {
 
 	private final NavigableMap<Long, Integer> dateToRoute;
-	private final Collection<View<Integer, V>>[] routeToViews;
+	private final Collection<View<V>>[] routeToViews;
 	private final Getter<Long, V> getter;
 	private final boolean mutable;
 
 	// TODO: review decision to use Joda Time
 	// TODO: consider cost of auto-[un]boxing...
 	@SuppressWarnings("unchecked")
-	public DateRoutingStrategy(Map<Interval, Collection<View<Integer, V>>> intervalToViews, Getter<Long, V> getter, boolean mutable) {
+	public DateRoutingStrategy(Map<Interval, Collection<View<V>>> intervalToViews, Getter<Long, V> getter, boolean mutable) {
 		NavigableSet<Long> dates = new TreeSet<Long>();
 		// aggregate period edges...
 		for (Interval interval : intervalToViews.keySet()) {
@@ -66,11 +66,11 @@ public class DateRoutingStrategy<V> implements Router.Strategy<Integer, V> {
 		routeToViews = new Collection[dates.size()]; // unchecked :-(
 		for (Long date : dates) {
 			dateToRoute.put(date, route);
-			Collection<View<Integer, V>> views = new ArrayList<View<Integer, V>>();
+			Collection<View<V>> views = new ArrayList<View<V>>();
 			routeToViews[route] = views;
-			for (Entry<Interval, Collection<View<Integer, V>>> entry : intervalToViews.entrySet()) {
+			for (Entry<Interval, Collection<View<V>>> entry : intervalToViews.entrySet()) {
 				Interval key = entry.getKey();
-				Collection<View<Integer, V>> value = entry.getValue();
+				Collection<View<V>> value = entry.getValue();
 				if (key.contains(date)) {
 					// map route to views
 					views.addAll(value);
@@ -84,7 +84,7 @@ public class DateRoutingStrategy<V> implements Router.Strategy<Integer, V> {
 	}
 
 	@Override
-	public Collection<View<Integer, V>> getViews(int route) {
+	public Collection<View<V>> getViews(int route) {
 		return routeToViews[route];
 	}
 

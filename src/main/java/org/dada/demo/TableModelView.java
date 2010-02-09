@@ -40,7 +40,7 @@ import org.dada.core.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TableModelView<K, V> extends AbstractTableModel implements View<K, V> {
+public class TableModelView<K, V> extends AbstractTableModel implements View<V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final CountDownLatch latch = new CountDownLatch(1);

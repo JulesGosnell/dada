@@ -41,15 +41,15 @@ import java.util.Collection;
  * @param <OK>
  * @param <OV>
  */
-public abstract class Connector<IK, IV, OK, OV> implements View<IK, IV> {
+public abstract class Connector<IK, IV, OK, OV> implements View<IV> {
 
-	private final Collection<View<OK, OV>> views;
+	private final Collection<View<OV>> views;
 	
-	public Connector(Collection<View<OK, OV>> views) {
+	public Connector(Collection<View<OV>> views) {
 		this.views = views;
 	}
 	
-	protected Collection<View<OK,OV>> getViews() {
+	protected Collection<View<OV>> getViews() {
 		return views;
 	}
 }

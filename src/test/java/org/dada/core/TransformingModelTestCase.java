@@ -67,7 +67,7 @@ public class TransformingModelTestCase extends MockObjectTestCase {
 		}
         
         final Registration<Object, Object> registration = new Registration<Object, Object>(null, null);
-        final View<Object, Object> view = mock(View.class);
+        final View<Object> view = mock(View.class);
 
         // register a view - unsuccessfully 
 

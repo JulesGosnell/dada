@@ -38,7 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public class FileCacheLoader<K, V> extends AbstractModel<K, V> implements Loader<K, V>, View<K, V> {
+public class FileCacheLoader<K, V> extends AbstractModel<K, V> implements Loader<K, V>, View<V> {
 
 	private final Collection<Update<V>> nil = Collections.emptyList();
 	private final List<V> data = new ArrayList<V>();

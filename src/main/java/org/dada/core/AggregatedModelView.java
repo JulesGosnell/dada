@@ -33,7 +33,7 @@ import java.util.Collections;
 
 // TODO: should be some sort of TransformedModelView - since output is a different shape from input
 
-public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<KI, VI> {
+public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<VI> {
 
 	public interface Aggregator<VI, V, KO, VO> {
 		V initialValue();

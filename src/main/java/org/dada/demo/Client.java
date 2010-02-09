@@ -78,8 +78,8 @@ public class Client {
 	private final MetaModel metaModel;
 	private final Model<Object, Object> serverProxy;
 	private final Destination clientDestination;
-	private final RemotingFactory<View<Object, Object>> serverFactory;
-	private final View<Object, Object> clientServer;
+	private final RemotingFactory<View<Object>> serverFactory;
+	private final View<Object> clientServer;
 	private final JView jview;
 	private final JTable table;
 	private final JFrame frame;
@@ -111,7 +111,7 @@ public class Client {
 		// create a Client
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
-		serverFactory = new RemotingFactory<View<Object, Object>>(session, View.class, timeout);
+		serverFactory = new RemotingFactory<View<Object>>(session, View.class, timeout);
 		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
 

@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<String, Model<Object, Object>> {
+public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<Model<Object, Object>> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ServiceFactory<Model<Object, Object>> serviceFactory;
@@ -62,7 +62,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public boolean deregisterView(String modelName, View<Object, Object> view) {
+	public boolean deregisterView(String modelName, View<Object> view) {
 		Model<Object, Object> model = nameToModel.get(modelName);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
@@ -71,7 +71,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public Registration<Object, Object> registerView(String modelName, View<Object, Object> view) {
+	public Registration<Object, Object> registerView(String modelName, View<Object> view) {
 		Model<Object, Object> model = nameToModel.get(modelName);
 		try {
 			if (!exportedModelNames.contains(modelName)) {
@@ -140,7 +140,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public boolean deregisterQueryView(String query, View<Object, Object> view) {
+	public boolean deregisterQueryView(String query, View<Object> view) {
 		synchronized (queryToModel) {
 			Model<?, ?> model = queryToModel.get(query);
 			if (model == null)
@@ -151,7 +151,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public Registration<Object, Object> registerQueryView(String query, View<Object, Object> view) {
+	public Registration<Object, Object> registerQueryView(String query, View<Object> view) {
 		synchronized (queryToModel) {
 			Model<?, ?> model = queryToModel.get(query);
 			if (model == null) {

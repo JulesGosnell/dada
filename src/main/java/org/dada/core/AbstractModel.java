@@ -51,7 +51,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	protected final Metadata<K, V> metadata;
 	private final Object viewsLock = new Object();
 
-	protected volatile Collection<View<K, V>> views = new ArrayList<View<K, V>>();
+	protected volatile Collection<View<V>> views = new ArrayList<View<V>>();
 
 	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -70,10 +70,10 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	@Override
-	public Registration<K, V> registerView(View<K, V> view) {
+	public Registration<K, V> registerView(View<V> view) {
 		synchronized (viewsLock) {
 			//views = (IPersistentSet)views.cons(view);
-			Collection<View<K, V>> newViews = new ArrayList<View<K, V>>(views);
+			Collection<View<V>> newViews = new ArrayList<View<V>>(views);
 			newViews.add(view);
 			views = newViews;
 			logger.debug("{}: registered view: {}", name, view);
@@ -83,9 +83,9 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	@Override
-	public boolean deregisterView(View<K, V> view) {
+	public boolean deregisterView(View<V> view) {
 		synchronized (viewsLock) {
-			Collection<View<K, V>> newViews = new ArrayList<View<K, V>>(views);
+			Collection<View<V>> newViews = new ArrayList<View<V>>(views);
 			newViews.remove(view);
 			views = newViews;
 			logger.debug("" + this + " deregistered view:" + view + " -> " + views);
@@ -94,8 +94,8 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		Collection<View<K, V>> snapshot = views;
-		for (View<K, V> view : snapshot) {
+		Collection<View<V>> snapshot = views;
+		for (View<V> view : snapshot) {
 			try {
 				view.update(insertions, updates, deletions);
 			} catch (Throwable t) {

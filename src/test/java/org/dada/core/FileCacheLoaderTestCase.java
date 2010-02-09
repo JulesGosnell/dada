@@ -102,7 +102,7 @@ public class FileCacheLoaderTestCase extends MockObjectTestCase {
 		
         final Loader<Integer, Integer> nestedLoader = mock(Loader.class);
         final FileCacheLoader<Integer, Integer> loader = new FileCacheLoader<Integer, Integer>("test", null, file, nestedLoader);
-        final View<Integer, Integer> view = mock(View.class);
+        final View< Integer> view = mock(View.class);
         loader.registerView(view);
 
         // file cache is available - so will not call through to nested loader...

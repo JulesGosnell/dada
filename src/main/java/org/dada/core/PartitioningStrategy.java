@@ -36,16 +36,16 @@ import org.dada.core.Router.Strategy;
 public class PartitioningStrategy<K, V> implements Strategy<K, V> {
 
 	private final Getter<Integer, V> getter;
-	private final Collection<View<K, V>>[] views;
+	private final Collection<View<V>>[] views;
 	private final int numViews;
 
 	@SuppressWarnings("unchecked")
-	public PartitioningStrategy(Getter<Integer, V> getter, Collection<View<K, V>> views) {
+	public PartitioningStrategy(Getter<Integer, V> getter, Collection<View<V>> views) {
 		this.getter = getter;
 		numViews = views.size();
 		this.views = new Collection[numViews]; // unchecked :-(
 		int i = 0;
-		for (View<K, V> partition : views)
+		for (View<V> partition : views)
 			this.views[i++] = Collections.singleton(partition);
 	}
 
@@ -60,7 +60,7 @@ public class PartitioningStrategy<K, V> implements Strategy<K, V> {
 	}
 
 	@Override
-	public Collection<View<K, V>> getViews(int route) {
+	public Collection<View<V>> getViews(int route) {
 		return views[route];
 	}
 
