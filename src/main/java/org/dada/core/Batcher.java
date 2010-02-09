@@ -38,13 +38,12 @@ import org.slf4j.LoggerFactory;
 
 // TODO: a little naive, but lets go with it...
 
-public class Batcher<K, V> implements View<K, V> {
+public class Batcher<K, V> extends Connector<K, V, K, V> {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private final int maxSize;
 	private final long maxDelay;
-	private final Collection<View<K, V>> views;
 
 	private final Timer timer = new Timer(true);
 	
@@ -55,9 +54,9 @@ public class Batcher<K, V> implements View<K, V> {
 	private Collection<Update<V>> newDeletions;
 
 	public Batcher(int maxSize, long maxDelay, Collection<View<K, V>> views) {
+		super(views);
 		this.maxSize = maxSize;
 		this.maxDelay = maxDelay;
-		this.views = views;
 		newInsertions = new ArrayList<Update<V>>();
 		newUpdates = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
@@ -126,7 +125,7 @@ public class Batcher<K, V> implements View<K, V> {
 	}
 
 	protected void notifyViews(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		for (View<K, V> view : views) {
+		for (View<K, V> view : getViews()) {
 			view.update(insertions, updates, deletions);
 		}
 	}	
