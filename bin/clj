@@ -1,5 +1,23 @@
 #!/bin/sh
 
+## look upwards for a pom.xml
+
+while [ ! `pwd` = "/" -a !  -f ./pom.xml ]
+do
+    cd ..
+    echo "checking `pwd`..."
+done
+
+## did we find one ?
+
+if [ ! -f "./pom.xml" ]
+then
+    echo "could not locate pom.xml"
+    exit 1
+fi
+
+## yes...
+
 file=.clojure-classpath.txt
 
 if [ pom.xml -nt $file ]
@@ -9,7 +27,7 @@ fi
 
 if [ ! -f $file ]
 then
-    mvn dependency:build-classpath -Dmdep.outputFile=$file --offline
+    mvn dependency:build-classpath -Dmdep.outputFile=$file
 fi
 
 CLASSPATH=\
@@ -21,4 +39,6 @@ target/classes:\
 
 echo $CLASSPATH | tr : \\n
 
-exec java -cp $CLASSPATH clojure.main
+#exec java -cp $CLASSPATH clojure.main
+#exec java -cp $CLASSPATH jline.ConsoleRunner clojure.lang.Repl
+exec java -cp $CLASSPATH jline.ConsoleRunner clojure.main
