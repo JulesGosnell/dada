@@ -1,16 +1,16 @@
 #!/bin/sh
 
 ## look upwards for a pom.xml
-
-while [ ! `pwd` = "/" -a !  -f ./pom.xml ]
+root=`pwd`
+while [ ! $root = "/" -a !  -f $root/pom.xml ]
 do
-    cd ..
-    echo "checking `pwd`..."
+    root=`dirname $root`
+    echo "checking $root..."
 done
 
 ## did we find one ?
 
-if [ ! -f "./pom.xml" ]
+if [ ! -f "$root/pom.xml" ]
 then
     echo "could not locate pom.xml"
     exit 1
@@ -18,27 +18,28 @@ fi
 
 ## yes...
 
-file=.clojure-classpath.txt
+file=$root/.clojure-classpath.txt
 
-if [ pom.xml -nt $file ]
+if [ $root/pom.xml -nt $file ]
 then
     rm -f $file
 fi
 
 if [ ! -f $file ]
 then
-    mvn dependency:build-classpath -Dmdep.outputFile=$file
+    mvn -f $root/pom.xml dependency:build-classpath -Dmdep.outputFile=$file --offline
 fi
 
 CLASSPATH=\
-src/test/java:\
-src/main/java:\
-src/main/resources:\
-target/classes:\
+$root/src/test/clojure:\
+$root/src/main/clojure:\
+$root/src/main/resources:\
+$root/src/test/resources:\
+$root/target/classes:\
 `cat $file`
 
 echo $CLASSPATH | tr : \\n
 
-#exec java -cp $CLASSPATH clojure.main
+exec java -cp $CLASSPATH clojure.main
 #exec java -cp $CLASSPATH jline.ConsoleRunner clojure.lang.Repl
-exec java -cp $CLASSPATH jline.ConsoleRunner clojure.main
+#exec java -cp $CLASSPATH jline.ConsoleRunner clojure.main
