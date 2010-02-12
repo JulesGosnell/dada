@@ -133,6 +133,41 @@
     (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
     ))
 
+(defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
+  (let [method# (symbol (str "." method-name))]
+    (eval `(proxy [Getter] [] 
+		  (#^{:tag ~output-type} get [#^{:tag ~input-type} bean#] (~method# bean#))))
+    ))
+
+(defn getter [#^Class input-type #^Class output-type #^Keyword key]
+  "return a Getter taking input-type returning output-type and calling get<Key>"
+  (getter-2 input-type output-type (make-getter-name (name key))))
+
+(defn creator [#^Class class]
+  "make a Creator for the given Class"
+  (proxy [Creator] [] 
+	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
+		  (apply make-instance class args))))
+
+(defn metadata [#^Class class #^Keyword key #^Keyword version & attribute-key-types]
+  "make Metadata for a given class"
+  (let [attribute-map (apply array-map attribute-key-types)]
+    (new GetterMetadata 
+	 (creator class)
+	 (collection (name key) (name version))
+	 (vals attribute-map)
+	 (map name (keys attribute-map))
+	 (map (fn [[key type]] (getter class type key)) attribute-map))))
+
+(defn model [name metadata]
+  (let [names (.getAttributeNames metadata)
+	getters (.getAttributeGetters metadata)
+	getter-map (apply array-map (interleave names getters))
+	key-names (.getKeyAttributeNames metadata)
+	id-getter (getter-map (first key-names))
+	version-getter (getter-map (second key-names))]
+    (new VersionedModelView name metadata id-getter version-getter)))
+
 ;; (defmacro make-proxy-getter [input-type output-type property-name]
 ;;   (let [method (symbol (make-getter-name property-name))]
 ;;     `(proxy [Getter] [] (get [bean#] (. bean# ~method)))

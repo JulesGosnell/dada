@@ -73,35 +73,46 @@
 		      [(Float/TYPE) "length"]
 		      [(Float/TYPE) "weight"]))
 
+(if false
+  (def *metamodel*
+       (new org.dada.core.MetaModelImpl
+	    "Cetacea"
+	    (new org.dada.core.StringMetadata "type")
+	    (new org.dada.core.SynchronousServiceFactory)))
+  (do
+    (def *metamodel* (start-server "Cetacea"))
+    (start-client "Cetacea")))
+
 (def Whale (apply make-class "org.dada.demo.whales.Whale" Object properties))
 
-(def *metamodel* (start-server "Cetacea"))
-(start-client "Cetacea")
+;; TODO - metadata should encapsulate class...
+(def whale-metadata
+     (metadata Whale :time :version 
+	       :time (Long/TYPE)
+	       :version (Integer/TYPE)
+	       :type String
+	       :length (Float/TYPE)
+	       :weight (Float/TYPE)))
 
-(let
-    [types (map (fn [property] (nth property 0)) properties)
-     names (map (fn [property] (nth property 1)) properties)
-     getters (map (fn [property] (make-proxy-getter Whale (nth property 0) (nth property 1))) properties)
-     key-getter (nth getters 0)
-     version-getter (nth getters 1)
-     creator (proxy [Creator] [] (create [args] (apply make-instance Whale args)))
-     metadata (new GetterMetadata creator (collection "time" "version") types names getters)
-     model-name "Whales"]
-  (def whales (new VersionedModelView model-name metadata key-getter version-getter))
-  (insert *metamodel* whales)
-  whales)
+(def whales (model "Whales" whale-metadata))
+
+(insert *metamodel* whales)
 
 ;; create 10,000 whales and insert them into model
 (insert-n
  whales
- (let [time (System/currentTimeMillis)]
-   (for [id (range time (+ time 1000))] ;;10,000
-     (make-instance org.dada.demo.whales.Whale 
-		    id
-		    0
-		    (rnd types)
-		    (/ (rand-int 3290) 100) ;; 32.9 metres
-		    (/ (rand-int 172) 100))))) ;; 172 metric tons
+ (let [num-whales 1000
+       time (System/currentTimeMillis)]
+   (for [id (range time (+ time num-whales))]
+     (. whale-metadata
+	create
+	(into-array
+	 Object
+	 (list id
+	       0
+	       (rnd types)
+	       (/ (rand-int 3290) 100)     ;; 32.9 metres
+	       (/ (rand-int 172) 100))))))) ;; 172 metric tons
 
 ;; syntactic sugar
 (defn fetch [& args]
