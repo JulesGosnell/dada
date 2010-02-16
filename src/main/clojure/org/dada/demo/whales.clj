@@ -381,15 +381,15 @@
 	aggregator-fn (eval (symbol (str "make-" aggregator "-aggregator")))]
     (aggregator-fn metadata model-name key-val attribute)))
 
-(defn select-aggregate
+(defn do-aggregate
   "apply an aggregator view to a model"
   [model key-name key-val aggregator attribute]
   (connect model (make-aggregator model key-name key-val aggregator attribute)))
 
 
-(def blue-whales-sum-length (select-aggregate blue-whales :type "blue whale" 'sum :length))
-(def blue-whales-count-length (select-aggregate blue-whales :type "blue whale" 'count :length))
-(def blue-whales-average-length (select-aggregate blue-whales :type "blue whale" 'average :length))
+(def blue-whales-sum-length (do-aggregate blue-whales :type "blue whale" 'sum :length))
+(def blue-whales-count-length (do-aggregate blue-whales :type "blue whale" 'count :length))
+(def blue-whales-average-length (do-aggregate blue-whales :type "blue whale" 'average :length))
 
 (insert *metamodel* blue-whales-sum-length)
 (insert *metamodel* blue-whales-count-length)
@@ -413,7 +413,7 @@
       aggregator-attr-key :weight
       aggregator-symbol 'count ;; 'sum, 'average, 'count
       
-      aggregation (select-aggregate 
+      aggregation (do-aggregate 
       		   filtration
 		   filter-attr-key filter-attr-value aggregator-symbol aggregator-attr-key)
   ]
