@@ -2,6 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use [org.dada.core])
+ (:import [clojure.lang Symbol])
  (:import [org.dada.core Average Creator Getter GetterMetadata VersionedModelView])
  )
 
@@ -330,7 +331,7 @@
 ;; aggregation
 ;;----------------------------------------
 
-(defn make-aggregator [model key-name key-val aggregator attribute]
+(defn make-aggregator [model key-name key-val #^Symbol aggregator attribute]
   (let [attribute-type (first (aggregator-metadata aggregator))
 	key key-name
 	key-type (type key-val)

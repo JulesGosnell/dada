@@ -1,5 +1,5 @@
 (ns org.dada.core
-    (:import (clojure.lang DynamicClassLoader)
+    (:import (clojure.lang DynamicClassLoader ISeq IFn)
 	     (java.util ArrayList)
 	     (java.beans PropertyDescriptor)
 	     (org.dada.core
@@ -31,7 +31,7 @@
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '()))
 
-(defn insert-n [#^View view items]
+(defn insert-n [#^View view #^ISeq items]
   (.update view (map (fn [item] (Update. nil item)) items) '() '()))
 
 (defn update [#^View view oldValue newValue]
@@ -59,11 +59,11 @@
    '()
    (map
     #(Update. % nil)
-    (.getData model)))
-  view)
+    (.getData model))
+   view))
 
 (defn collection [& args]
-  (let [array-list (ArrayList. (count args))]
+  (let [array-list (ArrayList. #^Integer (count args))]
     (.addAll array-list args)
     array-list))
 
@@ -86,7 +86,8 @@
 	  (if (empty? attribute-map)
 	    nil
 	    (into-array (map 
-			 (fn [[key type]] (into-array (list (.getCanonicalName type) (name key))))
+			 (fn [[#^Keyword key #^Class type]]
+			     (into-array (list (.getCanonicalName type) (name key))))
 			 attribute-map))))))))
 
 ;; fields => [model field]
@@ -107,7 +108,7 @@
 ;; TODO: how do we confirm that with-meta is doing the right thing for
 ;; both input and output types...
 
-(defn make-getter-name [property-name]
+(defn make-getter-name [#^String property-name]
   (str "get" (s/capitalize property-name)))
 
 (defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
@@ -167,15 +168,15 @@
 	version-getter (getter-map version)]
     (VersionedModelView. name metadata key-getter version-getter)))
 
-(defn apply-getters [getters value]
+(defn apply-getters [#^ISeq getters value]
   "apply a list of getters to a value returning a list of their results"
-  (map #(.get % value) getters))
+  (map (fn [#^Getter getter] (.get getter value)) getters))
 
 ;;----------------------------------------
 ;; filtration - could do with another pass through
 ;;----------------------------------------
 
-(defn make-filter [filter-fn #^View view]
+(defn make-filter [#^IFn filter-fn #^View view]
   (FilteredView. 
    (proxy
     [FilteredView$Filter]
@@ -188,8 +189,8 @@
    ))
 
 ;; ATTN: VIEW may be a name to use when making a View, or the View itself
-(defn do-filter [#^Model model keys function view]
-  "Get the values for KEYS from each alue in the MODEL and pass them to the FUNCTION..."
+(defn do-filter [#^Model model #^ISeq keys #^IFn function view]
+  "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
 	name-to-getter (apply
 			array-map
@@ -243,7 +244,7 @@
 ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
 ;; TODO :default not a good idea - would replace nulls
 ;; TODO what about type hints on lambdas ?
-(defn expand-property [src-type src-getter src-key & pvec]
+(defn expand-property [#^Class src-type #^Getter src-getter #^Keyword src-key & pvec]
   (let [pmap (apply array-map pvec)
 	tgt-type (or (pmap :type) src-type)
 	tgt-key (or (pmap :name) src-key)
@@ -280,7 +281,7 @@
 ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
 ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
-(defn select [src-model src-key-key src-version-key attrs & pvec]
+(defn select [#^Model src-model #^Keyword src-key-key #^Keyword src-version-key #^ISeq attrs & pvec]
   (let [pmap (apply array-map pvec)
 	src-metadata (. src-model getMetadata)
 	src-keys (map keyword (. src-metadata getAttributeNames))

@@ -34,5 +34,7 @@ public interface Model<K, V> extends Lifecycle {
 
 	Registration<K, V> registerView(View<V> view);
 	boolean deregisterView(View<V> view);
+	
+	Metadata<K, V> getMetadata();
 
 }
