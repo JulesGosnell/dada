@@ -133,22 +133,6 @@
 
 ;; make a class to hold key, version and aggregate value...
 
-(defn make-metadata [classname pktype pkname fieldtype fieldname]
-  (let [properties (list [pktype pkname] [(Integer/TYPE) "version"] [fieldtype fieldname])
-	class (apply make-class classname Object properties)]
-  (new GetterMetadata
-       (proxy [Creator] [] (create [args] (apply make-instance class args)))
-       (collection pkname "version")
-       (map first properties)
-       (map second properties)
-       (map 
-	(fn [property]
-	    (make-proxy-getter 
-	     class
-	     (first property)
-	     (second property)))
-	properties))))
-
 (def aggregator-initial-values
      {
      (Integer/TYPE) 0
@@ -282,7 +266,6 @@
 ;; initial-value - (new Float "0")
 ;; accessor - .getLength
 
-;; make-metadata [classname pktype pkname fieldtype fieldname]
 ;; make-aggregator [metadata modelname pkval initial-value fieldname]
 (def
  sum-aggregator
