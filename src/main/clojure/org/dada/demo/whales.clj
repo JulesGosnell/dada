@@ -323,7 +323,7 @@
 
 ;;----------------------------------------
 
-(def blue-whales (apply-filter whales '(:type) #(= "blue whale" %) "type='blue whale'"))
+(def blue-whales (do-filter whales '(:type) #(= "blue whale" %) "type='blue whale'"))
 (insert *metamodel* blue-whales)
 
 ;;----------------------------------------
@@ -365,7 +365,7 @@
 (let [model whales
       filter-attr-key :type
       filter-attr-value "killer whale"
-      filtration (apply-filter model [filter-attr-key] #(= % filter-attr-value) "type='killer whale'")
+      filtration (do-filter model [filter-attr-key] #(= % filter-attr-value) "type='killer whale'")
 
       aggregator-attr-key :weight
       aggregator-symbol 'count ;; 'sum, 'average, 'count

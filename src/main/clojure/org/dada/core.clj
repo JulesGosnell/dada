@@ -167,11 +167,15 @@
 	version-getter (getter-map version)]
     (VersionedModelView. name metadata key-getter version-getter)))
 
+(defn apply-getters [getters value]
+  "apply a list of getters to a value returning a list of their results"
+  (map #(.get % value) getters))
+
 ;;----------------------------------------
 ;; filtration - could do with another pass through
 ;;----------------------------------------
 
-(defn make-filter [filter-fn view]
+(defn make-filter [filter-fn #^View view]
   (FilteredView. 
    (proxy
     [FilteredView$Filter]
@@ -183,20 +187,8 @@
    (list view)
    ))
 
-(defn do-filter
-  "apply a filter view to a model"
-  ([model filter-fn view dummy]
-   (connect model (make-filter filter-fn view))
-   view)
-  ([model filter-fn filter-name]
-   (let [view-name (str (.getName model) "." filter-name)
-	 view (clone-model model view-name)]
-     (do-filter model filter-fn view "dummy"))))
-
-(defn apply-getters [getters row]
-  (map #(.get % row) getters))
-
-(defn apply-filter [model keys function filter-name]
+;; ATTN: VIEW may be a name to use when making a View, or the View itself
+(defn do-filter [#^Model model keys function view]
   "Get the values for KEYS from each alue in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
 	name-to-getter (apply
@@ -204,8 +196,12 @@
 			(interleave
 			 (.getAttributeNames metadata)
 			 (.getAttributeGetters metadata)))
-	getters (map #(name-to-getter (name %)) keys)]
-    (do-filter model #(apply function (apply-getters getters %)) filter-name)))
+	getters (map #(name-to-getter (name %)) keys)
+	view (if (instance? String view)
+	       (clone-model model (str (.getName model) "." view))
+	       view)]
+    (connect model (make-filter #(apply function (apply-getters getters %)) view))
+    view))
 
 ;;----------------------------------------
 ;; refactored to here
