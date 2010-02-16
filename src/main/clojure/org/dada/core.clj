@@ -8,6 +8,7 @@
 	      FilteredView$Filter
 	      Getter
 	      GetterMetadata
+	      Metadata
 	      Model
 	      Transformer
 	      Transformer$Transform
@@ -73,7 +74,7 @@
 ;; factory
 ;; "org.dada.tmp.Amount"
 ;; :id int :version int :amount double)
-(defn make-class [class-name superclass & attribute-key-types]
+(defn make-class [#^String class-name #^Class superclass & attribute-key-types]
   (let [attribute-map (apply array-map attribute-key-types)]
     (. #^DynamicClassLoader
        (deref clojure.lang.Compiler/LOADER)
@@ -91,12 +92,6 @@
 ;; fields => [model field]
 
 
-;; might be better than runtime make instance, if we could have
-;; selected the right ctor - not used at moment...
-(defn make-constructor [class & types]
-  (let [ctor (symbol (str (.getCanonicalName class) "."))]
-    (fn [& args] (apply ctor args))))
-
 ;; see http://groups.google.com/group/clojure/browse_thread/thread/106a2f73fb49f492#
 
 ;; I'm going with directly invoking this ctor, because it seems to be
@@ -104,7 +99,7 @@
 ;; new on a symbol... What I really want to do is come up with
 ;; something that compiles down to bytecode that calls the correct
 ;; ctor for the given args directly... - TODO - more thought...
-(defn make-instance [class & args]
+(defn make-instance [#^Class class & args]
   (clojure.lang.Reflector/invokeConstructor class (to-array args)))
 
 (require '[clojure.contrib.str-utils2 :as s])
@@ -115,26 +110,11 @@
 (defn make-getter-name [property-name]
   (str "get" (s/capitalize property-name)))
 
-;; (defmacro make-lambda-getter [input-type output-type #^String property-name]
-;;   (let [method-name (symbol (make-getter-name property-name))]
-;;     `(fn [bean#] (. bean# ~method-name))))
-
-(defn make-lambda-getter [input-type output-type #^String property-name]
-  (let [method-name (symbol (make-getter-name property-name))]
-    (eval (list 'fn '[bean] (list '. 'bean method-name)))))
-
-;;(with-meta here (:tag output-type))
-
-;; TODO : should this not be a a macro - use proper syntax...
-(defn make-proxy-getter [input-type output-type property-name]
-  (let [method (symbol (make-getter-name property-name))]
-    (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
-    ))
-
 (defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
   (let [method# (symbol (str "." method-name))]
-    (eval `(proxy [Getter] [] 
-		  (#^{:tag ~output-type} get [#^{:tag ~input-type} bean#] (~method# bean#))))
+    (eval
+     `(proxy [Getter] [] 
+	     (#^{:tag ~output-type} get [#^{:tag ~input-type} bean#] (~method# bean#))))
     ))
 
 (defn getter [#^Class input-type #^Class output-type #^Keyword key]
@@ -166,7 +146,7 @@
 	 (map name (keys attribute-map))
 	 (map (fn [[key type]] (getter class type key)) attribute-map))))
 
-(defn model [name metadata]
+(defn model [#^String name #^Metadata metadata]
   (let [names (.getAttributeNames metadata)
 	getters (.getAttributeGetters metadata)
 	getter-map (apply array-map (interleave names getters))
@@ -175,10 +155,9 @@
 	version-getter (getter-map (second key-names))]
     (new VersionedModelView name metadata id-getter version-getter)))
 
-;; (defmacro make-proxy-getter [input-type output-type property-name]
-;;   (let [method (symbol (make-getter-name property-name))]
-;;     `(proxy [Getter] [] (get [bean#] (. bean# ~method)))
-;;     ))
+;;----------------------------------------
+;; refactored to here
+;;----------------------------------------
 
 ;; should [if required] connect a transformer between model and view...
 ;; each property should be able to register a converter fn as part of the transformation...
@@ -236,6 +215,12 @@
 	defaulter (if (fn? default) default (fn [value] default))
 	retriever (fn [value] (convert (. src-getter get value)))]
     [tgt-type tgt-key retriever]
+    ))
+
+;; TODO : should this not be a a macro - use proper syntax...
+(defn make-proxy-getter [input-type output-type property-name]
+  (let [method (symbol (make-getter-name property-name))]
+    (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
     ))
 
 (defn make-getter-map [tgt-class fields]
