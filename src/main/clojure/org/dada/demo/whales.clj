@@ -353,7 +353,7 @@
 ;; filtration
 ;;----------------------------------------
 
-(defn select-filter
+(defn do-filter
   "apply a filter view to a model"
   ([model filter-fn view dummy]
    (connect model (make-filter filter-fn view))
@@ -361,9 +361,9 @@
   ([model filter-fn filter-name]
    (let [view-name (str (.getName model) "." filter-name)
 	 view (clone-model model view-name)]
-     (select-filter model filter-fn view "dummy"))))
+     (do-filter model filter-fn view "dummy"))))
 
-(def blue-whales (select-filter whales #(= "blue whale" (.getType %)) "type='blue whale'"))
+(def blue-whales (do-filter whales #(= "blue whale" (.getType %)) "type='blue whale'"))
 (insert *metamodel* blue-whales)
 
 ;;----------------------------------------
@@ -408,7 +408,7 @@
       filter-attr-accessor (make-accessor Whale filter-attr-type filter-attr-key)
       filter-name (str (name filter-attr-key) "='" filter-attr-value "'")
       filter-fn #(= filter-attr-value (filter-attr-accessor %))
-      filtration (select-filter model filter-fn filter-name)
+      filtration (do-filter model filter-fn filter-name)
 
       aggregator-attr-key :weight
       aggregator-symbol 'count ;; 'sum, 'average, 'count
