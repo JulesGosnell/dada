@@ -36,9 +36,7 @@ import java.util.Collection;
 
  * @author jules
  *
- * @param <IK>
  * @param <IV>
- * @param <OK>
  * @param <OV>
  */
 public class Transformer<IV, OV> extends Connector<IV, OV> {

@@ -36,9 +36,7 @@ import java.util.Collection;
  * 
  * @author jules
  *
- * @param <IK>
  * @param <IV>
- * @param <OK>
  * @param <OV>
  */
 public abstract class Connector<IV, OV> implements View<IV> {
