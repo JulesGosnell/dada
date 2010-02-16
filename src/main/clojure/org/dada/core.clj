@@ -141,6 +141,15 @@
   "return a Getter taking input-type returning output-type and calling get<Key>"
   (getter-2 input-type output-type (make-getter-name (name key))))
 
+(defn make-accessor-2 [#^Class input-type #^Class output-type #^String method-name]
+  (let [method# (symbol (str "." method-name))]
+    (eval `(#^{:tag ~output-type} fn [#^{:tag ~input-type} bean#] (~method# bean#)))))
+
+(defn make-accessor [#^Class input-type #^Class output-type #^Keyword key]
+  "return a function taking input-type returning output-type and calling get<Key>"
+  (let [method-name (symbol (make-getter-name (name key)))]
+    (make-accessor-2 input-type output-type method-name)))
+
 (defn creator [#^Class class]
   "make a Creator for the given Class"
   (proxy [Creator] [] 
@@ -232,7 +241,6 @@
 (defn make-getter-map [tgt-class fields]
   (let [types (map first fields)
 	names (map second fields)
-	dummy (println types names)
 	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types (map name names))]
     (apply array-map (interleave names getters))))
 
@@ -252,23 +260,16 @@
 
 (defn select [src-model src-key-key src-version-key attrs & pvec]
   (let [pmap (apply array-map pvec)
-	dummy (println pmap)
 	src-metadata (. src-model getMetadata)
 	src-keys (map keyword (. src-metadata getAttributeNames))
 	src-types (. src-metadata getAttributeTypes)
 	src-getters (. src-metadata getAttributeGetters)
 	src-type-map (apply array-map (interleave src-keys src-types)) ; key:type
-	dummy (println src-type-map)
-	dummy (println src-keys)
-	dummy (println src-getters)
 	src-getter-map (apply array-map (interleave src-keys src-getters)) ; key:getter
-	dummy (println "SRC-GETTER-MAP:" src-getter-map)
 	fields (make-fields src-type-map src-getter-map attrs) ; selection ([type name ...])
-	dummy (println "FIELDS:" fields)
 	;; test to see if transform is needed should be done somewhere here...
 	;; what is an :into param was given...none of this needs calculating...
 	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
-	dummy (println "HERE")
 	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
 	filter-fn (pmap :filter)
    	tgt-types (map (fn [field] (nth field 0)) fields)
@@ -277,10 +278,8 @@
    	sel-getters (map (fn [field] (nth field 2)) fields)
 	tgt-attrs (interleave tgt-keys tgt-types)
   	tgt-class (apply make-class tgt-class-name Object tgt-attrs)
-	dummy (println "TGT-CLASS:" tgt-class)
 	tgt-creator (proxy [Creator] [] (create [& args] (apply make-instance tgt-class args)))
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
-	dummy (println "HERE")
 	tgt-getters (vals tgt-getter-map)
    	tgt-key-getter (tgt-getter-map src-key-key)
    	tgt-version-getter (tgt-getter-map src-version-key)

@@ -401,19 +401,25 @@
 ;;----------------------------------------
 
 
-(let [filter-attribute-key :type
-      filter-attribute-value "killer whale"
-      aggregator-attribute-key :weight
-      aggregator-symbol 'count ;; 'sum, 'average, 'count
+(let [model whales
+      filter-attr-key :type
+      filter-attr-type String ;; pull from Metadata
+      filter-attr-value "killer whale"
+      filter-attr-accessor (make-accessor Whale filter-attr-type filter-attr-key)
+      filter-name (str (name filter-attr-key) "='" filter-attr-value "'")
+      filter-fn #(= filter-attr-value (filter-attr-accessor %))
+      filtration (select-filter model filter-fn filter-name)
 
-      filter-attribute-accessor (make-lambda-getter Whale String filter-attribute-key)
-      filtration (select-filter
-		  whales #(= filter-attribute-value (filter-attribute-accessor %)) (str (name filter-attribute-key) "='" filter-attribute-value "'"))
+      aggregator-attr-key :weight
+      aggregator-symbol 'count ;; 'sum, 'average, 'count
+      
       aggregation (select-aggregate 
-		   filtration
-		   filter-attribute-key filter-attribute-value aggregator-symbol aggregator-attribute-key)]
+      		   filtration
+		   filter-attr-key filter-attr-value aggregator-symbol aggregator-attr-key)
+  ]
   (insert *metamodel* filtration)
-  (insert *metamodel* aggregation))
+  (insert *metamodel* aggregation)
+  )
 
 ;; TODO - aggregated column's name and type depends on aggregator, not original column type
 
