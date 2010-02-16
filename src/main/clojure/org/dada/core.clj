@@ -155,6 +155,58 @@
 	version-getter (getter-map (second key-names))]
     (new VersionedModelView name metadata id-getter version-getter)))
 
+(defn clone-model [#^Model model #^String name]
+  (let [metadata (.getMetadata model)
+	names (. metadata getAttributeNames)
+	getters (. metadata getAttributeGetters)
+	getter-map (apply array-map (interleave names getters))
+	keys (. metadata getKeyAttributeNames)
+	key (first keys)
+	key-getter (getter-map key)
+	version (second keys)
+	version-getter (getter-map version)]
+    (VersionedModelView. name metadata key-getter version-getter)))
+
+;;----------------------------------------
+;; filtration - could do with another pass through
+;;----------------------------------------
+
+(defn make-filter [filter-fn view]
+  (FilteredView. 
+   (proxy
+    [FilteredView$Filter]
+    []
+    (filter 
+     [value]
+     ;; TODO: this code needs to be FAST - executed online
+     (filter-fn value)))
+   (list view)
+   ))
+
+(defn do-filter
+  "apply a filter view to a model"
+  ([model filter-fn view dummy]
+   (connect model (make-filter filter-fn view))
+   view)
+  ([model filter-fn filter-name]
+   (let [view-name (str (.getName model) "." filter-name)
+	 view (clone-model model view-name)]
+     (do-filter model filter-fn view "dummy"))))
+
+(defn apply-getters [getters row]
+  (map #(.get % row) getters))
+
+(defn apply-filter [model keys function filter-name]
+  "Get the values for KEYS from each alue in the MODEL and pass them to the FUNCTION..."
+  (let [metadata (.getMetadata model)
+	name-to-getter (apply
+			array-map
+			(interleave
+			 (.getAttributeNames metadata)
+			 (.getAttributeGetters metadata)))
+	getters (map #(name-to-getter (name %)) keys)]
+    (do-filter model #(apply function (apply-getters getters %)) filter-name)))
+
 ;;----------------------------------------
 ;; refactored to here
 ;;----------------------------------------
@@ -178,17 +230,6 @@
      (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
     )))
 
-(defn make-filter [filter-fn view]
-  (FilteredView. 
-   (proxy
-    [FilteredView$Filter]
-    []
-    (filter 
-     [value]
-     ;; TODO: this code needs to be FAST - executed online
-     (filter-fn value)))
-   (list view)
-   ))
 
 ;; (transform input-model src-class property-map input-names view output-class)
 (defn transform [model model-class property-map sel-getters tgt-names view view-class]

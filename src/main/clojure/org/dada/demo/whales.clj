@@ -317,36 +317,13 @@
 ;; pivot them into a single Model
 
 ;;----------------------------------------
-;; utils
-;;----------------------------------------
 
-(defn clone-model [model name]
- (let [metadata (.getMetadata model)
-       names (. metadata getAttributeNames)
-       getters (. metadata getAttributeGetters)
-       getter-map (apply array-map (interleave names getters))
-       keys (. metadata getKeyAttributeNames)
-       key (first keys)
-       key-getter (getter-map key)
-       version (second keys)
-       version-getter (getter-map version)]
-   (VersionedModelView. name metadata key-getter version-getter)))
+;; demonstrate filtration - only selecting a subset of the values from
+;; one model into another - based on their contents.
 
 ;;----------------------------------------
-;; filtration
-;;----------------------------------------
 
-(defn do-filter
-  "apply a filter view to a model"
-  ([model filter-fn view dummy]
-   (connect model (make-filter filter-fn view))
-   view)
-  ([model filter-fn filter-name]
-   (let [view-name (str (.getName model) "." filter-name)
-	 view (clone-model model view-name)]
-     (do-filter model filter-fn view "dummy"))))
-
-(def blue-whales (do-filter whales #(= "blue whale" (.getType %)) "type='blue whale'"))
+(def blue-whales (apply-filter whales '(:type) #(= "blue whale" %) "type='blue whale'"))
 (insert *metamodel* blue-whales)
 
 ;;----------------------------------------
@@ -384,14 +361,11 @@
 ;;----------------------------------------
 
 
+
 (let [model whales
       filter-attr-key :type
-      filter-attr-type String ;; pull from Metadata
       filter-attr-value "killer whale"
-      filter-attr-accessor (make-accessor Whale filter-attr-type filter-attr-key)
-      filter-name (str (name filter-attr-key) "='" filter-attr-value "'")
-      filter-fn #(= filter-attr-value (filter-attr-accessor %))
-      filtration (do-filter model filter-fn filter-name)
+      filtration (apply-filter model [filter-attr-key] #(= % filter-attr-value) "type='killer whale'")
 
       aggregator-attr-key :weight
       aggregator-symbol 'count ;; 'sum, 'average, 'count
