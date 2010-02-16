@@ -72,23 +72,21 @@
 ;;(make-class
 ;; factory
 ;; "org.dada.tmp.Amount"
-;; ["int" "id"] ["int" "version"] ["double" "amount"])
-(defn make-class [name superclass & properties]
-  (. #^DynamicClassLoader
-     (deref clojure.lang.Compiler/LOADER)
-     (defineClass name 
-       (.create 
-	*class-factory*
-	name
-	 superclass
-	(if (empty? properties)
-	  nil
-	  (into-array (map (fn [pair] 
-			       (let [array (make-array String 2)]
-				 (aset array 0 (.getCanonicalName (first pair)))
-				 (aset array 1 (first (rest pair)))
-				 array))
-			   properties)))))))
+;; :id int :version int :amount double)
+(defn make-class [class-name superclass & attribute-key-types]
+  (let [attribute-map (apply array-map attribute-key-types)]
+    (. #^DynamicClassLoader
+       (deref clojure.lang.Compiler/LOADER)
+       (defineClass class-name 
+	 (.create 
+	  *class-factory*
+	  class-name
+	  superclass
+	  (if (empty? attribute-map)
+	    nil
+	    (into-array (map 
+			 (fn [[key type]] (into-array (list (.getCanonicalName type) (name key))))
+			 attribute-map))))))))
 
 ;; fields => [model field]
 
@@ -220,30 +218,31 @@
 ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
 ;; TODO :default not a good idea - would replace nulls
 ;; TODO what about type hints on lambdas ?
-(defn expand-property [src-type src-getter src-name & pvec]
+(defn expand-property [src-type src-getter src-key & pvec]
   (let [pmap (apply array-map pvec)
 	tgt-type (or (pmap :type) src-type)
-	tgt-name (or (pmap :name) src-name)
+	tgt-key (or (pmap :name) src-key)
 	convert (or (pmap :convert) identity)
 	default (or (pmap :default) ())
 	defaulter (if (fn? default) default (fn [value] default))
 	retriever (fn [value] (convert (. src-getter get value)))]
-    [tgt-type tgt-name retriever]
+    [tgt-type tgt-key retriever]
     ))
 
 (defn make-getter-map [tgt-class fields]
   (let [types (map first fields)
 	names (map second fields)
-	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types names)]
+	dummy (println types names)
+	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types (map name names))]
     (apply array-map (interleave names getters))))
 
-(defn make-fields [src-type-map src-getter-map props]
-  (map (fn [prop]
-	   (let [src-name (first prop)
-		 src-type (src-type-map src-name)
-		 src-getter (src-getter-map src-name)]
-	     (apply expand-property src-type src-getter prop)))
-       props))
+(defn make-fields [src-type-map src-getter-map attrs]
+  (map (fn [attr]
+	   (let [src-key (first attr)
+		 src-type (src-type-map src-key)
+		 src-getter (src-getter-map src-key)]
+	     (apply expand-property src-type src-getter attr)))
+       attrs))
 
 ;; TODO
 ;; allow selection from a number of src-models
@@ -251,30 +250,40 @@
 ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
 ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
-(defn select [src-model src-key-name src-version-name props & pvec]
+(defn select [src-model src-key-key src-version-key attrs & pvec]
   (let [pmap (apply array-map pvec)
+	dummy (println pmap)
 	src-metadata (. src-model getMetadata)
-	src-names (. src-metadata getAttributeNames)
+	src-keys (map keyword (. src-metadata getAttributeNames))
 	src-types (. src-metadata getAttributeTypes)
-	src-type-map (apply array-map (interleave src-names src-types)) ; name:type
 	src-getters (. src-metadata getAttributeGetters)
-	src-getter-map (apply array-map (interleave src-names src-getters)) ; name:getter
-	fields (make-fields src-type-map src-getter-map props) ; selection ([type name ...])
+	src-type-map (apply array-map (interleave src-keys src-types)) ; key:type
+	dummy (println src-type-map)
+	dummy (println src-keys)
+	dummy (println src-getters)
+	src-getter-map (apply array-map (interleave src-keys src-getters)) ; key:getter
+	dummy (println "SRC-GETTER-MAP:" src-getter-map)
+	fields (make-fields src-type-map src-getter-map attrs) ; selection ([type name ...])
+	dummy (println "FIELDS:" fields)
 	;; test to see if transform is needed should be done somewhere here...
 	;; what is an :into param was given...none of this needs calculating...
 	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
+	dummy (println "HERE")
 	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
 	filter-fn (pmap :filter)
    	tgt-types (map (fn [field] (nth field 0)) fields)
-   	tgt-names (map (fn [field] (nth field 1)) fields)
+   	tgt-keys (map (fn [field] (nth field 1)) fields)
+   	tgt-names (map name tgt-keys)
    	sel-getters (map (fn [field] (nth field 2)) fields)
-	tgt-props (map (fn [field] [(nth field 0) (nth field 1)]) fields) ; ([type name]..)
-  	tgt-class (apply make-class tgt-class-name Object tgt-props)
+	tgt-attrs (interleave tgt-keys tgt-types)
+  	tgt-class (apply make-class tgt-class-name Object tgt-attrs)
+	dummy (println "TGT-CLASS:" tgt-class)
 	tgt-creator (proxy [Creator] [] (create [& args] (apply make-instance tgt-class args)))
    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
+	dummy (println "HERE")
 	tgt-getters (vals tgt-getter-map)
-   	tgt-key-getter (tgt-getter-map src-key-name)
-   	tgt-version-getter (tgt-getter-map src-version-name)
+   	tgt-key-getter (tgt-getter-map src-key-key)
+   	tgt-version-getter (tgt-getter-map src-version-key)
 	tgt-metadata (new GetterMetadata  tgt-creator  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
 	transformer (make-transformer sel-getters view tgt-class)
