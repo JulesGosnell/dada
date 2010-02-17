@@ -107,15 +107,13 @@
  (let [num-whales 1000
        time (System/currentTimeMillis)]
    (for [id (range time (+ time num-whales))]
-     (. whale-metadata
-	create
-	(into-array
-	 Object
-	 (list id
-	       0
-	       (rnd types)
-	       (/ (rand-int 3290) 100)     ;; 32.9 metres
-	       (/ (rand-int 172) 100))))))) ;; 172 metric tons
+     (.create
+      whale-metadata
+      [id
+       0
+       (rnd types)
+       (/ (rand-int 3290) 100)     ;; 32.9 metres
+       (/ (rand-int 172) 100)])))) ;; 172 metric tons
 
 ;; syntactic sugar
 (defn fetch [& args]
@@ -154,12 +152,11 @@
      })
 
 (defn make-sum-aggregator [metadata modelname pkval field-key]
-  (let [attribute-keys (map keyword (.getAttributeNames metadata))
-	getter ((apply array-map (interleave attribute-keys (.getAttributeGetters metadata))) field-key)
-	attribute-types (.getAttributeTypes metadata)
-	attribute-type ((apply array-map (interleave attribute-keys attribute-types)) field-key)
+  (let [attribute-name (name field-key)
+	attribute-getter (.getAttributeGetter metadata attribute-name)
+	attribute-type (.getAttributeType metadata attribute-name)
 	initial-value (aggregator-initial-values attribute-type)
-	accessor #(.get getter %)]
+	accessor #(.get attribute-getter %)]
     (AggregatedModelView.
      modelname
      metadata
@@ -172,7 +169,7 @@
       (initialType [type]
 		    type)
       (currentValue [key version value]
-		    (. metadata create (into-array Object (list key version value))))
+		    (.create metadata [key version value]))
       (aggregate [insertions updates deletions]
 		 (- 
 		  (+
@@ -189,9 +186,7 @@
      )))
 
 (defn make-count-aggregator [metadata model-name pkval field-key]
-  (let [attribute-keys (map keyword (.getAttributeNames metadata))
-	attribute-getters (.getAttributeGetters metadata)
-	getter ((apply array-map (interleave attribute-keys attribute-getters)) field-key)
+  (let [getter (.getAttributeGetter metadata (name field-key))
 	accessor #(.get getter %)]
     (AggregatedModelView.
      model-name
@@ -205,7 +200,7 @@
       (initialType [type]
 		   Integer)
       (currentValue [key version value]
-		    (. metadata create (into-array Object (list key version value))))
+		    (.create metadata [key version value]))
       (aggregate [insertions updates deletions]
 		 (- (count insertions) (count deletions)))
       (apply [currentValue delta]
@@ -214,9 +209,7 @@
      )))
 
 (defn make-average-aggregator [metadata model-name pkval field-key]
-  (let [attribute-keys (map keyword (.getAttributeNames metadata))
-	attribute-getters (.getAttributeGetters metadata)
-	getter ((apply array-map (interleave attribute-keys attribute-getters)) field-key)
+  (let [getter (.getAttributeGetter metadata field-key)
 	accessor #(.get getter %)]
     (AggregatedModelView.
      model-name
@@ -230,7 +223,7 @@
       (initialType []
 		   Average)
       (currentValue [key version value]
-		    (. metadata create (into-array Object (list key version value))))
+		    (.create metadata [key version value]))
       (aggregate [insertions updates deletions]
 		 (new
 		  org.dada.core.Average

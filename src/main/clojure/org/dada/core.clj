@@ -149,23 +149,16 @@
 
 (defn model [#^String name #^Metadata metadata]
   (let [names (.getAttributeNames metadata)
-	getters (.getAttributeGetters metadata)
-	getter-map (apply array-map (interleave names getters))
 	key-names (.getKeyAttributeNames metadata)
-	id-getter (getter-map (first key-names))
-	version-getter (getter-map (second key-names))]
+	id-getter (.getAttributeGetter metadata (first key-names))
+	version-getter (.getAttributeGetter metadata (second key-names))]
     (new VersionedModelView name metadata id-getter version-getter)))
 
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
-	names (. metadata getAttributeNames)
-	getters (. metadata getAttributeGetters)
-	getter-map (apply array-map (interleave names getters))
 	keys (. metadata getKeyAttributeNames)
-	key (first keys)
-	key-getter (getter-map key)
-	version (second keys)
-	version-getter (getter-map version)]
+	key-getter (.getAttributeGetter metadata (first keys))
+	version-getter (.getAttributeGetter metadata (second keys))]
     (VersionedModelView. name metadata key-getter version-getter)))
 
 (defn apply-getters [#^ISeq getters value]
@@ -192,12 +185,7 @@
 (defn do-filter [#^Model model #^ISeq keys #^IFn function view]
   "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
-	name-to-getter (apply
-			array-map
-			(interleave
-			 (.getAttributeNames metadata)
-			 (.getAttributeGetters metadata)))
-	getters (map #(name-to-getter (name %)) keys)
+	getters (map #(.getAttributeGetter metadata (name %)) keys)
 	view (if (instance? String view)
 	       (clone-model model (str (.getName model) "." view))
 	       view)]

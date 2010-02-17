@@ -72,7 +72,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 
 		// TODO: lose later
 		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
-			logger.warn("wasteful message: 0 size update", new RuntimeException());
+			logger.warn("wasteful message: 0 size update");
 
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;

@@ -33,7 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-
+@Deprecated
 public class StringMetadata implements Metadata<String, String> {
 
 	private final Collection<String> keyAttributeNames;
@@ -90,5 +90,20 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public Creator<String> getCreator() {
 		return creator;
+	}
+
+	@Override
+	public String create(Collection<Object> args) {
+		return creator.create(args.toArray());
+	}
+
+	@Override
+	public Class<?> getAttributeType(String name) {
+		return attributeTypes.get(0);
+	}
+
+	@Override
+	public Getter<?, String> getAttributeGetter(String name) {
+		return attributeGetters.get(0);
 	}
 }

@@ -30,7 +30,10 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
@@ -41,6 +44,8 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	private final List<Getter<?, V>> attributeGetters;
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
+	private final Map<String, Class<?>> nameToType;;
+	private final Map<String, Getter<?, V>> nameToGetter;
 
 	public GetterMetadata(Creator<V> creator, Collection<String> keyAttributeNames, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
 		this.creator = creator;
@@ -50,6 +55,22 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 		this.attributeGetters = new ArrayList<Getter<?, V>>(getters);
 		this.getters = getters.toArray(new Getter[getters.size()]);
 		this.keyGetter = (Getter<K, V>)this.getters[0];
+
+		{
+			nameToType = new HashMap<String, Class<?>>(attributeNames.size());
+			Iterator<String> n = attributeNames.iterator();
+			Iterator<Class<?>> t = attributeTypes.iterator();
+			while (n.hasNext() && t.hasNext())
+				nameToType.put(n.next(), t.next());
+		}
+
+		{
+			nameToGetter= new HashMap<String, Getter<?, V>>(attributeNames.size());
+			Iterator<String> n = attributeNames.iterator();
+			Iterator<Getter<?, V>> t = attributeGetters.iterator();
+			while (n.hasNext() && t.hasNext())
+				nameToGetter.put(n.next(), t.next());
+		}
 	}
 
 	@Override
@@ -90,6 +111,21 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public Creator<V> getCreator() {
 		return creator;
+	}
+
+	@Override
+	public V create(Collection<Object> args) {
+		return creator.create(args.toArray());
+	}
+
+	@Override
+	public Class<?> getAttributeType(String name) {
+		return nameToType.get(name);
+	}
+
+	@Override
+	public Getter<?, V> getAttributeGetter(String name) {
+		return nameToGetter.get(name);
 	}
 
 }

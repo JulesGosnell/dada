@@ -65,6 +65,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 
 	public abstract Collection<V> getData();
 
+	@Override
 	public Metadata<K, V> getMetadata() {
 		return metadata;
 	}

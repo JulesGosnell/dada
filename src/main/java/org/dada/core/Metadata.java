@@ -36,11 +36,20 @@ public interface Metadata<K, V> extends Serializable {
 
 	V create(Object... args);
 	Creator<V> getCreator();
+	V create(Collection<Object>args);
+	
+	// keys
 	K getKey(V value);
 	Collection<String> getKeyAttributeNames();
-	Object getAttributeValue(V value, int index);
-	List<Getter<?, V>> getAttributeGetters();
+
+	// keyed access
 	List<String> getAttributeNames();
 	List<Class<?>> getAttributeTypes();
+	Class<?> getAttributeType(String name);
+	List<Getter<?, V>> getAttributeGetters();
+	Getter<?, V> getAttributeGetter(String name);
 	
+	// indexed access
+	Object getAttributeValue(V value, int index);
+
 }

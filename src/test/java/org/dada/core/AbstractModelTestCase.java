@@ -32,9 +32,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.jmock.integration.junit3.MockObjectTestCase;
+
 import junit.framework.TestCase;
 
-public class AbstractModelTestCase extends TestCase {
+public class AbstractModelTestCase extends MockObjectTestCase {
 
 	public void testAbstractModel() {
 
@@ -50,57 +52,7 @@ public class AbstractModelTestCase extends TestCase {
 
 		final Collection<Datum<Integer>> data = Collections.singleton(datum);
 
-		Metadata<Integer, Datum<Integer>> metadata = new Metadata<Integer, Datum<Integer>>() {
-
-			@Override
-			public List<String> getAttributeNames() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public Object getAttributeValue(Datum<Integer> value, int index) {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public Integer getKey(Datum<Integer> value) {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public List<Class<?>> getAttributeTypes() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public List<Getter<?, Datum<Integer>>> getAttributeGetters() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public Collection<String> getKeyAttributeNames() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public Datum<Integer> create(Object... args) {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-
-			@Override
-			public Creator<Datum<Integer>> getCreator() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("NYI");
-			}
-		};
-
+		Metadata<Integer, Datum<Integer>> metadata = mock(Metadata.class);
 		AbstractModel<Integer, Datum<Integer>> model = new AbstractModel<Integer, Datum<Integer>>(name, metadata) {
 
 			@Override

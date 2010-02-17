@@ -28,17 +28,18 @@
  */
 package org.dada.core;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // TODO: Methods are not Serializable !
 // TODO: tidy up
 
+@Deprecated
 public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 
 	private static final String GET = "get";
@@ -51,7 +52,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final List<String> attributeNames;
 	private final List<Getter<?, V>> attributeGetters;
 	private final int keyIndex;
-	//private final List<Method> getters;
+	private final Map<String, Class<?>> nameToType;
+	private final Map<String, Getter<?, V>> nameToGetter;
 
 	public IntrospectiveMetadata(Class<?> clazz,Creator<V> creator, String keyName) throws NoSuchMethodException {
 		this.clazz = clazz;
@@ -60,7 +62,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		attributeTypes= new ArrayList<Class<?>>();
 		attributeNames = new ArrayList<String>();
 		attributeGetters = new ArrayList<Getter<?,V>>();
-		//getters = new ArrayList<Method>();
+		nameToType = new HashMap<String, Class<?>>();
+		nameToGetter = new HashMap<String, Getter<?,V>>();
 		int i = 0;
 		for (Method method : clazz.getMethods()) {
 			final int index = i++;
@@ -69,15 +72,18 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith(GET) && parameterTypes.length == 0) {
 				String attributeName = methodName.substring(GET_LENGTH);
-				attributeTypes.add(method.getReturnType());
+				Class<?> type = method.getReturnType();
+				attributeTypes.add(type);
 				attributeNames.add(attributeName);
-				attributeGetters.add(new Getter<Object, V>() {
+				Getter<Object, V> getter = new Getter<Object, V>() {
 					@Override
 					public Object get(V value) {
 						return getAttributeValue(value, index);
 					}
-				});
-				//getters.add(method);
+				};
+				attributeGetters.add(getter);
+				nameToType.put(attributeName, type);
+				nameToGetter.put(attributeName, getter);
 			}
 		}
 		keyIndex = attributeNames.indexOf(keyName);
@@ -128,6 +134,21 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public Creator<V> getCreator() {
 		return creator;
+	}
+
+	@Override
+	public V create(Collection<Object> args) {
+		return creator.create(args.toArray());
+	}
+
+	@Override
+	public Class<?> getAttributeType(String name) {
+		return nameToType.get(name);
+	}
+
+	@Override
+	public Getter<?, V> getAttributeGetter(String name) {
+		return nameToGetter.get(name);
 	}
 
 }
