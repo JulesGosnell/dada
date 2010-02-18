@@ -277,8 +277,8 @@
 	fields (make-fields src-type-map src-getter-map attrs) ; selection ([type name ...])
 	;; test to see if transform is needed should be done somewhere here...
 	;; what is an :into param was given...none of this needs calculating...
-	tgt-class-name (or (pmap :class) (.toString (gensym "org.dada.tmp.OutputValue")))
-	tgt-model-name (or (pmap :model) (.toString (gensym "OutputModel")))
+	tgt-class-name (or (pmap :class) (name (gensym "org.dada.tmp.OutputValue")))
+	tgt-model-name (or (pmap :model) (name (gensym "OutputModel")))
 	filter-fn (pmap :filter)
    	tgt-types (map (fn [field] (nth field 0)) fields)
    	tgt-keys (map (fn [field] (nth field 1)) fields)
