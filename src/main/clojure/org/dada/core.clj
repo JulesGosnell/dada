@@ -64,7 +64,7 @@
     (.addAll array-list args)
     array-list))
 
-(def *class-factory* (new ClassFactory))
+(def #^ClassFactory *class-factory* (new ClassFactory))
 
 ;; e.g.
 ;;(make-class
