@@ -93,10 +93,10 @@ public class TransformingModelTestCase extends MockObjectTestCase {
         
         checking(new Expectations(){{
             one(model).deregisterView(view);
-            will(returnValue(true));
+            will(returnValue(null));
         }});
 
-        assertTrue(metaModel.deregisterView(modelName, view));
+        assertTrue(metaModel.deregisterView(modelName, view) == null);
 
         // register/deregister 2nd view on MODEL - exercises slightly different code path...
 
@@ -109,10 +109,10 @@ public class TransformingModelTestCase extends MockObjectTestCase {
 
         checking(new Expectations(){{
             one(model).deregisterView(view);
-            will(returnValue(true));
+            will(returnValue(null));
         }});
 
-        assertTrue(metaModel.deregisterView(modelName, view));
+        assertTrue(metaModel.deregisterView(modelName, view) == null);
 
         // update metamodel - update
 

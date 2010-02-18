@@ -84,14 +84,15 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	@Override
-	public boolean deregisterView(View<V> view) {
+	public Collection<V> deregisterView(View<V> view) {
 		synchronized (viewsLock) {
 			Collection<View<V>> newViews = new ArrayList<View<V>>(views);
 			newViews.remove(view);
 			views = newViews;
 			logger.debug("" + this + " deregistered view:" + view + " -> " + views);
 		}
-		return true;
+		Collection<V> values = getData();
+		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
 	}
 
 	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {

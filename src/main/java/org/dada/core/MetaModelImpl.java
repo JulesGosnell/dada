@@ -62,7 +62,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public boolean deregisterView(String modelName, View<Object> view) {
+	public Collection<Object> deregisterView(String modelName, View<Object> view) {
 		Model<Object, Object> model = nameToModel.get(modelName);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
@@ -140,11 +140,11 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public boolean deregisterQueryView(String query, View<Object> view) {
+	public Collection<Object> deregisterQueryView(String query, View<Object> view) {
 		synchronized (queryToModel) {
 			Model<?, ?> model = queryToModel.get(query);
 			if (model == null)
-				return false;
+				return null;
 			else
 				return deregisterView(model.getName(), view);
 		}

@@ -52,14 +52,13 @@
   view)
 
 (defn disconnect [#^Model model #^View view]
-  (.deregisterView model view)
   (.update
    view
    '()
    '()
    (map
     #(Update. % nil)
-    (.getData model))
+    (.deregisterView model view))
    view))
 
 (defn collection [& args]
