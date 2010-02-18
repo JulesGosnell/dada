@@ -56,10 +56,8 @@
    view
    '()
    '()
-   (map
-    #(Update. % nil)
-    (.deregisterView model view))
-   view))
+   (map #(Update. % nil) (.deregisterView model view)))
+   view)
 
 (defn collection [& args]
   (let [array-list (ArrayList. #^Integer (count args))]
