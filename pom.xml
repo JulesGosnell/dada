@@ -242,6 +242,27 @@
               <goal>compile</goal>
             </goals>
 	  </execution>
+	  <execution>
+            <id>clojure-test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-gendoc</id>
+            <phase>site</phase>
+            <goals>
+              <goal>gendoc</goal>
+            </goals>
+	  </execution>
 	</executions>
       </plugin>
       
