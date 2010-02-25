@@ -229,6 +229,7 @@
 	<configuration>
 	  <!-- <clojureOptions>-Xmx128m</clojureOptions> -->
 	  <warnOnReflection>true</warnOnReflection>
+	  <generateTestDocumentation>false</generateTestDocumentation>
 	  <namespaces>
             <namespace>org.dada.core</namespace>
             <namespace>!org.dada.demo.*</namespace>
@@ -259,6 +260,10 @@
 	  <execution>
             <id>clojure-gendoc</id>
             <phase>site</phase>
+	    <configuration>
+	      <outputDirectory>target/site/clojure</outputDirectory> <!-- logic broken in Mojo -->
+	      <generateTestDocumentation>false</generateTestDocumentation>
+	    </configuration>
             <goals>
               <goal>gendoc</goal>
             </goals>
