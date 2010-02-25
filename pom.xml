@@ -227,9 +227,7 @@
 	<artifactId>clojure-maven-plugin</artifactId>
 	<version>1.3.1</version>
 	<configuration>
-	  <!-- <clojureOptions>-Xmx128m</clojureOptions> -->
 	  <warnOnReflection>true</warnOnReflection>
-	  <generateTestDocumentation>false</generateTestDocumentation>
 	  <namespaces>
             <namespace>org.dada.core</namespace>
             <namespace>!org.dada.demo.*</namespace>
@@ -262,11 +260,14 @@
             <phase>site</phase>
 	    <configuration>
 	      <outputDirectory>target/site/clojure</outputDirectory> <!-- logic broken in Mojo -->
+	      <clojureOptions>-Xmx256m</clojureOptions>
 	      <generateTestDocumentation>false</generateTestDocumentation>
 	    </configuration>
-            <goals>
-              <goal>gendoc</goal>
-            </goals>
+            <!--
+	       <goals>
+		 <goal>gendoc</goal>
+               </goals>
+	       -->
 	  </execution>
 	</executions>
       </plugin>
