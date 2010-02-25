@@ -11,9 +11,15 @@
       
       <p/>
 
-      DADA is essentially a set of Java components for building a
+      DADA started life as a set of Java components for building a
       highly concurrent and distributed graph of interconnected MVC
       Models and Views.
+
+      <p/>
+      
+      DADA is now growing into a n-dimensional data cube, with an
+      ad-hoc query language and queries whose resultset continues to
+      update as fresh data becomes available.
 
       <p/>
 
@@ -67,6 +73,11 @@
       produce highly scalable, distributed, resilient applications,
       partitioning, transforming, aggregating, slicing, dicing and
       displaying very large dynamic datasets in real time.
+
+      <p/>
+
+      With the addition of an ad-hoc query language implemented in
+      Clojure, DADA becomes a truly dynamic system.
 
       <p/>
 
