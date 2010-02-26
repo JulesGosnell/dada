@@ -23,10 +23,9 @@
     <menu name="Developers">
       <item name="Coverage" href="cobertura/index.html"/>
       <item name="GitHub" href="http://github.com/JulesGosnell/dada"/>
-      <item name="Issue Manager" href="http://github.com/JulesGosnell/dada"/>
+      <item name="Issue Manager" href="http://github.com/JulesGosnell/dada/issues"/>
       <item name="Continuous Integration" href="http://ouroboros.dnsalias.net/hudson/"/>
       <item name="Repository Manager" href="http://ouroboros.dnsalias.net/artifactory/webapp/home.html"/>
-      <item name="Clojure" href="http://clojure.org/"/>
       <item name="Clojure Contrib" href="http://code.google.com/p/clojure-contrib/"/>
       <item name="Clojure Group" href="http://groups.google.com/group/clojure"/>
       <item name="Clojure Maven Plugin Group" href="http://groups.google.com/group/clojure-maven-plugin?lnk=srg"/>
