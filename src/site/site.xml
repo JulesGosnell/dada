@@ -12,6 +12,7 @@
       <item name="Clojure" href="http://clojure.org/"/>
       <item name="Spring" href="http://www.springsource.org/"/>
       <item name="ActiveMQ" href="http://activemq.apache.org/"/>
+      <item name="SLF4J" href="http://www.slf4j.org/"/>
     </links>
     
     <menu name="Users">
