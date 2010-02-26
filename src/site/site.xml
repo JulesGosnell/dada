@@ -10,6 +10,7 @@
     <links>
       <item name="Maven" href="http://maven.apache.org/"/>
       <item name="Clojure" href="http://clojure.org/"/>
+      <item name="Spring" href="http://www.springsource.org/"/>
       <item name="ActiveMQ" href="http://activemq.apache.org/"/>
     </links>
     
