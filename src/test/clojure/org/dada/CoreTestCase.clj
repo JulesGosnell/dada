@@ -9,7 +9,7 @@
 	       ;;[test-attribute-array [] void]
 	       ]
      )
-    (:use [org.dada.core])
+    (:use org.dada.core)
     (:import [junit.framework TestCase] ;;[]
 	     ))
 
