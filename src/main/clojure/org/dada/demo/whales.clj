@@ -105,7 +105,7 @@
 ;; create 10,000 whales and insert them into model
 (insert-n
  whales
- (let [num-whales 100000
+ (let [num-whales 1000
        time (System/currentTimeMillis)
        #^Creator creator (.getCreator whale-metadata)]
    (for [id (range time (+ time num-whales))]
@@ -139,6 +139,25 @@
 
 (def blue-whales-length (do-transform "length" blue-whales :time :version :length))
 (insert *metamodel* blue-whales-length)
+
+;;----------------------------------------
+;; try a transformation on top of a filtration
+;; e.g. select time, version, length from whales where type="narwhal"
+;;----------------------------------------
+
+(def narwhals-length
+     (do-transform 
+      "length"
+      (do-filter 
+       "type=narwhal" 
+       whales
+       '(:type)
+       #(= "narwhal" %))
+      :time
+      :version
+      :length)
+     )
+(insert *metamodel* narwhals-length)
 
 ;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
