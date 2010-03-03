@@ -122,31 +122,29 @@
 (defn make-getter-name [#^String property-name]
   (str "get" (s/capitalize property-name)))
 
-(defn getter-22 [#^Class input-type #^Class output-type #^String method-name]
-  (let [method-symbol (symbol (str "." method-name))
-	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
-    (eval `(fn [~arg-symbol] (~method-symbol ~arg-symbol)))))
-
 (defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
   (let [method-symbol (symbol (str "." method-name))
 	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
     (eval `(proxy [Getter] [] 
-		  (#^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol)))
-	  )))
+		  (#^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol))))))
 
-;; TODO: lose output-type param
 (defn getter [#^Class input-type #^Class output-type #^Keyword key]
   "return a Getter taking input-type returning output-type and calling get<Key>"
   (getter-2 input-type output-type (make-getter-name (name key))))
 
-(defn make-accessor-2 [#^Class input-type #^Class output-type #^String method-name]
-  (let [method# (symbol (str "." method-name))]
-    (eval `(#^{:tag ~output-type} fn [#^{:tag ~input-type} bean#] (~method# bean#)))))
+;; (defn accessor-2 [#^Class input-type #^Class output-type #^String method-name]
+;;   (let [method-symbol (symbol (str "." method-name))
+;; 	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
+;;     (eval `(fn [~arg-symbol] (~method-symbol ~arg-symbol)))))
 
-(defn make-accessor [#^Class input-type #^Class output-type #^Keyword key]
-  "return a function taking input-type returning output-type and calling get<Key>"
-  (let [method-name (symbol (make-getter-name (name key)))]
-    (make-accessor-2 input-type output-type method-name)))
+;; (defn make-accessor-2 [#^Class input-type #^Class output-type #^String method-name]
+;;   (let [method# (symbol (str "." method-name))]
+;;     (eval `(#^{:tag ~output-type} fn [#^{:tag ~input-type} bean#] (~method# bean#)))))
+
+;; (defn make-accessor [#^Class input-type #^Class output-type #^Keyword key]
+;;   "return a function taking input-type returning output-type and calling get<Key>"
+;;   (let [method-name (symbol (make-getter-name (name key)))]
+;;     (make-accessor-2 input-type output-type method-name)))
 
 (defn creator [#^Class class]
   "make a Creator for the given Class"
