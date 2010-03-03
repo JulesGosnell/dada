@@ -1,6 +1,8 @@
 (ns org.dada.core
     (:import (clojure.lang DynamicClassLoader ISeq IFn)
-	     (java.util ArrayList)
+	     (java.util
+	      ArrayList
+	      Collection)
 	     (java.beans PropertyDescriptor)
 	     (org.dada.core
 	      Creator
@@ -17,8 +19,18 @@
 	      View)
 	     (org.dada.demo Client)
 	     (org.springframework.context.support ClassPathXmlApplicationContext)
-	     (org.dada.asm ClassFactory)))
+	     (org.dada.asm ClassFactory)
+	     (org.slf4j Logger LoggerFactory)
+	     ))
+
+(defn debug [foo]
+  (println "DEBUG: " foo)
+  foo)
+
+(set! *warn-on-reflection* true)
  
+(def #^Logger *logger* (LoggerFactory/getLogger "org.dada.core"))
+
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
   (let [context (ClassPathXmlApplicationContext. "application-context.xml")]
@@ -71,21 +83,23 @@
 ;; factory
 ;; "org.dada.tmp.Amount"
 ;; :id int :version int :amount double)
-(defn make-class [#^String class-name #^Class superclass & attribute-key-types]
-  (let [attribute-map (apply array-map attribute-key-types)]
-    (. #^DynamicClassLoader
-       (deref clojure.lang.Compiler/LOADER)
-       (defineClass class-name 
-	 (.create 
-	  *class-factory*
-	  class-name
-	  superclass
-	  (if (empty? attribute-map)
-	    nil
-	    (into-array (map 
-			 (fn [[#^Keyword key #^Class type]]
-			     (into-array (list (.getCanonicalName type) (name key))))
-			 attribute-map))))))))
+(defn attribute-array [& attribute-key-types]
+  (if (empty? attribute-key-types)
+    nil
+    (into-array (map 
+		 (fn [[#^Keyword key #^Class type]]
+		     (into-array (list (.getCanonicalName type) (name key))))
+		 (apply array-map attribute-key-types)))))
+
+(defn make-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
+  (.
+   #^DynamicClassLoader (deref clojure.lang.Compiler/LOADER)
+   (defineClass class-name 
+     (.create
+      *class-factory*
+      class-name
+      superclass
+      (apply attribute-array attribute-key-types)))))
 
 ;; fields => [model field]
 
@@ -108,13 +122,19 @@
 (defn make-getter-name [#^String property-name]
   (str "get" (s/capitalize property-name)))
 
-(defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
-  (let [method# (symbol (str "." method-name))]
-    (eval
-     `(proxy [Getter] [] 
-	     (#^{:tag ~output-type} get [#^{:tag ~input-type} bean#] (~method# bean#))))
-    ))
+(defn getter-22 [#^Class input-type #^Class output-type #^String method-name]
+  (let [method-symbol (symbol (str "." method-name))
+	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
+    (eval `(fn [~arg-symbol] (~method-symbol ~arg-symbol)))))
 
+(defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
+  (let [method-symbol (symbol (str "." method-name))
+	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
+    (eval `(proxy [Getter] [] 
+		  (#^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol)))
+	  )))
+
+;; TODO: lose output-type param
 (defn getter [#^Class input-type #^Class output-type #^Keyword key]
   "return a Getter taking input-type returning output-type and calling get<Key>"
   (getter-2 input-type output-type (make-getter-name (name key))))
@@ -134,7 +154,7 @@
 	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
 		  (apply make-instance class args))))
 
-(defn metadata [#^Class class #^Keyword key #^Keyword version & attribute-key-types]
+(defn #^Metadata metadata [#^Class class #^Keyword key #^Keyword version & attribute-key-types]
   "make Metadata for a given class"
   (let [attribute-map (apply array-map attribute-key-types)]
     (new GetterMetadata 
@@ -143,6 +163,16 @@
 	 (vals attribute-map)
 	 (map name (keys attribute-map))
 	 (map (fn [[key type]] (getter class type key)) attribute-map))))
+
+(defn class-metadata
+  "create metadata for a Model containing instances of a Class"
+  [#^String class-name #^Class superclass #^Keyword key-key #^Keyword version-key #^ISeq attributes]
+  (apply
+   metadata
+   (apply make-class class-name superclass attributes)
+   key-key
+   version-key
+   attributes))
 
 (defn model [#^String name #^Metadata metadata]
   (let [names (.getAttributeNames metadata)
@@ -153,7 +183,7 @@
 
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
-	keys (. metadata getKeyAttributeNames)
+	keys (.getKeyAttributeNames metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
     (VersionedModelView. name metadata key-getter version-getter)))
@@ -179,7 +209,7 @@
    ))
 
 ;; ATTN: VIEW may be a name to use when making a View, or the View itself
-(defn do-filter [#^Model model #^ISeq keys #^IFn function view]
+(defn do-filter [view #^Model model #^ISeq keys #^IFn function]
   "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
 	getters (map #(.getAttributeGetter metadata (name %)) keys)
@@ -190,6 +220,50 @@
     view))
 
 ;;----------------------------------------
+;; transformation
+;; selection of a subset of attributes from one type into another of a different shape
+;; TODO: creation of extra literal and composed values
+;;----------------------------------------
+
+(defn make-transformer [#^ISeq getters #^Metadata metadata #^View view]
+  (new
+   Transformer
+   (list view)
+   (proxy
+    [Transformer$Transform]
+    []
+    (transform 
+     [input]
+     ;; TODO: this code needs to be FAST - executed online
+     (.create metadata #^Collection (map (fn [#^Getter getter] (.get getter input)) getters)))
+    )))
+
+(defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & 
+		    #^ISeq attribute-keys]
+  (let [#^Metadata model-metadata (.getMetadata src-model)
+	get-attribute-type (fn [key] (.getAttributeType model-metadata (name key)))
+	key-type (get-attribute-type key-key)
+	version-type (get-attribute-type version-key)
+	attribute-types (map get-attribute-type attribute-keys)
+	attribute-getters 
+	(concat
+	 (list
+	  (.getAttributeGetter model-metadata (name key-key))
+	  (.getAttributeGetter model-metadata (name version-key))
+	  )
+	 (map (fn [attribute-key] (.getAttributeGetter model-metadata (name attribute-key))) attribute-keys))
+	attributes (interleave attribute-keys attribute-types)
+	class-name (name (gensym "org.dada.demo.whales.Transform"))
+	superclass Object
+	view-metadata (class-metadata class-name superclass key-key version-key (concat (list key-key key-type version-key version-type) attributes))
+	view-name (str (.getName src-model) "." suffix)
+	view (model view-name view-metadata)
+	transformer (make-transformer attribute-getters view-metadata view)]
+    ;; the connection between src and view needs to apply the transform...
+    (connect src-model transformer)
+    view))
+
+;;----------------------------------------
 ;; refactored to here
 ;;----------------------------------------
 
@@ -197,7 +271,7 @@
 ;; each property should be able to register a converter fn as part of the transformation...
 ;; if  properties is null, don't do a transformation etc..
 
-(defn make-transformer [getters view view-class]
+(defn make-transformer-old [getters view view-class]
   (def *getters* getters) ;; TODO - debug
   (def *view-class* view-class)
   (new
@@ -221,7 +295,7 @@
     ;; N.B. if just order has changed, could we just reorder metadata ?
     (connect model view)
     ;; we need some sort of transformation...
-    (connect model (make-transformer sel-getters view view-class))
+    (connect model (make-transformer-old sel-getters view view-class))
     ))
 
 ;; properties is a vector of property descriptions of the form:
@@ -242,6 +316,7 @@
 
 ;; TODO : should this not be a a macro - use proper syntax...
 (defn make-proxy-getter [input-type output-type property-name]
+  (.warn  *logger* "make-proxy-getter - DEPRECATED")
   (let [method (symbol (make-getter-name property-name))]
     (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
     ))
@@ -293,7 +368,7 @@
    	tgt-version-getter (tgt-getter-map src-version-key)
 	tgt-metadata (new GetterMetadata  tgt-creator  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
-	transformer (make-transformer sel-getters view tgt-class)
+	transformer (make-transformer-old sel-getters view tgt-class)
 	filter (make-filter filter-fn transformer)
 	]
     (connect src-model filter)
