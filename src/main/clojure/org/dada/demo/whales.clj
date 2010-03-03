@@ -41,28 +41,28 @@
 ;;  delphinidae                         ; Orca, Dolphins
 
 
-(def types '(
-	     "blue whale"
-	     "sei whale"
-	     "bottlenose dolphin"
-	     "killer whale"
-	     "false killer whale"
-	     "amazon river dolphin"
-	     "narwhal"
-	     "sperm whale"
-	     "pilot whale"
-	     "beluga whale"
-	     "humpback whale"
-	     "fin whale"
-	     "right whale"
-	     "bowhead whale"
-	     "brydes whale"
-	     "minke whale"
-	     "gray whale"
-	     "spinner dolphin"
-	     "melon headed whale"
-	     "beaked whale"
-	     ))
+(def types [
+	    "blue whale"
+	    "sei whale"
+	    "bottlenose dolphin"
+	    "killer whale"
+	    "false killer whale"
+	    "amazon river dolphin"
+	    "narwhal"
+	    "sperm whale"
+	    "pilot whale"
+	    "beluga whale"
+	    "humpback whale"
+	    "fin whale"
+	    "right whale"
+	    "bowhead whale"
+	    "brydes whale"
+	    "minke whale"
+	    "gray whale"
+	    "spinner dolphin"
+	    "melon headed whale"
+	    "beaked whale"
+	    ])
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
