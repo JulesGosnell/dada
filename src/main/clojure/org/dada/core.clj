@@ -246,11 +246,9 @@
 	version-type (get-attribute-type version-key)
 	attribute-types (map get-attribute-type attribute-keys)
 	attribute-getters 
-	(concat
-	 (list
-	  (.getAttributeGetter model-metadata (name key-key))
-	  (.getAttributeGetter model-metadata (name version-key))
-	  )
+	(list*
+	 (.getAttributeGetter model-metadata (name key-key))
+	 (.getAttributeGetter model-metadata (name version-key))
 	 (map (fn [attribute-key] (.getAttributeGetter model-metadata (name attribute-key))) attribute-keys))
 	attributes (interleave attribute-keys attribute-types)
 	class-name (name (gensym "org.dada.demo.whales.Transform"))
@@ -259,7 +257,6 @@
 	view-name (str (.getName src-model) "." suffix)
 	view (model view-name view-metadata)
 	transformer (make-transformer attribute-getters view-metadata view)]
-    ;; the connection between src and view needs to apply the transform...
     (connect src-model transformer)
     view))
 
