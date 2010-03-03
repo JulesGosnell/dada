@@ -268,106 +268,106 @@
 ;; each property should be able to register a converter fn as part of the transformation...
 ;; if  properties is null, don't do a transformation etc..
 
-(defn make-transformer-old [getters view view-class]
-  (def *getters* getters) ;; TODO - debug
-  (def *view-class* view-class)
-  (new
-   Transformer
-   (list view)
-   (proxy
-    [Transformer$Transform]
-    []
-    (transform 
-     [input]
-     ;; TODO: this code needs to be FAST - executed online
-     (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
-    )))
+;; (defn make-transformer-old [getters view view-class]
+;;   (def *getters* getters) ;; TODO - debug
+;;   (def *view-class* view-class)
+;;   (new
+;;    Transformer
+;;    (list view)
+;;    (proxy
+;;     [Transformer$Transform]
+;;     []
+;;     (transform 
+;;      [input]
+;;      ;; TODO: this code needs to be FAST - executed online
+;;      (apply make-instance view-class (map (fn [getter] (getter input)) getters)))
+;;     )))
 
 
-;; (transform input-model src-class property-map input-names view output-class)
-(defn transform [model model-class property-map sel-getters tgt-names view view-class]
-  (if (= tgt-names (keys property-map))
-    ;; we are selecting all the fields in their original order - no
-    ;; need for a transformation...
-    ;; N.B. if just order has changed, could we just reorder metadata ?
-    (connect model view)
-    ;; we need some sort of transformation...
-    (connect model (make-transformer-old sel-getters view view-class))
-    ))
+;; ;; (transform input-model src-class property-map input-names view output-class)
+;; (defn transform [model model-class property-map sel-getters tgt-names view view-class]
+;;   (if (= tgt-names (keys property-map))
+;;     ;; we are selecting all the fields in their original order - no
+;;     ;; need for a transformation...
+;;     ;; N.B. if just order has changed, could we just reorder metadata ?
+;;     (connect model view)
+;;     ;; we need some sort of transformation...
+;;     (connect model (make-transformer-old sel-getters view view-class))
+;;     ))
 
-;; properties is a vector of property descriptions of the form:
-;; [input-name output-type output-name]
-;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
-;; TODO :default not a good idea - would replace nulls
-;; TODO what about type hints on lambdas ?
-(defn expand-property [#^Class src-type #^Getter src-getter #^Keyword src-key & pvec]
-  (let [pmap (apply array-map pvec)
-	tgt-type (or (pmap :type) src-type)
-	tgt-key (or (pmap :name) src-key)
-	convert (or (pmap :convert) identity)
-	default (or (pmap :default) ())
-	defaulter (if (fn? default) default (fn [value] default))
-	retriever (fn [value] (convert (. src-getter get value)))]
-    [tgt-type tgt-key retriever]
-    ))
+;; ;; properties is a vector of property descriptions of the form:
+;; ;; [input-name output-type output-name]
+;; ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
+;; ;; TODO :default not a good idea - would replace nulls
+;; ;; TODO what about type hints on lambdas ?
+;; (defn expand-property [#^Class src-type #^Getter src-getter #^Keyword src-key & pvec]
+;;   (let [pmap (apply array-map pvec)
+;; 	tgt-type (or (pmap :type) src-type)
+;; 	tgt-key (or (pmap :name) src-key)
+;; 	convert (or (pmap :convert) identity)
+;; 	default (or (pmap :default) ())
+;; 	defaulter (if (fn? default) default (fn [value] default))
+;; 	retriever (fn [value] (convert (. src-getter get value)))]
+;;     [tgt-type tgt-key retriever]
+;;     ))
 
-;; TODO : should this not be a a macro - use proper syntax...
-(defn make-proxy-getter [input-type output-type property-name]
-  (.warn  *logger* "make-proxy-getter - DEPRECATED")
-  (let [method (symbol (make-getter-name property-name))]
-    (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
-    ))
+;; ;; TODO : should this not be a a macro - use proper syntax...
+;; (defn make-proxy-getter [input-type output-type property-name]
+;;   (.warn  *logger* "make-proxy-getter - DEPRECATED")
+;;   (let [method (symbol (make-getter-name property-name))]
+;;     (eval (list 'proxy '[Getter] '[] (list 'get '[bean] (list '. 'bean method))))
+;;     ))
 
-(defn make-getter-map [tgt-class fields]
-  (let [types (map first fields)
-	names (map second fields)
-	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types (map name names))]
-    (apply array-map (interleave names getters))))
+;; (defn make-getter-map [tgt-class fields]
+;;   (let [types (map first fields)
+;; 	names (map second fields)
+;; 	getters (map (fn [type name] (make-proxy-getter tgt-class type name)) types (map name names))]
+;;     (apply array-map (interleave names getters))))
 
-(defn make-fields [src-type-map src-getter-map attrs]
-  (map (fn [attr]
-	   (let [src-key (first attr)
-		 src-type (src-type-map src-key)
-		 src-getter (src-getter-map src-key)]
-	     (apply expand-property src-type src-getter attr)))
-       attrs))
+;; (defn make-fields [src-type-map src-getter-map attrs]
+;;   (map (fn [attr]
+;; 	   (let [src-key (first attr)
+;; 		 src-type (src-type-map src-key)
+;; 		 src-getter (src-getter-map src-key)]
+;; 	     (apply expand-property src-type src-getter attr)))
+;;        attrs))
 
-;; TODO
-;; allow selection from a number of src-models
-;; allow selection into a number of src views
-;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
-;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
+;; ;; TODO
+;; ;; allow selection from a number of src-models
+;; ;; allow selection into a number of src views
+;; ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
+;; ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
-(defn select [#^Model src-model #^Keyword src-key-key #^Keyword src-version-key #^ISeq attrs & pvec]
-  (let [pmap (apply array-map pvec)
-	src-metadata (. src-model getMetadata)
-	src-keys (map keyword (. src-metadata getAttributeNames))
-	src-types (. src-metadata getAttributeTypes)
-	src-getters (. src-metadata getAttributeGetters)
-	src-type-map (apply array-map (interleave src-keys src-types)) ; key:type
-	src-getter-map (apply array-map (interleave src-keys src-getters)) ; key:getter
-	fields (make-fields src-type-map src-getter-map attrs) ; selection ([type name ...])
-	;; test to see if transform is needed should be done somewhere here...
-	;; what is an :into param was given...none of this needs calculating...
-	tgt-class-name (or (pmap :class) (name (gensym "org.dada.tmp.OutputValue")))
-	tgt-model-name (or (pmap :model) (name (gensym "OutputModel")))
-	filter-fn (pmap :filter)
-   	tgt-types (map (fn [field] (nth field 0)) fields)
-   	tgt-keys (map (fn [field] (nth field 1)) fields)
-   	tgt-names (map name tgt-keys)
-   	sel-getters (map (fn [field] (nth field 2)) fields)
-	tgt-attrs (interleave tgt-keys tgt-types)
-  	tgt-class (apply make-class tgt-class-name Object tgt-attrs)
-	tgt-creator (proxy [Creator] [] (create [& args] (apply make-instance tgt-class args)))
-   	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
-	tgt-getters (vals tgt-getter-map)
-   	tgt-key-getter (tgt-getter-map src-key-key)
-   	tgt-version-getter (tgt-getter-map src-version-key)
-	tgt-metadata (new GetterMetadata  tgt-creator  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
-	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
-	transformer (make-transformer-old sel-getters view tgt-class)
-	filter (make-filter filter-fn transformer)
-	]
-    (connect src-model filter)
-    view)
-  )
+;; (defn select [#^Model src-model #^Keyword src-key-key #^Keyword src-version-key #^ISeq attrs & pvec]
+;;   (let [pmap (apply array-map pvec)
+;; 	src-metadata (. src-model getMetadata)
+;; 	src-keys (map keyword (. src-metadata getAttributeNames))
+;; 	src-types (. src-metadata getAttributeTypes)
+;; 	src-getters (. src-metadata getAttributeGetters)
+;; 	src-type-map (apply array-map (interleave src-keys src-types)) ; key:type
+;; 	src-getter-map (apply array-map (interleave src-keys src-getters)) ; key:getter
+;; 	fields (make-fields src-type-map src-getter-map attrs) ; selection ([type name ...])
+;; 	;; test to see if transform is needed should be done somewhere here...
+;; 	;; what is an :into param was given...none of this needs calculating...
+;; 	tgt-class-name (or (pmap :class) (name (gensym "org.dada.tmp.OutputValue")))
+;; 	tgt-model-name (or (pmap :model) (name (gensym "OutputModel")))
+;; 	filter-fn (pmap :filter)
+;;    	tgt-types (map (fn [field] (nth field 0)) fields)
+;;    	tgt-keys (map (fn [field] (nth field 1)) fields)
+;;    	tgt-names (map name tgt-keys)
+;;    	sel-getters (map (fn [field] (nth field 2)) fields)
+;; 	tgt-attrs (interleave tgt-keys tgt-types)
+;;   	tgt-class (apply make-class tgt-class-name Object tgt-attrs)
+;; 	tgt-creator (proxy [Creator] [] (create [& args] (apply make-instance tgt-class args)))
+;;    	tgt-getter-map (make-getter-map tgt-class fields) ; name:getter
+;; 	tgt-getters (vals tgt-getter-map)
+;;    	tgt-key-getter (tgt-getter-map src-key-key)
+;;    	tgt-version-getter (tgt-getter-map src-version-key)
+;; 	tgt-metadata (new GetterMetadata  tgt-creator  (collection tgt-key-getter tgt-version-getter) tgt-types tgt-names tgt-getters)
+;; 	view (VersionedModelView. tgt-model-name tgt-metadata tgt-key-getter tgt-version-getter)
+;; 	transformer (make-transformer-old sel-getters view tgt-class)
+;; 	filter (make-filter filter-fn transformer)
+;; 	]
+;;     (connect src-model filter)
+;;     view)
+;;   )
