@@ -376,7 +376,7 @@
             <configuration>
               <tasks name="javadoc-report">
                 <javadoc
-                  destdir="target/site/api"
+                  destdir="target/site/apidocs"
                   author="true"
                   version="true"
                   use="true"
@@ -512,11 +512,14 @@
   <reporting>
     <plugins>
 
+      <!-- javadoc report causes compile phase to be run twice -->
+<!--
       <plugin>
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-javadoc-plugin</artifactId>
 	<version>2.6.1</version>
       </plugin>
+-->
 
       <plugin>
         <groupId>com.googlecode.maven-overview-plugin</groupId>
@@ -543,6 +546,8 @@
 	</configuration>
       </plugin>
 
+      <!-- findbugs causes compiler plugin to be run again -->
+<!--
       <plugin>
 	<groupId>org.codehaus.mojo</groupId>
 	<artifactId>findbugs-maven-plugin</artifactId>
@@ -552,6 +557,7 @@
           <excludeFilterFile>src/site/resources/findbugs-exclude.xml</excludeFilterFile>
         </configuration>
       </plugin>
+-->
 
     </plugins>
   </reporting>
