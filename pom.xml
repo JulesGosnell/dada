@@ -543,6 +543,9 @@
 	<configuration>
 	  <linkXref>true</linkXref>
 	  <targetJdk>${java.version}</targetJdk>
+	  <excludes>
+	    <exclude>**/BigDecimalSum.java</exclude>
+	  </excludes>
 	</configuration>
       </plugin>
 
