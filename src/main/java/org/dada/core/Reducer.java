@@ -33,17 +33,17 @@ import java.util.Collections;
 
 // TODO: should be some sort of TransformedModelView - since output is a different shape from input
 
-public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<VI> {
+public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<VI> {
 
-	public interface Aggregator<VI, V, KO, VO> {
+	public interface Strategy<VI, V, KO, VO> {
 		V initialValue();
 		Class<?> initialType(Class<?> type);
 		VO currentValue(KO key, int version, V value);
-		V aggregate(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions);
+		V reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions);
 		V apply(V currentValue, V delta);
 	}
 
-	private final Aggregator<VI, V, KO, VO> aggregator;
+	private final Strategy<VI, V, KO, VO> strategy;
 
 	private final Collection<Update<VO>> nil = Collections.emptyList();
 	
@@ -51,12 +51,12 @@ public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO
 	private int version;
 	private V value;
 	
-	public AggregatedModelView(String name, Metadata<KO, VO> metadata, KO key, Aggregator<VI, V, KO, VO> aggregator) {
+	public Reducer(String name, Metadata<KO, VO> metadata, KO key, Strategy<VI, V, KO, VO> aggregator) {
 		super(name, metadata);
 		this.key = key;
-		this.aggregator = aggregator;
+		this.strategy = aggregator;
 		version = 0;
-		value = this.aggregator.initialValue();
+		value = this.strategy.initialValue();
 	}
 
 	@Override
@@ -67,21 +67,21 @@ public class AggregatedModelView<KI, VI, V, KO, VO> extends AbstractModel<KO, VO
 			snapshotVersion = version;
 			snapshotValue = value;
 		}
-		return Collections.singleton(aggregator.currentValue(key, snapshotVersion, snapshotValue));
+		return Collections.singleton(strategy.currentValue(key, snapshotVersion, snapshotValue));
 	}
 
 	@Override
 	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
-		V delta = aggregator.aggregate(insertions, updates, deletions);
+		V delta = strategy.reduce(insertions, updates, deletions);
 		V oldValue, newValue;
 		int oldVersion, newVersion;
 		synchronized (value) {
 			oldVersion = version;
 			oldValue = value;
 			newVersion = ++version;
-			newValue = value = aggregator.apply(value, delta);
+			newValue = value = strategy.apply(value, delta);
 		}
-		notifyUpdate(nil, Collections.singleton(new Update<VO>(aggregator.currentValue(key, oldVersion, oldValue), aggregator.currentValue(key, newVersion, newValue))), nil);
+		notifyUpdate(nil, Collections.singleton(new Update<VO>(strategy.currentValue(key, oldVersion, oldValue), strategy.currentValue(key, newVersion, newValue))), nil);
 	}
 
 }

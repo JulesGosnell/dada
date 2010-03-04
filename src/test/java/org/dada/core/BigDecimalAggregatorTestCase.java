@@ -34,12 +34,12 @@ import java.util.Collection;
 
 import junit.framework.TestCase;
 
-import org.dada.core.BigDecimalAggregator.Factory;
+import org.dada.core.BigDecimalSum.Factory;
 
 public class BigDecimalAggregatorTestCase extends TestCase {
 
 	public void test() throws Exception {
-		String name = "Aggregator";
+		String name = "Strategy";
 		Integer inputKey = 1;
 		Integer outputKey = 1;
 
@@ -66,7 +66,7 @@ public class BigDecimalAggregatorTestCase extends TestCase {
 			}
 		};
 
-		BigDecimalAggregator<Integer, Amount, Integer, Amount> aggregator = new BigDecimalAggregator<Integer, Amount, Integer, Amount>(name, inputKey, outputKey, metadata, factory, getter);
+		BigDecimalSum<Integer, Amount, Integer, Amount> aggregator = new BigDecimalSum<Integer, Amount, Integer, Amount>(name, inputKey, outputKey, metadata, factory, getter);
 
 		Collection<Amount> before = aggregator.getData();
 		assertTrue(before.size() == 1);

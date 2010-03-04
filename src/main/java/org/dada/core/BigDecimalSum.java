@@ -31,14 +31,14 @@ package org.dada.core;
 import java.math.BigDecimal;
 import java.util.Collection;
 
-public class BigDecimalAggregator<KI, VI, KO, VO> extends AggregatedModelView<KI, VI, BigDecimal, KO, VO> {
+public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, KO, VO> {
 
 	public interface Factory<KO, VO, KI> {
 		VO create(KO outputKey, int version, KI inputKey, BigDecimal amount);
 	}
 
-	public BigDecimalAggregator(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, final Factory<KO, VO, KI> factory, final Getter<BigDecimal, VI> getter) {
-		super(name, metadata, outputKey, new Aggregator<VI, BigDecimal, KO, VO>() {
+	public BigDecimalSum(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, final Factory<KO, VO, KI> factory, final Getter<BigDecimal, VI> getter) {
+		super(name, metadata, outputKey, new Strategy<VI, BigDecimal, KO, VO>() {
 
 			@Override
 			public BigDecimal initialValue() {
@@ -51,7 +51,7 @@ public class BigDecimalAggregator<KI, VI, KO, VO> extends AggregatedModelView<KI
 			}
 
 			@Override
-			public BigDecimal aggregate(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
+			public BigDecimal reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
 				BigDecimal delta = BigDecimal.ZERO;
 				
 				for (Update<VI> insertion : insertions) {
