@@ -160,6 +160,23 @@
 (insert *metamodel* narwhals-length)
 
 ;;----------------------------------------
+;; demonstrate reduction
+;;----------------------------------------
+
+;; (defn make-reducer [view #^Model model #^Keyword key #^Reducer$Strategy reduction]
+;;   )
+
+;; (defn do-reduce [view #^Model model #^Keyword key #^Reducer$Strategy reduction]
+;;   (connect model (make-reducer reduction view))
+;;   view)
+
+;; (def sum nil)
+
+;; ;; sum, average, mean, mode, COUNT, minimum, maximum,...
+;; (def narwhals-total-length (do-reduce "SUM(length)" sum narwhals-length :length))
+;; (insert *metamodel* narwhals-total-length)x
+
+;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
 ;;----------------------------------------
 
@@ -175,8 +192,8 @@
 
 ;; (def belugas (fetch whales :time :version '([:time] [:version] [:type][:length]) :model "Belugas" :filter (fn [value] (= "beluga whale" (. value getType)))))
 
-;; (import org.dada.core.AggregatedModelView)
-;; (import org.dada.core.AggregatedModelView$Aggregator)
+;; (import org.dada.core.Reducer)
+;; (import org.dada.core.Reducer$Strategy)
 
 ;; ;; make a class to hold key, version and aggregate value...
 
