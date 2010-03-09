@@ -133,12 +133,12 @@
 ;;----------------------------------------
 
 (let [half-max-length (/ max-length 2)]
-  (def longer-whales (do-filter "longer" whales '(:length) #(> % half-max-length))))
+  (def longer-whales (do-filter (str "length>" half-max-length) whales '(:length) #(> % half-max-length))))
 
 (insert *metamodel* longer-whales)
 
 (let [half-max-weight (/ max-weight 2)]
-  (def heavier-whales (do-filter "heavier" whales '(:weight) #(> % half-max-weight))))
+  (def heavier-whales (do-filter (str "weight>" half-max-weight)  whales '(:weight) #(> % half-max-weight))))
 
 (insert *metamodel* heavier-whales)
 
