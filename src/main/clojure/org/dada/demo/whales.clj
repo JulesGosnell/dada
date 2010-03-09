@@ -65,6 +65,9 @@
 	    "beaked whale"
 	    ])
 
+(def max-weight 172) ;; metric tons
+(def max-length 32.9) ;; metres
+
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
 ;; IDEAS
@@ -108,16 +111,19 @@
  whales
  (let [num-whales 1000
        time (System/currentTimeMillis)
-       #^Creator creator (.getCreator whale-metadata)]
+       #^Creator creator (.getCreator whale-metadata)
+       max-length-x-100 (* max-length 100)
+       max-weight-x-100 (* max-weight 100)]
    (for [id (range time (+ time num-whales))]
      (.create
       creator
-      (into-array Object 
-		  [id
-		   0
-		   (rnd types)
-		   (/ (rand-int 3290) 100)	       ;; 32.9 metres
-		   (/ (rand-int 172) 100)]))))) ;; 172 metric tons
+      (into-array
+       Object
+       [id
+	0
+	(rnd types)
+	(/ (rand-int max-length-x-100) 100)
+	(/ (rand-int max-weight-x-100) 100)])))))
 
 ;;----------------------------------------
 
@@ -126,8 +132,15 @@
 
 ;;----------------------------------------
 
-(def blue-whales (do-filter "type='blue whale'" whales '(:type) #(= "blue whale" %)))
-(insert *metamodel* blue-whales)
+(let [half-max-length (/ max-length 2)]
+  (def longer-whales (do-filter "longer" whales '(:length) #(> % half-max-length))))
+
+(insert *metamodel* longer-whales)
+
+(let [half-max-weight (/ max-weight 2)]
+  (def heavier-whales (do-filter "heavier" whales '(:weight) #(> % half-max-weight))))
+
+(insert *metamodel* heavier-whales)
 
 ;;----------------------------------------
 ;; demonstrate transformation - only selecting a subset of the
@@ -135,11 +148,11 @@
 ;; attributes...
 ;;----------------------------------------
 
-(def blue-whales-weight (do-transform "weight" blue-whales :time :version :weight))
-(insert *metamodel* blue-whales-weight)
+(def longer-whales-weight (do-transform "weight" longer-whales :time :version :weight))
+(insert *metamodel* longer-whales-weight)
 
-(def blue-whales-length (do-transform "length" blue-whales :time :version :length))
-(insert *metamodel* blue-whales-length)
+(def heavier-whales-length (do-transform "length" heavier-whales :time :version :length))
+(insert *metamodel* heavier-whales-length)
 
 ;;----------------------------------------
 ;; try a transformation on top of a filtration
