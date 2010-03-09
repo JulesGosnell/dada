@@ -3,20 +3,29 @@
 	     (java.util
 	      ArrayList
 	      Collection)
-	     (java.beans PropertyDescriptor)
+	     (java.util.concurrent
+	      ConcurrentHashMap)
+	     (java.beans
+	      PropertyDescriptor)
 	     (org.dada.core
 	      Creator
+	      Factory
 	      FilteredView
 	      FilteredView$Filter
 	      Getter
 	      GetterMetadata
+	      LazyView
 	      Metadata
 	      Model
+	      Router
+	      Router$Strategy
+	      SparseOpenLazyViewTable
 	      Transformer
 	      Transformer$Transform
 	      Update
 	      VersionedModelView
-	      View)
+	      View
+	      )
 	     (org.dada.demo Client)
 	     (org.springframework.context.support ClassPathXmlApplicationContext)
 	     (org.dada.asm ClassFactory)
@@ -41,7 +50,8 @@
   (Client/main (into-array String (list name))))
 
 (defn insert [#^View view item]
-  (.update view (list (Update. nil item)) '() '()))
+  (.update view (list (Update. nil item)) '() '())
+  item)
 
 (defn insert-n [#^View view #^ISeq items]
   (.update view (map (fn [item] (Update. nil item)) items) '() '()))
@@ -257,6 +267,36 @@
 	transformer (make-transformer attribute-getters view-metadata view)]
     (connect src-model transformer)
     view))
+
+;;----------------------------------------
+;; splitting
+;; split model into smaller models based on content of one attribute of each value
+;; TODO: accept ready-made table, split on more than one attribute
+;;----------------------------------------
+
+(defn make-splitter
+  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-route #^IFn route-to-value #^IFn view-hook]
+  (let [map (new ConcurrentHashMap)
+	prefix (str (.getName src-model) "." (name key) "=")
+	metadata (.getMetadata src-model)
+	view-factory (proxy [Factory] [] (create [key] (view-hook (model (str prefix (route-to-value key)) metadata))))
+	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
+	table (new SparseOpenLazyViewTable map lazy-factory)
+	getter (.getAttributeGetter metadata (name key))]
+    (new
+     Router
+     (proxy
+      [Router$Strategy]
+      []
+      (getMutable [] mutable)
+      (getRoute [value] (value-to-route (.get getter value)))
+      (getViews [route] (list (. table get route)))
+      ))))
+    
+(defn do-split
+  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-route #^IFn route-to-value #^IFn view-hook]
+  (connect src-model (make-splitter src-model key mutable value-to-route route-to-value view-hook))
+  )
 
 ;;----------------------------------------
 ;; refactored to here

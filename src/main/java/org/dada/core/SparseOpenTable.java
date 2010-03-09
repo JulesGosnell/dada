@@ -49,6 +49,7 @@ public class SparseOpenTable<K, V> implements Table<K, V> {
 	private final Factory<K, V> factory;
 	private final ConcurrentMap<K, V> map;
 
+	// TODO: should be Factory<K, Collection<V>>
 	public SparseOpenTable(ConcurrentMap<K, V> map, Factory<K, V> factory) {
 		this.factory = factory;
 		this.map = map;

@@ -12,7 +12,8 @@
 	   Model
 	   Transformer
 	   Transformer$Transform
-	   VersionedModelView])
+	   VersionedModelView
+	   ])
  )
 
 ;; TODO - this will have to wait until we have an extended ClassFactory
@@ -160,8 +161,17 @@
 (insert *metamodel* narwhals-length)
 
 ;;----------------------------------------
+;; demonstrate splitting
+;;----------------------------------------
+
+(let [type-to-route (apply hash-map (interleave types (range (count types))))
+      route-to-type (into-array String types)]
+  (do-split whales :type false type-to-route #(aget route-to-type %) #(insert *metamodel* %)))
+
+;;----------------------------------------
 ;; demonstrate reduction
 ;;----------------------------------------
+
 
 ;; (defn make-reducer [view #^Model model #^Keyword key #^Reducer$Strategy reduction]
 ;;   )
