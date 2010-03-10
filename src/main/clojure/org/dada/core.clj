@@ -29,6 +29,7 @@
 	      )
 	     (org.dada.demo Client)
 	     (org.springframework.context.support ClassPathXmlApplicationContext)
+	     (org.springframework.beans.factory BeanFactory)
 	     (org.dada.asm ClassFactory)
 	     (org.slf4j Logger LoggerFactory)
 	     ))
@@ -44,8 +45,8 @@
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
   (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
-  (def #^ServiceFactory *internal-view-service-factory* (.getBean *spring-context* "internalViewServiceFactory"))
-  (.getBean *spring-context* "metaModel"))
+  (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
+  (.getBean #^BeanFactory *spring-context* "metaModel"))
 
 (defn start-client [#^String name]
   (Client/main (into-array String (list name))))
