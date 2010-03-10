@@ -180,8 +180,8 @@
 ;;----------------------------------------
 
 (let [type-to-route (apply hash-map (interleave types (range (count types))))
-      route-to-type (into-array String types)]
-  (do-split whales :type false type-to-route #(aget route-to-type %) #(insert *metamodel* %)))
+      #^"[Ljava.lang.String;" route-to-type (into-array String types)]
+  (do-split whales :type false type-to-route #(aget route-to-type #^Integer %) #(insert *metamodel* %)))
 
 ;;----------------------------------------
 ;; demonstrate reduction
