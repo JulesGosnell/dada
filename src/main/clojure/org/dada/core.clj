@@ -19,6 +19,7 @@
 	      Model
 	      Router
 	      Router$Strategy
+	      ServiceFactory
 	      SparseOpenLazyViewTable
 	      Transformer
 	      Transformer$Transform
@@ -43,7 +44,9 @@
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
   (let [context (ClassPathXmlApplicationContext. "application-context.xml")]
-    (def *spring-context* context)
+    (def #^ClassPathXmlApplicationContext *spring-context* context)
+    (def #^ServiceFactory *internal-view-service-factory*
+	 (.getBean *spring-context* "internalViewServiceFactory"))
     (.getBean context "metaModel")))
 
 (defn start-client [#^String name]
@@ -279,7 +282,7 @@
   (let [map (new ConcurrentHashMap)
 	prefix (str (.getName src-model) "." (name key) "=")
 	metadata (.getMetadata src-model)
-	view-factory (proxy [Factory] [] (create [key] (view-hook (model (str prefix (route-to-value key)) metadata))))
+	view-factory (proxy [Factory] [] (create [key] (.decouple *internal-view-service-factory* (view-hook (model (str prefix (route-to-value key)) metadata)))))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
 	getter (.getAttributeGetter metadata (name key))]
