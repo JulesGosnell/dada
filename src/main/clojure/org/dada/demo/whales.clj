@@ -3,6 +3,7 @@
  org.dada.demo.whales
  (:use [org.dada.core])
  (:import [clojure.lang Symbol])
+ (:import [java.math BigDecimal])
  (:import [org.dada.core
 	   Average
 	   Creator
@@ -13,6 +14,9 @@
 	   Transformer
 	   Transformer$Transform
 	   VersionedModelView
+
+	   Reducer
+	   Reducer$Strategy
 	   ])
  )
 
@@ -109,7 +113,7 @@
 ;; create 10,000 whales and insert them into model
 (insert-n
  whales
- (let [num-whales 1000
+ (let [num-whales 10
        time (System/currentTimeMillis)
        #^Creator creator (.getCreator whale-metadata)
        max-length-x-100 (* max-length 100)
@@ -187,19 +191,44 @@
 ;; demonstrate reduction
 ;;----------------------------------------
 
+(let [metadata (class-metadata "org.dada.core.Sum" Object :key :version
+			       [:key String :version Integer :sum Number])
+      getter (.getAttributeGetter (.getMetadata heavier-whales-length) "length")
+      accessor (fn [value] (.get getter value))
+      new-value #(accessor (.getNewValue %))
+      old-value #(accessor (.getOldValue %))]
+  (def sum
+       (proxy
+	[Reducer$Strategy]
+	[]
+	(initialValue [] 0M)
+	(initialType [type] type)
+	(currentValue [key version value]
+		      (println "currentValue: " key version value)
+		      (.create metadata [key version value]))
+	(reduce [insertions updates deletions]
+		(-
+		 (+
+		  (reduce #(+ %1 (new-value %2)) 0 insertions)
+		  (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
+		 (reduce #(+ %1 (old-value %2)) 0 deletions))
+		)
+	(apply [currentValue delta] 
+	       (println "apply: " currentValue  delta)
+	       (+ currentValue delta))
+	))
 
-;; (defn make-reducer [view #^Model model #^Keyword key #^Reducer$Strategy reduction]
-;;   )
+  (defn make-reducer [#^Model model #^Keyword key-key #^Reducer$Strategy strategy]
+    (let [key (name key-key)]
+      (Reducer. (str (.getName model) ".sum(" key ")") metadata key strategy)))
+  )
 
-;; (defn do-reduce [view #^Model model #^Keyword key #^Reducer$Strategy reduction]
-;;   (connect model (make-reducer reduction view))
-;;   view)
+(defn do-reduce [#^Model model #^Keyword key #^Reducer$Strategy reduction]
+  (connect model (make-reducer model key reduction)))
 
-;; (def sum nil)
-
-;; ;; sum, average, mean, mode, COUNT, minimum, maximum,...
-;; (def narwhals-total-length (do-reduce "SUM(length)" sum narwhals-length :length))
-;; (insert *metamodel* narwhals-total-length)x
+;; sum, average, mean, mode, COUNT, minimum, maximum,...
+(def heavier-whales-length-sum (do-reduce heavier-whales-length :length sum))
+(insert *metamodel* heavier-whales-length-sum)
 
 ;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
