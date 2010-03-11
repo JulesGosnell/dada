@@ -193,41 +193,46 @@
 ;; demonstrate reduction
 ;;----------------------------------------
 
-(let [metadata (class-metadata "org.dada.core.Sum" Object :key :version
-			       [:key String :version Integer :sum Number])
-      getter (.getAttributeGetter (.getMetadata heavier-whales-length) "length")
-      accessor (fn [value] (.get getter value))
-      new-value (fn [#^Update update] (accessor (.getNewValue update)))
-      old-value (fn [#^Update update] (accessor (.getOldValue update)))]
-  (def sum
-       (proxy
-	[Reducer$Strategy]
-	[]
-	(initialValue [] 0M)
-	(initialType [type] type)
-	(currentValue [key version value]
-		      (.create #^Metadata metadata #^Collection (collection key version value)))
-	(reduce [insertions updates deletions]
-		(-
-		 (+
-		  (reduce #(+ %1 (new-value %2)) 0 insertions)
-		  (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
-		 (reduce #(+ %1 (old-value %2)) 0 deletions))
-		)
-	(apply [currentValue delta] 
-	       (+ currentValue delta))
-	))
+(defn make-sum-reducer-strategy
+  [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
+  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
+	accessor (fn [value] (.get getter value))
+	new-value (fn [#^Update update] (accessor (.getNewValue update)))
+	old-value (fn [#^Update update] (accessor (.getOldValue update)))
+	creator (.getCreator tgt-metadata)]
+    (proxy
+     [Reducer$Strategy]
+     []
+     (initialValue [] 0)
+     (initialType [type] type)
+     (currentValue [& args] (.create creator (into-array Object args)))
+     (reduce [insertions updates deletions]
+	     (-
+	      (+
+	       (reduce #(+ %1 (new-value %2)) 0 insertions)
+	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
+	      (reduce #(+ %1 (old-value %2)) 0 deletions))
+	     )
+     (apply [currentValue delta] (+ currentValue delta))
+     )))
 
-  (defn make-reducer [#^Model model #^Keyword key-key #^Reducer$Strategy strategy]
-    (let [key (name key-key)]
-      (Reducer. (str (.getName model) ".sum(" key ")") metadata key strategy)))
-  )
+;; refactor from here...
 
-(defn do-reduce [#^Model model #^Keyword key #^Reducer$Strategy reduction]
-  (connect model (make-reducer model key reduction)))
+(defn make-reducer
+  [#^Model src-model #^Keyword attr-key #^Reducer$Strategy strategy #^Metadata tgt-metadata]
+  (let [attr-name (name attr-key)]
+    (Reducer. (str (.getName src-model) ".sum(" attr-name ")") tgt-metadata attr-name strategy)))
+
+(defn do-reduce-sum [#^Model model #^Keyword attribute-key]
+  (let [src-metadata (.getMetadata model)
+	tgt-classname "org.dada.core.Sum"
+	tgt-metadata (class-metadata tgt-classname Object :key :version [:key String :version Integer :sum Number])
+	strategy (make-sum-reducer-strategy attribute-key src-metadata tgt-metadata)
+	reducer (make-reducer model attribute-key strategy tgt-metadata)]
+    (connect model reducer)))
 
 ;; sum, average, mean, mode, COUNT, minimum, maximum,...
-(def heavier-whales-length-sum (do-reduce heavier-whales-length :length sum))
+(def heavier-whales-length-sum (do-reduce-sum heavier-whales-length :length))
 (insert *metamodel* heavier-whales-length-sum)
 
 ;;----------------------------------------
