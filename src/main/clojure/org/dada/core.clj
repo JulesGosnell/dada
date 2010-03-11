@@ -174,7 +174,7 @@
 	 (map name (keys attribute-map))
 	 (map (fn [[key type]] (getter class type key)) attribute-map))))
 
-(defn class-metadata
+(defn #^Metadata class-metadata
   "create metadata for a Model containing instances of a Class"
   [#^String class-name #^Class superclass #^Keyword key-key #^Keyword version-key #^ISeq attributes]
   (apply
