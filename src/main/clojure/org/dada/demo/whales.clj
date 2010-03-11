@@ -4,6 +4,7 @@
  (:use [org.dada.core])
  (:import [clojure.lang Symbol])
  (:import [java.math BigDecimal])
+ (:import [java.util Collection])
  (:import [org.dada.core
 	   Average
 	   Creator
@@ -15,6 +16,7 @@
 	   Transformer$Transform
 	   VersionedModelView
 
+	   Update
 	   Reducer
 	   Reducer$Strategy
 	   ])
@@ -113,7 +115,7 @@
 ;; create 10,000 whales and insert them into model
 (insert-n
  whales
- (let [num-whales 10
+ (let [num-whales 10000
        time (System/currentTimeMillis)
        #^Creator creator (.getCreator whale-metadata)
        max-length-x-100 (* max-length 100)
@@ -157,7 +159,7 @@
 (def longer-whales-weight (do-transform "weight" longer-whales :time :version :weight))
 (insert *metamodel* longer-whales-weight)
 
-(def heavier-whales-length (do-transform "length" heavier-whales :time :version :length))
+(def #^Model heavier-whales-length (do-transform "length" heavier-whales :time :version :length))
 (insert *metamodel* heavier-whales-length)
 
 ;;----------------------------------------
@@ -195,8 +197,8 @@
 			       [:key String :version Integer :sum Number])
       getter (.getAttributeGetter (.getMetadata heavier-whales-length) "length")
       accessor (fn [value] (.get getter value))
-      new-value #(accessor (.getNewValue %))
-      old-value #(accessor (.getOldValue %))]
+      new-value (fn [#^Update update] (accessor (.getNewValue update)))
+      old-value (fn [#^Update update] (accessor (.getOldValue update)))]
   (def sum
        (proxy
 	[Reducer$Strategy]
@@ -204,8 +206,7 @@
 	(initialValue [] 0M)
 	(initialType [type] type)
 	(currentValue [key version value]
-		      (println "currentValue: " key version value)
-		      (.create metadata [key version value]))
+		      (.create #^Metadata metadata #^Collection (collection key version value)))
 	(reduce [insertions updates deletions]
 		(-
 		 (+
@@ -214,7 +215,6 @@
 		 (reduce #(+ %1 (old-value %2)) 0 deletions))
 		)
 	(apply [currentValue delta] 
-	       (println "apply: " currentValue  delta)
 	       (+ currentValue delta))
 	))
 
