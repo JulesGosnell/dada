@@ -311,7 +311,7 @@
 (defn make-reducer
   [#^Model src-model #^Keyword attr-key #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
   (let [attr-name (name attr-key)
-	view-name (str (.getName src-model) (name-fn attr-name))]
+	view-name (str (.getName src-model) "." (name-fn attr-name))]
     (Reducer. view-name tgt-metadata attr-name strategy)))
 
 ;; sum specific stuff - should be in its own file
