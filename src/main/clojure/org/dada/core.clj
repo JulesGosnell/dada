@@ -7,6 +7,10 @@
 	      ConcurrentHashMap)
 	     (java.beans
 	      PropertyDescriptor)
+	     (org.springframework.context.support ClassPathXmlApplicationContext)
+	     (org.springframework.beans.factory BeanFactory)
+	     (org.slf4j Logger LoggerFactory)
+	     (org.dada.asm ClassFactory)
 	     (org.dada.core
 	      Creator
 	      Factory
@@ -17,6 +21,8 @@
 	      LazyView
 	      Metadata
 	      Model
+	      Reducer
+	      Reducer$Strategy
 	      Router
 	      Router$Strategy
 	      ServiceFactory
@@ -28,10 +34,6 @@
 	      View
 	      )
 	     (org.dada.demo Client)
-	     (org.springframework.context.support ClassPathXmlApplicationContext)
-	     (org.springframework.beans.factory BeanFactory)
-	     (org.dada.asm ClassFactory)
-	     (org.slf4j Logger LoggerFactory)
 	     ))
 
 (defn debug [foo]
@@ -299,6 +301,50 @@
   [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-route #^IFn route-to-value #^IFn view-hook]
   (connect src-model (make-splitter src-model key mutable value-to-route route-to-value view-hook))
   )
+
+;;----------------------------------------
+;; reduction
+;; reduce all values in a model to a single one - by applying a fn - e.g. sum, count, etc...
+;; TODO: count, average (sum/count), mean, mode, minimum, maximum - min/max more tricky, need to carry state
+;;----------------------------------------
+
+(defn make-reducer
+  [#^Model src-model #^Keyword attr-key #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  (let [attr-name (name attr-key)
+	view-name (str (.getName src-model) (name-fn attr-name))]
+    (Reducer. view-name tgt-metadata attr-name strategy)))
+
+;; sum specific stuff - should be in its own file
+
+(def #^Metadata sum-reducer-metadata (class-metadata "org.dada.core.reducer.Sum" Object :key :version [:key String :version Integer :sum Number]))
+
+(defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata]
+  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
+	accessor (fn [value] (.get getter value))
+	new-value (fn [#^Update update] (accessor (.getNewValue update)))
+	old-value (fn [#^Update update] (accessor (.getOldValue update)))
+	creator (.getCreator sum-reducer-metadata)]
+    (proxy
+     [Reducer$Strategy]
+     []
+     (initialValue [] 0)
+     (initialType [type] type)
+     (currentValue [& args] (.create creator (into-array Object args)))
+     (reduce [insertions updates deletions]
+	     (-
+	      (+
+	       (reduce #(+ %1 (new-value %2)) 0 insertions)
+	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
+	      (reduce #(+ %1 (old-value %2)) 0 deletions))
+	     )
+     (apply [currentValue delta] (+ currentValue delta))
+     )))
+
+(defn do-reduce-sum [#^Model model #^Keyword attribute-key]
+  (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model))
+	view-name-fn #(str "sum(" % ")")
+	reducer (make-reducer model attribute-key strategy sum-reducer-metadata view-name-fn)]
+    (connect model reducer)))
 
 ;;----------------------------------------
 ;; refactored to here

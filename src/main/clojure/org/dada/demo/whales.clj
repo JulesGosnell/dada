@@ -2,23 +2,14 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use [org.dada.core])
- (:import [clojure.lang Symbol])
- (:import [java.math BigDecimal])
- (:import [java.util Collection])
+ (:import [clojure.lang
+	   ])
+ (:import [java.math
+	   ])
  (:import [org.dada.core
-	   Average
 	   Creator
-	   Getter
-	   GetterMetadata
 	   Metadata
 	   Model
-	   Transformer
-	   Transformer$Transform
-	   VersionedModelView
-
-	   Update
-	   Reducer
-	   Reducer$Strategy
 	   ])
  )
 
@@ -190,50 +181,11 @@
   (do-split whales :type false type-to-route #(aget route-to-type #^Integer %) #(insert *metamodel* %)))
 
 ;;----------------------------------------
-;; demonstrate reduction
+;; demonstrate reduction (sum)
 ;;----------------------------------------
-
-(def #^Metadata sum-reducer-metadata (class-metadata "org.dada.core.reducer.Sum" Object :key :version [:key String :version Integer :sum Number]))
-
-(defn make-sum-reducer-strategy
-  [#^Keyword attribute-key #^Metadata src-metadata]
-  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
-	accessor (fn [value] (.get getter value))
-	new-value (fn [#^Update update] (accessor (.getNewValue update)))
-	old-value (fn [#^Update update] (accessor (.getOldValue update)))
-	creator (.getCreator sum-reducer-metadata)]
-    (proxy
-     [Reducer$Strategy]
-     []
-     (initialValue [] 0)
-     (initialType [type] type)
-     (currentValue [& args] (.create creator (into-array Object args)))
-     (reduce [insertions updates deletions]
-	     (-
-	      (+
-	       (reduce #(+ %1 (new-value %2)) 0 insertions)
-	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
-	      (reduce #(+ %1 (old-value %2)) 0 deletions))
-	     )
-     (apply [currentValue delta] (+ currentValue delta))
-     )))
-
-;; refactor from here...
-
-(defn make-reducer
-  [#^Model src-model #^Keyword attr-key #^Reducer$Strategy strategy #^Metadata tgt-metadata]
-  (let [attr-name (name attr-key)]
-    (Reducer. (str (.getName src-model) ".sum(" attr-name ")") tgt-metadata attr-name strategy)))
-
-(defn do-reduce-sum [#^Model model #^Keyword attribute-key]
-  (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model))
-	reducer (make-reducer model attribute-key strategy sum-reducer-metadata)]
-    (connect model reducer)))
 
 (def heavier-whales-length-sum (do-reduce-sum heavier-whales-length :length))
 (insert *metamodel* heavier-whales-length-sum)
-
-;; TODO: count, average (sum/count), mean, mode, minimum, maximum - min/max more tricky, need to carry state
 
 ;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
