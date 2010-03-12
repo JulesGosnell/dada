@@ -176,10 +176,13 @@
 ;; demonstrate reduction (sum)
 ;;----------------------------------------
 
+(insert *metamodel* (do-reduce-count whales :length))
 (insert *metamodel* (do-reduce-sum whales :length))
 (insert *metamodel* (do-reduce-sum whales :weight))
+(insert *metamodel* (do-reduce-count heavier-whales-length :length))
 (insert *metamodel* (do-reduce-sum heavier-whales-length :length))
 (insert *metamodel* (do-reduce-sum longer-whales-weight :weight))
+(insert *metamodel* (do-reduce-count longer-whales-weight :weight))
 
 ;;----------------------------------------
 ;; demonstrate splitting [and more reduction)
@@ -195,6 +198,7 @@
    #(aget route-to-type #^Integer %)
    (fn [#^Model model]
        (insert *metamodel* model)
+       (insert *metamodel* (do-reduce-count model :length))
        (insert *metamodel* (do-reduce-sum model :length))
        (insert *metamodel* (do-reduce-sum model :weight))
        model				; TODO: do we really need to be able to override the model ? should threading go here ?
@@ -240,63 +244,6 @@
 ;;      'sum [Number 0]
 ;;      'average [Average (new Average (BigDecimal/ZERO) 0)]
 ;;      })
-
-;; (defn make-sum-aggregator [metadata modelname pkval field-key]
-;;   (let [attribute-name (name field-key)
-;; 	attribute-getter (.getAttributeGetter metadata attribute-name)
-;; 	attribute-type (.getAttributeType metadata attribute-name)
-;; 	initial-value (aggregator-initial-values attribute-type)
-;; 	accessor #(.get attribute-getter %)]
-;;     (AggregatedModelView.
-;;      modelname
-;;      metadata
-;;      pkval
-;;      (proxy
-;;       [AggregatedModelView$Aggregator]
-;;       []
-;;       (initialValue []
-;; 		    initial-value)
-;;       (initialType [type]
-;; 		    type)
-;;       (currentValue [key version value]
-;; 		    (.create metadata [key version value]))
-;;       (aggregate [insertions updates deletions]
-;; 		 (- 
-;; 		  (+
-;; 		   (apply + (map #(accessor (.getNewValue %)) insertions))
-;; 		   (apply + (map #(accessor (.getNewValue %)) updates))
-;; 		   )
-;; 		  (+
-;; 		   (apply + (map #(accessor (.getOldValue %)) updates))
-;; 		   (apply + (map #(accessor (.getOldValue %)) deletions))
-;; 		   )))
-;;       (apply [currentValue delta]
-;; 	     (+ currentValue delta))
-;;       )
-;;      )))
-
-;; (defn make-count-aggregator [metadata model-name pkval field-key]
-;;   (let [getter (.getAttributeGetter metadata (name field-key))
-;; 	accessor #(.get getter %)]
-;;     (AggregatedModelView.
-;;      model-name
-;;      metadata
-;;      pkval
-;;      (proxy
-;;       [AggregatedModelView$Aggregator]
-;;       []
-;;       (initialValue []
-;; 		    0)
-;;       (initialType [type]
-;; 		   Integer)
-;;       (currentValue [key version value]
-;; 		    (.create metadata [key version value]))
-;;       (aggregate [insertions updates deletions]
-;; 		 (- (count insertions) (count deletions)))
-;;       (apply [currentValue delta]
-;; 	     (+ currentValue delta))
-;;       )
-;;      )))
 
 ;; (defn make-average-aggregator [metadata model-name pkval field-key]
 ;;   (let [getter (.getAttributeGetter metadata field-key)

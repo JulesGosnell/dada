@@ -346,6 +346,33 @@
 	reducer (make-reducer model attribute-key strategy sum-reducer-metadata view-name-fn)]
     (connect model reducer)))
 
+;; count specific stuff - should be in its own file
+
+(def #^Metadata count-reducer-metadata (class-metadata "org.dada.core.reducer.Count" Object :key :version [:key String :version Integer :count Number]))
+
+(defn make-count-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata]
+  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
+	accessor (fn [value] (.get getter value))
+	new-value (fn [#^Update update] (accessor (.getNewValue update)))
+	old-value (fn [#^Update update] (accessor (.getOldValue update)))
+	creator (.getCreator count-reducer-metadata)]
+    (proxy
+     [Reducer$Strategy]
+     []
+     (initialValue [] 0)
+     (initialType [type] Integer)
+     (currentValue [& args] (.create creator (into-array Object args)))
+     (reduce [insertions updates deletions] (- (count insertions) (count deletions)))
+     (apply [currentValue delta] (+ currentValue delta))
+     )
+    ))
+
+(defn do-reduce-count [#^Model model #^Keyword attribute-key]
+  (let [strategy (make-count-reducer-strategy attribute-key (.getMetadata model))
+	view-name-fn #(str "count(" % ")")
+	reducer (make-reducer model attribute-key strategy count-reducer-metadata view-name-fn)]
+    (connect model reducer)))
+
 ;;----------------------------------------
 ;; refactored to here
 ;;----------------------------------------
