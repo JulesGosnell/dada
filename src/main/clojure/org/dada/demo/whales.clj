@@ -193,13 +193,15 @@
 ;; demonstrate reduction
 ;;----------------------------------------
 
+(def #^Metadata sum-reducer-metadata (class-metadata "org.dada.core.reducer.Sum" Object :key :version [:key String :version Integer :sum Number]))
+
 (defn make-sum-reducer-strategy
-  [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
+  [#^Keyword attribute-key #^Metadata src-metadata]
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
-	creator (.getCreator tgt-metadata)]
+	creator (.getCreator sum-reducer-metadata)]
     (proxy
      [Reducer$Strategy]
      []
@@ -224,16 +226,14 @@
     (Reducer. (str (.getName src-model) ".sum(" attr-name ")") tgt-metadata attr-name strategy)))
 
 (defn do-reduce-sum [#^Model model #^Keyword attribute-key]
-  (let [src-metadata (.getMetadata model)
-	tgt-classname "org.dada.core.Sum"
-	tgt-metadata (class-metadata tgt-classname Object :key :version [:key String :version Integer :sum Number])
-	strategy (make-sum-reducer-strategy attribute-key src-metadata tgt-metadata)
-	reducer (make-reducer model attribute-key strategy tgt-metadata)]
+  (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model))
+	reducer (make-reducer model attribute-key strategy sum-reducer-metadata)]
     (connect model reducer)))
 
-;; sum, average, mean, mode, COUNT, minimum, maximum,...
 (def heavier-whales-length-sum (do-reduce-sum heavier-whales-length :length))
 (insert *metamodel* heavier-whales-length-sum)
+
+;; TODO: count, average (sum/count), mean, mode, minimum, maximum - min/max more tricky, need to carry state
 
 ;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
