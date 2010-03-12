@@ -316,14 +316,15 @@
 
 ;; sum specific stuff - should be in its own file
 
-(def #^Metadata sum-reducer-metadata (class-metadata "org.dada.core.reducer.Sum" Object :key :version [:key String :version Integer :sum Number]))
+;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
+(defn #^Metadata sum-reducer-metadata [] (class-metadata "org.dada.core.reducer.Sum" Object :key :version [:key String :version Integer :sum Number]))
 
-(defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata]
+(defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
-	creator (.getCreator sum-reducer-metadata)]
+	creator (.getCreator tgt-metadata)]
     (proxy
      [Reducer$Strategy]
      []
@@ -341,21 +342,23 @@
      )))
 
 (defn do-reduce-sum [#^Model model #^Keyword attribute-key]
-  (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model))
+  (let [tgt-metadata (sum-reducer-metadata)
+	strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
 	view-name-fn #(str "sum(" % ")")
-	reducer (make-reducer model attribute-key strategy sum-reducer-metadata view-name-fn)]
+	reducer (make-reducer model attribute-key strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
 
 ;; count specific stuff - should be in its own file
 
-(def #^Metadata count-reducer-metadata (class-metadata "org.dada.core.reducer.Count" Object :key :version [:key String :version Integer :count Number]))
+;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
+(defn #^Metadata count-reducer-metadata [] (class-metadata "org.dada.core.reducer.Count" Object :key :version [:key String :version Integer :count Number]))
 
-(defn make-count-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata]
+(defn make-count-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
-	creator (.getCreator count-reducer-metadata)]
+	creator (.getCreator tgt-metadata)]
     (proxy
      [Reducer$Strategy]
      []
@@ -368,9 +371,10 @@
     ))
 
 (defn do-reduce-count [#^Model model #^Keyword attribute-key]
-  (let [strategy (make-count-reducer-strategy attribute-key (.getMetadata model))
+  (let [tgt-metadata (count-reducer-metadata)
+	strategy (make-count-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
 	view-name-fn #(str "count(" % ")")
-	reducer (make-reducer model attribute-key strategy count-reducer-metadata view-name-fn)]
+	reducer (make-reducer model attribute-key strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
 
 ;;----------------------------------------
