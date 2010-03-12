@@ -51,10 +51,10 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	private int version;
 	private V value;
 	
-	public Reducer(String name, Metadata<KO, VO> metadata, KO key, Strategy<VI, V, KO, VO> aggregator) {
+	public Reducer(String name, Metadata<KO, VO> metadata, KO key, Strategy<VI, V, KO, VO> strategy) {
 		super(name, metadata);
 		this.key = key;
-		this.strategy = aggregator;
+		this.strategy = strategy;
 		version = 0;
 		value = this.strategy.initialValue();
 	}
