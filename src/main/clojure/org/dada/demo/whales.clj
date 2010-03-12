@@ -173,19 +173,33 @@
 (insert *metamodel* narwhals-length)
 
 ;;----------------------------------------
-;; demonstrate splitting
+;; demonstrate reduction (sum)
+;;----------------------------------------
+
+(insert *metamodel* (do-reduce-sum whales :length))
+(insert *metamodel* (do-reduce-sum whales :weight))
+(insert *metamodel* (do-reduce-sum heavier-whales-length :length))
+(insert *metamodel* (do-reduce-sum longer-whales-weight :weight))
+
+;;----------------------------------------
+;; demonstrate splitting [and more reduction)
 ;;----------------------------------------
 
 (let [type-to-route (apply hash-map (interleave types (range (count types))))
       #^"[Ljava.lang.String;" route-to-type (into-array String types)]
-  (do-split whales :type false type-to-route #(aget route-to-type #^Integer %) #(insert *metamodel* %)))
-
-;;----------------------------------------
-;; demonstrate reduction (sum)
-;;----------------------------------------
-
-(def heavier-whales-length-sum (do-reduce-sum heavier-whales-length :length))
-(insert *metamodel* heavier-whales-length-sum)
+  (do-split
+   whales
+   :type
+   false
+   type-to-route
+   #(aget route-to-type #^Integer %)
+   (fn [#^Model model]
+       (insert *metamodel* model)
+       (insert *metamodel* (do-reduce-sum model :length))
+       (insert *metamodel* (do-reduce-sum model :weight))
+       model				; TODO: do we really need to be able to override the model ? should threading go here ?
+       )
+   ))
 
 ;;----------------------------------------
 ;; select - being refactored into filter, transform, aggregate, group, ...
