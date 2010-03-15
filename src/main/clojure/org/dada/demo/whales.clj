@@ -179,7 +179,16 @@
 ;;----------------------------------------
 
 (let [type-to-route (apply hash-map (interleave types (range (count types))))
-      #^"[Ljava.lang.String;" route-to-type (into-array String types)]
+      #^"[Ljava.lang.String;" route-to-type (into-array String types)
+      type-count-metadata (class-metadata
+       			   "org.dada.demo.whales.TypeCount"
+       			   Object
+       			   :key
+       			   :version
+       			   [:key String :version Integer :count Integer])
+      type-count-model (model "Whales.count(types)" type-count-metadata)
+      ]
+  (insert *metamodel* type-count-model)
   (do-split
    whales
    :type
@@ -188,7 +197,10 @@
    #(aget route-to-type #^Integer %)
    (fn [#^Model model value]
        (insert *metamodel* model)
-       (insert *metamodel* (do-reduce-count model value))
+       (let [tcm (do-reduce-count model value type-count-metadata)]
+	 (insert *metamodel* tcm)
+	 (connect tcm type-count-model)
+	 )
        (insert *metamodel* (do-reduce-sum model :length value))
        (insert *metamodel* (do-reduce-sum model :weight value))
        model ; TODO: do we really need to be able to override the model ? should threading go here ?

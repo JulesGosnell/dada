@@ -359,7 +359,7 @@
 
 ;; count specific stuff - should be in its own file
 
-;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
+;; TODO: pass through reduction key - e.g. count(weight) - will java allow this ?
 (defn #^Metadata count-reducer-metadata [] (class-metadata "org.dada.core.reducer.Count" Object :key :version [:key String :version Integer :count Number]))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
@@ -375,12 +375,15 @@
      )
     ))
 
-(defn do-reduce-count [#^Model model key-value]
-  (let [tgt-metadata (count-reducer-metadata)
-	strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
+(defn do-reduce-count
+  ([#^Model model key-value]
+   (do-reduce-count model key-value (count-reducer-metadata))
+   )
+  ([#^Model model key-value #^Metadata tgt-metadata]
+   (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")
 	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
-    (connect model reducer)))
+    (connect model reducer))))
 
 ;;----------------------------------------
 ;; refactored to here
