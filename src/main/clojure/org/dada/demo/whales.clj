@@ -166,13 +166,13 @@
 ;; demonstrate reduction (sum)
 ;;----------------------------------------
 
-(insert *metamodel* (do-reduce-count whales :length))
+(insert *metamodel* (do-reduce-count whales))
 (insert *metamodel* (do-reduce-sum whales :length))
 (insert *metamodel* (do-reduce-sum whales :weight))
-(insert *metamodel* (do-reduce-count heavier-whales-length :length))
+(insert *metamodel* (do-reduce-count heavier-whales-length))
 (insert *metamodel* (do-reduce-sum heavier-whales-length :length))
 (insert *metamodel* (do-reduce-sum longer-whales-weight :weight))
-(insert *metamodel* (do-reduce-count longer-whales-weight :weight))
+(insert *metamodel* (do-reduce-count longer-whales-weight))
 
 ;;----------------------------------------
 ;; demonstrate splitting [and more reduction)
@@ -188,10 +188,10 @@
    #(aget route-to-type #^Integer %)
    (fn [#^Model model]
        (insert *metamodel* model)
-       (insert *metamodel* (do-reduce-count model :length))
+       (insert *metamodel* (do-reduce-count model))
        (insert *metamodel* (do-reduce-sum model :length))
        (insert *metamodel* (do-reduce-sum model :weight))
-       model				; TODO: do we really need to be able to override the model ? should threading go here ?
+       model ; TODO: do we really need to be able to override the model ? should threading go here ?
        )
    ))
 

@@ -353,12 +353,8 @@
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
 (defn #^Metadata count-reducer-metadata [] (class-metadata "org.dada.core.reducer.Count" Object :key :version [:key String :version Integer :count Number]))
 
-(defn make-count-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
-  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
-	accessor (fn [value] (.get getter value))
-	new-value (fn [#^Update update] (accessor (.getNewValue update)))
-	old-value (fn [#^Update update] (accessor (.getOldValue update)))
-	creator (.getCreator tgt-metadata)]
+(defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
+  (let [creator (.getCreator tgt-metadata)]
     (proxy
      [Reducer$Strategy]
      []
@@ -370,11 +366,11 @@
      )
     ))
 
-(defn do-reduce-count [#^Model model #^Keyword attribute-key]
+(defn do-reduce-count [#^Model model]
   (let [tgt-metadata (count-reducer-metadata)
-	strategy (make-count-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
-	view-name-fn #(str "count(" % ")")
-	reducer (make-reducer model attribute-key strategy tgt-metadata view-name-fn)]
+	strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
+	view-name-fn (fn [arg] "count()")
+	reducer (make-reducer model :count strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
 
 ;;----------------------------------------
