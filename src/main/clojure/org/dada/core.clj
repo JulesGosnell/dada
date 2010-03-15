@@ -283,7 +283,16 @@
   (let [map (new ConcurrentHashMap)
 	prefix (str (.getName src-model) "." (name key) "=")
 	metadata (.getMetadata src-model)
-	view-factory (proxy [Factory] [] (create [key] (.decouple #^ServiceFactory *internal-view-service-factory* (view-hook (model (str prefix (route-to-value key)) metadata)))))
+	view-factory (proxy
+		      [Factory]
+		      []
+		      (create [key]
+			      (let [value (route-to-value key)
+				    view (model (str prefix value) metadata)]
+				(.decouple
+				 #^ServiceFactory *internal-view-service-factory*
+				 (view-hook view value)))
+			      ))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
 	getter (.getAttributeGetter metadata (name key))]
@@ -309,10 +318,10 @@
 ;;----------------------------------------
 
 (defn make-reducer
-  [#^Model src-model #^Keyword attr-key #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
-  (let [attr-name (name attr-key)
-	view-name (str (.getName src-model) "." (name-fn attr-name))]
-    (Reducer. view-name tgt-metadata attr-name strategy)))
+  [#^Model src-model #^Keyword key-key key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  (let [key-name (name key-key)
+	view-name (str (.getName src-model) "." (name-fn key-name))]
+    (Reducer. view-name tgt-metadata key-value strategy)))
 
 ;; sum specific stuff - should be in its own file
 
@@ -341,11 +350,11 @@
      (apply [currentValue delta] (+ currentValue delta))
      )))
 
-(defn do-reduce-sum [#^Model model #^Keyword attribute-key]
+(defn do-reduce-sum [#^Model model #^Keyword attribute-key attribute-value]
   (let [tgt-metadata (sum-reducer-metadata)
 	strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
 	view-name-fn #(str "sum(" % ")")
-	reducer (make-reducer model attribute-key strategy tgt-metadata view-name-fn)]
+	reducer (make-reducer model attribute-key attribute-value strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
 
 ;; count specific stuff - should be in its own file
@@ -366,11 +375,11 @@
      )
     ))
 
-(defn do-reduce-count [#^Model model]
+(defn do-reduce-count [#^Model model key-value]
   (let [tgt-metadata (count-reducer-metadata)
 	strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")
-	reducer (make-reducer model :count strategy tgt-metadata view-name-fn)]
+	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
 
 ;;----------------------------------------
