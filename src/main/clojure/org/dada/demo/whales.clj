@@ -91,17 +91,18 @@
 (def #^Metadata whale-metadata (apply metadata Whale :time :version attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
+(def num-whales 10000)
+(def start-time (System/currentTimeMillis))
+
 (insert *metamodel* whales)
 
 ;; create 10,000 whales and insert them into model
 (insert-n
  whales
- (let [num-whales 10000
-       time (System/currentTimeMillis)
-       #^Creator creator (.getCreator whale-metadata)
+ (let [#^Creator creator (.getCreator whale-metadata)
        max-length-x-100 (* max-length 100)
        max-weight-x-100 (* max-weight 100)]
-   (for [id (range time (+ time num-whales))]
+   (for [id (range start-time (+ start-time num-whales))]
      (.create
       creator
       (into-array
@@ -207,6 +208,17 @@
        )
    ))
 
+;; (do-split
+;;    whales
+;;    :time
+;;    false
+;;    #(mod % 10)
+;;    #(aget route-to-type #^Integer %)
+;;    (fn [#^Model model value]
+;;        (insert *metamodel* model)
+;;        model)
+;;    )
+
 ;; TODO: Reducers need to support variable length set of attribute keys
 
 ;;----------------------------------------
@@ -231,3 +243,7 @@
 
 ;; TODO - factory comes from core
 
+;;----------------------------------------
+;; TODO
+;; simplify splitting - Sparse splitting should use Object keys, not only int
+;; transform needs to suppport synthetic attributes
