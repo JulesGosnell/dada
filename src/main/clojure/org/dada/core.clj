@@ -23,8 +23,8 @@
 	      Model
 	      Reducer
 	      Reducer$Strategy
-	      Router
-	      Router$Strategy
+	      Splitter
+	      Splitter$Strategy
 	      ServiceFactory
 	      SparseOpenLazyViewTable
 	      Transformer
@@ -277,7 +277,7 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-route #^IFn route-to-value #^IFn view-hook]
+  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-key #^IFn key-to-value #^IFn view-hook]
   (let [map (new ConcurrentHashMap)
 	prefix (str (.getName src-model) "." (name key) "=")
 	metadata (.getMetadata src-model)
@@ -285,7 +285,7 @@
 		      [Factory]
 		      []
 		      (create [key]
-			      (let [value (route-to-value key)
+			      (let [value (key-to-value key)
 				    view (model (str prefix value) metadata)]
 				(.decouple
 				 #^ServiceFactory *internal-view-service-factory*
@@ -295,18 +295,18 @@
 	table (new SparseOpenLazyViewTable map lazy-factory)
 	getter (.getAttributeGetter metadata (name key))]
     (new
-     Router
+     Splitter
      (proxy
-      [Router$Strategy]
+      [Splitter$Strategy]
       []
       (getMutable [] mutable)
-      (getRoute [value] (value-to-route (.get getter value)))
-      (getViews [route] (list (. table get route)))
+      (getKey [value] (value-to-key (.get getter value)))
+      (getViews [key] (list (. table get key)))
       ))))
     
 (defn do-split
-  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-route #^IFn route-to-value #^IFn view-hook]
-  (connect src-model (make-splitter src-model key mutable value-to-route route-to-value view-hook))
+  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-key #^IFn key-to-value #^IFn view-hook]
+  (connect src-model (make-splitter src-model key mutable value-to-key key-to-value view-hook))
   )
 
 ;;----------------------------------------

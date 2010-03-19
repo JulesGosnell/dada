@@ -179,9 +179,7 @@
 ;; demonstrate splitting [and more reduction)
 ;;----------------------------------------
 
-(let [type-to-route (apply hash-map (interleave types (range (count types))))
-      #^"[Ljava.lang.String;" route-to-type (into-array String types)
-      type-count-metadata (class-metadata
+(let [type-count-metadata (class-metadata
        			   "org.dada.demo.whales.TypeCount"
        			   Object
        			   :key
@@ -194,8 +192,8 @@
    whales
    :type
    false
-   type-to-route
-   #(aget route-to-type #^Integer %)
+   identity
+   identity
    (fn [#^Model model value]
        (insert *metamodel* model)
        (let [tcm (do-reduce-count model value type-count-metadata)]
@@ -213,7 +211,7 @@
 ;;    :time
 ;;    false
 ;;    #(mod % 10)
-;;    #(aget route-to-type #^Integer %)
+;;    #(aget key-to-type #^Integer %)
 ;;    (fn [#^Model model value]
 ;;        (insert *metamodel* model)
 ;;        model)
