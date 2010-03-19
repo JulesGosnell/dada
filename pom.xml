@@ -27,7 +27,7 @@
     <cobertura.datafile>target/cobertura/cobertura.ser</cobertura.datafile>
     <cobertura.classes>target/generated-classes/cobertura</cobertura.classes>
     <cobertura.site>target/site/cobertura</cobertura.site>
-    <cobertura.version>1.9.3</cobertura.version>
+    <cobertura.version>1.9.4.1</cobertura.version>
     <spring.version>2.5.6.SEC01</spring.version>
     <slf4j.version>1.5.10</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
@@ -271,7 +271,7 @@
 	  </execution>
 	</executions>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
