@@ -33,11 +33,11 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
-import org.dada.core.Router.Strategy;
+import org.dada.core.Splitter.Strategy;
 
-public class RouterTestCase extends TestCase {
+public class SplitterTestCase extends TestCase {
 
-	public void testRouteOnImmutableAttribute() {
+	public void testKeyOnImmutableAttribute() {
 		View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			
 			@Override
@@ -57,17 +57,17 @@ public class RouterTestCase extends TestCase {
 			}
 
 			@Override
-			public int getRoute(Datum<Integer> value) {
+			public Object getKey(Datum<Integer> value) {
 				return value.getId();
 			}
 
 			@Override
-			public Collection<View<Datum<Integer>>> getViews(int route) {
+			public Collection<View<Datum<Integer>>> getViews(Object key) {
 				return views;
 			}
 		};
 
-		View<Datum<Integer>> router = new Router<Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> Splitter = new Splitter<Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -79,7 +79,7 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> insertion = new Update<Datum<Integer>>(null, v0);
 		Collection<Update<Datum<Integer>>> insertions = Collections.singleton(insertion);
-		router.update(insertions, nil, nil);
+		Splitter.update(insertions, nil, nil);
 
 		DatumImpl<Integer> v1 = new DatumImpl<Integer>(0, 1) {
 			@Override
@@ -89,7 +89,7 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> update = new Update<Datum<Integer>>(v0, v1);
 		Collection<Update<Datum<Integer>>> updates = Collections.singleton(update);
-		router.update(nil, updates, nil);
+		Splitter.update(nil, updates, nil);
 
 		DatumImpl<Integer> v2 = new DatumImpl<Integer>(0, 2) {
 			@Override
@@ -99,10 +99,10 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> deletion = new Update<Datum<Integer>>(v1, v2);
 		Collection<Update<Datum<Integer>>> deletions = Collections.singleton(deletion);
-		router.update(nil, nil, deletions);
+		Splitter.update(nil, nil, deletions);
 	}
 
-	public void testRouteOnmutableAttribute() {
+	public void testKeyOnmutableAttribute() {
 		View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			
 			@Override
@@ -122,17 +122,17 @@ public class RouterTestCase extends TestCase {
 			}
 
 			@Override
-			public int getRoute(Datum<Integer> value) {
+			public Object getKey(Datum<Integer> value) {
 				return value.getVersion();
 			}
 
 			@Override
-			public Collection<View<Datum<Integer>>> getViews(int route) {
+			public Collection<View<Datum<Integer>>> getViews(Object key) {
 				return views;
 			}
 		};
 
-		View<Datum<Integer>> router = new Router<Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> Splitter = new Splitter<Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -144,7 +144,7 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> insertion = new Update<Datum<Integer>>(null, v0);
 		Collection<Update<Datum<Integer>>> insertions = Collections.singleton(insertion);
-		router.update(insertions, nil, nil);
+		Splitter.update(insertions, nil, nil);
 
 		DatumImpl<Integer> v1 = new DatumImpl<Integer>(0, 1) {
 			@Override
@@ -154,7 +154,7 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> update = new Update<Datum<Integer>>(v0, v1);
 		Collection<Update<Datum<Integer>>> updates = Collections.singleton(update);
-		router.update(nil, updates, nil);
+		Splitter.update(nil, updates, nil);
 		
 		{
 		DatumImpl<Integer> v11 = new DatumImpl<Integer>(1, 1) {
@@ -165,7 +165,7 @@ public class RouterTestCase extends TestCase {
 		};
 		Update<Datum<Integer>> update1 = new Update<Datum<Integer>>(v0, v11);
 		Collection<Update<Datum<Integer>>> updates1 = Collections.singleton(update1);
-		router.update(nil, updates1, nil);
+		Splitter.update(nil, updates1, nil);
 		}
 	}
 }

@@ -30,124 +30,86 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.collections.MultiMap;
+import org.apache.commons.collections.map.MultiValueMap;
 
-public class Splitter<K, GK, V> implements View<V> {
+public class Splitter<V> implements View<V> {
 
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
+	// TODO: if we managed the MultiMaps via this API we could optimise them
+	// to arrays when dealing with immutable attributes
+	public interface Strategy<V> {
+		boolean getMutable();
+		Object getKey(V value);
+		Collection<View<V>> getViews(Object key);
+	}
 
-	public interface Factory<K, V> { Collection<View<V>> create(K key); };
-
+	private final Strategy<V> strategy;
 	private final boolean mutable;
-	private final Getter<K, V> getter;
-	private final Map<K, Collection<View<V>>> keyToViews;
-	private final Factory<K, V> factory;
-	
-	public Splitter(boolean mutable, Getter<K, V> getter, Map<K, Collection<View<V>>> valueToViews, Factory<K, V> factory) {
-		this.mutable = mutable;
-		this.getter = getter;
-		this.keyToViews = valueToViews;
-		this.factory = factory;
+
+	public Splitter(Strategy<V> strategy) {
+		this.strategy = strategy;
+		this.mutable = strategy.getMutable();
 	}
 
-	private class Batch<V> {
-		Collection<Update<V>> insertions;
-		Collection<Update<V>>  updates;
-		Collection<Update<V>> deletions;
-	}
+	private Collection<Update<V>> empty = new ArrayList<Update<V>>(0);
 
-	private Batch<V> get(Map<K, Batch<V>> map, K key) {
-		// naive impl to start
-		Batch<V> collection = map.get(key);
-		if (collection == null)
-			map.put(key, collection = new Batch<V>());
-		return collection;
-	}
-
-	private Collection<Update<V>> NIL = Collections.emptyList();
-	
-	private Collection<Update<V>> dft(Collection<Update<V>> updates) {
-		return updates == null ? NIL : updates;
-	}
-	
+	@SuppressWarnings("unchecked")
 	@Override
-	public void update(Collection<Update<V>> insertions,Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		Map<K, Batch<V>> map = new HashMap<K, Batch<V>>();
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
 
-		// TODO: mutability
+//		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
+//			for (Update<V> insertion : insertions) {
+//				for (View<K, V> view : strategy.getViews(strategy.getRoute(insertion.getNewValue()))) {
+//					view.update(insertions, updates, deletions);
+//				}
+//			}
+//			return;
+//		}
+
+		// split updates according to Route...
+		MultiMap keyToInsertions = new MultiValueMap();
+		MultiMap keyToUpdates = new MultiValueMap();
+		MultiMap keyToDeletions = new MultiValueMap();
 
 		for (Update<V> insertion : insertions) {
-			V value = insertion.getNewValue();
-			Batch<V> batch = get(map, getter.get(value));
-			Collection<Update<V>> i = batch.insertions;
-			if (i == null)
-				i = (batch.insertions = new ArrayList<Update<V>>());
-			i.add(insertion);
+			Object key = strategy.getKey(insertion.getNewValue());
+			keyToInsertions.put(key, insertion);
 		}
-
-		// TODO: updates
-
 		for (Update<V> update : updates) {
-			V newValue = update.getNewValue();
-			K newAttribute = getter.get(newValue);
-			Batch<V> newBatch = get(map, newAttribute);
-			K oldAttribute = null; // TODO: outwit compiler ? - is this safe ?
-			// TODO: NPEs...
-			if (mutable && 
-					((oldAttribute = getter.get(update.getOldValue())) != newAttribute) || // they could both be null
-					(oldAttribute != null && oldAttribute.equals(newAttribute))) {
-				Batch<V> oldBatch = get(map, oldAttribute);
-				Collection<Update<V>> d = oldBatch.deletions;
-				if (d == null)
-					d = (oldBatch.deletions= new ArrayList<Update<V>>());
-				d.add(update);
-				Collection<Update<V>> i = newBatch.insertions;
-				if (i == null)
-					i = (newBatch.insertions = new ArrayList<Update<V>>());
-				i.add(update);
-
+			Object newKey = strategy.getKey(update.getNewValue());
+			Object oldKey;
+			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive
+			// test if possible - therefore we cannot produce coverage for the case where an immutable attribute is mutated...
+			if (mutable && (oldKey = strategy.getKey(update.getOldValue())) != newKey) {
+				keyToInsertions.put(newKey, update);
+				keyToDeletions.put(oldKey, update);
 			} else {
-				Collection<Update<V>> u = newBatch.updates;
-				if (u == null)
-					u = (newBatch.updates = new ArrayList<Update<V>>());
-				u.add(update);
+				keyToUpdates.put(newKey, update);
 			}
 		}
-
 		for (Update<V> deletion : deletions) {
-			V value = deletion.getOldValue();
-			Batch<V> event = get(map, getter.get(value));
-			Collection<Update<V>> i = event.deletions;
-			if (i == null)
-				i = (event.deletions = new ArrayList<Update<V>>());
-			i.add(deletion);
+			Object key = strategy.getKey(deletion.getOldValue());
+			keyToInsertions.put(key, deletion);
 		}
-
-
-		for (Entry<K, Batch<V>> entry : map.entrySet()) {
-			K key = entry.getKey();
-			Batch<V> event = entry.getValue();
-			Collection<View<V>> views = keyToViews.get(key);
-			if (views == null) {
-				if (factory != null) {
-					views = factory.create(key);
-				} else {
-					views = Collections.emptyList();
-				}
-			}
-			for (View<V> view : views) {
-				try {
-					view.update(dft(event.insertions), dft(event.updates), dft(event.deletions));
-				} catch (Throwable t) {
-					logger.error("problem updating view", t);
-				}
+		// then dispatch on viewers...
+		// TODO: optimise for single update case...
+		Set<Object> keys = new HashSet<Object>();
+		keys.addAll(keyToInsertions.keySet());
+		keys.addAll(keyToUpdates.keySet());
+		keys.addAll(keyToDeletions.keySet());
+		for (Object key : keys) {
+			Collection<Update<V>> insertionsOut = (Collection<Update<V>>) keyToInsertions.get(key);
+			Collection<Update<V>> updatesOut = (Collection<Update<V>>) keyToUpdates.get(key);
+			Collection<Update<V>> deletionsOut = (Collection<Update<V>>) keyToDeletions.get(key);
+			for (View<V> view : strategy.getViews(key)) {
+				view.update(insertionsOut == null ? empty : insertionsOut,
+							updatesOut == null ? empty : updatesOut,
+							deletionsOut == null ? empty : deletionsOut);
 			}
 		}
 	}
+
 }
