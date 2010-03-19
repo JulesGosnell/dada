@@ -128,13 +128,11 @@
 (defn make-instance [#^Class class & args]
   (clojure.lang.Reflector/invokeConstructor class (to-array args)))
 
-(require '[clojure.contrib.str-utils2 :as s])
-
 ;; TODO: how do we confirm that with-meta is doing the right thing for
 ;; both input and output types...
 
 (defn make-getter-name [#^String property-name]
-  (str "get" (s/capitalize property-name)))
+  (str "get" (.toUpperCase (.substring property-name 0 1)) (.substring property-name 1 (.length property-name))))
 
 (defn getter-2 [#^Class input-type #^Class output-type #^String method-name]
   (let [method-symbol (symbol (str "." method-name))
