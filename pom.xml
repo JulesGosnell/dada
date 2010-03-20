@@ -28,7 +28,7 @@
     <cobertura.classes>target/generated-classes/cobertura</cobertura.classes>
     <cobertura.site>target/site/cobertura</cobertura.site>
     <cobertura.version>1.9.4.1</cobertura.version>
-    <spring.version>2.5.6.SEC01</spring.version>
+    <spring.version>3.0.1.RELEASE</spring.version>
     <slf4j.version>1.5.11</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
     <junit.version>3.8.1</junit.version>
@@ -38,7 +38,7 @@
     <asm.version>3.2</asm.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
-    <java.agent>-javaagent:${settings.localRepository}/org/springframework/spring-agent/${spring.version}/spring-agent-${spring.version}.jar</java.agent>   <!-- for Spring Aspect Load Time Weaving -->
+    <java.agent>-javaagent:${settings.localRepository}/org/springframework/spring-instrument/${spring.version}/spring-instrument-${spring.version}.jar</java.agent>   <!-- for Spring Aspect Load Time Weaving -->
     <dotnet.hack>dummy</dotnet.hack>
   </properties>
 
@@ -170,7 +170,7 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
-      <artifactId>spring-agent</artifactId>
+      <artifactId>spring-instrument</artifactId>
       <version>${spring.version}</version>
     </dependency>
     <dependency>
