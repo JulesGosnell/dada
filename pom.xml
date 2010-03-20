@@ -29,7 +29,7 @@
     <cobertura.site>target/site/cobertura</cobertura.site>
     <cobertura.version>1.9.4.1</cobertura.version>
     <spring.version>2.5.6.SEC01</spring.version>
-    <slf4j.version>1.5.10</slf4j.version>
+    <slf4j.version>1.5.11</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
     <junit.version>3.8.1</junit.version>
     <java.version>1.6</java.version>
