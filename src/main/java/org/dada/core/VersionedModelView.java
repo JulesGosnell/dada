@@ -114,7 +114,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 						current = current.without(key);
 					} catch (Exception e) {
 						// TODO: difficult to cover this bit of code - needs some thought...
-						logger.warn("unable to perform deletion: {}", key, e);
+						logger.warn("unable to perform deletion: {}", e, key);
 					}
 					historic = historic.assoc(keyGetter.get(newValue), newValue);
 					deletionsOut.add(deletion);

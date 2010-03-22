@@ -35,10 +35,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // N.B. we shouldn't really be writing/reading files as part of the testsuite - but it's just the once...
 

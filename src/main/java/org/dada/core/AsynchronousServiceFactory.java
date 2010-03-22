@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 /**
  * A ServiceFactory that returns a proxy for its target, invocations upon which are queued and executed on another thread.
@@ -78,7 +78,7 @@ public class AsynchronousServiceFactory<T> implements ServiceFactory<T> {
 			try {
 				method.invoke(target, args);
 			} catch (Throwable t) {
-				log.error("problem during async invocation ({})", this, t);
+				log.error("problem during async invocation ({})", t, this);
 			} finally {
 				lock.unlock();
 			}

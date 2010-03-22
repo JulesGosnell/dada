@@ -32,8 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 import EDU.oswego.cs.dl.util.concurrent.Sync;
 

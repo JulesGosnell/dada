@@ -30,13 +30,6 @@ package org.dada.core;
 
 import java.util.Collection;
 
-import org.dada.core.IntegerDatum;
-import org.dada.core.IntrospectiveMetadata;
-import org.dada.core.Metadata;
-import org.dada.core.Update;
-import org.dada.core.View;
-import org.dada.core.IntrospectiveMetadataTestCase.Test;
-
 import junit.framework.TestCase;
 
 public class ViewTestCase extends TestCase {

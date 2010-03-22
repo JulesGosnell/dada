@@ -37,8 +37,8 @@ import javax.swing.table.AbstractTableModel;
 import org.dada.core.Metadata;
 import org.dada.core.Update;
 import org.dada.core.View;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 public class TableModelView<K, V> extends AbstractTableModel implements View<V> {
 

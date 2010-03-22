@@ -30,10 +30,6 @@ package org.dada.consensus.paxos;
 
 import java.io.IOException;
 
-import org.dada.consensus.paxos.Acceptor;
-import org.dada.consensus.paxos.AcceptorImpl;
-import org.dada.consensus.paxos.Proposal;
-
 import junit.framework.TestCase;
 
 /**

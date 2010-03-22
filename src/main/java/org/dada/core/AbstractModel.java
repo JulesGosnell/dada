@@ -101,7 +101,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			try {
 				view.update(insertions, updates, deletions);
 			} catch (Throwable t) {
-				logger.error("error during view notification: {}", view, t);
+				logger.error("error during view notification: {}", t, view);
 			}
 		}
 	}

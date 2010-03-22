@@ -30,11 +30,8 @@ package org.dada.core;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import org.jmock.integration.junit3.MockObjectTestCase;
-
-import junit.framework.TestCase;
 
 public class AbstractModelTestCase extends MockObjectTestCase {
 

@@ -28,43 +28,55 @@
  */
 package org.dada.slf4j;
 
-import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class LoggerTestCase extends MockObjectTestCase {
 	
-	public void test() {
-		final org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
-		final Logger logger = new Logger(slf4jLogger);
+//	public void test() {
+//		final org.slf4j.Logger slf4jLogger = mock(org.slf4j.Logger.class);
+//		final Logger logger = new Logger(slf4jLogger);
+//
+//		final String string = "string";
+//		final Object object = new Object();
+//		final Throwable throwable = new Throwable();
+//		
+//		checking(new Expectations(){{
+//            Object[] objects = new Object[]{object};
+//			one(slf4jLogger).trace(string, objects);
+//            one(slf4jLogger).trace(string, throwable);
+//			one(slf4jLogger).debug(string, objects);
+//            one(slf4jLogger).debug(string, throwable);
+//			one(slf4jLogger).info(string, objects);
+//            one(slf4jLogger).info(string, throwable);
+//			one(slf4jLogger).warn(string, objects);
+//            one(slf4jLogger).warn(string, throwable);
+//			one(slf4jLogger).error(string, objects);
+//            one(slf4jLogger).error(string, throwable);
+//        }});
+//		
+//		logger.trace(string, object);
+//		logger.trace(string, throwable);
+//		logger.debug(string, object);
+//		logger.debug(string, throwable);
+//		logger.info(string, object);
+//		logger.info(string, throwable);
+//		logger.warn(string, object);
+//		logger.warn(string, throwable);
+//		logger.error(string, object);
+//		logger.error(string, throwable);
+//	}
 
-		final String string = "string";
-		final Object object = new Object();
-		final Throwable throwable = new Throwable();
-		
-		checking(new Expectations(){{
-            Object[] objects = new Object[]{object};
-			one(slf4jLogger).trace(string, objects);
-            one(slf4jLogger).trace(string, throwable);
-			one(slf4jLogger).debug(string, objects);
-            one(slf4jLogger).debug(string, throwable);
-			one(slf4jLogger).info(string, objects);
-            one(slf4jLogger).info(string, throwable);
-			one(slf4jLogger).warn(string, objects);
-            one(slf4jLogger).warn(string, throwable);
-			one(slf4jLogger).error(string, objects);
-            one(slf4jLogger).error(string, throwable);
-        }});
-		
-		logger.trace(string, object);
-		logger.trace(string, throwable);
-		logger.debug(string, object);
-		logger.debug(string, throwable);
-		logger.info(string, object);
-		logger.info(string, throwable);
-		logger.warn(string, object);
-		logger.warn(string, throwable);
-		logger.error(string, object);
-		logger.error(string, throwable);
+	public void testSignatures() {
+		Logger  logger = LoggerFactory.getLogger(getClass());
+		logger.warn("0xO");
+		logger.warn("1xO: {} ", new Object());
+		logger.warn("2xO: {} {}", new Object(), new Object());
+		logger.warn("3xO: {} {} {}", new Object(), new Object(), new Object());
+		logger.warn("4xO: {} {} {} {}", new Object(), new Object(), new Object(), new Object());
+		logger.warn("1xT+0xO", new Exception());
+		logger.warn("1xT+1xO: {}", new Exception(), new Object());
+		logger.warn("1xT+2xO: {} {}", new Exception(), new Object(), new Object());
+		logger.warn("1xT+3xO: {} {} {}", new Exception(), new Object(), new Object(), new Object());
+		logger.warn("1xT+4xO: {} {} {} {}", new Exception(), new Object(), new Object(), new Object(), new Object());
 	}
-
 }

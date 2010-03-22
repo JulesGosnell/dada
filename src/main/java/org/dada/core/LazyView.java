@@ -31,8 +31,8 @@ package org.dada.core;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 // TODO - key should be parameter to create, not ctor...
 /**
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LazyView<K, V> implements View<V> {
 
-	private static final Logger LOG = LoggerFactory.getLogger(CompactOpenTable.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LazyView.class);
 
 	private final ConcurrentMap<K, View<V>> map;
 	private final K key;
@@ -74,7 +74,7 @@ public class LazyView<K, V> implements View<V> {
 			if (view == null) init(); // check VOLATILE field without locking - see comment above
 			view.update(insertions, updates, deletions);
 		} catch (Exception e) {
-			LOG.error("problem creating new View: {}", key, e);
+			LOG.error("problem creating new View: {}", e, key);
 		}
 	}
 

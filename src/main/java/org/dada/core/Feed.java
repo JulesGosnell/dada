@@ -34,8 +34,8 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 
 public class Feed<K, V> extends AbstractModel<K, V> {

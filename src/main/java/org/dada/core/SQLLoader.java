@@ -39,8 +39,8 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 public class SQLLoader<K, V> extends AbstractModel<K, V> implements Loader<K, V> {
 
@@ -94,19 +94,19 @@ public class SQLLoader<K, V> extends AbstractModel<K, V> implements Loader<K, V>
 					}
 					
 				} catch (SQLException e) {
-					logger.error("could not execute query: {}", sql, e);
+					logger.error("could not execute query: {}", e, sql);
 				} finally {
 					statement.close();
 				}
 				
 			} catch (SQLException e) {
-				logger.error("could not prepare statement: {}", sql, e);
+				logger.error("could not prepare statement: {}", e, sql);
 			} finally {
 				connection.close();
 			}
 
 		} catch (SQLException e) {
-			logger.error("could not connect to datasource: {}", dataSource, e);
+			logger.error("could not connect to datasource: {}", e, dataSource);
 		}
 	}
 

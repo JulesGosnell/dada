@@ -42,8 +42,8 @@ import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 // TODO: reuse more code between these classes...
 // TODO: support topic/multi-shot result aggregation
@@ -136,7 +136,7 @@ public class RemotingFactory<T> {
 					logger.trace("RESPONDING: {} -> {}", results, replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
-				        logger.warn("problem replying to message: {}", response, e);
+				        logger.warn("problem replying to message: {}", e, response);
 				}
 			}
 		}

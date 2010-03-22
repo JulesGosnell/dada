@@ -37,8 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<Model<Object, Object>> {
 
@@ -82,7 +82,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 			logger.info("registering View ({}) with Model ({})", view, model);
 			return model.registerView(view);
 		} catch (Exception e) {
-			logger.error("unable to export Model: {}", model, e);
+			logger.error("unable to export Model: {}", e, model);
 			return null;
 		}
 	}

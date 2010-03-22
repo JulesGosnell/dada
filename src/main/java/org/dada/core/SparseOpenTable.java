@@ -30,8 +30,8 @@ package org.dada.core;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 /**
  * If asked for a value that is not present create one using given factory, add it to our map and return

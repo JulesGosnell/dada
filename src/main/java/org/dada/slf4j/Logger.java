@@ -42,44 +42,80 @@ public class Logger {
 		this.logger = logger;
 	}
 
+	public boolean isTraceEnabled() {
+		return logger.isTraceEnabled();
+	}
+	public void trace(String string) {
+		logger.trace(string);
+	}
+	public void trace(String string, Throwable throwable) {
+		logger.trace(string, throwable);
+	}
+	public void trace(String string, Throwable throwable, Object... objects) {
+		logger.trace(string, objects);
+		logger.trace("", throwable);
+	}
 	public void trace(String string, Object... objects) {
 		logger.trace(string, objects);
 	}
 
-	public void trace(String string, Throwable throwable) {
-		logger.trace(string, throwable);
+	public boolean isDebugEnabled() {
+		return logger.isDebugEnabled();
 	}
-
+	public void debug(String string) {
+		logger.debug(string);
+	}
+	public void debug(String string, Throwable throwable) {
+		logger.debug(string, throwable);
+	}
+	public void debug(String string, Throwable throwable, Object... objects) {
+		logger.debug(string, objects);
+		logger.debug("", throwable);
+	}
 	public void debug(String string, Object... objects) {
 		logger.debug(string, objects);
 	}
 
-	public void debug(String string, Throwable throwable) {
-		logger.debug(string, throwable);
+	public boolean isInfoEnabled() {
+		return logger.isInfoEnabled();
 	}
-
+	public void info(String string) {
+		logger.info(string);
+	}
 	public void info(String string, Object... objects) {
 		logger.info(string, objects);
 	}
-
-	public void info(String string, Throwable throwable) {
-		logger.info(string, throwable);
+	public void info(String string, Throwable throwable, Object... objects) {
+		logger.info(string, objects);
+		logger.info("", throwable);
 	}
 
+	public boolean isWarnEnabled() {
+		return logger.isWarnEnabled();
+	}
+	public void warn(String string) {
+		logger.warn(string);
+	}
 	public void warn(String string, Object... objects) {
 		logger.warn(string, objects);
 	}
-
-	public void warn(String string, Throwable throwable) {
-		logger.warn(string, throwable);
+	public void warn(String string, Throwable throwable, Object... objects) {
+		logger.warn(string, objects);
+		logger.warn("", throwable);
 	}
 
+	public boolean isErrorEnabled() {
+		return logger.isErrorEnabled();
+	}
+	public void error(String string) {
+		logger.error(string);
+	}
 	public void error(String string, Object... objects) {
 		logger.error(string, objects);
 	}
-
-	public void error(String string, Throwable throwable) {
-		logger.error(string, throwable);
+	public void error(String string, Throwable throwable, Object... objects) {
+		logger.error(string, objects);
+		logger.error("", throwable);
 	}
 
 }
