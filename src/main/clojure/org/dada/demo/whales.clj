@@ -167,13 +167,13 @@
 ;; demonstrate reduction (sum)
 ;;----------------------------------------
 
-(insert *metamodel* (do-reduce-count whales "whales"))
-(insert *metamodel* (do-reduce-sum whales :length "whales"))
-(insert *metamodel* (do-reduce-sum whales :weight "whales"))
-(insert *metamodel* (do-reduce-count heavier-whales-length "heavier-whales"))
-(insert *metamodel* (do-reduce-sum heavier-whales-length :length "heavier-whales"))
-(insert *metamodel* (do-reduce-sum longer-whales-weight :weight "longer-whales"))
-(insert *metamodel* (do-reduce-count longer-whales-weight "longer-whales"))
+(insert *metamodel* (do-reduce-count whales String "whales"))
+(insert *metamodel* (do-reduce-sum whales :length String "whales"))
+(insert *metamodel* (do-reduce-sum whales :weight String "whales"))
+(insert *metamodel* (do-reduce-count heavier-whales-length String "heavier-whales"))
+(insert *metamodel* (do-reduce-sum heavier-whales-length :length String "heavier-whales"))
+(insert *metamodel* (do-reduce-sum longer-whales-weight :weight String "longer-whales"))
+(insert *metamodel* (do-reduce-count longer-whales-weight String "longer-whales"))
 
 ;;----------------------------------------
 ;; demonstrate splitting [and more reduction)
@@ -196,12 +196,12 @@
    identity
    (fn [#^Model model value]
        (insert *metamodel* model)
-       (let [tcm (do-reduce-count model value type-count-metadata)]
+       (let [tcm (do-reduce-count model String value type-count-metadata)]
 	 (insert *metamodel* tcm)
 	 (connect tcm type-count-model)
 	 )
-       (insert *metamodel* (do-reduce-sum model :length value))
-       (insert *metamodel* (do-reduce-sum model :weight value))
+       (insert *metamodel* (do-reduce-sum model :length String value))
+       (insert *metamodel* (do-reduce-sum model :weight String value))
        model ; TODO: do we really need to be able to override the model ? should threading go here ?
        )
    ))
