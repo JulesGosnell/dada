@@ -145,6 +145,19 @@
 (insert *metamodel* heavier-whales-length)
 
 ;;----------------------------------------
+;; demonstrate transformation - a synthetic field - metric tons per metre
+;;----------------------------------------
+
+(insert *metamodel* 
+	(do-transform
+	 "tonsPerMetre"
+	 whales
+	 :time
+	 :version 
+	 (list :tonsPerMetre Number '(:weight :length) (fn [weight length] (if (= length 0) 0 (/ weight length)))))
+	)
+
+;;----------------------------------------
 ;; try a transformation on top of a filtration
 ;; e.g. select time, version, length from whales where type="narwhal"
 ;;----------------------------------------

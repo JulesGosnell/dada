@@ -252,6 +252,7 @@
 (defmulti do-transform-attribute (fn [descrip md] (class descrip)))
 
 ;; simple one-to-one mapping
+;; key -> [key type fn]
 (defmethod do-transform-attribute 
   clojure.lang.Keyword [#^Keyword key #^Metadata md]
   (let [key-name (name key)
@@ -260,20 +261,27 @@
 	value-fn (fn [value] (.get getter value))]
     [key type value-fn]))
 
-;;(defmethod do-transform-attribute
-;;  clojure.lang.PersistentList [#^ISeq attribute #^Metadata md]
-;;  (apply do-transform-attribute attribute))
+;; synthetic attribute
+;; [key type keys fn] -> [key type fn]
+(defmethod do-transform-attribute
+  clojure.lang.PersistentList [attribute #^Metadata md]
+  (let [[key type keys transform-fn] attribute
+	getters (map #(.getAttributeGetter md (name %)) keys)
+	product-fn (fn [value] (map (fn [#^Getter getter] (.get getter value)) getters))
+	init-fn (fn [value] (apply transform-fn (product-fn value)))]
+    (list key type init-fn)))
 
 (defn third [s] (nth s 2))
 
 (defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & 
-		    #^ISeq attribute-keys]
+		    #^ISeq attribute-descrips]
   (let [#^Metadata model-metadata (.getMetadata src-model)
 	key-details (do-transform-attribute key-key model-metadata)
 	key-type (second key-details)
 	version-details (do-transform-attribute version-key model-metadata)
 	version-type (second version-details)
-	attribute-details (map #(do-transform-attribute % model-metadata) attribute-keys)
+	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
+	attribute-keys (map first attribute-details)
 	attribute-types (map second attribute-details)
 	init-fns 
 	(list*
