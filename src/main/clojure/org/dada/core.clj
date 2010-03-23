@@ -235,7 +235,7 @@
 ;; TODO: creation of extra literal and composed values
 ;;----------------------------------------
 
-(defn make-transformer [#^ISeq getters #^Metadata metadata #^View view]
+(defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
   (new
    Transformer
    (list view)
@@ -245,28 +245,48 @@
     (transform 
      [input]
      ;; TODO: this code needs to be FAST - executed online
-     (.create metadata #^Collection (map (fn [#^Getter getter] (.get getter input)) getters)))
+     (.create metadata #^Collection (map (fn [#^IFn init-fn] (init-fn input)) init-fns)))
     )))
+
+;; returns [key type init-fn]
+(defmulti do-transform-attribute (fn [descrip md] (class descrip)))
+
+;; simple one-to-one mapping
+(defmethod do-transform-attribute 
+  clojure.lang.Keyword [#^Keyword key #^Metadata md]
+  (let [key-name (name key)
+	type(.getAttributeType md key-name)
+	getter (.getAttributeGetter md key-name)
+	value-fn (fn [value] (.get getter value))]
+    [key type value-fn]))
+
+;;(defmethod do-transform-attribute
+;;  clojure.lang.PersistentList [#^ISeq attribute #^Metadata md]
+;;  (apply do-transform-attribute attribute))
+
+(defn third [s] (nth s 2))
 
 (defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & 
 		    #^ISeq attribute-keys]
   (let [#^Metadata model-metadata (.getMetadata src-model)
-	get-attribute-type (fn [key] (.getAttributeType model-metadata (name key)))
-	key-type (get-attribute-type key-key)
-	version-type (get-attribute-type version-key)
-	attribute-types (map get-attribute-type attribute-keys)
-	attribute-getters 
+	key-details (do-transform-attribute key-key model-metadata)
+	key-type (second key-details)
+	version-details (do-transform-attribute version-key model-metadata)
+	version-type (second version-details)
+	attribute-details (map #(do-transform-attribute % model-metadata) attribute-keys)
+	attribute-types (map second attribute-details)
+	init-fns 
 	(list*
-	 (.getAttributeGetter model-metadata (name key-key))
-	 (.getAttributeGetter model-metadata (name version-key))
-	 (map (fn [attribute-key] (.getAttributeGetter model-metadata (name attribute-key))) attribute-keys))
+	 (third key-details)
+	 (third version-details)
+	 (map third attribute-details))
 	attributes (interleave attribute-keys attribute-types)
 	class-name (name (gensym "org.dada.demo.whales.Transform"))
 	superclass Object
 	view-metadata (class-metadata class-name superclass key-key version-key (concat (list key-key key-type version-key version-type) attributes))
 	view-name (str (.getName src-model) "." suffix)
 	view (model view-name view-metadata)
-	transformer (make-transformer attribute-getters view-metadata view)]
+	transformer (make-transformer init-fns view-metadata view)]
     (connect src-model transformer)
     view))
 
