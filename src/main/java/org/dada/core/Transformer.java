@@ -31,6 +31,9 @@ package org.dada.core;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
+
 /**
  * A Connector that performs a one-for-one pluggable transformation on Updates flowing through it.
 
@@ -41,36 +44,69 @@ import java.util.Collection;
  */
 public class Transformer<IV, OV> extends Connector<IV, OV> {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(Transformer.class);
+
 	public interface Transform<IV, OV> {
 		OV transform(IV value);
 	}
 	
-	private final Transform<IV, OV> transform;
+	public interface Strategy<IV, OV> {
+		Update<OV> insert(Update<IV> insertion);
+		Update<OV> update(Update<IV> alteration);
+		Update<OV> delete(Update<IV> deletion);
+	}
 	
-	public Transformer(Collection<View<OV>> views, Transform<IV, OV> transform) {
+	private final Strategy<IV, OV> strategy;
+
+	public Transformer(Collection<View<OV>> views, Strategy<IV, OV> strategy) {
 		super(views);
-		this.transform = transform;
+		this.strategy = strategy;
 	}
 
-	protected Update<OV> transform(Update<IV> input) {
-		IV oldValue = input.getOldValue();
-		IV newValue = input.getNewValue();
-		return new Update<OV>(oldValue == null ? (OV)null : transform.transform(oldValue),
-							  newValue == null ? (OV)null : transform.transform(newValue));
-	}
+	public Transformer(Collection<View<OV>> views, final Transform<IV, OV> transform) {
+		super(views);
+		this.strategy = new Strategy<IV, OV>() {
 
-	protected Collection<Update<OV>> transform(Collection<Update<IV>> inputs) {
-		Collection<Update<OV>> outputs = new ArrayList<Update<OV>>(inputs.size());
-		for (Update<IV> input: inputs) {
-			outputs.add(transform(input));
-		}
-		return outputs;
+			@Override
+			public Update<OV> insert(Update<IV> insertion) {
+				return new Update<OV>(null, transform.transform(insertion.getNewValue()));
+			}
+
+			@Override
+			public Update<OV> update(Update<IV> alteration) {
+				return new Update<OV>(
+						transform.transform(alteration.getOldValue()),
+						transform.transform(alteration.getNewValue()));
+			}
+
+			@Override
+			public Update<OV> delete(Update<IV> deletion) {
+				return new Update<OV>(transform.transform(deletion.getOldValue()), null);
+			}
+			
+		};
 	}
 
 	@Override
-	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> updates, Collection<Update<IV>> deletions) {
+	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> alterations, Collection<Update<IV>> deletions) {
+		Collection<Update<OV>> i = new ArrayList<Update<OV>>(insertions.size());
+		for (Update<IV> insertion :  insertions)
+			i.add(strategy.insert(insertion));
+		
+		Collection<Update<OV>> a = new ArrayList<Update<OV>>(alterations.size());
+		for (Update<IV> alteration :  alterations)
+			a.add(strategy.update(alteration));
+
+		Collection<Update<OV>> d = new ArrayList<Update<OV>>(deletions.size());
+		for (Update<IV> deletion :  deletions)
+			a.add(strategy.update(deletion));
+
 		for (View<OV> view : getViews()) {
-			view.update(transform(insertions), transform(updates), transform(deletions));
+			try {
+				view.update(i, a, d);
+			} catch (Throwable t) {
+				LOGGER.error("problem updating View", t);
+			}
 		}
 	}
 
