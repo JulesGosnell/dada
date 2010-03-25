@@ -49,7 +49,7 @@ public class SplitterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Datum<Integer>> idStrategy = new Strategy<Datum<Integer>>() {
+		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
@@ -57,7 +57,7 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Object getKey(Datum<Integer> value) {
+			public Integer getKey(Datum<Integer> value) {
 				return value.getId();
 			}
 
@@ -67,7 +67,7 @@ public class SplitterTestCase extends TestCase {
 			}
 		};
 
-		View<Datum<Integer>> Splitter = new Splitter<Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> Splitter = new Splitter<Integer, Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 
@@ -114,7 +114,7 @@ public class SplitterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Datum<Integer>> idStrategy = new Strategy<Datum<Integer>>() {
+		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
@@ -122,7 +122,7 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Object getKey(Datum<Integer> value) {
+			public Integer getKey(Datum<Integer> value) {
 				return value.getVersion();
 			}
 
@@ -132,7 +132,7 @@ public class SplitterTestCase extends TestCase {
 			}
 		};
 
-		View<Datum<Integer>> Splitter = new Splitter<Datum<Integer>>(idStrategy);
+		View<Datum<Integer>> Splitter = new Splitter<Integer,  Datum<Integer>>(idStrategy);
 
 		Collection<Update<Datum<Integer>>> nil = Collections.emptyList();
 

@@ -36,20 +36,20 @@ import java.util.Set;
 import org.apache.commons.collections.MultiMap;
 import org.apache.commons.collections.map.MultiValueMap;
 
-public class Splitter<V> implements View<V> {
+public class Splitter<K, V> implements View<V> {
 
 	// TODO: if we managed the MultiMaps via this API we could optimise them
 	// to arrays when dealing with immutable attributes
-	public interface Strategy<V> {
+	public interface Strategy<K, V> {
 		boolean getMutable();
-		Object getKey(V value);
+		K getKey(V value);
 		Collection<View<V>> getViews(Object key);
 	}
 
-	private final Strategy<V> strategy;
+	private final Strategy<K, V> strategy;
 	private final boolean mutable;
 
-	public Splitter(Strategy<V> strategy) {
+	public Splitter(Strategy<K, V> strategy) {
 		this.strategy = strategy;
 		this.mutable = strategy.getMutable();
 	}
@@ -75,12 +75,12 @@ public class Splitter<V> implements View<V> {
 		MultiMap keyToDeletions = new MultiValueMap();
 
 		for (Update<V> insertion : insertions) {
-			Object key = strategy.getKey(insertion.getNewValue());
+			K key = strategy.getKey(insertion.getNewValue());
 			keyToInsertions.put(key, insertion);
 		}
 		for (Update<V> update : updates) {
-			Object newKey = strategy.getKey(update.getNewValue());
-			Object oldKey;
+			K newKey = strategy.getKey(update.getNewValue());
+			K oldKey;
 			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive
 			// test if possible - therefore we cannot produce coverage for the case where an immutable attribute is mutated...
 			if (mutable && (oldKey = strategy.getKey(update.getOldValue())) != newKey) {
@@ -91,16 +91,16 @@ public class Splitter<V> implements View<V> {
 			}
 		}
 		for (Update<V> deletion : deletions) {
-			Object key = strategy.getKey(deletion.getOldValue());
+			K key = strategy.getKey(deletion.getOldValue());
 			keyToInsertions.put(key, deletion);
 		}
 		// then dispatch on viewers...
 		// TODO: optimise for single update case...
-		Set<Object> keys = new HashSet<Object>();
+		Set<K> keys = new HashSet<K>();
 		keys.addAll(keyToInsertions.keySet());
 		keys.addAll(keyToUpdates.keySet());
 		keys.addAll(keyToDeletions.keySet());
-		for (Object key : keys) {
+		for (K key : keys) {
 			Collection<Update<V>> insertionsOut = (Collection<Update<V>>) keyToInsertions.get(key);
 			Collection<Update<V>> updatesOut = (Collection<Update<V>>) keyToUpdates.get(key);
 			Collection<Update<V>> deletionsOut = (Collection<Update<V>>) keyToDeletions.get(key);
