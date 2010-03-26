@@ -31,11 +31,11 @@ package org.dada.core;
 import java.util.Collection;
 import java.util.Collections;
 
-import junit.framework.TestCase;
-
 import org.dada.core.Splitter.StatelessStrategy;
+import org.jmock.Expectations;
+import org.jmock.integration.junit3.MockObjectTestCase;
 
-public class SplitterTestCase extends TestCase {
+public class SplitterTestCase extends MockObjectTestCase {
 
 	public void testKeyOnImmutableAttribute() {
 		View<Datum<Integer>> view = new View<Datum<Integer>>() {
@@ -102,7 +102,7 @@ public class SplitterTestCase extends TestCase {
 		Splitter.update(nil, nil, deletions);
 	}
 
-	public void testKeyOnmutableAttribute() {
+	public void testKeyOnMutableAttribute() {
 		View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			
 			@Override
@@ -168,4 +168,45 @@ public class SplitterTestCase extends TestCase {
 		Splitter.update(nil, updates1, nil);
 		}
 	}
+	
+	public void testBadlyBehavedView() {
+		final View<Datum<Integer>> view = mock(View.class);
+		final Splitter.StatefulStrategy<Integer, Datum<Integer>> strategy = mock(Splitter.StatefulStrategy.class);
+
+		checking(new Expectations(){{
+			one(strategy).getMutable();
+            will(returnValue(false));
+		}});
+
+		Splitter<Integer, Datum<Integer>> splitter = new Splitter<Integer, Datum<Integer>>(strategy);
+		final Collection<Update<Datum<Integer>>> insertions = Collections.singleton(new Update<Datum<Integer>>(null, null)); 
+		final Collection<Update<Datum<Integer>>> alterations = Collections.emptyList();
+		final Collection<Update<Datum<Integer>>> deletions = Collections.emptyList();
+
+		checking(new Expectations(){{
+			one(strategy).createKeys(null);
+            will(returnValue(Collections.singleton(0)));
+            one(strategy).getViews(0);
+            will(returnValue(Collections.singleton(view)));
+            allowing(view).update(insertions, alterations, deletions);
+            will(throwException(new UnsupportedOperationException()));
+		}});
+
+		try {
+			splitter.update(insertions, alterations, deletions);
+		} catch (Throwable t) {
+			fail();
+		}
+		
+//		checking(new Expectations(){{
+//			one(strategy).createKeys(null);
+//            will(returnValue(Collections.singleton(0)));
+//            one(strategy).getViews(0);
+//            will(returnValue(Collections.singleton(view)));
+//            one(view).update(insertions, alterations, deletions);
+//		}});
+//
+//		splitter.update(insertions, alterations, deletions);
+	}
+
 }
