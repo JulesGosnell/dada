@@ -28,7 +28,7 @@
 	      ServiceFactory
 	      SparseOpenLazyViewTable
 	      Transformer
-	      Transformer$Transform
+	      Transformer$StatelessStrategy
 	      Update
 	      VersionedModelView
 	      View
@@ -240,7 +240,7 @@
    Transformer
    (list view)
    (proxy
-    [Transformer$Transform]
+    [Transformer$StatelessStrategy]
     []
     (transform 
      [input]
@@ -428,7 +428,7 @@
 ;;    Transformer
 ;;    (list view)
 ;;    (proxy
-;;     [Transformer$Transform]
+;;     [Transformer$StatelessStrategy]
 ;;     []
 ;;     (transform 
 ;;      [input]

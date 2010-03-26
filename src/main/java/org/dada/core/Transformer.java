@@ -46,42 +46,42 @@ public class Transformer<IV, OV> extends Connector<IV, OV> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Transformer.class);
 
-	public interface Transform<IV, OV> {
+	public interface StatelessStrategy<IV, OV> {
 		OV transform(IV value);
 	}
 	
-	public interface Strategy<IV, OV> {
+	public interface StatefulStrategy<IV, OV> {
 		Update<OV> insert(Update<IV> insertion);
 		Update<OV> update(Update<IV> alteration);
 		Update<OV> delete(Update<IV> deletion);
 	}
 	
-	private final Strategy<IV, OV> strategy;
+	private final StatefulStrategy<IV, OV> strategy;
 
-	public Transformer(Collection<View<OV>> views, Strategy<IV, OV> strategy) {
+	public Transformer(Collection<View<OV>> views, StatefulStrategy<IV, OV> strategy) {
 		super(views);
 		this.strategy = strategy;
 	}
 
-	public Transformer(Collection<View<OV>> views, final Transform<IV, OV> transform) {
+	public Transformer(Collection<View<OV>> views, final StatelessStrategy<IV, OV> strategy) {
 		super(views);
-		this.strategy = new Strategy<IV, OV>() {
+		this.strategy = new StatefulStrategy<IV, OV>() {
 
 			@Override
 			public Update<OV> insert(Update<IV> insertion) {
-				return new Update<OV>(null, transform.transform(insertion.getNewValue()));
+				return new Update<OV>(null, strategy.transform(insertion.getNewValue()));
 			}
 
 			@Override
 			public Update<OV> update(Update<IV> alteration) {
 				return new Update<OV>(
-						transform.transform(alteration.getOldValue()),
-						transform.transform(alteration.getNewValue()));
+						strategy.transform(alteration.getOldValue()),
+						strategy.transform(alteration.getNewValue()));
 			}
 
 			@Override
 			public Update<OV> delete(Update<IV> deletion) {
-				return new Update<OV>(transform.transform(deletion.getOldValue()), null);
+				return new Update<OV>(strategy.transform(deletion.getOldValue()), null);
 			}
 			
 		};
