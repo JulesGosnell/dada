@@ -205,7 +205,7 @@
    whales
    :type
    false
-   identity
+   list
    identity
    (fn [#^Model model value]
        (insert *metamodel* model)

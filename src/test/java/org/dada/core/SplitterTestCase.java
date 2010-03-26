@@ -57,8 +57,8 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Integer getKey(Datum<Integer> value) {
-				return value.getId();
+			public Collection<Integer> getKeys(Datum<Integer> value) {
+				return Collections.singleton(value.getId());
 			}
 
 			@Override
@@ -122,8 +122,8 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Integer getKey(Datum<Integer> value) {
-				return value.getVersion();
+			public Collection<Integer> getKeys(Datum<Integer> value) {
+				return Collections.singleton(value.getVersion());
 			}
 
 			@Override

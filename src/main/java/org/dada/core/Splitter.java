@@ -44,7 +44,7 @@ public class Splitter<K, V> implements View<V> {
 	// stateless / context-free splits
 	public interface StatelessStrategy<K, V> {
 		boolean getMutable();
-		K getKey(V value); // any value // TODO: should allow return of multiple keys
+		Collection<K> getKeys(V value); // any value
 		Collection<View<V>> getViews(K key);
 	}
 
@@ -75,12 +75,12 @@ public class Splitter<K, V> implements View<V> {
 
 		@Override
 		public Collection<K> createKeys(V value) {
-			return Collections.singleton(strategy.getKey(value));
+			return strategy.getKeys(value);
 		}
 
 		@Override
 		public Collection<K> findKeys(V value) {
-			return Collections.singleton(strategy.getKey(value));
+			return strategy.getKeys(value);
 		}
 
 		@Override

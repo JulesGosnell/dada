@@ -239,6 +239,7 @@
   (new
    Transformer
    (list view)
+   #^Transformer$StatelessStrategy
    (proxy
     [Transformer$StatelessStrategy]
     []
@@ -305,7 +306,7 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-key #^IFn key-to-value #^IFn view-hook]
+  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (let [map (new ConcurrentHashMap)
 	prefix (str (.getName src-model) "." (name key) "=")
 	metadata (.getMetadata src-model)
@@ -328,13 +329,13 @@
       [Splitter$StatelessStrategy]
       []
       (getMutable [] mutable)
-      (getKey [value] (value-to-key (.get getter value)))
+      (getKeys [value] (value-to-keys (.get getter value)))
       (getViews [key] (list (. table get key)))
       ))))
     
 (defn do-split
-  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-key #^IFn key-to-value #^IFn view-hook]
-  (connect src-model (make-splitter src-model key mutable value-to-key key-to-value view-hook))
+  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  (connect src-model (make-splitter src-model key mutable value-to-keys key-to-value view-hook))
   )
 
 ;;----------------------------------------
