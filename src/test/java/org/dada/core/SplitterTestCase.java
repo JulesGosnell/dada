@@ -33,7 +33,7 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
-import org.dada.core.Splitter.Strategy;
+import org.dada.core.Splitter.StatelessStrategy;
 
 public class SplitterTestCase extends TestCase {
 
@@ -49,7 +49,7 @@ public class SplitterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
+		StatelessStrategy<Integer, Datum<Integer>> idStrategy = new StatelessStrategy<Integer, Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {
@@ -114,7 +114,7 @@ public class SplitterTestCase extends TestCase {
 		
 		final Collection<View<Datum<Integer>>> views =Collections.singleton(view);
 		
-		Strategy<Integer, Datum<Integer>> idStrategy = new Strategy<Integer, Datum<Integer>>() {
+		StatelessStrategy<Integer, Datum<Integer>> idStrategy = new StatelessStrategy<Integer, Datum<Integer>>() {
 
 			@Override
 			public boolean getMutable() {

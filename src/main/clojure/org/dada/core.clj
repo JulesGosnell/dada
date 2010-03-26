@@ -24,7 +24,7 @@
 	      Reducer
 	      Reducer$Strategy
 	      Splitter
-	      Splitter$Strategy
+	      Splitter$StatelessStrategy
 	      ServiceFactory
 	      SparseOpenLazyViewTable
 	      Transformer
@@ -325,7 +325,7 @@
     (new
      Splitter
      (proxy
-      [Splitter$Strategy]
+      [Splitter$StatelessStrategy]
       []
       (getMutable [] mutable)
       (getKey [value] (value-to-key (.get getter value)))

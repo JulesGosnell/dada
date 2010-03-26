@@ -43,29 +43,29 @@ public class Splitter<K, V> implements View<V> {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	// stateless / context-free splits
-	public interface Strategy<K, V> {
+	public interface StatelessStrategy<K, V> {
 		boolean getMutable();
 		K getKey(V value); // any value // TODO: should allow return of multiple keys
 		Collection<View<V>> getViews(K key);
 	}
 
 	// stateful / context-sensitive splits
-	public interface Split<K, V> {
+	public interface StatefulStrategy<K, V> {
 		boolean getMutable();
 		Collection<K> createKeys(V value); // unknown value
 		Collection<K> findKeys(V value); // known value
 		Collection<View<V>> getViews(K key);
 	}
 	
-	private final Split<K, V> split;
+	private final StatefulStrategy<K, V> strategy;
 	private final boolean mutable;
 
 	// allows plugging in of a stateless strategy via a stateful strategy interface
-	private static class Adaptor<K, V> implements Split<K, V> {
+	private static class Adaptor<K, V> implements StatefulStrategy<K, V> {
 		
-		private final Strategy<K,V> strategy;
+		private final StatelessStrategy<K,V> strategy;
 		
-		public Adaptor(Strategy<K, V> strategy) {
+		public Adaptor(StatelessStrategy<K, V> strategy) {
 			this.strategy = strategy;
 		}
 
@@ -90,15 +90,15 @@ public class Splitter<K, V> implements View<V> {
 		}
 	};
 	
-	public Splitter(Strategy<K, V> strategy) {
-		this.split = new Adaptor<K, V>(strategy);
-		this.mutable = split.getMutable();
+	public Splitter(StatelessStrategy<K, V> strategy) {
+		this.strategy = new Adaptor<K, V>(strategy);
+		this.mutable = this.strategy.getMutable();
 		
 	}
 
-	public Splitter(Split<K, V> split) {
-		this.split = split;
-		this.mutable = split.getMutable();
+	public Splitter(StatefulStrategy<K, V> strategy) {
+		this.strategy = strategy;
+		this.mutable = this.strategy.getMutable();
 	}
 
 	private static class Batch<V> {
@@ -154,21 +154,21 @@ public class Splitter<K, V> implements View<V> {
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 
-		// map to hold split insertions/alterations/deletions
+		// map to hold strategy insertions/alterations/deletions
 		Map<K, Batch<V>> keyToBatch = new HashMap<K, Batch<V>>();
 
-		// split insertions
+		// strategy insertions
 		for (Update<V> insertion : insertions)
-			for (K key : split.createKeys(insertion.getNewValue()))
+			for (K key : strategy.createKeys(insertion.getNewValue()))
 				ensureBatch(keyToBatch, key).addInsertion(insertion);
 
-		// split alterations
+		// strategy alterations
 		for (Update<V> alteration : alterations) {
-			Collection<K> newKeys = split.createKeys(alteration.getNewValue());
+			Collection<K> newKeys = strategy.createKeys(alteration.getNewValue());
 			Collection<K> oldKeys;
 			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive
 			// test if possible - therefore we cannot produce coverage for the case where an immutable attribute is mutated...
-			if (mutable && (oldKeys = split.findKeys(alteration.getOldValue())) != newKeys) {
+			if (mutable && (oldKeys = strategy.findKeys(alteration.getOldValue())) != newKeys) {
 				for (K key : newKeys)
 					ensureBatch(keyToBatch, key).addInsertion(alteration);
 				for (K key : oldKeys)
@@ -179,15 +179,15 @@ public class Splitter<K, V> implements View<V> {
 			}
 		}
 
-		// split deletions
+		// strategy deletions
 		for (Update<V> deletion : deletions)
-			for (K key : split.findKeys(deletion.getOldValue()))
+			for (K key : strategy.findKeys(deletion.getOldValue()))
 				ensureBatch(keyToBatch, key).addDeletion(deletion);
 		
-		// dispatch split on relevant Views...
+		// dispatch strategy on relevant Views...
 		for (Entry<K, Batch<V>> entry : keyToBatch.entrySet()) {
 			Batch<V> batch = entry.getValue();
-			for (View<V> view : split.getViews(entry.getKey()))
+			for (View<V> view : strategy.getViews(entry.getKey()))
 				try {
 					view.update(batch.getInsertions(), batch.getAlterations(), batch.getDeletions());
 				} catch (Throwable t) {
