@@ -30,85 +30,169 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.apache.commons.collections.MultiMap;
-import org.apache.commons.collections.map.MultiValueMap;
+import org.dada.slf4j.Logger;
+import org.dada.slf4j.LoggerFactory;
 
 public class Splitter<K, V> implements View<V> {
 
-	// TODO: if we managed the MultiMaps via this API we could optimise them
-	// to arrays when dealing with immutable attributes
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	// stateless / context-free splits
 	public interface Strategy<K, V> {
 		boolean getMutable();
-		K getKey(V value);
-		Collection<View<V>> getViews(Object key);
+		K getKey(V value); // any value // TODO: should allow return of multiple keys
+		Collection<View<V>> getViews(K key);
 	}
 
-	private final Strategy<K, V> strategy;
+	// stateful / context-sensitive splits
+	public interface Split<K, V> {
+		boolean getMutable();
+		Collection<K> createKeys(V value); // unknown value
+		Collection<K> findKeys(V value); // known value
+		Collection<View<V>> getViews(K key);
+	}
+	
+	private final Split<K, V> split;
 	private final boolean mutable;
 
+	// allows pluggin in of a stateless strategy via a stateful strategy interface
+	private static class Adaptor<K, V> implements Split<K, V> {
+		
+		private final Strategy<K,V> strategy;
+		
+		public Adaptor(Strategy<K, V> strategy) {
+			this.strategy = strategy;
+		}
+
+		@Override
+		public boolean getMutable() {
+			return strategy.getMutable();
+		}
+
+		@Override
+		public Collection<K> createKeys(V value) {
+			return Collections.singleton(strategy.getKey(value));
+		}
+
+		@Override
+		public Collection<K> findKeys(V value) {
+			return Collections.singleton(strategy.getKey(value));
+		}
+
+		@Override
+		public Collection<View<V>> getViews(K key) {
+			return strategy.getViews(key);
+		}
+	};
+	
 	public Splitter(Strategy<K, V> strategy) {
-		this.strategy = strategy;
+		this.split = new Adaptor<K, V>(strategy);
 		this.mutable = strategy.getMutable();
+		
 	}
 
-	private Collection<Update<V>> empty = new ArrayList<Update<V>>(0);
+	public Splitter(Split<K, V> split) {
+		this.split = split;
+		this.mutable = split.getMutable();
+	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-
-//		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
-//			for (Update<V> insertion : insertions) {
-//				for (View<K, V> view : strategy.getViews(strategy.getRoute(insertion.getNewValue()))) {
-//					view.update(insertions, updates, deletions);
-//				}
-//			}
-//			return;
-//		}
-
-		// split updates according to Route...
-		MultiMap keyToInsertions = new MultiValueMap();
-		MultiMap keyToUpdates = new MultiValueMap();
-		MultiMap keyToDeletions = new MultiValueMap();
-
-		for (Update<V> insertion : insertions) {
-			K key = strategy.getKey(insertion.getNewValue());
-			keyToInsertions.put(key, insertion);
+	private static class Batch<V> {
+		
+		private final Collection<Update<V>> EMPTY = Collections.emptyList();
+		
+		public Collection<Update<V>> getInsertions() {
+			return insertions;
 		}
-		for (Update<V> update : updates) {
-			K newKey = strategy.getKey(update.getNewValue());
-			K oldKey;
+
+		public Collection<Update<V>> getAlterations() {
+			return alterations;
+		}
+
+		public Collection<Update<V>> getDeletions() {
+			return deletions;
+		}
+
+		private Collection<Update<V>> insertions  = EMPTY;
+		private Collection<Update<V>> alterations = EMPTY;
+		private Collection<Update<V>> deletions   = EMPTY;
+		
+		public void addInsertion(Update<V> insertion) {
+			if (insertions == EMPTY)
+				insertions = new ArrayList<Update<V>>();
+			insertions.add(insertion);
+		}
+
+		public void addAlteration(Update<V> alteration) {
+			if (alterations == EMPTY)
+				alterations = new ArrayList<Update<V>>();
+			alterations.add(alteration);
+		}
+
+		public void addDeletion(Update<V> deletion) {
+			if (deletions == EMPTY)
+				deletions = new ArrayList<Update<V>>();
+			deletions.add(deletion);
+		}
+
+	}
+	
+	private Batch<V> ensureBatch(Map<K, Batch<V>> map, K key) {
+		Batch<V> batch = map.get(key);
+		if (batch == null)
+			map.put(key, batch = new Batch<V>());
+		
+		return batch;
+	}
+	
+	// TODO: optimise for single update case...
+
+	@Override
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+
+		// map to hold split insertions/alterations/deletions
+		Map<K, Batch<V>> keyToBatch = new HashMap<K, Batch<V>>();
+
+		// split insertions
+		for (Update<V> insertion : insertions)
+			for (K key : split.createKeys(insertion.getNewValue()))
+				ensureBatch(keyToBatch, key).addInsertion(insertion);
+
+		// split alterations
+		for (Update<V> alteration : alterations) {
+			Collection<K> newKeys = split.createKeys(alteration.getNewValue());
+			Collection<K> oldKeys;
 			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive
 			// test if possible - therefore we cannot produce coverage for the case where an immutable attribute is mutated...
-			if (mutable && (oldKey = strategy.getKey(update.getOldValue())) != newKey) {
-				keyToInsertions.put(newKey, update);
-				keyToDeletions.put(oldKey, update);
+			if (mutable && (oldKeys = split.findKeys(alteration.getOldValue())) != newKeys) {
+				for (K key : newKeys)
+					ensureBatch(keyToBatch, key).addInsertion(alteration);
+				for (K key : oldKeys)
+					ensureBatch(keyToBatch, key).addDeletion(alteration);
 			} else {
-				keyToUpdates.put(newKey, update);
+				for (K key : newKeys)
+					ensureBatch(keyToBatch, key).addAlteration(alteration);
 			}
 		}
-		for (Update<V> deletion : deletions) {
-			K key = strategy.getKey(deletion.getOldValue());
-			keyToInsertions.put(key, deletion);
-		}
-		// then dispatch on viewers...
-		// TODO: optimise for single update case...
-		Set<K> keys = new HashSet<K>();
-		keys.addAll(keyToInsertions.keySet());
-		keys.addAll(keyToUpdates.keySet());
-		keys.addAll(keyToDeletions.keySet());
-		for (K key : keys) {
-			Collection<Update<V>> insertionsOut = (Collection<Update<V>>) keyToInsertions.get(key);
-			Collection<Update<V>> updatesOut = (Collection<Update<V>>) keyToUpdates.get(key);
-			Collection<Update<V>> deletionsOut = (Collection<Update<V>>) keyToDeletions.get(key);
-			for (View<V> view : strategy.getViews(key)) {
-				view.update(insertionsOut == null ? empty : insertionsOut,
-							updatesOut == null ? empty : updatesOut,
-							deletionsOut == null ? empty : deletionsOut);
-			}
+
+		// split deletions
+		for (Update<V> deletion : deletions)
+			for (K key : split.findKeys(deletion.getOldValue()))
+				ensureBatch(keyToBatch, key).addDeletion(deletion);
+		
+		// dispatch split on relevant Views...
+		for (Entry<K, Batch<V>> entry : keyToBatch.entrySet()) {
+			Batch<V> batch = entry.getValue();
+			for (View<V> view : split.getViews(entry.getKey()))
+				try {
+					view.update(batch.getInsertions(), batch.getAlterations(), batch.getDeletions());
+				} catch (Throwable t) {
+					logger.error("problem updating View", t);
+				}
 		}
 	}
 

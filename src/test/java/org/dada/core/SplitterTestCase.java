@@ -62,7 +62,7 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Collection<View<Datum<Integer>>> getViews(Object key) {
+			public Collection<View<Datum<Integer>>> getViews(Integer key) {
 				return views;
 			}
 		};
@@ -127,7 +127,7 @@ public class SplitterTestCase extends TestCase {
 			}
 
 			@Override
-			public Collection<View<Datum<Integer>>> getViews(Object key) {
+			public Collection<View<Datum<Integer>>> getViews(Integer key) {
 				return views;
 			}
 		};
