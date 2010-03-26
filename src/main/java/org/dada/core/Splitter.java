@@ -28,7 +28,6 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,46 +100,6 @@ public class Splitter<K, V> implements View<V> {
 		this.mutable = this.strategy.getMutable();
 	}
 
-	private static class Batch<V> {
-		
-		private final Collection<Update<V>> EMPTY = Collections.emptyList();
-		
-		public Collection<Update<V>> getInsertions() {
-			return insertions;
-		}
-
-		public Collection<Update<V>> getAlterations() {
-			return alterations;
-		}
-
-		public Collection<Update<V>> getDeletions() {
-			return deletions;
-		}
-
-		private Collection<Update<V>> insertions  = EMPTY;
-		private Collection<Update<V>> alterations = EMPTY;
-		private Collection<Update<V>> deletions   = EMPTY;
-		
-		public void addInsertion(Update<V> insertion) {
-			if (insertions == EMPTY)
-				insertions = new ArrayList<Update<V>>();
-			insertions.add(insertion);
-		}
-
-		public void addAlteration(Update<V> alteration) {
-			if (alterations == EMPTY)
-				alterations = new ArrayList<Update<V>>();
-			alterations.add(alteration);
-		}
-
-		public void addDeletion(Update<V> deletion) {
-			if (deletions == EMPTY)
-				deletions = new ArrayList<Update<V>>();
-			deletions.add(deletion);
-		}
-
-	}
-	
 	private Batch<V> ensureBatch(Map<K, Batch<V>> map, K key) {
 		Batch<V> batch = map.get(key);
 		if (batch == null)
