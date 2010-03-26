@@ -62,16 +62,16 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		// copy these aggressively for the moment - later they should be copy-on-write or persistent...
 		Collection<Update<V>> insertionsOut = new ArrayList<Update<V>>(insertions.size());
-		Collection<Update<V>> updatesOut = new ArrayList<Update<V>>(updates.size());
+		Collection<Update<V>> alterationsOut = new ArrayList<Update<V>>(alterations.size());
 		Collection<Update<V>> deletionsOut = new ArrayList<Update<V>>(deletions.size());
 
-		logger.debug("{}: update: insertions={}, updates={}, deletions={}", name, insertions.size(), updates.size(), deletions.size());
+		logger.debug("{}: update: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
 
 		// TODO: lose later
-		if (insertions.isEmpty() && updates.isEmpty() && deletions.isEmpty())
+		if (insertions.isEmpty() && alterations.isEmpty() && deletions.isEmpty())
 			logger.warn("wasteful message: 0 size update");
 
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
@@ -93,13 +93,13 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 					logger.trace("ignoring insertion: {} is more recent than {}", currentValue, newValue);
 				}
 			}
-			for (Update<V> update : updates) {
+			for (Update<V> update : alterations) {
 				V newValue = update.getNewValue();
 				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
 				if (currentValue == null || versionGetter.get(currentValue) < versionGetter.get(newValue)) {
 					current = current.assoc(keyGetter.get(newValue), newValue);
-					updatesOut.add(update);
+					alterationsOut.add(update);
 					changed = true;
 				} else {
 					logger.trace("ignoring update: {} is more recent than {}", currentValue, newValue);
@@ -129,7 +129,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 				maps = new Maps(current, historic);
 		} // end of sync block
 
-		notifyUpdate(insertionsOut, updatesOut, deletionsOut);
+		notifyUpdate(insertionsOut, alterationsOut, deletionsOut);
 	}
 }
 

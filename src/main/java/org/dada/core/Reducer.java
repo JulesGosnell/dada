@@ -39,7 +39,7 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 		V initialValue();
 		Class<?> initialType(Class<?> type);
 		VO currentValue(KO key, int version, V value);
-		V reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions);
+		V reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions);
 		V apply(V currentValue, V delta);
 	}
 
@@ -71,8 +71,8 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	}
 
 	@Override
-	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
-		V delta = strategy.reduce(insertions, updates, deletions);
+	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions) {
+		V delta = strategy.reduce(insertions, alterations, deletions);
 		V oldValue, newValue;
 		int oldVersion, newVersion;
 		synchronized (value) {

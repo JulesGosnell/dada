@@ -97,8 +97,8 @@ public class FileCacheLoader<K, V> extends AbstractModel<K, V> implements Loader
 	}
 
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		notifyUpdate(insertions, updates, deletions);
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+		notifyUpdate(insertions, alterations, deletions);
 		for (Update<V> insertion : insertions) {
 			data.add(insertion.getNewValue());
 		}

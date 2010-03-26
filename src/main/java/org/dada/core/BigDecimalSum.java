@@ -51,7 +51,7 @@ public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, K
 			}
 
 			@Override
-			public BigDecimal reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> updates, Collection<Update<VI>> deletions) {
+			public BigDecimal reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions) {
 				BigDecimal delta = BigDecimal.ZERO;
 				
 				for (Update<VI> insertion : insertions) {
@@ -59,11 +59,11 @@ public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, K
 					BigDecimal insertionAmount = getter.get(newValue);
 					delta = delta.add(insertionAmount);
 				}
-				for (Update<VI> update : updates) {
+				for (Update<VI> update : alterations) {
 					delta = delta.subtract(getter.get(update.getOldValue()));
 					delta = delta.add(getter.get(update.getNewValue()));
 				}
-				for (Update<VI> update : updates) {
+				for (Update<VI> update : alterations) {
 					delta = delta.subtract(getter.get(update.getOldValue()));
 				}
 

@@ -50,7 +50,7 @@ public class Batcher<V> extends Connector<V, V> {
 	private TimerTask task = null;
 	
 	private Collection<Update<V>> newInsertions;
-	private Collection<Update<V>> newUpdates;
+	private Collection<Update<V>> newAlterations;
 	private Collection<Update<V>> newDeletions;
 
 	public Batcher(int maxSize, long maxDelay, Collection<View<V>> views) {
@@ -58,34 +58,34 @@ public class Batcher<V> extends Connector<V, V> {
 		this.maxSize = maxSize;
 		this.maxDelay = maxDelay;
 		newInsertions = new ArrayList<Update<V>>();
-		newUpdates = new ArrayList<Update<V>>();
+		newAlterations = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 	}
 
 	@Override
-	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
-		if (insertions.size() + updates.size() + deletions.size() == 0)
+	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+		if (insertions.size() + alterations.size() + deletions.size() == 0)
 			return;
 		
-		boolean empty = newInsertions.size() + newUpdates.size() + newDeletions.size() == 0;
+		boolean empty = newInsertions.size() + newAlterations.size() + newDeletions.size() == 0;
 		
-		if (insertions.size() + updates.size() + deletions.size() > maxSize) {
+		if (insertions.size() + alterations.size() + deletions.size() > maxSize) {
 			if (empty) {
 				// no data standing by and enough incoming to be passed straight through...
 				logger.trace("pass update through");
-				notifyViews(insertions, updates, deletions);
+				notifyViews(insertions, alterations, deletions);
 			} else {
 				// merge with outstanding data and send upstream...
 				logger.trace("aggregate update and flush");
-				add(insertions, updates, deletions);
+				add(insertions, alterations, deletions);
 				flush();
 			}
 		} else {
 			// merge with outstanding data
 			logger.trace("aggregate update");
-			add(insertions, updates, deletions);
+			add(insertions, alterations, deletions);
 			// if big enough send upstream...	
-			if (newInsertions.size() + newUpdates.size() + newDeletions.size() > maxSize) {
+			if (newInsertions.size() + newAlterations.size() + newDeletions.size() > maxSize) {
 				logger.trace("size induced flush");
 				flush();
 			} else {
@@ -107,10 +107,10 @@ public class Batcher<V> extends Connector<V, V> {
 
 	protected synchronized void flush() {
 
-		notifyViews(newInsertions, newUpdates, newDeletions);
+		notifyViews(newInsertions, newAlterations, newDeletions);
 
 		newInsertions = new ArrayList<Update<V>>();
-		newUpdates = new ArrayList<Update<V>>();
+		newAlterations = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 
 		logger.trace("cancelling timer");
@@ -118,15 +118,15 @@ public class Batcher<V> extends Connector<V, V> {
 		task = null;
 	}
 	
-	protected void add(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	protected void add(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		newInsertions.addAll(insertions);
-		newUpdates.addAll(updates);
+		newAlterations.addAll(alterations);
 		newDeletions.addAll(deletions);
 	}
 
-	protected void notifyViews(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	protected void notifyViews(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		for (View<V> view : getViews()) {
-			view.update(insertions, updates, deletions);
+			view.update(insertions, alterations, deletions);
 		}
 	}	
 

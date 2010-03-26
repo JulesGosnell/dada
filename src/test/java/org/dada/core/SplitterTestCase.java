@@ -42,7 +42,7 @@ public class SplitterTestCase extends TestCase {
 			
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions,
-					Collection<Update<Datum<Integer>>> updates,
+					Collection<Update<Datum<Integer>>> alterations,
 					Collection<Update<Datum<Integer>>> deletions) {
 			}
 		};
@@ -107,7 +107,7 @@ public class SplitterTestCase extends TestCase {
 			
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions,
-					Collection<Update<Datum<Integer>>> updates,
+					Collection<Update<Datum<Integer>>> alterations,
 					Collection<Update<Datum<Integer>>> deletions) {
 			}
 		};

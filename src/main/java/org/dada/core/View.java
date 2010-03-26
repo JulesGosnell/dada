@@ -39,10 +39,10 @@ public interface View<V> {
 	 * can display a item that has moved out, using its last known value (so you can link to its new View and follow the trail).
 	 *
 	 * @param insertions
-	 * @param updates
+	 * @param alterations
 	 * @param deletions
 	 */
-	void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions);
+	void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions);
 	// TODO: should I put all of these in one structure ?
 }
 

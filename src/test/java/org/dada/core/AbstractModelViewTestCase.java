@@ -15,7 +15,7 @@ public class AbstractModelViewTestCase extends TestCase {
 			
 			@Override
 			public void update(Collection<Update<Datum<Integer>>> insertions,
-					Collection<Update<Datum<Integer>>> updates,
+					Collection<Update<Datum<Integer>>> alterations,
 					Collection<Update<Datum<Integer>>> deletions) {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("NYI");

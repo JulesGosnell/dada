@@ -88,7 +88,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	}
 
 	@Override
-	public void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> updates, Collection<Update<Model<Object, Object>>> deletions) {
+	public void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> alterations, Collection<Update<Model<Object, Object>>> deletions) {
 		Collection<Update<String>> i;
 		if (!insertions.isEmpty()) {
 			i = new ArrayList<Update<String>>(insertions.size());
@@ -103,9 +103,9 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		}
 
 		Collection<Update<String>> u;
-		if (!updates.isEmpty()) {
-			u = new ArrayList<Update<String>>(updates.size());
-			for (Update<Model<Object, Object>> update : updates) {
+		if (!alterations.isEmpty()) {
+			u = new ArrayList<Update<String>>(alterations.size());
+			for (Update<Model<Object, Object>> update : alterations) {
 				Model<Object, Object> oldModel = update.getOldValue();
 				Model<Object, Object> newModel = update.getNewValue();
 				String oldModelName = oldModel.getName();

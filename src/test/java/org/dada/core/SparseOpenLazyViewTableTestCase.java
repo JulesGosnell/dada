@@ -11,7 +11,7 @@ public class SparseOpenLazyViewTableTestCase extends TestCase {
 		
 		final View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			@Override
-			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> alterations, Collection<Update<Datum<Integer>>> deletions) {
 			}
 		};
 		

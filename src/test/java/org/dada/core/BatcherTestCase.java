@@ -117,7 +117,7 @@ public class BatcherTestCase extends MockObjectTestCase {
 		final Thread thread = Thread.currentThread();
 		final View<Datum<Integer>> view = new View<Datum<Integer>>() {
 			@Override
-			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> alterations, Collection<Update<Datum<Integer>>> deletions) {
 				assertTrue(insertions.size() == 2);
 				assertFalse(Thread.currentThread().equals(thread)); // triggered by timer...
 				latch.countDown();

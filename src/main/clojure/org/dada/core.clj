@@ -367,11 +367,11 @@
      (initialValue [] 0)
      (initialType [type] type)
      (currentValue [& args] (.create creator (into-array Object args)))
-     (reduce [insertions updates deletions]
+     (reduce [insertions alterations deletions]
 	     (-
 	      (+
 	       (reduce #(+ %1 (new-value %2)) 0 insertions)
-	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 updates))
+	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 alterations))
 	      (reduce #(+ %1 (old-value %2)) 0 deletions))
 	     )
      (apply [currentValue delta] (+ currentValue delta))
@@ -398,7 +398,7 @@
      (initialValue [] 0)
      (initialType [type] Integer)
      (currentValue [& args] (.create creator (into-array Object args)))
-     (reduce [insertions updates deletions] (- (count insertions) (count deletions)))
+     (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
      )
     ))

@@ -57,7 +57,7 @@ public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> imp
 	}
 
 	@Override
-	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> updates, Collection<Update<IV>> deletions) {
+	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> alterations, Collection<Update<IV>> deletions) {
 		Collection<Update<OV>> i;
 		if (!insertions.isEmpty()) {
 			i = new ArrayList<Update<OV>>(insertions.size());
@@ -73,9 +73,9 @@ public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> imp
 		}
 
 		Collection<Update<OV>> u;
-		if (!updates.isEmpty()) {
-			u = new ArrayList<Update<OV>>(updates.size());
-			for (Update<IV> update : updates) {
+		if (!alterations.isEmpty()) {
+			u = new ArrayList<Update<OV>>(alterations.size());
+			for (Update<IV> update : alterations) {
 				IV oldInputValue = update.getOldValue();
 				IV newInputValue = update.getNewValue();
 				OV oldOutputValue = transformer.transform(oldInputValue);

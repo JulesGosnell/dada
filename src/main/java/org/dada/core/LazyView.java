@@ -69,10 +69,10 @@ public class LazyView<K, V> implements View<V> {
 	}
 
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		try {
 			if (view == null) init(); // check VOLATILE field without locking - see comment above
-			view.update(insertions, updates, deletions);
+			view.update(insertions, alterations, deletions);
 		} catch (Exception e) {
 			LOG.error("problem creating new View: {}", e, key);
 		}

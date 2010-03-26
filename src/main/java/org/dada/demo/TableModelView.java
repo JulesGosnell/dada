@@ -66,7 +66,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 	// Listener
 
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		logger.trace("update: {}", insertions);
 		Metadata<K, V> metadata = getMetadata();
 		for (Update<V> insertion : insertions) {
@@ -76,7 +76,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 			int index = map.headMap(key).size();
 			fireTableRowsInserted(index, index);
 		}
-		for (Update<V> update : updates) {
+		for (Update<V> update : alterations) {
 			V oldValue = update.getOldValue();
 			K oldKey = metadata.getKey(oldValue);
 			V newValue = update.getNewValue();

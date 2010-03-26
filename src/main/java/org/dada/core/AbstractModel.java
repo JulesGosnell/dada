@@ -95,11 +95,11 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
 	}
 
-	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		Collection<View<V>> snapshot = views;
 		for (View<V> view : snapshot) {
 			try {
-				view.update(insertions, updates, deletions);
+				view.update(insertions, alterations, deletions);
 			} catch (Throwable t) {
 				logger.error("error during view notification: {}", t, view);
 			}

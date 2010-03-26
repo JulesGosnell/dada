@@ -58,7 +58,7 @@ public class Router<V> implements View<V> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 
 //		if (insertions.size()==1 && updates.size()==0 && deletions.size()==0) {
 //			for (Update<V> insertion : insertions) {
@@ -78,7 +78,7 @@ public class Router<V> implements View<V> {
 			int route = strategy.getRoute(insertion.getNewValue());
 			routeToInsertions.put(route, insertion);
 		}
-		for (Update<V> update : updates) {
+		for (Update<V> update : alterations) {
 			int newRoute = strategy.getRoute(update.getNewValue());
 			int oldRoute;
 			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive

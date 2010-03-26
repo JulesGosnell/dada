@@ -51,14 +51,14 @@ public class FilteredView<V> implements View<V> {
 	}
 	
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		Collection<Update<V>> i = new ArrayList<Update<V>>();
 		for (Update<V> insertion : insertions) {
 			if (filter.filter(insertion.getNewValue()))
 				i.add(insertion);
 		}
 		Collection<Update<V>> u = new ArrayList<Update<V>>();
-		for (Update<V> update : updates) {
+		for (Update<V> update : alterations) {
 			if (filter.filter(update.getOldValue()))
 				u.add(update);
 		}

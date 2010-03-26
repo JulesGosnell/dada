@@ -70,9 +70,9 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 		View<Datum<Integer>> goodView = new View<Datum<Integer>>() {
 
 			@Override
-			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> alterations, Collection<Update<Datum<Integer>>> deletions) {
 				assertTrue(insertions == empty);
-				assertTrue(updates == empty);
+				assertTrue(alterations == empty);
 				assertTrue(deletions == empty);
 			}
 
@@ -91,7 +91,7 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 		View<Datum<Integer>> badView = new View<Datum<Integer>>() {
 
 			@Override
-			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> updates, Collection<Update<Datum<Integer>>> deletions) {
+			public void update(Collection<Update<Datum<Integer>>> insertions, Collection<Update<Datum<Integer>>> alterations, Collection<Update<Datum<Integer>>> deletions) {
 				throw new UnsupportedOperationException("BADLY BEHAVED VIEW");
 			}
 

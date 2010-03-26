@@ -85,7 +85,7 @@ public class ViewTestCase extends TestCase {
 		int count;
 
 		@Override
-		public void update(Collection<Update<V>> insertions, Collection<Update<V>> updates, Collection<Update<V>> deletions) {
+		public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 			count += insertions.size();
 		}
 
