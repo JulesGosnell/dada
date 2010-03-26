@@ -60,7 +60,7 @@ public class Splitter<K, V> implements View<V> {
 	private final Split<K, V> split;
 	private final boolean mutable;
 
-	// allows pluggin in of a stateless strategy via a stateful strategy interface
+	// allows plugging in of a stateless strategy via a stateful strategy interface
 	private static class Adaptor<K, V> implements Split<K, V> {
 		
 		private final Strategy<K,V> strategy;
@@ -92,7 +92,7 @@ public class Splitter<K, V> implements View<V> {
 	
 	public Splitter(Strategy<K, V> strategy) {
 		this.split = new Adaptor<K, V>(strategy);
-		this.mutable = strategy.getMutable();
+		this.mutable = split.getMutable();
 		
 	}
 
