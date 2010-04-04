@@ -36,6 +36,8 @@
     <!-- <clojure.version>1.1.0</clojure.version> -->
     <clojure.version>1.1.0-new-SNAPSHOT</clojure.version>
     <asm.version>3.2</asm.version>
+    <activemq.version>5.3.0</activemq.version>
+    <commons-lang.version>2.5</commons-lang.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
     <java.agent>-javaagent:${settings.localRepository}/org/springframework/spring-instrument/${spring.version}/spring-instrument-${spring.version}.jar</java.agent>   <!-- for Spring Aspect Load Time Weaving -->
@@ -120,7 +122,7 @@
     <dependency> <!-- scope should be test -->
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
-      <version>5.3.0</version>
+      <version>${activemq.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.xbean</groupId>
@@ -141,7 +143,7 @@
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
-      <version>2.4</version>
+      <version>${commons-lang.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-collections</groupId>
