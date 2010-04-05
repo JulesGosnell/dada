@@ -265,11 +265,9 @@
 	      <clojureOptions>-Xmx256m</clojureOptions>
 	      <generateTestDocumentation>false</generateTestDocumentation>
 	    </configuration>
-            <!--
-	       <goals>
-		 <goal>gendoc</goal>
-               </goals>
-	       -->
+	    <goals>
+	      <goal>gendoc</goal>
+	    </goals>
 	  </execution>
 	</executions>
       </plugin>
