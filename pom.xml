@@ -28,7 +28,7 @@
     <cobertura.classes>target/generated-classes/cobertura</cobertura.classes>
     <cobertura.site>target/site/cobertura</cobertura.site>
     <cobertura.version>1.9.4.1</cobertura.version>
-    <spring.version>3.0.1.RELEASE</spring.version>
+    <spring.version>3.0.2.RELEASE</spring.version>
     <slf4j.version>1.5.11</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
     <junit.version>3.8.1</junit.version>
