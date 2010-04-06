@@ -274,25 +274,18 @@
 
 (defn third [s] (nth s 2))
 
-(defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & 
-		    #^ISeq attribute-descrips]
+(defn do-transform [#^String suffix #^Model src-model & #^Collection attribute-descrips]
   (let [#^Metadata model-metadata (.getMetadata src-model)
-	key-details (do-transform-attribute key-key model-metadata)
-	key-type (second key-details)
-	version-details (do-transform-attribute version-key model-metadata)
-	version-type (second version-details)
 	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
 	attribute-keys (map first attribute-details)
 	attribute-types (map second attribute-details)
-	init-fns 
-	(list*
-	 (third key-details)
-	 (third version-details)
-	 (map third attribute-details))
+	init-fns (map third attribute-details)
+	key-key (first attribute-keys)
+	version-key (second attribute-keys)
 	attributes (interleave attribute-keys attribute-types)
-	class-name (name (gensym "org.dada.demo.whales.Transform"))
+	class-name (name (gensym "org.dada.core.Transform"))
 	superclass Object
-	view-metadata (class-metadata class-name superclass key-key version-key (concat (list key-key key-type version-key version-type) attributes))
+	view-metadata (class-metadata class-name superclass key-key version-key attributes)
 	view-name (str (.getName src-model) "." suffix)
 	view (model view-name view-metadata)
 	transformer (make-transformer init-fns view-metadata view)]
