@@ -28,6 +28,7 @@
  */
 package org.dada.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -179,16 +180,20 @@ public class SplitterTestCase extends MockObjectTestCase {
 		}});
 
 		Splitter<Integer, Datum<Integer>> splitter = new Splitter<Integer, Datum<Integer>>(strategy);
-		final Collection<Update<Datum<Integer>>> insertions = Collections.singleton(new Update<Datum<Integer>>(null, null)); 
+		
+		final Collection<Update<Datum<Integer>>> insertions = new ArrayList<Update<Datum<Integer>>>();
+		Update<Datum<Integer>> update = new Update<Datum<Integer>>(null, null);
+		insertions.add(update);
+		insertions.add(update);
 		final Collection<Update<Datum<Integer>>> alterations = Collections.emptyList();
 		final Collection<Update<Datum<Integer>>> deletions = Collections.emptyList();
 
 		checking(new Expectations(){{
-			one(strategy).createKeys(null);
+			exactly(2).of(strategy).createKeys(null);
             will(returnValue(Collections.singleton(0)));
-            one(strategy).getViews(0);
+            oneOf(strategy).getViews(0);
             will(returnValue(Collections.singleton(view)));
-            allowing(view).update(insertions, alterations, deletions);
+            allowing(view).update(insertions, alterations, deletions); // should be one() but throws Exception
             will(throwException(new UnsupportedOperationException()));
 		}});
 
@@ -197,16 +202,6 @@ public class SplitterTestCase extends MockObjectTestCase {
 		} catch (Throwable t) {
 			fail();
 		}
-		
-//		checking(new Expectations(){{
-//			one(strategy).createKeys(null);
-//            will(returnValue(Collections.singleton(0)));
-//            one(strategy).getViews(0);
-//            will(returnValue(Collections.singleton(view)));
-//            one(view).update(insertions, alterations, deletions);
-//		}});
-//
-//		splitter.update(insertions, alterations, deletions);
 	}
 
 }

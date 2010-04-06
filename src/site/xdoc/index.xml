@@ -17,9 +17,19 @@
 
       <p/>
       
-      DADA is now growing into a n-dimensional data cube, with an
-      ad-hoc query language and queries whose resultset continues to
-      update as fresh data becomes available.
+      We then found that DADA was growing into a n-dimensional data
+      cube, with an ad-hoc query language and real time query/view
+      updates.
+
+      <p/>
+      
+      Then we discovered Event Driven Architecture (EDA) and Complex
+      Event Processing (CEP) and realised that DADA was actually a CEP
+      engine.
+
+      <p/>
+      
+      Here is how DADA works:
 
       <p/>
 
@@ -45,15 +55,16 @@
 
       <p/>
       
-      Routers (a type of View) may be used to decouple a Model from a
+      Splitters (a type of View) may be used to decouple a Model from a
       set of Views and encapsulate logic to efficiently route incoming
       events to particular members of this set based on pluggable
       strategies.
       
       <p/>
 
-      Aggregators (a type of Model/View) may be used to transform and
-      collapse incoming data into e.g. a current total.
+      Reducers (a type of Model/View) may be used to transform and
+      collapse/reduce incoming data into e.g. a current total, changes
+      to which are once again, notified to upstream Views.
 
       <p/>
 
@@ -77,11 +88,14 @@
       <p/>
 
       With the addition of an ad-hoc query language implemented in
-      Clojure, DADA becomes a truly dynamic system.
+      Clojure, development of such models can be simplified and moved
+      from a compile-time to a run-time environment accelerating
+      productivity and potentially putting query content into the
+      hands of the user rather than the developer.
 
       <p/>
 
-      DADA makes`use of IOC, pluggable interfaces, factories and
+      DADA makes use of IOC, pluggable interfaces, factories,
       strategies and generics for strict typing throughout,
       prioritises concurrency issues and tries to remain small,
       simple, flexible, performant and clean. A substantial testsuite
@@ -89,6 +103,10 @@
       and unit tested on a number of modern JVMs (Sun, OpenJDK, IBM
       and BEA 6 &amp; 7 32/64 bit on Solaris and Linux) on every
       checkin.
+
+      <p/>
+
+      We hope you enjoy DADA !
 
     </section>
   </body>
