@@ -51,7 +51,7 @@ public class Splitter<K, V> implements View<V> {
 	// stateful / context-sensitive splits
 	public interface StatefulStrategy<K, V> {
 		boolean getMutable();
-		Collection<K> createKeys(V value); // unknown value
+		Collection<K> createKeys(V oldParam, V newValue); // unknown value
 		Collection<K> findKeys(V value); // known value
 		Collection<View<V>> getViews(K key);
 	}
@@ -74,8 +74,8 @@ public class Splitter<K, V> implements View<V> {
 		}
 
 		@Override
-		public Collection<K> createKeys(V value) {
-			return strategy.getKeys(value);
+		public Collection<K> createKeys(V oldParam, V newValue) {
+			return strategy.getKeys(newValue);
 		}
 
 		@Override
@@ -118,12 +118,12 @@ public class Splitter<K, V> implements View<V> {
 
 		// strategy insertions
 		for (Update<V> insertion : insertions)
-			for (K key : strategy.createKeys(insertion.getNewValue()))
+			for (K key : strategy.createKeys(insertion.getOldValue(), insertion.getNewValue()))
 				ensureBatch(keyToBatch, key).addInsertion(insertion);
 
 		// strategy alterations
 		for (Update<V> alteration : alterations) {
-			Collection<K> newKeys = strategy.createKeys(alteration.getNewValue());
+			Collection<K> newKeys = strategy.createKeys(alteration.getOldValue(), alteration.getNewValue());
 			Collection<K> oldKeys;
 			// the boolean test of 'mutable 'does not add any further constraint - it simply heads off a more expensive
 			// test if possible - therefore we cannot produce coverage for the case where an immutable attribute is mutated...

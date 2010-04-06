@@ -189,7 +189,7 @@ public class SplitterTestCase extends MockObjectTestCase {
 		final Collection<Update<Datum<Integer>>> deletions = Collections.emptyList();
 
 		checking(new Expectations(){{
-			exactly(2).of(strategy).createKeys(null);
+			exactly(2).of(strategy).createKeys(null, null);
             will(returnValue(Collections.singleton(0)));
             oneOf(strategy).getViews(0);
             will(returnValue(Collections.singleton(view)));
