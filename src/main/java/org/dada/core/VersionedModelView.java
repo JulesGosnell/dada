@@ -85,9 +85,13 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 				V newValue = insertion.getNewValue();
 				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
-				if (currentValue == null || versionGetter.get(currentValue) < versionGetter.get(newValue)) {
+				if (currentValue == null) {
 					current = current.assoc(key, newValue);
 					insertionsOut.add(insertion);
+					changed = true;
+				} else if (versionGetter.get(currentValue) < versionGetter.get(newValue)) {
+					current = current.assoc(key, newValue);
+					alterationsOut.add(new Update<V>(currentValue, newValue));
 					changed = true;
 				} else {
 					logger.trace("ignoring insertion: {} is more recent than {}", currentValue, newValue);
