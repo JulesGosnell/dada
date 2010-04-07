@@ -51,7 +51,7 @@ public class Splitter<K, V> implements View<V> {
 	// stateful / context-sensitive splits
 	public interface StatefulStrategy<K, V> {
 		boolean getMutable();
-		Collection<K> createKeys(V oldParam, V newValue); // unknown value
+		Collection<K> createKeys(V oldValue, V newValue); // unknown value
 		Collection<K> findKeys(V value); // known value
 		Collection<View<V>> getViews(K key);
 	}
@@ -74,7 +74,7 @@ public class Splitter<K, V> implements View<V> {
 		}
 
 		@Override
-		public Collection<K> createKeys(V oldParam, V newValue) {
+		public Collection<K> createKeys(V oldValue, V newValue) {
 			return strategy.getKeys(newValue);
 		}
 
