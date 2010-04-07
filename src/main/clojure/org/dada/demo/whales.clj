@@ -138,10 +138,10 @@
 ;; attributes...
 ;;----------------------------------------
 
-(def longer-whales-weight (do-transform "weight" longer-whales :time :version :weight))
+(def longer-whales-weight (do-transform "weight" longer-whales :time :version :time :version :weight))
 (insert *metamodel* longer-whales-weight)
 
-(def #^Model heavier-whales-length (do-transform "length" heavier-whales :time :version :length))
+(def #^Model heavier-whales-length (do-transform "length" heavier-whales :time :version :time :version :length))
 (insert *metamodel* heavier-whales-length)
 
 ;;----------------------------------------
@@ -152,6 +152,8 @@
 	(do-transform
 	 "tonsPerMetre"
 	 whales
+	 :time
+	 :version 
 	 :time
 	 :version 
 	 (list :tonsPerMetre Number '(:weight :length) (fn [weight length] (if (= length 0) 0 (/ weight length)))))
@@ -170,6 +172,8 @@
        whales
        '(:type)
        #(= "narwhal" %))
+      :time
+      :version
       :time
       :version
       :length)

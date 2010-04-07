@@ -274,14 +274,12 @@
 
 (defn third [s] (nth s 2))
 
-(defn do-transform [#^String suffix #^Model src-model & #^Collection attribute-descrips]
+(defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
   (let [#^Metadata model-metadata (.getMetadata src-model)
 	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
 	attribute-keys (map first attribute-details)
 	attribute-types (map second attribute-details)
 	init-fns (map third attribute-details)
-	key-key (first attribute-keys)
-	version-key (second attribute-keys)
 	attributes (interleave attribute-keys attribute-types)
 	class-name (name (gensym "org.dada.core.Transform"))
 	superclass Object
