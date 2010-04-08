@@ -87,11 +87,52 @@
       :length (Float/TYPE)
       :weight (Float/TYPE)))
 
+;; could try using deftype thus:
+;; (deftype Cetacean [#^String key #^Integer version])
+;; you can use dates as field names !
+;;  user=> (def field-symbol (symbol (.toString (java.util.Date.))))
+;;  #'user/field-symbol
+;;  user=> (eval (list 'deftype 'Test [field-symbol]))
+;;  #'user/Test
+;;  user=> (def myTest (Test "foo"))
+;;  #'user/myTest
+;;  user=> myTest
+;;  #:Test{:Wed Apr 07 08:26:46 BST 2010 "foo"}
+;;  user=> (def field-key (keyword field-symbol))
+;;  #'user/field-key
+;;  user=> (field-key myTest)
+;;  "foo"
+;;  user=> 
+;; but clojure does NOT define accessors only:
+;;  public clojure.lang.IObj user.Test__254.withMeta(clojure.lang.IPersistentMap)
+;;  public clojure.lang.IPersistentMap user.Test__254.meta()
+;;  public java.lang.Object user.Test__254.valAt(java.lang.Object)
+;;  public java.lang.Object user.Test__254.valAt(java.lang.Object,java.lang.Object)
+;;  public clojure.lang.ILookupThunk user.Test__254.getLookupThunk(clojure.lang.Keyword)
+;;  public clojure.lang.Keyword user.Test__254.getDynamicType()
+;;  public java.lang.Object user.Test__254.getDynamicField(clojure.lang.Keyword,java.lang.Object)
+;;  public clojure.lang.IPersistentMap user.Test__254.getExtensionMap()
+;; interestingly, clojure does define the following instance fields:
+;;  public final java.lang.Object user.Test__254.Wed Apr 07 08_COLON_26_COLON_46 BST 2010
+;;  public final java.lang.Object user.Test__254.__meta
+;;  public final java.lang.Object user.Test__254.__extmap
+
+;; a deftyped instance has slower access times - see below -
+;; getter1/test1 uses a deftyped object, whereas getter2/test2 uses a
+;; ClassFactory-ed object:
+
+;; user=> (time (dotimes [n 100000000] (getter1 test1)))
+;; "Elapsed time: 8615.820346 msecs"
+;; nil
+;; user=> (time (dotimes [n 100000000] (getter2 test2)))
+;; "Elapsed time: 5298.08904 msecs"
+;; nil
+
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
 (def #^Metadata whale-metadata (apply metadata Whale :time :version attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
-(def num-whales 10000)
+(def num-whales 1000)
 (def start-time (System/currentTimeMillis))
 
 (insert *metamodel* whales)
@@ -115,22 +156,61 @@
 
 ;;----------------------------------------
 
+(defn dfilter [#^Model src-model #^String tgt-view #^Collection attr-keys #^IFn filter-fn]
+  ;; TODO: accept ready-made View
+  (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
+
+(defn dtransform [#^Model src-model #^String suffix & #^Collection attribute-descrips]
+  ;; TOODO: accept ready-made View ?
+  (insert *metamodel* (apply do-transform suffix src-model attribute-descrips)))
+
+(defn dcount 
+  ([#^Model src-model key-value]
+   (let [key-type (type key-value)]
+     (dcount src-model key-type key-value)))
+  ([#^Model src-model #^Class key-type key-value]
+   (dcount src-model key-type key-value (count-reducer-metadata key-type)))
+  ([#^Model src-model #^Class key-type key-value #^Metadata metadata]
+   (insert *metamodel* (do-reduce-count src-model key-type key-value metadata)))
+  )
+
+(defn dsum
+  ([#^Model src-model #^Keyword attribute-key key-value]
+   (dsum src-model attribute-key (type key-value) key-value))
+  ([#^Model src-model #^Keyword attribute-key #^Class key-type key-value]
+   (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value)))
+  )
+
+;; try to lose key-to-valua and vice-versa then define dpivot...
+(defn dsplit [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
+  (do-split
+   src-model
+   key
+   mutable
+   value-to-keys
+   key-to-value
+   (fn [#^Model model value]
+       (insert *metamodel* model)
+       (tgt-hook model value)
+       )
+   )
+  )
+
+;;----------------------------------------
+
 ;; demonstrate filtration - only selecting a subset of the values from
 ;; one model into another - based on their contents.
 
 ;;----------------------------------------
 
-(let [half-max-length (/ max-length 2)]
-  (def longer-whales
-       (do-filter (str "length>" half-max-length) whales '(:length) #(> % half-max-length))))
+(def median-length (/ max-length 2))
+(def median-weight (/ max-weight 2))
 
-(insert *metamodel* longer-whales)
+(def longer-whales 
+     (dfilter whales (str "length>" median-length) '(:length) #(> % median-length)))
 
-(let [half-max-weight (/ max-weight 2)]
-  (def heavier-whales
-       (do-filter (str "weight>" half-max-weight)  whales '(:weight) #(> % half-max-weight))))
-
-(insert *metamodel* heavier-whales)
+(def heavier-whales
+     (dfilter whales (str "weight>" median-weight) '(:weight) #(> % median-weight)))
 
 ;;----------------------------------------
 ;; demonstrate transformation - only selecting a subset of the
@@ -138,26 +218,29 @@
 ;; attributes...
 ;;----------------------------------------
 
-(def longer-whales-weight (do-transform "weight" longer-whales :time :version :time :version :weight))
-(insert *metamodel* longer-whales-weight)
+(def longer-whales-weight
+     (dtransform longer-whales "weight" :time :version :time :version :weight))
 
-(def #^Model heavier-whales-length (do-transform "length" heavier-whales :time :version :time :version :length))
-(insert *metamodel* heavier-whales-length)
+(def #^Model heavier-whales-length
+     (dtransform heavier-whales "length" :time :version :time :version :length))
 
 ;;----------------------------------------
 ;; demonstrate transformation - a synthetic field - metric tons per metre
 ;;----------------------------------------
 
-(insert *metamodel* 
-	(do-transform
-	 "tonsPerMetre"
-	 whales
-	 :time
-	 :version 
-	 :time
-	 :version 
-	 (list :tonsPerMetre Number '(:weight :length) (fn [weight length] (if (= length 0) 0 (/ weight length)))))
-	)
+(dtransform
+ whales
+ "tonsPerMetre"
+ :time
+ :version 
+ :time
+ :version 
+ (list
+  :tonsPerMetre
+  Number
+  '(:weight :length)
+  (fn [weight length] (if (= length 0) 0 (/ weight length))))
+ )
 
 ;;----------------------------------------
 ;; try a transformation on top of a filtration
@@ -165,60 +248,57 @@
 ;;----------------------------------------
 
 (def narwhals-length
-     (do-transform 
-      "length"
-      (do-filter 
-       "type=narwhal" 
+     (dtransform 
+      (dfilter 
        whales
+       "type=narwhal" 
        '(:type)
        #(= "narwhal" %))
+      "length"
       :time
       :version
       :time
       :version
       :length)
      )
-(insert *metamodel* narwhals-length)
 
 ;;----------------------------------------
 ;; demonstrate reduction (sum)
 ;;----------------------------------------
 
-(insert *metamodel* (do-reduce-count whales String "whales"))
-(insert *metamodel* (do-reduce-sum whales :length String "whales"))
-(insert *metamodel* (do-reduce-sum whales :weight String "whales"))
-(insert *metamodel* (do-reduce-count heavier-whales-length String "heavier-whales"))
-(insert *metamodel* (do-reduce-sum heavier-whales-length :length String "heavier-whales"))
-(insert *metamodel* (do-reduce-sum longer-whales-weight :weight String "longer-whales"))
-(insert *metamodel* (do-reduce-count longer-whales-weight String "longer-whales"))
+(dcount whales "whales")
+(dsum whales :length "whales")
+(dsum whales :weight "whales")
+(dcount heavier-whales-length "heavier-whales")
+(dsum heavier-whales-length :length "heavier-whales")
+(dsum longer-whales-weight :weight "longer-whales")
+(dcount longer-whales-weight "longer-whales")
 
 ;;----------------------------------------
-;; demonstrate splitting [and more reduction)
+;; demonstrate splitting [and more reduction] - a pivot...
 ;;----------------------------------------
 
-(let [type-count-metadata (class-metadata
-       			   "org.dada.demo.whales.TypeCount"
-       			   Object
-       			   :key
-       			   :version
-       			   [:key String :version Integer :count Integer])
-      type-count-model (model "Whales.count(types)" type-count-metadata)
+(let [pivot-metadata (class-metadata
+		      "org.dada.demo.whales.TypeCount"
+		      Object
+		      :key
+		      :version
+		      [:key String :version Integer :count Integer])
+      pivot-model (model "Whales.count(split(type))" pivot-metadata)
       ]
-  (insert *metamodel* type-count-model)
-  (do-split
+  (insert *metamodel* pivot-model)
+  (dsplit
    whales
    :type
    false
    list
    identity
    (fn [#^Model model value]
-       (insert *metamodel* model)
-       (let [tcm (do-reduce-count model String value type-count-metadata)]
-	 (insert *metamodel* tcm)
-	 (connect tcm type-count-model)
+       (let [tcm (dcount model String value pivot-metadata)]
+	 (connect tcm pivot-model)
 	 )
-       (insert *metamodel* (do-reduce-sum model :length String value))
-       (insert *metamodel* (do-reduce-sum model :weight String value))
+       (dsum model :length value)
+       (dsum model :weight value)
        model ; TODO: do we really need to be able to override the model ? should threading go here ?
        )
    ))
