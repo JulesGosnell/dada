@@ -66,15 +66,11 @@
 (defn delete [#^View view value]
   (.update view '() '() (list (Update. value nil))))
 
+;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?
 (defn connect [#^Model model #^View view]
-  (.update
-   view
-   (map
-    #(Update. nil %) 
-    (.getData 
-     (.registerView model view)))
-   '()
-   '())
+  (.registerView model view)
+  (let [batch (map #(Update. nil %) (.getData model))]
+    (if (not (empty? batch)) (.update view batch '() '())))
   view)
 
 (defn disconnect [#^Model model #^View view]
