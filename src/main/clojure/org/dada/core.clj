@@ -184,13 +184,19 @@
    version-key
    attributes))
 
-(defn model [#^String name #^Metadata metadata]
-  (let [names (.getAttributeNames metadata)
-	key-names (.getKeyAttributeNames metadata)
-	id-getter (.getAttributeGetter metadata (first key-names))
-	version-getter (.getAttributeGetter metadata (second key-names))]
-    (new VersionedModelView name metadata id-getter version-getter)))
+(defn model
+  ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]
+   (let [id-getter (.getAttributeGetter metadata (name key))
+	 version-getter (.getAttributeGetter metadata (name version))]
+     (new VersionedModelView model-name metadata id-getter version-getter)))
+  ([#^String model-name #^Metadata metadata]
+   (let [names (.getAttributeNames metadata)
+	 key-names (.getKeyAttributeNames metadata)
+	 id-getter (.getAttributeGetter metadata (first key-names))
+	 version-getter (.getAttributeGetter metadata (second key-names))]
+     (new VersionedModelView model-name metadata id-getter version-getter))))
 
+;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
 	keys (.getKeyAttributeNames metadata)
@@ -238,6 +244,7 @@
 (defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
   (new
    Transformer
+   #^Collection
    (list view)
    #^Transformer$StatelessStrategy
    (proxy
