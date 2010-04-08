@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
@@ -52,30 +53,40 @@ public class FilteredView<V> implements View<V> {
 	
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
-		Collection<Update<V>> i = new ArrayList<Update<V>>();
-		for (Update<V> insertion : insertions) {
-			if (filter.filter(insertion.getNewValue()))
-				i.add(insertion);
-		}
-		Collection<Update<V>> u = new ArrayList<Update<V>>();
-		for (Update<V> update : alterations) {
-			if (filter.filter(update.getOldValue()))
-				u.add(update);
-		}
-		Collection<Update<V>> d = new ArrayList<Update<V>>();
-		for (Update<V> deletion : deletions) {
-			if (filter.filter(deletion.getOldValue()))
-				d.add(deletion);
-		}
+		if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)
+			logger.warn("{}: receiving empty event", new Exception(), "FilteredView");
 		
-		for (View<V> view: views) {
-			try {
-				view.update(i, u, d);
-			} catch (Throwable t) {
-				logger.error("problem updating View: ", t);
+		Collection<Update<V>> i = Collections.emptyList();
+		for (Update<V> insertion : insertions) {
+			if (filter.filter(insertion.getNewValue())) {
+				if (i.isEmpty()) i = new ArrayList<Update<V>>();
+				i.add(insertion);
 			}
 		}
- 
+		Collection<Update<V>> a = Collections.emptyList();
+		for (Update<V> update : alterations) {
+			if (filter.filter(update.getOldValue())) {
+				if (a.isEmpty()) a = new ArrayList<Update<V>>();
+				a.add(update);
+			}
+		}
+		Collection<Update<V>> d = Collections.emptyList();
+		for (Update<V> deletion : deletions) {
+			if (filter.filter(deletion.getOldValue())) {
+				if (d.isEmpty()) d = new ArrayList<Update<V>>();
+				d.add(deletion);
+			}
+		}
+
+		if (i.size() > 0 || a.size() > 0 || d.size() > 0) {
+			for (View<V> view: views) {
+				try {
+					view.update(i, a, d);
+				} catch (Throwable t) {
+					logger.error("problem updating View: ", t);
+				}
+			}
+		}
 	}
 
 }

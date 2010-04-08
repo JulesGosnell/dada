@@ -68,11 +68,11 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 		Collection<Update<V>> alterationsOut = new ArrayList<Update<V>>(alterations.size());
 		Collection<Update<V>> deletionsOut = new ArrayList<Update<V>>(deletions.size());
 
-		logger.debug("{}: update: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
+		logger.trace("{}:  input: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
 
 		// TODO: lose later
 		if (insertions.isEmpty() && alterations.isEmpty() && deletions.isEmpty())
-			logger.warn("wasteful message: 0 size update");
+			logger.warn("{}: receiving empty event", new Exception(), name);
 
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
@@ -133,6 +133,7 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 				maps = new Maps(current, historic);
 		} // end of sync block
 
+		logger.trace("{}: output: insertions={}, alterations={}, deletions={}", name, insertionsOut.size(), alterationsOut.size(), deletionsOut.size());
 		notifyUpdate(insertionsOut, alterationsOut, deletionsOut);
 	}
 }

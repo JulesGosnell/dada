@@ -89,6 +89,9 @@ public class Transformer<IV, OV> extends Connector<IV, OV> {
 
 	@Override
 	public void update(Collection<Update<IV>> insertions, Collection<Update<IV>> alterations, Collection<Update<IV>> deletions) {
+		if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)
+			LOGGER.warn("{}: receiving empty event", new Exception(), "Transformer");
+			
 		Collection<Update<OV>> i = new ArrayList<Update<OV>>(insertions.size());
 		for (Update<IV> insertion :  insertions)
 			i.add(strategy.insert(insertion));

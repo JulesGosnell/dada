@@ -98,6 +98,8 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		Collection<View<V>> snapshot = views;
 		for (View<V> view : snapshot) {
+			if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)
+				logger.warn("{}: sending empty event", name);
 			try {
 				view.update(insertions, alterations, deletions);
 			} catch (Throwable t) {
