@@ -295,6 +295,32 @@
 ;; demonstrate splitting [and more reduction] - a pivot...
 ;;----------------------------------------
 
+;; PROBLEM - 
+;; tgt-model values must be same shape as intermediate model values...
+;; EITHER: we prearrange the shape (preferred - complex - how do do this?)
+;; OR: we could construct the tgt mode lazily (simpler - but concurrency issues)
+
+;; (defn dpivot [#^Model src-model #^Keyword split-key #^boolean mutable #^String tgt-model-name #^IFn tgt-model-hook
+;; 	      #^Keyword key-key #^Keyword version-key & attribute-key-types]
+;;   (let [tgt-metadata (class-metadata
+;; 		      (name (gensym "org.dada.demo.core.Pivot"))
+;; 		      Object
+;; 		      key-key
+;; 		      version-key
+;; 		      attribute-key-types)
+;; 	tgt-model (model tgt-model-name tgt-metadata)]
+;;     (insert *metamodel* tgt-model)
+;;     (dsplit
+;;      src-model
+;;      split-key
+;;      mutable
+;;      (fn [#^Model model value]
+;; 	 (connect (dcount model String value tgt-metadata) tgt-model)
+;; 	 (tgt-model-hook model value)
+;; 	 )
+;;      ))
+;;   )
+
 (let [pivot-metadata (class-metadata
 		      "org.dada.demo.whales.TypeCount"
 		      Object
