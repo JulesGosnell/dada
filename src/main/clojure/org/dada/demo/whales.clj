@@ -161,13 +161,13 @@
   (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
 
 (defn dmorph [#^Model src-model #^String suffix & #^Collection attribute-descrips]
-  ;; TOODO: accept ready-made View ?
+  ;; TODO: accept ready-made View ?
+  ;; TODO: default key/version from src-model
   (insert *metamodel* (apply do-transform suffix src-model attribute-descrips)))
 
 (defn dcount 
   ([#^Model src-model key-value]
-   (let [key-type (type key-value)]
-     (dcount src-model key-type key-value)))
+   (dcount src-model (type key-value) key-value))
   ([#^Model src-model #^Class key-type key-value]
    (dcount src-model key-type key-value (count-reducer-metadata key-type)))
   ([#^Model src-model #^Class key-type key-value #^Metadata metadata]
@@ -181,21 +181,37 @@
    (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value)))
   )
 
-;; try to lose key-to-valua and vice-versa then define dpivot...
+;; TODO: try to lose key-to-value and vice-versa then define dpivot...
 ;; TODO: should mutability be part of metadata ?
-(defn dsplit [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
-  (do-split
-   src-model
-   key
-   mutable
-   value-to-keys
-   key-to-value
-   (fn [#^Model model value]
-       (insert *metamodel* model)
-       (tgt-hook model value)
-       )
-   )
+(defn dsplit
+  ([#^Model src-model #^Keyword key #^boolean mutable #^IFn tgt-hook]
+   (dsplit
+    src-model
+    key
+    mutable
+    list
+    identity
+    (fn [#^Model model value]
+	(insert *metamodel* model)
+	(tgt-hook model value)
+	)
+    ))
+  ([#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
+   (do-split
+    src-model
+    key
+    mutable
+    value-to-keys
+    key-to-value
+    (fn [#^Model model value]
+	(insert *metamodel* model)
+	(tgt-hook model value)
+	)
+    ))
   )
+
+;; TODO
+;; dindex
 
 ;;----------------------------------------
 
@@ -285,19 +301,15 @@
 		      :key
 		      :version
 		      [:key String :version Integer :count Integer])
-      pivot-model (model "Whales.count(split(type))" pivot-metadata)
+      pivot-model (model "Whales.pivot(count(split(type)))" pivot-metadata)
       ]
   (insert *metamodel* pivot-model)
   (dsplit
    whales
    :type
    false
-   list
-   identity
    (fn [#^Model model value]
-       (let [tcm (dcount model String value pivot-metadata)]
-	 (connect tcm pivot-model)
-	 )
+       (connect (dcount model String value pivot-metadata) pivot-model)
        (dsum model :length value)
        (dsum model :weight value)
        model ; TODO: do we really need to be able to override the model ? should threading go here ?
