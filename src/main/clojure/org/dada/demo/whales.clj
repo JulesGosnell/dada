@@ -160,7 +160,7 @@
   ;; TODO: accept ready-made View
   (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
 
-(defn dtransform [#^Model src-model #^String suffix & #^Collection attribute-descrips]
+(defn dmorph [#^Model src-model #^String suffix & #^Collection attribute-descrips]
   ;; TOODO: accept ready-made View ?
   (insert *metamodel* (apply do-transform suffix src-model attribute-descrips)))
 
@@ -182,6 +182,7 @@
   )
 
 ;; try to lose key-to-valua and vice-versa then define dpivot...
+;; TODO: should mutability be part of metadata ?
 (defn dsplit [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
   (do-split
    src-model
@@ -219,16 +220,16 @@
 ;;----------------------------------------
 
 (def longer-whales-weight
-     (dtransform longer-whales "weight" :time :version :time :version :weight))
+     (dmorph longer-whales "weight" :time :version :time :version :weight))
 
 (def #^Model heavier-whales-length
-     (dtransform heavier-whales "length" :time :version :time :version :length))
+     (dmorph heavier-whales "length" :time :version :time :version :length))
 
 ;;----------------------------------------
 ;; demonstrate transformation - a synthetic field - metric tons per metre
 ;;----------------------------------------
 
-(dtransform
+(dmorph
  whales
  "tonsPerMetre"
  :time
@@ -248,7 +249,7 @@
 ;;----------------------------------------
 
 (def narwhals-length
-     (dtransform 
+     (dmorph 
       (dfilter 
        whales
        "type=narwhal" 
