@@ -62,10 +62,13 @@ public class Batcher<V> extends Connector<V, V> {
 		newDeletions = new ArrayList<Update<V>>();
 	}
 
+	// TODO: this could be made much more concurrent... - we only need to sychronize if we are interacting with our own state and even then we could probably do it in an almost lockless manner...
 	@Override
 	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
-		if (insertions.size() + alterations.size() + deletions.size() == 0)
+		if (insertions.size() + alterations.size() + deletions.size() == 0) {
+			logger.warn("{}: receiving empty event", new Exception(), "Batcher");
 			return;
+		}
 		
 		boolean empty = newInsertions.size() + newAlterations.size() + newDeletions.size() == 0;
 		
@@ -113,9 +116,11 @@ public class Batcher<V> extends Connector<V, V> {
 		newAlterations = new ArrayList<Update<V>>();
 		newDeletions = new ArrayList<Update<V>>();
 
-		logger.trace("cancelling timer");
-		task.cancel();
-		task = null;
+		if (task != null) { 
+			logger.trace("cancelling timer");
+			task.cancel();
+			task = null;
+		}
 	}
 	
 	protected void add(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
