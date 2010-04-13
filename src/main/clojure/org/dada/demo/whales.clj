@@ -366,12 +366,38 @@
 	    (DateMidnight. 2008 1 1)
 	    (DateMidnight. 2009 1 1))))
 
+(def year-names (map (fn [day] (.toString day "yyyy")) dates))
+
+(eval (list 'deftype 'pivot-type (apply vector 'type 'version (map (fn [year-name] (symbol year-name)) year-names))))
+
+(def attribute-names (apply collection "type" "version" year-names))
+
+(import org.dada.core.Creator)
+(import org.dada.core.Getter)
+(import org.dada.core.GetterMetadata)
+
+(def pivot-metadata
+     (GetterMetadata.
+      (proxy [Creator] [] (create [args] (apply pivot-type args)))
+      (collection "type" "version") ;; key-attribute-names
+      (apply collection String Integer (repeat 10 DateMidnight)) ;; attribute-types
+      attribute-names
+      (apply collection
+	     (map
+	      (fn [name]
+		  (let [key (keyword (symbol name))]
+		    (proxy [Getter] [] (get [instance] (key instance)))))
+	      attribute-names))))
+
 (def survey-metadata (class-metadata
 		      (name (gensym "org.dada.demo.whales.Survey"))
 		      Object
 		      :time
 		      :version
 		      [:time DateMidnight :version Integer :count Integer]))
+
+(def pivot-model (model (str (.getName whales) ".pivot(count(time))") pivot-metadata))
+(insert *metamodel* pivot-model)
 
 (dsplit
  whales
@@ -380,6 +406,8 @@
  (fn [#^Model type-model type]
      (let [survey-model (model (str (.getName type-model) ".count(time)") survey-metadata)]
        (insert *metamodel* survey-model)
+       ;; need some sort of transform here...'
+       ;;(connect survey-model pivot-model)
        (dsplit
 	type-model
 	:time
