@@ -369,28 +369,29 @@
 (def survey-metadata (class-metadata
 		      (name (gensym "org.dada.demo.whales.Survey"))
 		      Object
-		      :type
+		      :time
 		      :version
-		      [:type String :version Integer :count Integer]))
+		      [:time DateMidnight :version Integer :count Integer]))
 
 (dsplit
-   whales
-   :time
-   false
-   (fn [time] (list (.lower dates time)))
-   identity
-   (fn [#^Model time-model time]
-       (let [survey-model (model (str (.getName time-model) ".count(type)") survey-metadata)]
-	 (insert *metamodel* survey-model)
-	 (dsplit
-	  time-model
-	  :type
-	  false
-	  (fn [#^Model type-model type]
-	      (connect (dcount type-model String type survey-metadata) survey-model)
-	      type-model)))
-       time-model)
-   )
+ whales
+ :type
+ false
+ (fn [#^Model type-model type]
+     (let [survey-model (model (str (.getName type-model) ".count(time)") survey-metadata)]
+       (insert *metamodel* survey-model)
+       (dsplit
+	type-model
+	:time
+	false
+	(fn [time] (list (or (.lower dates time) time)))
+	identity
+	(fn [#^Model time-model time]
+	    (connect (dcount time-model DateMidnight time survey-metadata) survey-model)
+	    time-model))
+       )
+     type-model)
+ )
 
 ;; TODO: Reducers need to support variable length set of attribute keys
 
