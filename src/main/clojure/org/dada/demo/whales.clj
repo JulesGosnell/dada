@@ -6,10 +6,17 @@
 	   ])
  (:import [java.math
 	   ])
+ (:import [java.util
+	   NavigableSet
+	   TreeSet
+	   ])
  (:import [org.dada.core
 	   Creator
 	   Metadata
 	   Model
+	   ])
+ (:import [org.joda.time
+	   DateMidnight
 	   ])
  )
 
@@ -81,7 +88,7 @@
 
 (def attributes
      (list 
-      :time (Long/TYPE)
+      :time DateMidnight
       :version (Integer/TYPE)
       :type String
       :length (Float/TYPE)
@@ -137,7 +144,9 @@
 
 (insert *metamodel* whales)
 
-;; create 10,000 whales and insert them into model
+;; TODO - Why does insert-n work here, but not insert ?
+
+;; create some whales and insert them into model
 (insert-n
  whales
  (let [#^Creator creator (.getCreator whale-metadata)
@@ -148,7 +157,9 @@
       creator
       (into-array
        Object
-       [id
+       [(DateMidnight. (+ (rand-int 10) 2000)
+		       (+ (rand-int 12) 1)
+		       (+ (rand-int 28) 1))
 	0
 	(rnd types)
 	(/ (rand-int max-length-x-100) 100)
@@ -160,7 +171,7 @@
   ;; TODO: accept ready-made View
   (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
 
-(defn dmorph [#^Model src-model #^String suffix & #^Collection attribute-descrips]
+(defn dtransform [#^Model src-model #^String suffix & #^Collection attribute-descrips]
   ;; TODO: accept ready-made View ?
   ;; TODO: default key/version from src-model
   (insert *metamodel* (apply do-transform suffix src-model attribute-descrips)))
@@ -236,16 +247,16 @@
 ;;----------------------------------------
 
 (def longer-whales-weight
-     (dmorph longer-whales "weight" :time :version :time :version :weight))
+     (dtransform longer-whales "weight" :time :version :time :version :weight))
 
 (def #^Model heavier-whales-length
-     (dmorph heavier-whales "length" :time :version :time :version :length))
+     (dtransform heavier-whales "length" :time :version :time :version :length))
 
 ;;----------------------------------------
 ;; demonstrate transformation - a synthetic field - metric tons per metre
 ;;----------------------------------------
 
-(dmorph
+(dtransform
  whales
  "tonsPerMetre"
  :time
@@ -265,7 +276,7 @@
 ;;----------------------------------------
 
 (def narwhals-length
-     (dmorph 
+     (dtransform 
       (dfilter 
        whales
        "type=narwhal" 
@@ -321,37 +332,65 @@
 ;;      ))
 ;;   )
 
-(let [pivot-metadata (class-metadata
+(let [union-metadata (class-metadata
 		      "org.dada.demo.whales.TypeCount"
 		      Object
 		      :key
 		      :version
 		      [:key String :version Integer :count Integer])
-      pivot-model (model "Whales.pivot(count(split(type)))" pivot-metadata)
+      union-model (model "Whales.union(count(split(type)))" union-metadata)
       ]
-  (insert *metamodel* pivot-model)
+  (insert *metamodel* union-model)
   (dsplit
    whales
    :type
    false
    (fn [#^Model model value]
-       (connect (dcount model String value pivot-metadata) pivot-model)
+       (connect (dcount model String value union-metadata) union-model)
        (dsum model :length value)
        (dsum model :weight value)
        model ; TODO: do we really need to be able to override the model ? should threading go here ?
        )
    ))
 
-;; (do-split
-;;    whales
-;;    :time
-;;    false
-;;    #(mod % 10)
-;;    #(aget key-to-type #^Integer %)
-;;    (fn [#^Model model value]
-;;        (insert *metamodel* model)
-;;        model)
-;;    )
+(def #^NavigableSet dates (TreeSet.
+	    (list
+	    (DateMidnight. 2000 1 1)
+	    (DateMidnight. 2001 1 1)
+	    (DateMidnight. 2002 1 1)
+	    (DateMidnight. 2003 1 1)
+	    (DateMidnight. 2004 1 1)
+	    (DateMidnight. 2005 1 1)
+	    (DateMidnight. 2006 1 1)
+	    (DateMidnight. 2007 1 1)
+	    (DateMidnight. 2008 1 1)
+	    (DateMidnight. 2009 1 1))))
+
+(def survey-metadata (class-metadata
+		      (name (gensym "org.dada.demo.whales.Survey"))
+		      Object
+		      :type
+		      :version
+		      [:type String :version Integer :count Integer]))
+
+(dsplit
+   whales
+   :time
+   false
+   (fn [time] (list (.lower dates time)))
+   identity
+   (fn [#^Model time-model time]
+       (let [survey-model (model (str (.getName time-model) ".count(type)") survey-metadata)]
+	 (insert *metamodel* survey-model)
+	 (dsplit
+	  time-model
+	  :type
+	  false
+	  (fn [#^Model type-model type]
+	      (connect (dcount type-model String type survey-metadata) survey-model)
+	      type-model)))
+       time-model)
+   )
 
 ;; TODO: Reducers need to support variable length set of attribute keys
 
@@ -381,3 +420,44 @@
 ;; TODO
 ;; simplify splitting - Sparse splitting should use Object keys, not only int
 ;; transform needs to suppport synthetic attributes
+
+;; need some form of pluggable sorting algorithm
+
+;; operations are:
+;;  transform
+;;  index-with-version
+;;  filter
+;;  split (related to filter)
+;;  reduce(sum, count, ?as-percentage-within-range?[, min. max. avg, mean, median, mode, etc)
+;;  collect/union
+;;  rotate/pivot
+;;  [intersect]
+;;  [complement]
+
+;; a group-by is a tree-structure where each level represents a
+;; grouping by a further column. Difference subtrees should be
+;; parallelisable.
+
+;; initially group-by can be implemented as split/reduce/union - later, for efficiencies sake this may need to become a single operation - particularly if we want to express collapse-by-index-and-version as a group-by(key) 
+
+
+;; versioned-index is actually an efficient split (by pk), reduce (all
+;; versions into latest), union all latest versions back into another
+;; set...
+
+;; rotate/pivot
+
+;; can only pivot when pivoted dimension consists of a closed set of
+;; values - e.g. a projection, since if the set were open, the
+;; insertion of new members would herald the restructuring of all
+;; members of pivoted dataset - possible but nasty...
+
+;; we could ensure this by prefiltering/pretransforming, but nicest
+;; way is by a single split with clever statelss strategy-fn.
+
+;; so pivot fn must supply such a closed list of values to be used as
+;; attribute metadata for output model....
+
+;; how about the application of fns vertically as well as horizontally
+;; during transforms.
+

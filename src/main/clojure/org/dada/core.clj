@@ -12,6 +12,7 @@
 	     (org.slf4j Logger LoggerFactory)
 	     (org.dada.asm ClassFactory)
 	     (org.dada.core
+	      AbstractModel
 	      Creator
 	      Factory
 	      FilteredView
@@ -69,7 +70,7 @@
 ;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?
 (defn connect [#^Model model #^View view]
   (.registerView model view)
-  (let [batch (map #(Update. nil %) (.getData model))]
+  (let [batch (map #(Update. nil %) (.getData #^AbstractModel model))] ;; TODO: getData should be on Model ?
     (if (not (empty? batch)) (.update view batch '() '())))
   view)
 
@@ -101,9 +102,16 @@
 		     (into-array (list (.getCanonicalName type) (name key))))
 		 (apply array-map attribute-key-types)))))
 
+(def *classloader* (deref clojure.lang.Compiler/LOADER))
+
+(defn #^DynamicClassLoader classloader []
+  (try
+   (deref clojure.lang.Compiler/LOADER)
+   (catch Throwable _ *classloader*)))
+
 (defn make-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
   (.
-   #^DynamicClassLoader (deref clojure.lang.Compiler/LOADER)
+   (classloader)
    (defineClass class-name 
      (.create
       *class-factory*
