@@ -37,9 +37,13 @@
 	     (org.dada.demo Client)
 	     ))
 
-(defn debug [foo]
+(defn debug [& foo]
   (println "DEBUG: " foo)
   foo)
+
+(defn warn [& args]
+  (println "WARN: " args)
+  args)
 
 (set! *warn-on-reflection* true)
  
@@ -107,7 +111,7 @@
 (defn #^DynamicClassLoader classloader []
   (try
    (deref clojure.lang.Compiler/LOADER)
-   (catch Throwable _ *classloader*)))
+   (catch IllegalStateException _ (warn "could not retrieve ClassLoader") *classloader*)))
 
 (defn make-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
   (.
@@ -380,12 +384,15 @@
      (apply [currentValue delta] (+ currentValue delta))
      )))
 
-(defn do-reduce-sum [#^Model model #^Keyword attribute-key attribute-type attribute-value]
-  (let [tgt-metadata (sum-reducer-metadata attribute-type)
-	strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
-	view-name-fn #(str "sum(" % ")")
-	reducer (make-reducer model attribute-key attribute-value strategy tgt-metadata view-name-fn)]
-    (connect model reducer)))
+(defn do-reduce-sum
+  ([#^Model model #^Keyword attribute-key attribute-type attribute-value]
+   (do-reduce-sum model attribute-key attribute-type attribute-value (sum-reducer-metadata attribute-type)))
+  ([#^Model model #^Keyword attribute-key attribute-type attribute-value #^Metadata tgt-metadata]
+   (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
+	 view-name-fn #(str "sum(" % ")")
+	 reducer (make-reducer model attribute-key attribute-value strategy tgt-metadata view-name-fn)]
+     (connect model reducer)))
+  )
 
 ;; count specific stuff - should be in its own file
 
