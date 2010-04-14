@@ -88,9 +88,10 @@
     (start-client "Cetacea")))
 
 (def attributes
-     (list 
-      :time DateMidnight
+     (list
+      :id (Integer/TYPE)
       :version (Integer/TYPE)
+      :time DateMidnight
       :type String
       :length (Float/TYPE)
       :weight (Float/TYPE)))
@@ -137,11 +138,10 @@
 ;; nil
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
-(def #^Metadata whale-metadata (apply metadata Whale :time :version attributes))
+(def #^Metadata whale-metadata (apply metadata Whale :id :version attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
-(def num-whales 10000)
-(def start-time 0)
+(def num-whales 1000000)
 
 (insert *metamodel* whales)
 
@@ -227,10 +227,10 @@
 ;;----------------------------------------
 
 (def longer-whales-weight
-     (dtransform longer-whales "weight" :time :version :time :version :weight))
+     (dtransform longer-whales "weight" :id :version :id :version :weight))
 
 (def #^Model heavier-whales-length
-     (dtransform heavier-whales "length" :time :version :time :version :length))
+     (dtransform heavier-whales "length" :id :version :id :version :length))
 
 ;;----------------------------------------
 ;; demonstrate transformation - a synthetic field - metric tons per metre
@@ -239,9 +239,9 @@
 (dtransform
  whales
  "tonsPerMetre"
- :time
+ :id
  :version 
- :time
+ :id
  :version 
  (list
   :tonsPerMetre
@@ -263,9 +263,9 @@
        '(:type)
        #(= "narwhal" %))
       "length"
-      :time
+      :id
       :version
-      :time
+      :id
       :version
       :length)
      )
@@ -430,29 +430,32 @@
 ;; simplify splitting - Sparse splitting should use Object keys, not only int
 ;; transform needs to suppport synthetic attributes
 
-;; create 10,000 whales and insert them into model
- ;;whales
-(doall
- (let [batcher (Batcher. 999 1000 (list whales))
-       #^Creator creator (.getCreator whale-metadata)
-       max-length-x-100 (* max-length 100)
-       max-weight-x-100 (* max-weight 100)]
-   (for [id (range start-time (+ start-time num-whales))]
-     (insert
-      batcher
-      (.create
-       creator
-       (into-array
-	Object
-	[(DateMidnight. (+ (rand-int 10) 2000)
-			(+ (rand-int 12) 1)
-			(+ (rand-int 28) 1))
-	 0
-	 (rnd types)
-	 (/ (rand-int max-length-x-100) 100)
-	 (/ (rand-int max-weight-x-100) 100)]))))))
+;; create some whales...
+(time
+ (doall
+  (let [batcher (Batcher. 999 1000 (list whales))
+	#^Creator creator (.getCreator whale-metadata)
+	max-length-x-100 (* max-length 100)
+	max-weight-x-100 (* max-weight 100)]
+    (pmap
+     (fn [id]
+	 (insert
+	  whales ;; batcher
+	  (.create
+	   creator
+	   (into-array
+	    Object
+	    [id
+	     0
+	     (DateMidnight. (+ (rand-int 10) 2000)
+			    (+ (rand-int 12) 1)
+			    (+ (rand-int 28) 1))
+	     (rnd types)
+	     (/ (rand-int max-length-x-100) 100)
+	     (/ (rand-int max-weight-x-100) 100)]))))
+     (range num-whales)))))
 
-(println "LOADED!")
+(println "LOADED: " num-whales)
 
 
 ;; need some form of pluggable sorting algorithm
