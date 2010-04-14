@@ -38,38 +38,38 @@ import java.util.Map;
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
-	private final Collection<String> keyAttributeNames;
+	private final Collection<Object> keyAttributeKeys;
 	private final List<Class<?>> attributeTypes;
-	private final List<String> attributeNames;
+	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
-	private final Map<String, Class<?>> nameToType;;
-	private final Map<String, Getter<?, V>> nameToGetter;
+	private final Map<Object, Class<?>> keyToType;;
+	private final Map<Object, Getter<?, V>> keyToGetter;
 
-	public GetterMetadata(Creator<V> creator, Collection<String> keyAttributeNames, Collection<Class<?>> attributeTypes, Collection<String> attributeNames, Collection<Getter<?, V>> getters) {
+	public GetterMetadata(Creator<V> creator, Collection<Object> keyAttributeKeys, Collection<Class<?>> attributeTypes, Collection<Object> attributeKeys, Collection<Getter<?, V>> getters) {
 		this.creator = creator;
-		this.keyAttributeNames = keyAttributeNames;
+		this.keyAttributeKeys = keyAttributeKeys;
 		this.attributeTypes = new ArrayList<Class<?>>(attributeTypes);
-		this.attributeNames = new ArrayList<String>(attributeNames);
+		this.attributeKeys = new ArrayList<Object>(attributeKeys);
 		this.attributeGetters = new ArrayList<Getter<?, V>>(getters);
 		this.getters = getters.toArray(new Getter[getters.size()]);
 		this.keyGetter = (Getter<K, V>)this.getters[0];
 
 		{
-			nameToType = new HashMap<String, Class<?>>(attributeNames.size());
-			Iterator<String> n = attributeNames.iterator();
+			keyToType = new HashMap<Object, Class<?>>(attributeKeys.size());
+			Iterator<Object> n = attributeKeys.iterator();
 			Iterator<Class<?>> t = attributeTypes.iterator();
 			while (n.hasNext() && t.hasNext())
-				nameToType.put(n.next(), t.next());
+				keyToType.put(n.next(), t.next());
 		}
 
 		{
-			nameToGetter= new HashMap<String, Getter<?, V>>(attributeNames.size());
-			Iterator<String> n = attributeNames.iterator();
+			keyToGetter= new HashMap<Object, Getter<?, V>>(attributeKeys.size());
+			Iterator<Object> n = attributeKeys.iterator();
 			Iterator<Getter<?, V>> t = attributeGetters.iterator();
 			while (n.hasNext() && t.hasNext())
-				nameToGetter.put(n.next(), t.next());
+				keyToGetter.put(n.next(), t.next());
 		}
 	}
 
@@ -79,8 +79,8 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public List<String> getAttributeNames() {
-		return attributeNames;
+	public List<Object> getAttributeKeys() {
+		return attributeKeys;
 	}
 
 	@Override
@@ -99,8 +99,8 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Collection<String> getKeyAttributeNames() {
-		return keyAttributeNames;
+	public Collection<Object> getKeyAttributeKeys() {
+		return keyAttributeKeys;
 	}
 
 	@Override
@@ -120,12 +120,12 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 
 	@Override
 	public Class<?> getAttributeType(String name) {
-		return nameToType.get(name);
+		return keyToType.get(name);
 	}
 
 	@Override
 	public Getter<?, V> getAttributeGetter(String name) {
-		return nameToGetter.get(name);
+		return keyToGetter.get(name);
 	}
 
 }

@@ -32,7 +32,7 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
 
 		// check attribute names
 		
-		List<String> attributeNames = metadata.getAttributeNames();
+		List<Object> attributeNames = metadata.getAttributeKeys();
 		assertTrue(attributeNames.size() == 2);
 		assertTrue(attributeNames.contains("Key"));
 		assertTrue(attributeNames.contains("Exception"));
