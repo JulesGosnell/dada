@@ -151,10 +151,11 @@
   ;; TODO: accept ready-made View
   (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
 
-(defn dtransform [#^Model src-model #^String suffix & #^Collection attribute-descrips]
+(defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
   ;; TODO: accept ready-made View ?
   ;; TODO: default key/version from src-model
-  (insert *metamodel* (apply do-transform suffix src-model attribute-descrips)))
+  
+  (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
 (defn dcount 
   ([#^Model src-model key-value]
@@ -170,11 +171,25 @@
    (dsum src-model attribute-key (type key-value) key-value))
   ([#^Model src-model #^Keyword attribute-key #^Class key-type key-value]
    (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value)))
+  ([#^Model src-model #^Keyword attribute-key #^Class key-type key-value #^Metadata metadata]
+   (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value metadata)))
   )
 
 ;; TODO: try to lose key-to-value and vice-versa then define dpivot...
 ;; TODO: should mutability be part of metadata ?
 (defn dsplit
+  ([#^Model src-model #^Keyword key #^boolean mutable]
+   (dsplit
+    src-model
+    key
+    mutable
+    list
+    identity
+    (fn [#^Model model value]
+	(insert *metamodel* model)
+	model
+	)
+    ))
   ([#^Model src-model #^Keyword key #^boolean mutable #^IFn tgt-hook]
    (dsplit
     src-model
@@ -200,6 +215,9 @@
 	)
     ))
   )
+
+(defn do-model [#^Model src-model #^String suffix #^Keyword key #^Keyword version]
+  (connect src-model (model (str (.getName src-model) "." suffix) key version (.getMetadata  src-model))))
 
 ;; TODO
 ;; dindex
