@@ -110,7 +110,8 @@ public class Batcher<V> extends Connector<V, V> {
 
 	protected synchronized void flush() {
 
-		notifyViews(newInsertions, newAlterations, newDeletions);
+		if (newInsertions.size() > 0 || newAlterations.size() > 0 || newDeletions.size() > 0)
+			notifyViews(newInsertions, newAlterations, newDeletions);
 
 		newInsertions = new ArrayList<Update<V>>();
 		newAlterations = new ArrayList<Update<V>>();
