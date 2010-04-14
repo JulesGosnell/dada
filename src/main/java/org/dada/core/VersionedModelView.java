@@ -101,7 +101,11 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 				V newValue = update.getNewValue();
 				K key = keyGetter.get(newValue);
 				V currentValue = (V) current.valAt(key);
-				if (currentValue == null || versionGetter.get(currentValue) < versionGetter.get(newValue)) {
+				if (currentValue == null) {
+					current = current.assoc(keyGetter.get(newValue), newValue);
+					insertionsOut.add(update);
+					changed = true;
+				} else if (versionGetter.get(currentValue) < versionGetter.get(newValue)) {
 					current = current.assoc(keyGetter.get(newValue), newValue);
 					alterationsOut.add(update);
 					changed = true;
