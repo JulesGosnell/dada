@@ -12,6 +12,7 @@
 	   TreeSet
 	   ])
  (:import [org.dada.core
+	   Batcher
 	   Creator
 	   Metadata
 	   Model
@@ -85,9 +86,10 @@
     (start-client "Cetacea")))
 
 (def attributes
-     (list 
-      :time Date
+     (list
+      :id (Integer/TYPE)
       :version (Integer/TYPE)
+      :time Date
       :type String
       :length (Float/TYPE)
       :weight (Float/TYPE)))
@@ -134,34 +136,12 @@
 ;; nil
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
-(def #^Metadata whale-metadata (apply metadata Whale :time :version attributes))
+(def #^Metadata whale-metadata (apply metadata Whale :id :version attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
 (def num-whales 1000)
-(def start-time (System/currentTimeMillis))
 
 (insert *metamodel* whales)
-
-;; TODO - Why does insert-n work here, but not insert ?
-
-;; create some whales and insert them into model
-(insert-n
- whales
- (let [#^Creator creator (.getCreator whale-metadata)
-       max-length-x-100 (* max-length 100)
-       max-weight-x-100 (* max-weight 100)]
-   (for [id (range start-time (+ start-time num-whales))]
-     (.create
-      creator
-      (into-array
-       Object
-       [(Date. (+ (rand-int 10) 0)
-	       (rand-int 12)
-	       (+ (rand-int 28) 1))
-	0
-	(rnd types)
-	(/ (rand-int max-length-x-100) 100)
-	(/ (rand-int max-weight-x-100) 100)])))))
 
 ;;----------------------------------------
 
@@ -553,8 +533,6 @@
  ;;  false)
  )
 
-
-
 ;; (execute
 ;;  (munion
 ;; ;;  (msplit
@@ -599,6 +577,34 @@
 ;; TODO
 ;; simplify splitting - Sparse splitting should use Object keys, not only int
 ;; transform needs to suppport synthetic attributes
+
+;; create some whales...
+(time
+ (doall
+  (let [batcher (Batcher. 999 1000 (list whales))
+	#^Creator creator (.getCreator whale-metadata)
+	max-length-x-100 (* max-length 100)
+	max-weight-x-100 (* max-weight 100)]
+    (pmap
+     (fn [id]
+	 (insert
+	  whales ;; batcher
+	  (.create
+	   creator
+	   (into-array
+	    Object
+	    [id
+	     0
+	     (Date. (rand-int 10)
+		    (rand-int 12)
+		    (+ (rand-int 28) 1))
+	     (rnd types)
+	     (/ (rand-int max-length-x-100) 100)
+	     (/ (rand-int max-weight-x-100) 100)]))))
+     (range num-whales)))))
+
+(println "LOADED: " num-whales)
+
 
 ;; need some form of pluggable sorting algorithm
 

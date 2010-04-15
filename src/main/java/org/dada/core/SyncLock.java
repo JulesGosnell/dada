@@ -51,7 +51,7 @@ public class SyncLock implements Lock {
 	public void lock() {
 		try {
 			sync.acquire();
-			logger.debug("{}: LOCKED -> {}", Thread.currentThread().getName(), ++count);
+			logger.trace("{}: LOCKED -> {}", Thread.currentThread().getName(), ++count);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
@@ -80,7 +80,7 @@ public class SyncLock implements Lock {
 	@Override
 	public void unlock() {
 		sync.release();
-		logger.debug("{}: UNLOCKED -> {}", Thread.currentThread().getName(), --count);
+		logger.trace("{}: UNLOCKED -> {}", Thread.currentThread().getName(), --count);
 	}
 
 }

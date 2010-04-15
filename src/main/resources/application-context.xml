@@ -90,7 +90,7 @@
   </bean>
 
   <bean id="executorService" class="java.util.concurrent.Executors" factory-method="newFixedThreadPool">
-    <constructor-arg><value>20</value></constructor-arg> <!-- TODO: should size dynamically according to h/w -->
+    <constructor-arg><value>32</value></constructor-arg> <!-- TODO: should size dynamically according to h/w -->
   </bean>
 
   <bean id="queueFactory" class="org.dada.jms.QueueFactory"/>
@@ -170,10 +170,12 @@
     <constructor-arg ref="readSync"/>
   </bean>
 
+  <!-- <bean id="internalViewServiceFactory" class="org.dada.core.SynchronousServiceFactory"/> -->
+
   <bean id="internalViewServiceFactory" class="org.dada.core.AsynchronousServiceFactory">
-    <constructor-arg><list><ref bean="viewInterface"/></list></constructor-arg>
-    <constructor-arg ref="executorService"/>
-    <constructor-arg ref="readLock"/>
+       <constructor-arg><list><ref bean="viewInterface"/></list></constructor-arg>
+       <constructor-arg ref="executorService"/>
+       <constructor-arg ref="readLock"/>
   </bean>
 
   <bean id="stringMetadata" class="org.dada.core.StringMetadata">
