@@ -351,9 +351,6 @@
 ;;        )
 ;;    ))
 
-;; (import java.util.NavigableSet)
-;; (import java.util.TreeSet)
-
 ;; (def #^NavigableSet pivot-years
 ;;      (TreeSet.
 ;;       (list
@@ -463,9 +460,9 @@
 	       (hook tgt-model tgt-key)
 	       (applicator
 		(fn [src-model src-key]
-		    (println "HERE" src-model src-key)
-		    (connect src-model tgt-model)))
-	       tgt-model))
+		    (println "UNION: " src-key src-model)
+		    (connect src-model tgt-model)
+		    tgt-model))))
 	 ])
       ))
 
@@ -480,44 +477,97 @@
 	 (fn [hook]
 	     (applicator
 	      (fn [src-model src-key]
-		  (println "COUNT(): " src-model src-key tgt-key)
+		  (println "COUNT: " src-key src-model)
 		  (let [tgt-model (do-reduce-count src-model src-key-type src-key tgt-metadata tgt-key)]
 		    (insert *metamodel* tgt-model)
 		    ;;(connect src-model tgt-model)
 		    (hook tgt-model tgt-key)
-		    tgt-model))))])))
+		    tgt-model)))
+	     )]
+	)))
 
-(defn msplit [chain split-key mutable]
-  (fn []
-      (let [[downstream-metadata-accessor applicator] (chain)
-	    [src-metadata src-key] (downstream-metadata-accessor)]
-	[ ;;n get metadata / key
-	 (fn [] [src-metadata split-key])
-	 ;; apply
-	 (fn [hook]
-	     (applicator
-	      (fn [src-model src-key]
-		  (dsplit src-model split-key mutable
-			  (fn [tgt-model tgt-key]
-			      (insert *metamodel* tgt-model)
-			      (hook tgt-model tgt-key)
-			      tgt-model)))))
-	 ])
-      ))
+(defn msplit
+  ([chain split-key mutable]
+   (msplit chain split-key mutable list))
+  ([chain split-key mutable split-fn]
+   (fn []
+       (let [[downstream-metadata-accessor applicator] (chain)
+	     [src-metadata src-key] (downstream-metadata-accessor)]
+	 [ ;;n get metadata / key
+	  (fn [] [src-metadata split-key])
+	  ;; apply
+	  (fn [hook]
+	      (applicator
+	       (fn [src-model src-key]
+		   (println "SPLIT: " src-key src-model)
+		   (dsplit src-model split-key mutable split-fn identity
+			   (fn [tgt-model tgt-key]
+			       (insert *metamodel* tgt-model)
+			       (hook tgt-model tgt-key)
+			       tgt-model))
+		   src-model)))
+	  ])
+       )))
 
 ;; next step e.g. (select [a <model.field> b <model.field> c <model.field>] from [model....] where [(= a 10)...]....)
 
 (defn execute [monad]
   ((second (monad)) (fn [model key])))
 
+;;--------------------------------------------------------------------------------
+
 (def my-whales (mlift whales "my-whales"))
 
+;; count up whales by type...
 (execute
  (munion
   (mcount 
    (msplit my-whales :type false)
    "count()")
-  "Whales.union(count(split(:type)))"))
+  "union(count(split(whales, :type)))")
+ )
+
+;; count up whales by time by type
+(def #^NavigableSet years
+     (TreeSet.
+      (list
+       (Date. 0 0 1)
+       (Date. 1 0 1)
+       (Date. 2 0 1)
+       (Date. 3 0 1)
+       (Date. 4 0 1)
+       (Date. 5 0 1)
+       (Date. 6 0 1)
+       (Date. 7 0 1)
+       (Date. 8 0 1)
+       (Date. 9 0 1))))
+
+(execute
+ ;; (msplit
+ (munion
+  (mcount
+   (msplit my-whales :time false (fn [time] (list (or (.lower years time) time))))
+   "count(split(whales, :time))")
+  "union(count(split(whales, :time)))")
+ ;;  :type
+ ;;  false)
+ )
+
+
+
+;; (execute
+;;  (munion
+;; ;;  (msplit
+;;    (mcount
+;;     (msplit
+;;      my-whales
+;;      :type false)
+;;     "count(split(:time))")
+;; ;;   :time
+;; ;;   false
+;; ;;   (fn [time] (list (or (.lower years time) time))))
+;;   "union(split(count(:type(split(:time)))))")
+;;  )
 
 ;;--------------------------------------------------------------------------------
 
