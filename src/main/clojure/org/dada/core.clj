@@ -414,6 +414,11 @@
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")
 	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
+    (connect model reducer)))
+  ([#^Model model key-type key-value #^Metadata tgt-metadata model-key]
+   (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
+	view-name-fn (fn [arg] (.toString model-key))
+	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
     (connect model reducer))))
 
 ;;----------------------------------------
