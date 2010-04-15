@@ -461,7 +461,10 @@
 	     (let [tgt-model (model (.toString tgt-key) src-metadata)]
 	       (insert *metamodel* tgt-model)
 	       (hook tgt-model tgt-key)
-	       (applicator (fn [src-model src-key] (connect src-model tgt-model)))
+	       (applicator
+		(fn [src-model src-key]
+		    (println "HERE" src-model src-key)
+		    (connect src-model tgt-model)))
 	       tgt-model))
 	 ])
       ))
@@ -469,15 +472,16 @@
 (defn mcount [chain tgt-key]
   (fn []
       (let [[downstream-metadata-accessor applicator] (chain)
-	    tgt-key-type (type tgt-key)
-	    tgt-metadata (count-reducer-metadata tgt-key-type)]
+	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
+	    tgt-metadata (count-reducer-metadata src-key-type)]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
 	 ;; apply
 	 (fn [hook]
 	     (applicator
 	      (fn [src-model src-key]
-		  (let [tgt-model (do-reduce-count src-model tgt-key-type tgt-key tgt-metadata tgt-key)]
+		  (println "COUNT(): " src-model src-key tgt-key)
+		  (let [tgt-model (do-reduce-count src-model src-key-type src-key tgt-metadata tgt-key)]
 		    (insert *metamodel* tgt-model)
 		    ;;(connect src-model tgt-model)
 		    (hook tgt-model tgt-key)
@@ -487,7 +491,7 @@
   (fn []
       (let [[downstream-metadata-accessor applicator] (chain)
 	    [src-metadata src-key] (downstream-metadata-accessor)]
-	[ ;; get metadata / key
+	[ ;;n get metadata / key
 	 (fn [] [src-metadata split-key])
 	 ;; apply
 	 (fn [hook]
@@ -496,7 +500,7 @@
 		  (dsplit src-model split-key mutable
 			  (fn [tgt-model tgt-key]
 			      (insert *metamodel* tgt-model)
-			      (hook tgt-model (str src-key "." tgt-key))
+			      (hook tgt-model tgt-key)
 			      tgt-model)))))
 	 ])
       ))
@@ -513,7 +517,7 @@
   (mcount 
    (msplit my-whales :type false)
    "count()")
-  "union()"))
+  "Whales.union(count(split(:type)))"))
 
 ;;--------------------------------------------------------------------------------
 
