@@ -446,11 +446,12 @@
 	 ])
       ))
 
-(defn mcount [chain tgt-key]
+(defn mcount [chain]
   (fn []
       (let [[downstream-metadata-accessor applicator] (chain)
 	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
-	    tgt-metadata (count-reducer-metadata src-key-type)]
+	    tgt-metadata (count-reducer-metadata src-key-type)
+	    tgt-key "count"]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
 	 ;; apply
@@ -499,13 +500,12 @@
 (def my-whales (mlift whales "my-whales"))
 
 ;; count up whales by type...
-(execute
- (munion
-  (mcount 
-   (msplit my-whales :type false)
-   "count()")
-  "union(count(split(whales, :type)))")
- )
+;; (execute
+;;  (munion
+;;   (mcount 
+;;    (msplit my-whales :type false))
+;;   "union(count(split(whales, :type)))")
+;;  )
 
 ;; count up whales by time by type
 (def #^NavigableSet years
@@ -522,30 +522,32 @@
        (Date. 8 0 1)
        (Date. 9 0 1))))
 
+;; (execute
+;;  ;; (msplit
+;;  (munion
+;;   (mcount
+;;    (msplit my-whales :time false (fn [time] (list (or (.lower years time) time)))))
+;;   "union(count(split(whales, :time)))")
+;;  ;;  :type
+;;  ;;  false)
+;;  )
+
 (execute
- ;; (msplit
  (munion
   (mcount
-   (msplit my-whales :time false (fn [time] (list (or (.lower years time) time))))
-   "count(split(whales, :time))")
+   (msplit
+    (msplit
+     my-whales
+     :type
+     false)
+    :time
+    false
+    (fn [time] (list (or (.lower years time) time))) ;; TODO: fencepost error...
+    ))
   "union(count(split(whales, :time)))")
- ;;  :type
- ;;  false)
  )
 
-;; (execute
-;;  (munion
-;; ;;  (msplit
-;;    (mcount
-;;     (msplit
-;;      my-whales
-;;      :type false)
-;;     "count(split(:time))")
-;; ;;   :time
-;; ;;   false
-;; ;;   (fn [time] (list (or (.lower years time) time))))
-;;   "union(split(count(:type(split(:time)))))")
-;;  )
+
 
 ;;--------------------------------------------------------------------------------
 
