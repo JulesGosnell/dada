@@ -7,6 +7,7 @@
  (:import [java.math
 	   ])
  (:import [java.util
+	   Date
 	   NavigableSet
 	   TreeSet
 	   ])
@@ -15,9 +16,6 @@
 	   Creator
 	   Metadata
 	   Model
-	   ])
- (:import [org.joda.time
-	   DateMidnight
 	   ])
  )
 
@@ -91,7 +89,7 @@
      (list
       :id (Integer/TYPE)
       :version (Integer/TYPE)
-      :time DateMidnight
+      :time Date
       :type String
       :length (Float/TYPE)
       :weight (Float/TYPE)))
@@ -141,7 +139,7 @@
 (def #^Metadata whale-metadata (apply metadata Whale :id :version attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
-(def num-whales 1000000)
+(def num-whales 1000)
 
 (insert *metamodel* whales)
 
@@ -229,195 +227,346 @@
 
 ;;----------------------------------------
 
-(def median-length (/ max-length 2))
-(def median-weight (/ max-weight 2))
+;; (def median-length (/ max-length 2))
+;; (def median-weight (/ max-weight 2))
 
-(def longer-whales 
-     (dfilter whales (str "length>" median-length) '(:length) #(> % median-length)))
+;; (def longer-whales 
+;;      (dfilter whales (str "length>" median-length) '(:length) #(> % median-length)))
 
-(def heavier-whales
-     (dfilter whales (str "weight>" median-weight) '(:weight) #(> % median-weight)))
+;; (def heavier-whales
+;;      (dfilter whales (str "weight>" median-weight) '(:weight) #(> % median-weight)))
 
-;;----------------------------------------
-;; demonstrate transformation - only selecting a subset of the
-;; attributes from one model into another. We may support synthetic
-;; attributes...
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; demonstrate transformation - only selecting a subset of the
+;; ;; attributes from one model into another. We may support synthetic
+;; ;; attributes...
+;; ;;----------------------------------------
 
-(def longer-whales-weight
-     (dtransform longer-whales "weight" :id :version :id :version :weight))
+;; (def longer-whales-weight
+;;      (dtransform longer-whales "weight" :time :version :time :version :weight))
 
-(def #^Model heavier-whales-length
-     (dtransform heavier-whales "length" :id :version :id :version :length))
+;; (def #^Model heavier-whales-length
+;;      (dtransform heavier-whales "length" :time :version :time :version :length))
 
-;;----------------------------------------
-;; demonstrate transformation - a synthetic field - metric tons per metre
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; demonstrate transformation - a synthetic field - metric tons per metre
+;; ;;----------------------------------------
 
-(dtransform
- whales
- "tonsPerMetre"
- :id
- :version 
- :id
- :version 
- (list
-  :tonsPerMetre
-  Number
-  '(:weight :length)
-  (fn [weight length] (if (= length 0) 0 (/ weight length))))
- )
+;; (dtransform
+;;  whales
+;;  "tonsPerMetre"
+;;  :time
+;;  :version 
+;;  :time
+;;  :version 
+;;  (list
+;;   :tonsPerMetre
+;;   Number
+;;   '(:weight :length)
+;;   (fn [weight length] (if (= length 0) 0 (/ weight length))))
+;;  )
 
-;;----------------------------------------
-;; try a transformation on top of a filtration
-;; e.g. select time, version, length from whales where type="narwhal"
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; try a transformation on top of a filtration
+;; ;; e.g. select time, version, length from whales where type="narwhal"
+;; ;;----------------------------------------
 
-(def narwhals-length
-     (dtransform 
-      (dfilter 
-       whales
-       "type=narwhal" 
-       '(:type)
-       #(= "narwhal" %))
-      "length"
-      :id
-      :version
-      :id
-      :version
-      :length)
-     )
+;; (def narwhals-length
+;;      (dtransform 
+;;       (dfilter 
+;;        whales
+;;        "type=narwhal" 
+;;        '(:type)
+;;        #(= "narwhal" %))
+;;       "length"
+;;       :time
+;;       :version
+;;       :time
+;;       :version
+;;       :length)
+;;      )
 
-;;----------------------------------------
-;; demonstrate reduction (sum)
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; demonstrate reduction (sum)
+;; ;;----------------------------------------
 
-(dcount whales "whales")
-(dsum whales :length "whales")
-(dsum whales :weight "whales")
-(dcount heavier-whales-length "heavier-whales")
-(dsum heavier-whales-length :length "heavier-whales")
-(dsum longer-whales-weight :weight "longer-whales")
-(dcount longer-whales-weight "longer-whales")
+;; (dcount whales "whales")
+;; (dsum whales :length "whales")
+;; (dsum whales :weight "whales")
+;; (dcount heavier-whales-length "heavier-whales")
+;; (dsum heavier-whales-length :length "heavier-whales")
+;; (dsum longer-whales-weight :weight "longer-whales")
+;; (dcount longer-whales-weight "longer-whales")
 
-;;----------------------------------------
-;; demonstrate splitting [and more reduction] - a pivot...
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; demonstrate splitting [and more reduction] - a pivot...
+;; ;;----------------------------------------
 
-;; PROBLEM - 
-;; tgt-model values must be same shape as intermediate model values...
-;; EITHER: we prearrange the shape (preferred - complex - how do do this?)
-;; OR: we could construct the tgt mode lazily (simpler - but concurrency issues)
+;; ;; PROBLEM - 
+;; ;; tgt-model values must be same shape as intermediate model values...
+;; ;; EITHER: we prearrange the shape (preferred - complex - how do do this?)
+;; ;; OR: we could construct the tgt mode lazily (simpler - but concurrency issues)
 
-;; (defn dpivot [#^Model src-model #^Keyword split-key #^boolean mutable #^String tgt-model-name #^IFn tgt-model-hook
-;; 	      #^Keyword key-key #^Keyword version-key & attribute-key-types]
-;;   (let [tgt-metadata (class-metadata
-;; 		      (name (gensym "org.dada.demo.core.Pivot"))
+;; ;; (defn dpivot [#^Model src-model #^Keyword split-key #^boolean mutable #^String tgt-model-name #^IFn tgt-model-hook
+;; ;; 	      #^Keyword key-key #^Keyword version-key & attribute-key-types]
+;; ;;   (let [tgt-metadata (class-metadata
+;; ;; 		      (name (gensym "org.dada.demo.core.Pivot"))
+;; ;; 		      Object
+;; ;; 		      key-key
+;; ;; 		      version-key
+;; ;; 		      attribute-key-types)
+;; ;; 	tgt-model (model tgt-model-name tgt-metadata)]
+;; ;;     (insert *metamodel* tgt-model)
+;; ;;     (dsplit
+;; ;;      src-model
+;; ;;      split-key
+;; ;;      mutable
+;; ;;      (fn [#^Model model value]
+;; ;; 	 (connect (dcount model String value tgt-metadata) tgt-model)
+;; ;; 	 (tgt-model-hook model value)
+;; ;; 	 )
+;; ;;      ))
+;; ;;   )
+
+;; (let [union-metadata (class-metadata
+;; 		      "org.dada.demo.whales.TypeCount"
 ;; 		      Object
-;; 		      key-key
-;; 		      version-key
-;; 		      attribute-key-types)
-;; 	tgt-model (model tgt-model-name tgt-metadata)]
-;;     (insert *metamodel* tgt-model)
-;;     (dsplit
-;;      src-model
-;;      split-key
-;;      mutable
-;;      (fn [#^Model model value]
-;; 	 (connect (dcount model String value tgt-metadata) tgt-model)
-;; 	 (tgt-model-hook model value)
-;; 	 )
-;;      ))
-;;   )
+;; 		      :key
+;; 		      :version
+;; 		      [:key String :version Integer :count Integer])
+;;       union-model (model "Whales.union(count(split(type)))" union-metadata)
+;;       ]
+;;   (insert *metamodel* union-model)
+;;   (dsplit
+;;    whales
+;;    :type
+;;    false
+;;    (fn [#^Model model value]
+;;        (connect (dcount model String value union-metadata) union-model)
+;;        (dsum model :length value)
+;;        (dsum model :weight value)
+;;        model ; TODO: do we really need to be able to override the model ? should threading go here ?
+;;        )
+;;    ))
 
-(let [union-metadata (class-metadata
-		      "org.dada.demo.whales.TypeCount"
-		      Object
-		      :key
-		      :version
-		      [:key String :version Integer :count Integer])
-      union-model (model "Whales.union(count(split(type)))" union-metadata)
-      ]
-  (insert *metamodel* union-model)
-  (dsplit
-   whales
-   :type
-   false
-   (fn [#^Model model value]
-       (connect (dcount model String value union-metadata) union-model)
-       (dsum model :length value)
-       (dsum model :weight value)
-       model ; TODO: do we really need to be able to override the model ? should threading go here ?
-       )
-   ))
+;; (def #^NavigableSet pivot-years
+;;      (TreeSet.
+;;       (list
+;;        (Date. 0 0 1)
+;;        (Date. 1 0 1)
+;;        (Date. 2 0 1)
+;;        (Date. 3 0 1)
+;;        (Date. 4 0 1)
+;;        (Date. 5 0 1)
+;;        (Date. 6 0 1)
+;;        (Date. 7 0 1)
+;;        (Date. 8 0 1)
+;;        (Date. 9 0 1))))
 
-(def #^NavigableSet dates (TreeSet.
-	    (list
-	    (DateMidnight. 2000 1 1)
-	    (DateMidnight. 2001 1 1)
-	    (DateMidnight. 2002 1 1)
-	    (DateMidnight. 2003 1 1)
-	    (DateMidnight. 2004 1 1)
-	    (DateMidnight. 2005 1 1)
-	    (DateMidnight. 2006 1 1)
-	    (DateMidnight. 2007 1 1)
-	    (DateMidnight. 2008 1 1)
-	    (DateMidnight. 2009 1 1))))
+;; (def pivot-key-keys (collection "type" "version"))
+;; (def pivot-keys (apply collection (concat pivot-key-keys pivot-years)))
+;; (def pivot-types (apply collection String Integer (repeat 10 Date)))
+;; (def pivot-names (map (fn [key](.toString key)) pivot-keys))
+;; (def pivot-symbols (map (fn [name] (symbol name)) pivot-names))
+;; (def pivot-keywords (map (fn [name] (keyword name)) pivot-names))
 
-(def year-names (map (fn [day] (.toString day "yyyy")) dates))
+;; (eval (list 'deftype 'pivot-type (apply vector pivot-symbols)))
 
-(eval (list 'deftype 'pivot-type (apply vector 'type 'version (map (fn [year-name] (symbol year-name)) year-names))))
+;; (import org.dada.core.Creator)
+;; (import org.dada.core.Getter)
+;; (import org.dada.core.GetterMetadata)
 
-(def attribute-names (apply collection "type" "version" year-names))
+;; (def pivot-metadata
+;;      (GetterMetadata.
+;;       (proxy [Creator] [] (create [args] (apply pivot-type args)))
+;;       pivot-key-keys ;; key-attribute-keys
+;;       pivot-types ;; attribute-types
+;;       pivot-keys
+;;       (apply
+;;        collection
+;;        (map
+;; 	(fn [keyword] (proxy [Getter] [] (get [instance] (keyword instance))))
+;; 	pivot-keywords))))
 
-(import org.dada.core.Creator)
-(import org.dada.core.Getter)
-(import org.dada.core.GetterMetadata)
+;; (def survey-metadata (class-metadata
+;; 		      (name (gensym "org.dada.demo.whales.Survey"))
+;; 		      Object
+;; 		      :time
+;; 		      :version
+;; 		      [:time Date :version Integer :count Integer]))
 
-(def pivot-metadata
-     (GetterMetadata.
-      (proxy [Creator] [] (create [args] (apply pivot-type args)))
-      (collection "type" "version") ;; key-attribute-names
-      (apply collection String Integer (repeat 10 DateMidnight)) ;; attribute-types
-      attribute-names
-      (apply collection
-	     (map
-	      (fn [name]
-		  (let [key (keyword (symbol name))]
-		    (proxy [Getter] [] (get [instance] (key instance)))))
-	      attribute-names))))
+;; (def pivot-model (model (str (.getName whales) ".pivot(count(time))") pivot-metadata))
+;; (insert *metamodel* pivot-model)
 
-(def survey-metadata (class-metadata
-		      (name (gensym "org.dada.demo.whales.Survey"))
-		      Object
-		      :time
-		      :version
-		      [:time DateMidnight :version Integer :count Integer]))
+;; (dsplit
+;;  whales
+;;  :type
+;;  false
+;;  (fn [#^Model type-model type]
+;;      (let [survey-model (model (str (.getName type-model) ".count(time)") survey-metadata)]
+;;        (insert *metamodel* survey-model)
+;;        ;; need some sort of transform here...'
+;;        ;;(connect survey-model pivot-model)
+;;        (dsplit
+;; 	type-model
+;; 	:time
+;; 	false
+;; 	(fn [time] (list (or (.lower pivot-years time) time)))
+;; 	identity
+;; 	(fn [#^Model time-model time]
+;; 	    (connect (dcount time-model Date time survey-metadata) survey-model)
+;; 	    time-model))
+;;        )
+;;      type-model)
+;;  )
 
-(def pivot-model (model (str (.getName whales) ".pivot(count(time))") pivot-metadata))
-(insert *metamodel* pivot-model)
+;;--------------------------------------------------------------------------------
+;; lets try improving the sytax using ?monads?
 
-(dsplit
- whales
- :type
- false
- (fn [#^Model type-model type]
-     (let [survey-model (model (str (.getName type-model) ".count(time)") survey-metadata)]
-       (insert *metamodel* survey-model)
-       ;; need some sort of transform here...'
-       ;;(connect survey-model pivot-model)
-       (dsplit
-	type-model
-	:time
-	false
-	(fn [time] (list (or (.lower dates time) time)))
-	identity
-	(fn [#^Model time-model time]
-	    (connect (dcount time-model DateMidnight time survey-metadata) survey-model)
-	    time-model))
-       )
-     type-model)
+;; I want to say e.g. (munion (mcount (msplit whales :type))
+
+;; return a fn which when applied to a model, value and a chain, applies
+;; itself to the model then applies the chain to this...
+
+;; example queries:
+
+;; summarise a table where the row is :type, column is :time and cell
+;; contains number of whales of this type sighted this year...
+
+;; (union (count (split :time
+
+;; this won't do it...
+
+(defn mlift [model key]
+  (fn []
+      [;; get metadata / key
+       (fn [] [(.getMetadata model) key])
+       ;; apply
+       (fn [hook] (hook model key))
+       ]))
+
+(defn munion [chain tgt-key]
+  (fn []
+      (let [[downstream-metadata-accessor applicator] (chain)
+	    [src-metadata src-key] (downstream-metadata-accessor)]
+	[ ;; get metadata / key
+	 (fn [] [src-metadata tgt-key])
+	 ;; apply
+	 (fn [hook]
+	     (let [tgt-name (name (gensym "union"))
+		   tgt-model (model tgt-name src-metadata)]
+	       (insert *metamodel* tgt-model)
+	       (hook tgt-model tgt-key)
+	       (applicator
+		(fn [src-model src-key]
+		    (println "UNION: " src-key src-model)
+		    (connect src-model tgt-model)
+		    tgt-model))))
+	 ])
+      ))
+
+(defn mcount [chain]
+  (fn []
+      (let [[downstream-metadata-accessor applicator] (chain)
+	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
+	    tgt-metadata (count-reducer-metadata src-key-type)
+	    tgt-key "count"]
+	[ ;; get metadata / key
+	 (fn [] [tgt-metadata tgt-key])
+	 ;; apply
+	 (fn [hook]
+	     (applicator
+	      (fn [src-model src-key]
+		  (println "COUNT: " src-key src-model)
+		  (let [tgt-model (do-reduce-count src-model src-key-type src-key tgt-metadata tgt-key)]
+		    (insert *metamodel* tgt-model)
+		    ;;(connect src-model tgt-model)
+		    (hook tgt-model tgt-key)
+		    tgt-model)))
+	     )]
+	)))
+
+(defn msplit
+  ([chain split-key mutable]
+   (msplit chain split-key mutable list))
+  ([chain split-key mutable split-fn]
+   (fn []
+       (let [[downstream-metadata-accessor applicator] (chain)
+	     [src-metadata src-key] (downstream-metadata-accessor)]
+	 [ ;;n get metadata / key
+	  (fn [] [src-metadata split-key])
+	  ;; apply
+	  (fn [hook]
+	      (applicator
+	       (fn [src-model src-key]
+		   (println "SPLIT: " src-key src-model)
+		   (dsplit src-model split-key mutable split-fn identity
+			   (fn [tgt-model tgt-key]
+			       (insert *metamodel* tgt-model)
+			       (hook tgt-model tgt-key)
+			       tgt-model))
+		   src-model)))
+	  ])
+       )))
+
+;; next step e.g. (select [a <model.field> b <model.field> c <model.field>] from [model....] where [(= a 10)...]....)
+
+(defn execute [monad]
+  ((second (monad)) (fn [model key])))
+
+;;--------------------------------------------------------------------------------
+
+(def my-whales (mlift whales "my-whales"))
+
+;; count up whales by type...
+;; (execute
+;;  (munion
+;;   (mcount 
+;;    (msplit my-whales :type false))
+;;   "union(count(split(whales, :type)))")
+;;  )
+
+;; count up whales by time by type
+(def #^NavigableSet years
+     (TreeSet.
+      (list
+       (Date. 0 0 1)
+       (Date. 1 0 1)
+       (Date. 2 0 1)
+       (Date. 3 0 1)
+       (Date. 4 0 1)
+       (Date. 5 0 1)
+       (Date. 6 0 1)
+       (Date. 7 0 1)
+       (Date. 8 0 1)
+       (Date. 9 0 1))))
+
+;; (execute
+;;  ;; (msplit
+;;  (munion
+;;   (mcount
+;;    (msplit my-whales :time false (fn [time] (list (or (.lower years time) time)))))
+;;   "union(count(split(whales, :time)))")
+;;  ;;  :type
+;;  ;;  false)
+;;  )
+
+(execute
+ (munion
+  (mcount
+   (msplit
+    (msplit
+     my-whales
+     :type
+     false)
+    :time
+    false
+    (fn [time] (list (or (.lower years time) time))) ;; TODO: fencepost error...
+    ))
+  "union(count(split(whales, :time)))")
  )
+
+;;--------------------------------------------------------------------------------
 
 ;; TODO: Reducers need to support variable length set of attribute keys
 
@@ -465,9 +614,9 @@
 	    Object
 	    [id
 	     0
-	     (DateMidnight. (+ (rand-int 10) 2000)
-			    (+ (rand-int 12) 1)
-			    (+ (rand-int 28) 1))
+	     (Date. (rand-int 10)
+		    (rand-int 12)
+		    (+ (rand-int 28) 1))
 	     (rnd types)
 	     (/ (rand-int max-length-x-100) 100)
 	     (/ (rand-int max-weight-x-100) 100)]))))
@@ -515,4 +664,26 @@
 
 ;; how about the application of fns vertically as well as horizontally
 ;; during transforms.
+
+
+
+;;--------------------------------------------------------------------------------
+;; THOUGHTS:
+
+;; union fn needs access-to/to-coordinate metadata in subsequent layer of models
+;; when a union is used, the class-related md etc used in these models should be shared
+
+;; when sum fn is used must interrogate src-model md for details of chosed attribute
+
+;; do I need type - e.g. Operation and Query<Operation> with a
+;; lifecycle, with e.g. plan() and execute() phases ?
+;; plan would allow the arrangement of metadata
+;; execute would run the models... - maybe creating more and connecting them...
+;; a metamodel could be optionally injected at the top of the query...
+
+;; would our syntax be expressive enough ?
+
+;; do we have to go the whole sql hog and have e.g.
+
+;;(select/query :from <src-model> :where <filter> :groupby <split/union>)
 

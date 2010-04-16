@@ -36,17 +36,17 @@ import java.util.List;
 @Deprecated
 public class StringMetadata implements Metadata<String, String> {
 
-	private final Collection<String> keyAttributeNames;
+	private final Collection<Object> keyAttributeKeys;
 	private final List<Class<?>> attributeTypes;
-	private final List<String> attributeNames;
+	private final List<Object> attributeKeys;
 	private final List<Getter<?, String>> attributeGetters;
 	private final Creator<String> creator;
 
-	public StringMetadata(String keyName) {
-		keyAttributeNames = Collections.singleton(keyName); 
+	public StringMetadata(Object key) {
+		keyAttributeKeys = Collections.singleton(key); 
 		attributeTypes = new ArrayList<Class<?>>();
 		attributeTypes.add(String.class);
-		attributeNames = Collections.singletonList(keyName);
+		attributeKeys = Collections.singletonList(key);
 		attributeGetters = new ArrayList<Getter<?,String>>();
 		attributeGetters.add(new Getter<Object, String>() {@Override public Object get(String value) {return value;}});
 		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
@@ -58,8 +58,8 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public List<String> getAttributeNames() {
-		return attributeNames;
+	public List<Object> getAttributeKeys() {
+		return attributeKeys;
 	}
 
 	@Override
@@ -78,8 +78,8 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Collection<String> getKeyAttributeNames() {
-		return keyAttributeNames;
+	public Collection<Object> getKeyAttributeKeys() {
+		return keyAttributeKeys;
 	}
 
 	@Override

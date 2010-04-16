@@ -198,16 +198,16 @@
 	 version-getter (.getAttributeGetter metadata (name version))]
      (new VersionedModelView model-name metadata id-getter version-getter)))
   ([#^String model-name #^Metadata metadata]
-   (let [names (.getAttributeNames metadata)
-	 key-names (.getKeyAttributeNames metadata)
-	 id-getter (.getAttributeGetter metadata (first key-names))
-	 version-getter (.getAttributeGetter metadata (second key-names))]
+   (let [keys (.getAttributeKeys metadata)
+	 key-keys (.getKeyAttributeKeys metadata)
+	 id-getter (.getAttributeGetter metadata (first key-keys))
+	 version-getter (.getAttributeGetter metadata (second key-keys))]
      (new VersionedModelView model-name metadata id-getter version-getter))))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
-	keys (.getKeyAttributeNames metadata)
+	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
     (VersionedModelView. name metadata key-getter version-getter)))
@@ -421,6 +421,11 @@
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")
 	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
+    (connect model reducer)))
+  ([#^Model model key-type key-value #^Metadata tgt-metadata model-key]
+   (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
+	view-name-fn (fn [arg] (.toString model-key))
+	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
     (connect model reducer))))
 
 ;;----------------------------------------
@@ -504,7 +509,7 @@
 ;; (defn select [#^Model src-model #^Keyword src-key-key #^Keyword src-version-key #^ISeq attrs & pvec]
 ;;   (let [pmap (apply array-map pvec)
 ;; 	src-metadata (. src-model getMetadata)
-;; 	src-keys (map keyword (. src-metadata getAttributeNames))
+;; 	src-keys (map keyword (. src-metadata getAttributeKeys))
 ;; 	src-types (. src-metadata getAttributeTypes)
 ;; 	src-getters (. src-metadata getAttributeGetters)
 ;; 	src-type-map (apply array-map (interleave src-keys src-types)) ; key:type

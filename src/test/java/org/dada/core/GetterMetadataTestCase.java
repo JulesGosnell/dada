@@ -44,19 +44,19 @@ public class GetterMetadataTestCase extends TestCase {
 		Getter<?, ?> amountGetter = new Getter<BigDecimal, Amount>() {@Override public BigDecimal get(Amount value) {return value.getAmount();}};
 
 		Collection<Class<?>> attributeTypes= Arrays.asList((Class<?>)int.class, int.class, BigDecimal.class);
-		Collection<String> attributeNames = Arrays.asList("Id", "Version", "Amount");
+		Collection<Object> attributeKeys = Arrays.asList((Object)"Id", "Version", "Amount");
 		Collection<Getter<?, Amount>> getters = new ArrayList<Getter<?,Amount>>();
 		getters.add((Getter<?, Amount>)idGetter);
 		getters.add((Getter<?, Amount>)versionGetter);
 		getters.add((Getter<?, Amount>)amountGetter);
 
 		Creator<Amount> creator = new Creator<Amount>(){@Override public Amount create(Object... args) {return new Amount((Integer)args[0], (Integer)args[1], (BigDecimal)args[2]);}};
-		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(creator, Arrays.asList(new String[]{"id", "version"}), attributeTypes, attributeNames, getters) ;
+		Metadata<Integer, Amount> metadata = new GetterMetadata<Integer, Amount>(creator, Arrays.asList(new Object[]{"id", "version"}), attributeTypes, attributeKeys, getters) ;
 
 		BigDecimal one = new BigDecimal("1.0");
 		Amount amount = new Amount(1, 0, one);
 
-		assertTrue(metadata.getAttributeNames().size() == 3);
+		assertTrue(metadata.getAttributeKeys().size() == 3);
 		assertTrue(metadata.getKey(amount) == 1);
 		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
 		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));

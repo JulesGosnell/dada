@@ -47,20 +47,20 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	
 	private final Class<?> clazz;
 	private final Creator<V> creator;
-	private final Collection<String> keyAttributeNames;
+	private final Collection<Object> keyAttributeKeys;
 	private final List<Class<?>> attributeTypes;
-	private final List<String> attributeNames;
+	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
 	private final int keyIndex;
 	private final Map<String, Class<?>> nameToType;
 	private final Map<String, Getter<?, V>> nameToGetter;
 
-	public IntrospectiveMetadata(Class<?> clazz,Creator<V> creator, String keyName) throws NoSuchMethodException {
+	public IntrospectiveMetadata(Class<?> clazz,Creator<V> creator, Object key) throws NoSuchMethodException {
 		this.clazz = clazz;
 		this.creator = creator;
-		this.keyAttributeNames = Collections.singleton(keyName);
+		this.keyAttributeKeys = Collections.singleton(key);
 		attributeTypes= new ArrayList<Class<?>>();
-		attributeNames = new ArrayList<String>();
+		attributeKeys = new ArrayList<Object>();
 		attributeGetters = new ArrayList<Getter<?,V>>();
 		nameToType = new HashMap<String, Class<?>>();
 		nameToGetter = new HashMap<String, Getter<?,V>>();
@@ -74,7 +74,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 				String attributeName = methodName.substring(GET_LENGTH);
 				Class<?> type = method.getReturnType();
 				attributeTypes.add(type);
-				attributeNames.add(attributeName);
+				attributeKeys.add(attributeName);
 				Getter<Object, V> getter = new Getter<Object, V>() {
 					@Override
 					public Object get(V value) {
@@ -86,7 +86,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 				nameToGetter.put(attributeName, getter);
 			}
 		}
-		keyIndex = attributeNames.indexOf(keyName);
+		keyIndex = attributeKeys.indexOf(key);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -94,7 +94,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	public V getAttributeValue(V value, int index) {
 		try {
 			//Method method = getters.get(index);
-			Method method = clazz.getMethod(GET + attributeNames.get(index), (Class<?>[]) null);
+			Method method = clazz.getMethod(GET + attributeKeys.get(index), (Class<?>[]) null);
 			return (V) method.invoke(value, (Object[]) null);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -107,8 +107,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public List<String> getAttributeNames() {
-		return attributeNames;
+	public List<Object> getAttributeKeys() {
+		return attributeKeys;
 	}
 
 	@Override
@@ -122,8 +122,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Collection<String> getKeyAttributeNames() {
-		return keyAttributeNames;
+	public Collection<Object> getKeyAttributeKeys() {
+		return keyAttributeKeys;
 	}
 
 	@Override
