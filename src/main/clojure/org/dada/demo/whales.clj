@@ -435,7 +435,8 @@
 	 (fn [] [src-metadata tgt-key])
 	 ;; apply
 	 (fn [hook]
-	     (let [tgt-model (model (.toString tgt-key) src-metadata)]
+	     (let [tgt-name (name (gensym "union"))
+		   tgt-model (model tgt-name src-metadata)]
 	       (insert *metamodel* tgt-model)
 	       (hook tgt-model tgt-key)
 	       (applicator
@@ -546,8 +547,6 @@
     ))
   "union(count(split(whales, :time)))")
  )
-
-
 
 ;;--------------------------------------------------------------------------------
 
