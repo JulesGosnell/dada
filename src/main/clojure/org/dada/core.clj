@@ -26,6 +26,7 @@
 	      Reducer$Strategy
 	      Splitter
 	      Splitter$StatelessStrategy
+	      SynchronousServiceFactory
 	      ServiceFactory
 	      SparseOpenLazyViewTable
 	      Transformer
@@ -48,6 +49,9 @@
 (set! *warn-on-reflection* true)
  
 (def #^Logger *logger* (LoggerFactory/getLogger "org.dada.core"))
+
+;;default - no threading...
+(def #^ServiceFactory *internal-view-service-factory* (new SynchronousServiceFactory))
 
 (defn start-server [#^String name]
   (System/setProperty "server.name" name)
