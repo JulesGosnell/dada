@@ -74,13 +74,13 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 		if (insertions.isEmpty() && alterations.isEmpty() && deletions.isEmpty())
 			logger.warn("{}: receiving empty event", new Exception(), name);
 
+		boolean changed = false;
 		synchronized (mapsLock) { // take lock before snapshotting and until replacing maps with new version
 			final Maps snapshot = maps;
 			final IPersistentMap originalCurrent = snapshot.getCurrent();
-			final IPersistentMap originalHistoric = snapshot.getHistoric();
+			final IPersistentMap originalDeleted = snapshot.getHistoric();
 			IPersistentMap current = originalCurrent;
-			IPersistentMap historic = originalHistoric;
-			boolean changed = false;
+			IPersistentMap deleted = originalDeleted;
 			for (Update<V> insertion : insertions) {
 				V newValue = insertion.getNewValue();
 				K key = keyGetter.get(newValue);
@@ -114,31 +114,35 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 				}
 			}
 			for (Update<V> deletion : deletions) {
+				V oldValue = deletion.getOldValue();
 				V newValue = deletion.getNewValue();
-				K key = keyGetter.get(newValue);
-				V currentValue = (V) current.valAt(key);
+				K oldKey = keyGetter.get(oldValue);
+				K newKey = keyGetter.get(newValue);
+				V currentValue = (V) current.valAt(oldKey);
 				if (currentValue != null && versionGetter.get(currentValue) < versionGetter.get(newValue)) {
 					try {
-						current = current.without(key);
+						current = current.without(oldKey);
 					} catch (Exception e) {
 						// TODO: difficult to cover this bit of code - needs some thought...
-						logger.warn("unable to perform deletion: {}", e, key);
+						logger.warn("unable to perform deletion: {}", e, oldKey);
 					}
-					historic = historic.assoc(keyGetter.get(newValue), newValue);
+					deleted = deleted.assoc(newKey, newValue);
 					deletionsOut.add(deletion);
 					changed = true;
 				} else {
-					logger.trace("ignoring deletion: {} is more recent than {} or did not exist", currentValue, newValue);
+					logger.info("ignoring out of order deletion: {} is more recent than {} or did not exist", currentValue, newValue);
 				}
 			}
 
 			// have we made any updates - commit them...
 			if (changed)
-				maps = new Maps(current, historic);
+				maps = new Maps(current, deleted);
 		} // end of sync block
 
-		logger.trace("{}: output: insertions={}, alterations={}, deletions={}", name, insertionsOut.size(), alterationsOut.size(), deletionsOut.size());
-		notifyUpdate(insertionsOut, alterationsOut, deletionsOut);
+		if (changed) {
+			logger.trace("{}: output: insertions={}, alterations={}, deletions={}", name, insertionsOut.size(), alterationsOut.size(), deletionsOut.size());
+			notifyUpdate(insertionsOut, alterationsOut, deletionsOut);
+		}
 	}
 }
 
