@@ -60,6 +60,10 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 	public Collection<String> getData() {
 		return nameToModel.keySet();
 	}
+	
+	public Model<Object, Object> getModel(String modelName) {
+		return nameToModel.get(modelName);
+	}
 
 	@Override
 	public Collection<Object> deregisterView(String modelName, View<Object> view) {
