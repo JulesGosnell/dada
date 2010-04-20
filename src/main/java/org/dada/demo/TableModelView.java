@@ -46,7 +46,12 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 	private final CountDownLatch latch = new CountDownLatch(1);
 	private Metadata<K, V> metadata;
 	private final ConcurrentSkipListMap<K, V> map = new ConcurrentSkipListMap<K, V>();
-
+	private final String name;
+	
+	public TableModelView(String name) {
+		this.name = name;
+	}
+	
 	public void setMetadata(Metadata<K, V> metadata) {
 		this.metadata = metadata;
 		latch.countDown();
@@ -67,7 +72,8 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
-		logger.trace("update: {}", insertions);
+		logger.trace("{}:  input: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
+
 		Metadata<K, V> metadata = getMetadata();
 		for (Update<V> insertion : insertions) {
 			V newValue = insertion.getNewValue();
@@ -99,7 +105,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 			V value = deletion.getOldValue();
 			K key = metadata.getKey(value);
 			int index = map.headMap(key).size();
-			map.remove(key, value);
+			map.remove(key);
 			fireTableRowsDeleted(index, index);
 		}
 	}

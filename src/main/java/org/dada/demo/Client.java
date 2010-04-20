@@ -94,7 +94,7 @@ public class Client {
 		this.timeout = timeout;
 		this.topLevel = topLevel;
 
-		guiModel = new TableModelView<Object, Object>();
+		guiModel = new TableModelView<Object, Object>(modelName);
 		LOG.info("viewing: " + this.modelName);
 
 		serverDestination = session.createQueue(this.modelName);
