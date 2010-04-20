@@ -493,7 +493,7 @@
    (fn []
        (let [[downstream-metadata-accessor applicator] (chain)
 	     [src-metadata src-key] (downstream-metadata-accessor)]
-	 [ ;;n get metadata / key
+	 [ ;; get metadata / key
 	  (fn [] [src-metadata split-key])
 	  ;; apply
 	  (fn [hook]
@@ -509,6 +509,66 @@
 	  ])
        )))
 
+
+(import org.dada.core.AbstractModel)
+(import org.dada.core.Creator)
+(import org.dada.core.Getter)
+(import org.dada.core.GetterMetadata)
+(import org.dada.core.View)
+
+(defmulti attribute-name (fn [arg] (class arg)))
+(defmethod attribute-name Date [#^Date date] (str "attribute_" (.getTime date)))
+(defmethod attribute-name String [#^String string] (.replace string "_" "_underscore_"))
+
+(defn mpivot [chain pivot-key pivot-values]
+  (fn []
+      (let [[downstream-metadata-accessor applicator] (chain)
+	    [src-metadata src-key] (downstream-metadata-accessor)
+	    pivot-key-keys (collection "type" "version")
+	    pivot-key-types (collection String Integer)
+	    pivot-value-type (.getAttributeType src-metadata (name pivot-key))
+	    pivot-value-types (repeat (count pivot-values) pivot-value-type)
+	    pivot-names (map (fn [key](attribute-name key)) pivot-values)
+	    pivot-symbols (map (fn [name] (symbol name)) pivot-names)
+	    pivot-keywords (map (fn [name] (keyword name)) pivot-names)
+	    pivot-keys (apply collection (concat pivot-key-keys pivot-names))
+	    pivot-types (apply collection (concat pivot-key-types pivot-value-types))
+	    tgt-model-name (str "pivot(" pivot-key ")")
+	    attributes (interleave pivot-keywords pivot-types)
+	    classname (name (gensym "org.dada.demo.core.Pivot"))
+	    tgt-metadata (class-metadata classname Object :type :version attributes)
+	    ]
+	 [ ;; get metadata / key
+	  (fn [] [tgt-metadata pivot-key])
+	  ;; apply
+	  (fn [hook]
+	      
+	      ;; call downstream installing connection and wierd model
+	      ;; type needs to be a different sort of model - need to
+	      ;; extend AbstractModel in Clojure - a project for the
+	      ;; train tomorrow...
+	      (let [tgt-data (atom {})
+		    tgt-model (proxy
+			       [AbstractModel View] [tgt-model-name tgt-metadata]
+			       (getData [] @tgt-data)
+			       (update [insertions alterations deletions]
+				       (println "Pivot: update NYI")
+				       ;; don't forget to call notifyUpdate
+				       )
+		     )
+		    ]
+		(applicator
+		 (fn [src-model src-key]
+		     (insert *metamodel* tgt-model)
+		     (println "PIVOT: " src-key src-model "->" pivot-key tgt-model)
+		     (connect src-model tgt-model)
+		     ;; TODO: how do we do our transformation ?
+		     (hook tgt-model pivot-key)
+		     ))
+		tgt-model))
+	  ])
+       ))
+  
 ;; next step e.g. (select [a <model.field> b <model.field> c <model.field>] from [model....] where [(= a 10)...]....)
 
 (defn execute [monad]
@@ -551,20 +611,39 @@
 ;;  ;;  false)
 ;;  )
 
+(def whales-by-type (msplit my-whales :type false))
+
 (execute
+(mpivot
  (munion
   (mcount
    (msplit
-    (msplit
-     my-whales
-     :type
-     false)
+    whales-by-type
     :time
     false
     (fn [time] (list (or (.lower years time) time))) ;; TODO: fencepost error...
     ))
   "union(count(split(whales, :time)))")
+ :key years)
  )
+
+;; would this make sense ?
+
+;; (def count-by-time (msplit :time (mcount)))
+;; (my-whales (msplit :type ... count-by-time (union count-by-time)))
+
+;; ;; or
+
+;; dodgy
+;; (def sum-by-value-date (msplit :valueDate (msum :amount))
+;; (my-trades (msplit :nostro sum-by-value-date (union sum-by-value-date)))
+
+;; ;; and 
+
+;; unfinished
+;; (def sum-by-value-date (msplit :valueDate dates (msum :amount))
+;; (def nostro-projection (pivot dates :valueDate (union sum-by-value-date)))
+;; (my-trades (msplit :currency (msplit :nostro sum-by-value-date nostro-projection)))
 
 ;;--------------------------------------------------------------------------------
 
