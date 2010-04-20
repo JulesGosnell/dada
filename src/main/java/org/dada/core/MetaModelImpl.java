@@ -61,6 +61,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 		return nameToModel.keySet();
 	}
 	
+	@Override
 	public Model<Object, Object> getModel(String modelName) {
 		return nameToModel.get(modelName);
 	}
