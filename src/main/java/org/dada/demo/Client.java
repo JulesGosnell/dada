@@ -138,7 +138,6 @@ public class Client {
 			public void valueChanged(ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting()) {
 					int row = table.getSelectedRow();
-					LOG.trace("SELECTION CHANGED: " + row);
 					selected = row;
 				}
 			}

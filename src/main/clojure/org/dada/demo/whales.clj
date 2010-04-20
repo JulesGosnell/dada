@@ -547,15 +547,49 @@
 	      ;; type needs to be a different sort of model - need to
 	      ;; extend AbstractModel in Clojure - a project for the
 	      ;; train tomorrow...
-	      (let [tgt-data (atom {})
+	      (let [src-keys (.getKeyAttributeKeys src-metadata)
+		    src-key-getter (.getAttributeGetter src-metadata (first src-keys))
+		    src-version-getter (.getAttributeGetter src-metadata (second src-keys))
+		    tgt-data (atom [{}{}]) ;; [input output]
 		    tgt-model (proxy
-			       [AbstractModel View] [tgt-model-name tgt-metadata]
-			       (getData [] @tgt-data)
+			       [AbstractModel View]
+			       [tgt-model-name tgt-metadata]
+			       (getData [] (keys (second @tgt-data))) ;; TODO - should be values
 			       (update [insertions alterations deletions]
-				       (println "Pivot: update NYI")
-				       ;; don't forget to call notifyUpdate
+				       (println "Pivot:" insertions alterations deletions)
+				       (map
+					(fn [insertion]
+					    (println ["PIVOT INSERTION:" insertion])
+					    (swap!
+					     tgt-data
+					     (fn [[input output] insertion]
+						 (let [src-key (src-key-getter insertion)
+						       src-version (src-version-getter insertion)]
+						   (println ["PIVOT INSERTION:" src-key src-version (input src-key)])
+						   [input output]
+						   ))
+					     insertion)
+					    ;; don't forget to call notifyUpdate
+					    )
+					insertions
+					)
+				       (map
+					(fn [alteration]
+					    (swap!
+					     tgt-data
+					     (fn [[input output] alteration]
+						 (let [src-key (src-key-getter alteration)
+						       src-version (src-version-getter alteration)]
+						   (println ["PIVOT ALTERATION:" src-key src-version (input src-key)])
+						   [input output]
+						   ))
+					     alteration)
+					    ;; don't forget to call notifyUpdate
+					    )
+					alterations
+					)
 				       )
-		     )
+			       )
 		    ]
 		(applicator
 		 (fn [src-model src-key]
