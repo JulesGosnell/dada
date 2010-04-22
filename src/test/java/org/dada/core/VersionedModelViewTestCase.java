@@ -36,19 +36,19 @@ import junit.framework.TestCase;
 
 public class VersionedModelViewTestCase extends TestCase {
 
-	private VersionedModelView<Integer, Datum<Integer>> view;
+	private VersionedModelView<Integer, Datum<Integer>> model;
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		Getter<Integer, Datum<Integer>> idGetter = new Getter<Integer, Datum<Integer>>() {@Override public Integer get(Datum<Integer> value) {return value.getId();}};
 		Getter<Integer, Datum<Integer>> versionGetter = new Getter<Integer, Datum<Integer>>() {@Override public Integer get(Datum<Integer> value) {return value.getVersion();}};
-		view = new VersionedModelView<Integer, Datum<Integer>>(null, null, idGetter, versionGetter);
+		model = new VersionedModelView<Integer, Datum<Integer>>(null, null, idGetter, versionGetter);
 	}
 
 	@Override
 	protected void tearDown() throws Exception {
-		view = null;
+		model = null;
 		super.tearDown();
 	}
 
@@ -57,103 +57,103 @@ public class VersionedModelViewTestCase extends TestCase {
 		ArrayList<Update<Datum<Integer>>> nil = new ArrayList<Update<Datum<Integer>>>(); // useful value
 
 		// Model/View is empty
-		Collection<Datum<Integer>> data = view.getData();
+		Collection<Datum<Integer>> data = model.getData();
 
-		assertTrue(view.maps.current.count() == 0);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 0);
+		assertTrue(model.maps.historic.count() == 0);
 		assertTrue(data.isEmpty());
 	
 		// empty update
 
-		view.update(nil, nil, nil);
+		model.update(nil, nil, nil);
 		
-		assertTrue(view.maps.current.count() == 0);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 0);
+		assertTrue(model.maps.historic.count() == 0);
 		assertTrue(data.isEmpty());
 	
 		// simple insertion
 
 		Datum<Integer> datum0v1 = new IntegerDatum(0, 1);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v1)), nil, nil);
+		model.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v1)), nil, nil);
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum0v1);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 1);
+		assertTrue(model.maps.current.valAt(0) == datum0v1);
+		assertTrue(model.maps.historic.count() == 0);
 
 		// out of order insertion - should be update but we need to exercise code...
 		
 		Datum<Integer> datum0v0 = new IntegerDatum(0, 0);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v0)), nil, nil);
+		model.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v0)), nil, nil);
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum0v1);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 1);
+		assertTrue(model.maps.current.valAt(0) == datum0v1);
+		assertTrue(model.maps.historic.count() == 0);
 		
 		// correctly ordered insertion - should be update but we need to exercise code...
 		
 		Datum<Integer> datum0v2 = new IntegerDatum(0, 2);
-		view.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v2)), nil, nil);
+		model.update(Collections.singleton(new Update<Datum<Integer>>(null, datum0v2)), nil, nil);
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(view.maps.current.valAt(0) == datum0v2);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 1);
+		assertTrue(model.maps.current.valAt(0) == datum0v2);
+		assertTrue(model.maps.historic.count() == 0);
 		
 		// update non-existant/contiguous val - where is version 0 ?
 		
 		IntegerDatum datum1v1 = new IntegerDatum(1, 1);
-		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v1)), nil);
+		model.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v1)), nil);
 
-		assertTrue(view.maps.current.count() == 2);
-		assertTrue(view.maps.current.valAt(1) == datum1v1);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 2);
+		assertTrue(model.maps.current.valAt(1) == datum1v1);
+		assertTrue(model.maps.historic.count() == 0);
 
 		// update existing value with contiguous version
 
 		Datum<Integer> datum1v2 = new IntegerDatum(1, 2);
-		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v2)), nil);
+		model.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v2)), nil);
 
-		assertTrue(view.maps.current.count() == 2);
-		assertTrue(view.maps.current.valAt(1) == datum1v2);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 2);
+		assertTrue(model.maps.current.valAt(1) == datum1v2);
+		assertTrue(model.maps.historic.count() == 0);
 		
 		// update existing val with previous version - should be ignored
 		
 		Datum<Integer> datum1v0 = new IntegerDatum(1, 0);
-		view.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v0)), nil);
+		model.update(nil, Collections.singleton(new Update<Datum<Integer>>(null, datum1v0)), nil);
 
-		assertTrue(view.maps.current.count() == 2);
-		assertTrue(view.maps.current.valAt(1) == datum1v2);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 2);
+		assertTrue(model.maps.current.valAt(1) == datum1v2);
+		assertTrue(model.maps.historic.count() == 0);
 
 		// out of order deletion of existing val
 		
-		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v1)));
+		model.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v1)));
 
-		assertTrue(view.maps.current.count() == 2);
-		assertTrue(view.maps.current.valAt(1) == datum1v2);
-		assertTrue(view.maps.historic.count() == 0);
+		assertTrue(model.maps.current.count() == 2);
+		assertTrue(model.maps.current.valAt(1) == datum1v2);
+		assertTrue(model.maps.historic.count() == 0);
 
 		// deletion of existing val
 		
 		Datum<Integer> datum1v3 = new IntegerDatum(1, 3);
-		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v3)));
+		model.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum1v2, datum1v3)));
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(!view.maps.current.containsKey(1));
-		assertTrue(view.maps.historic.count() == 1);
-		assertTrue(view.maps.historic.valAt(1) == datum1v3);
+		assertTrue(model.maps.current.count() == 1);
+		assertTrue(!model.maps.current.containsKey(1));
+		assertTrue(model.maps.historic.count() == 1);
+		assertTrue(model.maps.historic.valAt(1) == datum1v3);
 
 		// deletion of non-existing val
 		
 		Datum<Integer> datum2v0 = new IntegerDatum(2, 0);
 		Datum<Integer> datum2v1 = new IntegerDatum(2, 1);
-		view.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum2v0, datum2v1)));
+		model.update(nil, nil, Collections.singleton(new Update<Datum<Integer>>(datum2v0, datum2v1)));
 
-		assertTrue(view.maps.current.count() == 1);
-		assertTrue(!view.maps.current.containsKey(2));
+		assertTrue(model.maps.current.count() == 1);
+		assertTrue(!model.maps.current.containsKey(2));
 		// TODO: is this  a bug ? do we care ?
-		// assertTrue(view.maps.historic.count() == 2);
-		// assertTrue(view.maps.historic.valAt(2) == datum2v1);
+		// assertTrue(model.maps.historic.count() == 2);
+		// assertTrue(model.maps.historic.valAt(2) == datum2v1);
 	}
 
 }

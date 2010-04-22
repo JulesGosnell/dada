@@ -119,13 +119,13 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Class<?> getAttributeType(String name) {
-		return keyToType.get(name);
+	public Class<?> getAttributeType(Object key) {
+		return keyToType.get(key);
 	}
 
 	@Override
-	public Getter<?, V> getAttributeGetter(String name) {
-		return keyToGetter.get(name);
+	public Getter<?, V> getAttributeGetter(Object key) {
+		return keyToGetter.get(key);
 	}
 
 }

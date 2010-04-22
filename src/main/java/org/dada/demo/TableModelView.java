@@ -110,8 +110,6 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 		}
 	}
 
-	protected String[] columnNames = new String[]{"id", "version"};
-
 	@Override
 	public String getColumnName(int columnIndex) {
 		return getMetadata().getAttributeKeys().get(columnIndex).toString();

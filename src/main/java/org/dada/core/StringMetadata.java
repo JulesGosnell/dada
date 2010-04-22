@@ -98,12 +98,12 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Class<?> getAttributeType(String name) {
+	public Class<?> getAttributeType(Object key) {
 		return attributeTypes.get(0);
 	}
 
 	@Override
-	public Getter<?, String> getAttributeGetter(String name) {
+	public Getter<?, String> getAttributeGetter(Object key) {
 		return attributeGetters.get(0);
 	}
 }

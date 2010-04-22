@@ -63,8 +63,6 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return name;
 	}
 
-	public abstract Collection<V> getData();
-
 	@Override
 	public Metadata<K, V> getMetadata() {
 		return metadata;
@@ -95,7 +93,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
 	}
 
-	protected void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+	public void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		Collection<View<V>> snapshot = views;
 		for (View<V> view : snapshot) {
 			if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)

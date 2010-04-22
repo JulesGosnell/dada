@@ -557,37 +557,39 @@
 			       (getData [] (keys (second @tgt-data))) ;; TODO - should be values
 			       (update [insertions alterations deletions]
 				       (println "Pivot:" insertions alterations deletions)
-				       (map
-					(fn [insertion]
-					    (println ["PIVOT INSERTION:" insertion])
-					    (swap!
-					     tgt-data
-					     (fn [[input output] insertion]
-						 (let [src-key (src-key-getter insertion)
-						       src-version (src-version-getter insertion)]
-						   (println ["PIVOT INSERTION:" src-key src-version (input src-key)])
-						   [input output]
-						   ))
-					     insertion)
-					    ;; don't forget to call notifyUpdate
-					    )
-					insertions
-					)
-				       (map
-					(fn [alteration]
-					    (swap!
-					     tgt-data
-					     (fn [[input output] alteration]
-						 (let [src-key (src-key-getter alteration)
-						       src-version (src-version-getter alteration)]
-						   (println ["PIVOT ALTERATION:" src-key src-version (input src-key)])
-						   [input output]
-						   ))
-					     alteration)
-					    ;; don't forget to call notifyUpdate
-					    )
-					alterations
-					)
+				       (doall
+					(map
+					 (fn [insertion]
+					     (println ["PIVOT INSERTION:" insertion])
+					     (swap!
+					      tgt-data
+					      (fn [[input output] insertion]
+						  (let [src-key (src-key-getter insertion)
+							src-version (src-version-getter insertion)]
+						    (println ["PIVOT INSERTION:" src-key src-version (input src-key)])
+						    [input output]
+						    ))
+					      insertion)
+					     ;; don't forget to call notifyUpdate
+					     )
+					 insertions
+					 ))
+				       (doall
+					(map
+					 (fn [alteration]
+					     (swap!
+					      tgt-data
+					      (fn [[input output] alteration]
+						  (let [src-key (src-key-getter alteration)
+							src-version (src-version-getter alteration)]
+						    (println ["PIVOT ALTERATION:" src-key src-version (input src-key)])
+						    [input output]
+						    ))
+					      alteration)
+					     ;; don't forget to call notifyUpdate
+					     )
+					 alterations
+					 ))
 				       )
 			       )
 		    ]

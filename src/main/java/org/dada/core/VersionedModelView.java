@@ -63,6 +63,8 @@ public class VersionedModelView<K, V> extends AbstractModelView<K, V> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+		// TODO: should we support insertion after deletion - probably yes...
+		
 		// copy these aggressively for the moment - later they should be copy-on-write or persistent...
 		Collection<Update<V>> insertionsOut = new ArrayList<Update<V>>(insertions.size());
 		Collection<Update<V>> alterationsOut = new ArrayList<Update<V>>(alterations.size());

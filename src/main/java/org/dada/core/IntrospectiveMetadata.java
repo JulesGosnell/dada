@@ -142,13 +142,13 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Class<?> getAttributeType(String name) {
-		return nameToType.get(name);
+	public Class<?> getAttributeType(Object key) {
+		return nameToType.get(key);
 	}
 
 	@Override
-	public Getter<?, V> getAttributeGetter(String name) {
-		return nameToGetter.get(name);
+	public Getter<?, V> getAttributeGetter(Object key) {
+		return nameToGetter.get(key);
 	}
 
 }
