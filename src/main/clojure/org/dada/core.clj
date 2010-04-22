@@ -90,9 +90,10 @@
    (map #(Update. % nil) (.deregisterView model view)))
    view)
 
-(defn collection [& args]
-  (let [array-list (ArrayList. #^Integer (count args))]
-    (.addAll array-list args)
+(defn #^Collection collection [& args]
+  (let [size (count args)
+	array-list (ArrayList. #^Integer size)]
+    (if (> 0 size) (.addAll array-list args))
     array-list))
 
 (def #^ClassFactory *class-factory* (new ClassFactory))
