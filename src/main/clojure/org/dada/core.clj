@@ -93,7 +93,7 @@
 (defn #^Collection collection [& args]
   (let [size (count args)
 	array-list (ArrayList. #^Integer size)]
-    (if (> 0 size) (.addAll array-list args))
+    (if (> size 0) (.addAll array-list args))
     array-list))
 
 (def #^ClassFactory *class-factory* (new ClassFactory))
