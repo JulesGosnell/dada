@@ -71,7 +71,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 	// Listener
 
 	@Override
-	public void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		logger.trace("{}:  input: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
 
 		Metadata<K, V> metadata = getMetadata();
@@ -92,21 +92,30 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 				int index = map.headMap(newKey).size();
 				fireTableRowsUpdated(index, index);
 			} else {
-				map.remove(oldKey, oldValue);
-				int oldIndex = map.headMap(oldKey).size();
-				fireTableRowsDeleted(oldIndex, oldIndex);
-				map.put(newKey, newValue);
+				int oldIndex = map.headMap(oldKey, true).size();
+				if (oldIndex > 0) {
+					map.remove(oldKey);
+					oldIndex--;
+					fireTableRowsDeleted(oldIndex, oldIndex);
+				}
+				Object currentValue = map.put(newKey, newValue);
 				int newIndex = map.headMap(newKey).size();
-				fireTableRowsInserted(newIndex, newIndex);
+				if (currentValue == null)
+					fireTableRowsInserted(newIndex, newIndex);
+				else
+					fireTableRowsUpdated(newIndex, newIndex);
 				// TODO: if both indeces are the same...
 			}
 		}
 		for (Update<V> deletion : deletions) {
 			V value = deletion.getOldValue();
 			K key = metadata.getKey(value);
-			int index = map.headMap(key).size();
-			map.remove(key);
-			fireTableRowsDeleted(index, index);
+			int index = map.headMap(key, true).size();
+			if (index > 0) {
+				map.remove(key);
+				index--;
+				fireTableRowsDeleted(index, index);
+			}
 		}
 	}
 
