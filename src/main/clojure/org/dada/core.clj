@@ -197,6 +197,14 @@
    version-key
    attributes))
 
+(defn #^Metadata seq-metadata [length]
+  (new GetterMetadata
+       (proxy [Creator] [] (create [args] (apply collection args)))
+       (collection 0 1)
+       (apply collection (repeat length Object))
+       (apply collection (range length))
+       (apply collection (map (fn [i] (proxy [Getter] [] (get [s] (nth s i)))) (range length)))))
+
 (defn model
   ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]
    (let [id-getter (.getAttributeGetter metadata (name key))
