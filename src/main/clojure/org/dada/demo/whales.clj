@@ -567,6 +567,11 @@
 						  (let [src-key (src-key-getter insertion)
 							src-version (src-version-getter insertion)]
 						    (println ["PIVOT INSERTION:" src-key src-version (input src-key)])
+						    (if (> src-version (src-version-getter (input src-key)))
+						      (let [transformed ]
+							
+							)
+							
 						    [input output]
 						    ))
 					      insertion)
