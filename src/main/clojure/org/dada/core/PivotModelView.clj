@@ -134,20 +134,21 @@
   ;; increment version
   ;; keep input and output models
   ;; send insertion/alteration upstream
-  [[nil nil nil]])
+  [nil nil nil])
 
 (defn process-deletion [in-extant in-extinct out-extant out-extinct pivot-fn deletion]
-  [[nil nil nil]])
+  [nil nil nil])
 
 (defn process-update [in-extant in-extinct out-extant out-extinct pivot-fn
 		      insertions alterations deletions]
   ;;TODO - sort out state required...
-  (map
-   identity ;; TODO - sort out reduction of list
+  (reduce
+   (fn [[oi oa od] [ii ia id]] [(if ii (concat ii oi) oi) (if ia (concat ia oa) oa) (if id (concat id od) od)])
+   [nil nil nil]
    (concat
-    (map #(process-addition %) in-extant in-extinct out-extant out-extinct pivot-fn insertions)
-    (map #(process-addition %) in-extant in-extinct out-extant out-extinct pivot-fn alterations)
-    (map #(process-deletion %) in-extant in-extinct out-extant out-extinct pivot-fn deletions))))
+    (map #(process-addition in-extant in-extinct out-extant out-extinct pivot-fn %) insertions)
+    (map #(process-addition in-extant in-extinct out-extant out-extinct pivot-fn %) alterations)
+    (map #(process-deletion in-extant in-extinct out-extant out-extinct pivot-fn %) deletions))))
 
 (defn -getData [this]
   (let [[[in-extant in-extinct out-extant out-extinct]] @(.state this)]
