@@ -452,14 +452,15 @@
 	[ ;; get metadata / key
 	 (fn [] [src-metadata tgt-key])
 	 ;; apply
-	 (fn [hook]
-	     (let [tgt-name (name (gensym "union"))
+	 (fn [src-name hook]
+	     (println "UNION[1]: " src-name)
+	     (let [tgt-name (str src-name ".union(" tgt-key ")")
 		   tgt-model (model tgt-name src-metadata)]
 	       (insert *metamodel* tgt-model)
 	       (hook tgt-model tgt-key)
 	       (applicator
 		(fn [src-model src-key]
-		    (println "UNION: " src-key src-model)
+		    (println "UNION[2]: " src-key src-model)
 		    (connect src-model tgt-model)
 		    tgt-model))))
 	 ])
@@ -477,13 +478,15 @@
 	 (fn [hook]
 	     (applicator
 	      (fn [src-model src-key]
-		  (println "COUNT: " src-key src-model)
+		  ;;(println "COUNT: " src-key src-model)
 		  (let [tgt-model (do-reduce-count src-model src-key-type src-key tgt-metadata tgt-key)]
 		    (insert *metamodel* tgt-model)
 		    ;;(connect src-model tgt-model)
 		    (hook tgt-model tgt-key)
 		    tgt-model)))
-	     )]
+	     )
+	 "count"
+	 ]
 	)))
 
 (defn msplit
@@ -499,13 +502,14 @@
 	  (fn [hook]
 	      (applicator
 	       (fn [src-model src-key]
-		   (println "SPLIT: " src-key src-model)
+		   ;;(println "SPLIT: " src-key src-model)
 		   (dsplit src-model split-key mutable split-fn identity
 			   (fn [tgt-model tgt-key]
 			       (insert *metamodel* tgt-model)
 			       (hook tgt-model tgt-key)
 			       tgt-model))
 		   src-model)))
+	  "split"
 	  ])
        )))
 
@@ -520,95 +524,48 @@
 (defmethod attribute-name Date [#^Date date] (str "attribute_" (.getTime date)))
 (defmethod attribute-name String [#^String string] (.replace string "_" "_underscore_"))
 
-(defn mpivot [chain pivot-key pivot-values]
-  (fn []
-      (let [[downstream-metadata-accessor applicator] (chain)
-	    [src-metadata src-key] (downstream-metadata-accessor)
-	    pivot-key-keys (collection "type" "version")
-	    pivot-key-types (collection String Integer)
-	    pivot-value-type (.getAttributeType src-metadata (name pivot-key))
-	    pivot-value-types (repeat (count pivot-values) pivot-value-type)
-	    pivot-names (map (fn [key](attribute-name key)) pivot-values)
-	    pivot-symbols (map (fn [name] (symbol name)) pivot-names)
-	    pivot-keywords (map (fn [name] (keyword name)) pivot-names)
-	    pivot-keys (apply collection (concat pivot-key-keys pivot-names))
-	    pivot-types (apply collection (concat pivot-key-types pivot-value-types))
-	    tgt-model-name (str "pivot(" pivot-key ")")
-	    attributes (interleave pivot-keywords pivot-types)
-	    classname (name (gensym "org.dada.demo.core.Pivot"))
-	    tgt-metadata (class-metadata classname Object :type :version attributes)
-	    ]
-	 [ ;; get metadata / key
-	  (fn [] [tgt-metadata pivot-key])
-	  ;; apply
-	  (fn [hook]
+;; (defn mpivot [chain pivot-key pivot-values]
+;;   (fn []
+;;       (let [[downstream-metadata-accessor applicator] (chain)
+;; 	    [src-metadata src-key] (downstream-metadata-accessor)
+;; 	    pivot-key-keys (collection "type" "version")
+;; 	    pivot-key-types (collection String Integer)
+;; 	    pivot-value-type (.getAttributeType src-metadata (name pivot-key))
+;; 	    pivot-value-types (repeat (count pivot-values) pivot-value-type)
+;; 	    pivot-names (map (fn [key](attribute-name key)) pivot-values)
+;; 	    pivot-symbols (map (fn [name] (symbol name)) pivot-names)
+;; 	    pivot-keywords (map (fn [name] (keyword name)) pivot-names)
+;; 	    pivot-keys (apply collection (concat pivot-key-keys pivot-names))
+;; 	    pivot-types (apply collection (concat pivot-key-types pivot-value-types))
+;; 	    tgt-model-name (str "pivot(" pivot-key ")")
+;; 	    attributes (interleave pivot-keywords pivot-types)
+;; 	    classname (name (gensym "org.dada.demo.core.Pivot"))
+;; 	    tgt-metadata (class-metadata classname Object :type :version attributes)
+;; 	    ]
+;; 	[ ;; get metadata / key
+;; 	 (fn [] [tgt-metadata pivot-key])
+;; 	 ;; apply
+;; 	 (fn [hook]
 	      
-	      ;; call downstream installing connection and wierd model
-	      ;; type needs to be a different sort of model - need to
-	      ;; extend AbstractModel in Clojure - a project for the
-	      ;; train tomorrow...
-	      (let [src-keys (.getKeyAttributeKeys src-metadata)
-		    src-key-getter (.getAttributeGetter src-metadata (first src-keys))
-		    src-version-getter (.getAttributeGetter src-metadata (second src-keys))
-		    tgt-data (atom [{}{}]) ;; [input output]
-		    tgt-model (proxy
-			       [AbstractModel View]
-			       [tgt-model-name tgt-metadata]
-			       (getData [] (keys (second @tgt-data))) ;; TODO - should be values
-			       (update [insertions alterations deletions]
-				       (println "Pivot:" insertions alterations deletions)
-				       (doall
-					(map
-					 (fn [insertion]
-					     (println ["PIVOT INSERTION:" insertion])
-					     (swap!
-					      tgt-data
-					      (fn [[input output] insertion]
-						  (let [src-key (src-key-getter insertion)
-							src-version (src-version-getter insertion)]
-						    (println ["PIVOT INSERTION:" src-key src-version (input src-key)])
-						    (if (> src-version (src-version-getter (input src-key)))
-						      (let [transformed ]
-							
-							)
-							
-						    [input output]
-						    ))
-					      insertion)
-					     ;; don't forget to call notifyUpdate
-					     )
-					 insertions
-					 ))
-				       (doall
-					(map
-					 (fn [alteration]
-					     (swap!
-					      tgt-data
-					      (fn [[input output] alteration]
-						  (let [src-key (src-key-getter alteration)
-							src-version (src-version-getter alteration)]
-						    (println ["PIVOT ALTERATION:" src-key src-version (input src-key)])
-						    [input output]
-						    ))
-					      alteration)
-					     ;; don't forget to call notifyUpdate
-					     )
-					 alterations
-					 ))
-				       )
-			       )
-		    ]
-		(applicator
-		 (fn [src-model src-key]
-		     (insert *metamodel* tgt-model)
-		     (println "PIVOT: " src-key src-model "->" pivot-key tgt-model)
-		     (connect src-model tgt-model)
-		     ;; TODO: how do we do our transformation ?
-		     (hook tgt-model pivot-key)
-		     ))
-		tgt-model))
-	  ])
-       ))
+;; 	     ;; call downstream installing connection and PivotModelView
+;; 	     (let [src-keys (.getKeyAttributeKeys src-metadata)
+;; 		   src-key-getter (.getAttributeGetter src-metadata (first src-keys))
+;; 		   src-version-getter (.getAttributeGetter src-metadata (second src-keys))
+;; 		   tgt-data (atom [{}{}]) ;; [input output]
+;; 		   years (rand-int 10)
+;; 		   tgt-model (PivotModelView. "pivot()" :key :count years src-metadata tgt-metadata)
+;; 		   ]
+;; 		   (applicator
+;; 		    (fn [src-model src-key]
+;; 			(insert *metamodel* tgt-model)
+;; 			(println "PIVOT: " src-key src-model "->" pivot-key tgt-model)
+;; 			(connect src-model tgt-model)
+;; 			;; TODO: how do we do our transformation ?
+;; 			(hook tgt-model pivot-key)
+;; 			))
+;; 		   tgt-model))
+;; 	     ])
+;; 	))
   
 ;; next step e.g. (select [a <model.field> b <model.field> c <model.field>] from [model....] where [(= a 10)...]....)
 
@@ -652,39 +609,41 @@
 ;;  ;;  false)
 ;;  )
 
-(def whales-by-type (msplit my-whales :type false))
+;; (execute
+;;  ;;(mpivot
+;; ;; (munion
+;;   (mcount
+;;    (msplit
+;;     (msplit my-whales :type false)
+;;     :time
+;;     false
+;;     (fn [time] (list (or (.lower years time) time))) ;; TODO: fencepost error...
+;;     )
+;;    )
+;; ;;  "union(count(split(whales, :time)))")
+;;  ;; :key years)
+;;  )
 
-(execute
-(mpivot
- (munion
-  (mcount
-   (msplit
-    whales-by-type
-    :time
-    false
-    (fn [time] (list (or (.lower years time) time))) ;; TODO: fencepost error...
-    ))
-  "union(count(split(whales, :time)))")
- :key years)
- )
 
-;; would this make sense ?
+;; try raising abstraction level
+;; e.g. (mgroupby whales [:type :time] mcount ...)
 
-;; (def count-by-time (msplit :time (mcount)))
-;; (my-whales (msplit :type ... count-by-time (union count-by-time)))
-
-;; ;; or
-
-;; dodgy
-;; (def sum-by-value-date (msplit :valueDate (msum :amount))
-;; (my-trades (msplit :nostro sum-by-value-date (union sum-by-value-date)))
-
-;; ;; and 
-
-;; unfinished
-;; (def sum-by-value-date (msplit :valueDate dates (msum :amount))
-;; (def nostro-projection (pivot dates :valueDate (union sum-by-value-date)))
-;; (my-trades (msplit :currency (msplit :nostro sum-by-value-date nostro-projection)))
+;; do equivalent of :
+;; (munion
+;;  (<reduction>
+;;   (msplit
+;;    <dimension-1>
+;;    ...
+;;    (msplit
+;;     <dimension-n>
+;;     <chain>
+;;     <dimension-n-args>
+;;     )
+;;    ...
+;;    <dimension-1-args>
+;;    )
+;;   <reduction-args>)
+;;  )
 
 ;;--------------------------------------------------------------------------------
 
@@ -807,3 +766,49 @@
 
 ;;(select/query :from <src-model> :where <filter> :groupby <split/union>)
 
+
+;; testsuite should insert whales into db and model then run analagous
+;; queries on both and compare result sets...
+;; then run more data into both and compare result of db query and existing model state
+
+;;--------------------------------------------------------------------------------
+
+(defn mgroup [chain split-specs reduction-monad & reduction-args]
+  (fn []
+      (let [[chain-metadata-accessor chain-applicator] (chain)
+	    [chain-metadata chain-key] (chain-metadata-accessor)
+	    tgt-key (interpose "," (map (fn [[split-key & _]] (name split-key)) split-specs))]
+	[ ;; get metadata / key
+	 (fn [] [chain-metadata tgt-key])
+	 ;; apply
+	 (fn [hook]
+	     (chain-applicator
+	      (fn [src-model src-key]
+		  (let [new-applicator (fn [hook] (hook src-model src-key))
+			new-chain (fn [] [chain-metadata-accessor new-applicator])
+			split (reduce
+			       (fn [chain split-spec] (apply msplit chain split-spec))
+			       new-chain
+			       split-specs)
+			[reduction-metadata-accessor reduction-applicator reduction-name]
+			((apply reduction-monad split reduction-args))
+			[reduction-metadata reduction-key] (reduction-metadata-accessor)
+			tgt-name (str (.getName src-model) "." (apply collection tgt-key) "=*." reduction-name)
+			dummy (println "MGROUP" (.getName src-model) "." (apply collection tgt-key) "=*." reduction-name)
+			tgt-model (model tgt-name reduction-metadata)]
+		    (insert *metamodel* tgt-model)
+		    (hook tgt-model tgt-key)
+		    (reduction-applicator
+		     (fn [src-model src-key]
+			 (connect src-model tgt-model)
+			 tgt-model))
+		    tgt-model))))
+	 "union"
+	 ])
+      ))
+
+(execute (mgroup my-whales [[:type false]] mcount))
+
+(execute (mgroup my-whales [[:type false]
+			    [:time false (fn [time] (list (or (.lower years time) time)))]]
+		 mcount))

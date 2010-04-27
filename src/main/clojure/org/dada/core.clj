@@ -325,23 +325,21 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^Model src-model #^Symbol key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  [#^IFn src-name-fn #^Metadata src-metadata #^Symbol key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (let [map (new ConcurrentHashMap)
-	prefix (str (.getName src-model) "." (name key) "=")
-	metadata (.getMetadata src-model)
 	view-factory (proxy
 		      [Factory]
 		      []
 		      (create [key]
 			      (let [value (key-to-value key)
-				    view (model (str prefix value) metadata)]
+				    view (model (src-name-fn value) src-metadata)]
 				(.decouple
 				 #^ServiceFactory *internal-view-service-factory*
 				 (view-hook view value)))
 			      ))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
-	getter (.getAttributeGetter metadata (name key))]
+	getter (.getAttributeGetter src-metadata (name key))]
     (new
      Splitter
      (proxy
@@ -354,7 +352,10 @@
     
 (defn do-split
   [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
-  (connect src-model (make-splitter src-model key mutable value-to-keys key-to-value view-hook))
+  (connect src-model (make-splitter
+		      (fn [value] (str (.getName src-model) "." "split(" key "=" value")"))
+		      (.getMetadata src-model)
+		      key mutable value-to-keys key-to-value view-hook))
   )
 
 ;;----------------------------------------
@@ -437,7 +438,7 @@
     (connect model reducer)))
   ([#^Model model key-type key-value #^Metadata tgt-metadata model-key]
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
-	view-name-fn (fn [arg] (.toString model-key))
+	view-name-fn (fn [arg] "count()")
 	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
     (connect model reducer))))
 
