@@ -496,6 +496,29 @@
 	 ]
 	)))
 
+(defn msum [chain key]
+  (fn []
+      (let [[downstream-metadata-accessor applicator] (chain)
+	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
+	    tgt-metadata (sum-reducer-metadata src-key-type)
+	    tgt-key "sum"]
+	[ ;; get metadata / key
+	 (fn [] [tgt-metadata tgt-key])
+	 ;; apply
+	 (fn [hook]
+	     (applicator
+	      (fn [src-model src-key]
+		  ;;(println "SUM: " src-key src-model)
+		  (let [tgt-model (do-reduce-sum src-model key src-key-type tgt-key tgt-metadata)]
+		    (insert *metamodel* tgt-model)
+		    ;;(connect src-model tgt-model)
+		    (hook tgt-model tgt-key)
+		    tgt-model)))
+	     )
+	 "sum"
+	 ]
+	)))
+
 (defn msplit
   ([chain split-key]
    (msplit chain split-key list))
@@ -686,7 +709,9 @@
 	    [chain-metadata chain-key] (chain-metadata-accessor)
 	    tgt-key (interpose "," (map (fn [[split-key & _]] (name split-key)) split-specs))]
 	[ ;; get metadata / key
-	 (fn [] [chain-metadata tgt-key])
+	 (fn [] [(count-reducer-metadata String) ;; TODO - filthy temporary hack
+		 ;;chain-metadata
+		 tgt-key])
 	 ;; apply
 	 (fn [hook]
 	     (chain-applicator
@@ -713,16 +738,18 @@
 	 ])
       ))
 
-(execute (mgroup my-whales [[:type]] mcount))
+(execute (msum (mgroup my-whales [[:type]] mcount) :count))
+(execute (mcount my-whales))
 
-(execute (mgroup my-whales [[:type]
-			    [:time (fn [time] (list (or (.lower years time) time)))]]
-		 mcount))
+;;(execute (mgroup my-whales [[:type]
+;;			    [:time (fn [time] (list (or (.lower years time) time)))]]
+;;		 mcount))
 
 ;;----------------------------------------
 ;; TODO
 ;; simplify splitting - Sparse splitting should use Object keys, not only int
 ;; transform needs to suppport synthetic attributes
+
 
 ;; create some whales...
 (time
