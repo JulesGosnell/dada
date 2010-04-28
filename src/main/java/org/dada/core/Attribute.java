@@ -4,14 +4,14 @@ import java.io.Serializable;
 
 import clojure.lang.Indexed;
 
-public class MetaAttribute<K, V> implements Serializable, Indexed {
+public class Attribute<K, V> implements Serializable, Indexed {
 	
 	private final K key;
 	private final Class<V> type;
 	private final Getter<K, V> getter;
 	private final boolean mutable;
 	
-	public MetaAttribute(K key, Class<V> type, Getter<K, V> getter, boolean mutable) {
+	public Attribute(K key, Class<V> type, Getter<K, V> getter, boolean mutable) {
 		this.key = key;
 		this.mutable = mutable;
 		this.type = type;

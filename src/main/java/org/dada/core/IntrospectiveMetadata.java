@@ -151,4 +151,10 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		return nameToGetter.get(key);
 	}
 
+	@Override
+	public Attribute<Object, V> getAttribute(Object key) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }

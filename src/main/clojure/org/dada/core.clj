@@ -18,9 +18,10 @@
 	      FilteredView
 	      FilteredView$Filter
 	      Getter
-	      GetterMetadata
 	      LazyView
 	      Metadata
+	      Attribute
+	      MetadataImpl
 	      Model
 	      Reducer
 	      Reducer$Strategy
@@ -179,13 +180,13 @@
 
 (defn #^Metadata metadata [#^Class class #^Keyword key #^Keyword version & attribute-key-types]
   "make Metadata for a given class"
-  (let [attribute-map (apply array-map attribute-key-types)]
-    (new GetterMetadata 
+    (new MetadataImpl
 	 (creator class)
 	 (collection (name key) (name version))
-	 (vals attribute-map)
-	 (map name (keys attribute-map))
-	 (map (fn [[key type]] (getter class type key)) attribute-map))))
+	 (map
+	  (fn [[key type]] (Attribute. (name key) ;; TODO: assumes key is a String
+				       type (getter class type key) true)) ;; TODO: mutable needs to be passed through from above
+	  (apply array-map attribute-key-types))))
 
 (defn #^Metadata class-metadata
   "create metadata for a Model containing instances of a Class"
@@ -198,12 +199,14 @@
    attributes))
 
 (defn #^Metadata seq-metadata [length]
-  (new GetterMetadata
+  (new MetadataImpl
        (proxy [Creator] [] (create [args] (apply collection args)))
        (collection 0 1)
-       (apply collection (repeat length Object))
-       (apply collection (range length))
-       (apply collection (map (fn [i] (proxy [Getter] [] (get [s] (nth s i)))) (range length)))))
+       (apply 
+	collection
+	(map
+	 (fn [i] (Attribute. i Object (proxy [Getter] [] (get [s] (nth s i))) (= i 0)))
+	 (range length)))))
 
 (defn model
   ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]

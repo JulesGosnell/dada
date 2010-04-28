@@ -31,11 +31,10 @@ package org.dada.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class GetterMetadata<K, V> implements Metadata<K, V> {
+public class MetadataImpl<K, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
 	private final Collection<Object> keyAttributeKeys;
@@ -43,34 +42,37 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
 	private final Getter<K, V> keyGetter;
-	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
-	private final Map<Object, Class<?>> keyToType;;
+	private final Map<Object, Attribute<Object, V>> keyToAttribute;
+	private final Map<Object, Class<?>> keyToType;
 	private final Map<Object, Getter<?, V>> keyToGetter;
 
-	public GetterMetadata(Creator<V> creator, Collection<Object> keyAttributeKeys, Collection<Class<?>> attributeTypes, Collection<Object> attributeKeys, Collection<Getter<?, V>> getters) {
+	private final Getter<?, V>[] getters; // for fast lookup
+	
+	public MetadataImpl(Creator<V> creator, Collection<Object> keyAttributeKeys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
 		this.keyAttributeKeys = keyAttributeKeys;
-		this.attributeTypes = new ArrayList<Class<?>>(attributeTypes);
-		this.attributeKeys = new ArrayList<Object>(attributeKeys);
-		this.attributeGetters = new ArrayList<Getter<?, V>>(getters);
-		this.getters = getters.toArray(new Getter[getters.size()]);
-		this.keyGetter = (Getter<K, V>)this.getters[0];
 
-		{
-			keyToType = new HashMap<Object, Class<?>>(attributeKeys.size());
-			Iterator<Object> n = attributeKeys.iterator();
-			Iterator<Class<?>> t = attributeTypes.iterator();
-			while (n.hasNext() && t.hasNext())
-				keyToType.put(n.next(), t.next());
-		}
+		int size = attributes.size();
+		attributeKeys = new ArrayList<Object>(size);
+		attributeTypes = new ArrayList<Class<?>>(size);
+		attributeGetters = new ArrayList<Getter<?, V>>(size);
+		keyToType= new HashMap<Object, Class<?>>(size);
+		keyToGetter = new HashMap<Object, Getter<?, V>>(size);
+		keyToAttribute = new HashMap<Object, Attribute<Object, V>>(size);
 
-		{
-			keyToGetter= new HashMap<Object, Getter<?, V>>(attributeKeys.size());
-			Iterator<Object> n = attributeKeys.iterator();
-			Iterator<Getter<?, V>> t = attributeGetters.iterator();
-			while (n.hasNext() && t.hasNext())
-				keyToGetter.put(n.next(), t.next());
+		for (Attribute<Object, V> attribute : attributes) {
+			Object key = attribute.getKey();
+			Class<V> type = attribute.getType();
+			Getter<Object, V> getter = attribute.getGetter();
+			keyToAttribute.put(key, attribute);
+			keyToType.put(key, type);
+			keyToGetter.put(key, getter);
+			attributeKeys.add(key);
+			attributeTypes.add(type);
+			attributeGetters.add(getter);
 		}
+		this.getters = attributeGetters.toArray(new Getter[size]);
+		this.keyGetter = (Getter<K, V>)this.getters[0]; // TODO: assumes simple PK
 	}
 
 	@Override
@@ -130,8 +132,7 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 
 	@Override
 	public Attribute<Object, V> getAttribute(Object key) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return keyToAttribute.get(key);
 	}
 
 }
