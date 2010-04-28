@@ -106,4 +106,10 @@ public class StringMetadata implements Metadata<String, String> {
 	public Getter<?, String> getAttributeGetter(Object key) {
 		return attributeGetters.get(0);
 	}
+
+	@Override
+	public Attribute<Object, String> getAttribute(Object key) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
 }
