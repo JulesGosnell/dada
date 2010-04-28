@@ -333,8 +333,9 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^IFn src-name-fn #^Metadata src-metadata #^Symbol key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
-  (let [map (new ConcurrentHashMap)
+  [#^IFn src-name-fn #^Metadata src-metadata #^Symbol key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  (let [mutable (.getMutable (.getAttribute src-metadata (name key)))
+	map (new ConcurrentHashMap)
 	view-factory (proxy
 		      [Factory]
 		      []
@@ -359,11 +360,11 @@
       ))))
     
 (defn do-split
-  [#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  [#^Model src-model #^Keyword key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (connect src-model (make-splitter
 		      (fn [value] (str (.getName src-model) "." "split(" key "=" value")"))
 		      (.getMetadata src-model)
-		      key mutable value-to-keys key-to-value view-hook))
+		      key value-to-keys key-to-value view-hook))
   )
 
 ;;----------------------------------------

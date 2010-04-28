@@ -90,7 +90,7 @@
       [:id (Integer/TYPE) false]
       [:version (Integer/TYPE) true]
       [:time Date true]
-      [:type String true]
+      [:type String false]		;a whale cannot change type
       [:length (Float/TYPE) true]
       [:weight (Float/TYPE) true]
       ))
@@ -186,11 +186,10 @@
 ;; TODO: try to lose key-to-value and vice-versa then define dpivot...
 ;; TODO: should mutability be part of metadata ?
 (defn dsplit
-  ([#^Model src-model #^Keyword key #^boolean mutable]
+  ([#^Model src-model #^Keyword key]
    (dsplit
     src-model
     key
-    mutable
     list
     identity
     (fn [#^Model model value]
@@ -198,11 +197,10 @@
 	model
 	)
     ))
-  ([#^Model src-model #^Keyword key #^boolean mutable #^IFn tgt-hook]
+  ([#^Model src-model #^Keyword key #^IFn tgt-hook]
    (dsplit
     src-model
     key
-    mutable
     list
     identity
     (fn [#^Model model value]
@@ -210,11 +208,10 @@
 	(tgt-hook model value)
 	)
     ))
-  ([#^Model src-model #^Keyword key #^boolean mutable #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
+  ([#^Model src-model #^Keyword key #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
    (do-split
     src-model
     key
-    mutable
     value-to-keys
     key-to-value
     (fn [#^Model model value]
@@ -500,9 +497,9 @@
 	)))
 
 (defn msplit
-  ([chain split-key mutable]
-   (msplit chain split-key mutable list))
-  ([chain split-key mutable split-fn]
+  ([chain split-key]
+   (msplit chain split-key list))
+  ([chain split-key split-fn]
    (fn []
        (let [[downstream-metadata-accessor applicator] (chain)
 	     [src-metadata src-key] (downstream-metadata-accessor)]
@@ -513,7 +510,7 @@
 	      (applicator
 	       (fn [src-model src-key]
 		   ;;(println "SPLIT: " src-key src-model)
-		   (dsplit src-model split-key mutable split-fn identity
+		   (dsplit src-model split-key split-fn identity
 			   (fn [tgt-model tgt-key]
 			       (insert *metamodel* tgt-model)
 			       (hook tgt-model tgt-key)
@@ -716,10 +713,10 @@
 	 ])
       ))
 
-(execute (mgroup my-whales [[:type false]] mcount))
+(execute (mgroup my-whales [[:type]] mcount))
 
-(execute (mgroup my-whales [[:type false]
-			    [:time false (fn [time] (list (or (.lower years time) time)))]]
+(execute (mgroup my-whales [[:type]
+			    [:time (fn [time] (list (or (.lower years time) time)))]]
 		 mcount))
 
 ;;----------------------------------------
