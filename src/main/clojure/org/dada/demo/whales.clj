@@ -793,8 +793,7 @@
 			[reduction-metadata-accessor reduction-applicator reduction-name]
 			((apply reduction-monad split reduction-args))
 			[reduction-metadata reduction-key] (reduction-metadata-accessor)
-			tgt-name (str (.getName src-model) "." (apply collection tgt-key) "=*." reduction-name)
-			dummy (println "MGROUP" (.getName src-model) "." (apply collection tgt-key) "=*." reduction-name)
+			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
 			tgt-model (model tgt-name reduction-metadata)]
 		    (insert *metamodel* tgt-model)
 		    (hook tgt-model tgt-key)
