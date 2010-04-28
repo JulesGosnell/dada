@@ -37,7 +37,6 @@ import java.util.Map;
 public class MetadataImpl<K, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
-	private final Collection<Object> keyAttributeKeys;
 	private final List<Class<?>> attributeTypes;
 	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
@@ -48,9 +47,8 @@ public class MetadataImpl<K, V> implements Metadata<K, V> {
 
 	private final Getter<?, V>[] getters; // for fast lookup
 	
-	public MetadataImpl(Creator<V> creator, Collection<Object> keyAttributeKeys, Collection<Attribute<Object, V>> attributes) {
+	public MetadataImpl(Creator<V> creator, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
-		this.keyAttributeKeys = keyAttributeKeys;
 
 		int size = attributes.size();
 		attributeKeys = new ArrayList<Object>(size);
@@ -102,7 +100,7 @@ public class MetadataImpl<K, V> implements Metadata<K, V> {
 
 	@Override
 	public Collection<Object> getKeyAttributeKeys() {
-		return keyAttributeKeys;
+		throw new UnsupportedOperationException("deprecated method");
 	}
 
 	@Override

@@ -40,8 +40,9 @@ public interface Metadata<K, V> extends Serializable {
 	
 	// keys
 	K getKey(V value);
+	
+	@Deprecated
 	Collection<Object> getKeyAttributeKeys();
-	//Getter<K, V> getKeyGetter();
 	
 	// keyed access
 	Attribute<Object, V> getAttribute(Object key);

@@ -179,11 +179,10 @@
 	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
 		  (apply make-instance class args))))
 
-(defn #^Metadata metadata [#^Class class #^Keyword key #^Keyword version & attribute-specs]
+(defn #^Metadata metadata [#^Class class attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
        (creator class)
-       (collection (name key) (name version))
        (map
 	(fn [[key type mutable]]
 	    (Attribute.
@@ -195,18 +194,13 @@
 
 (defn #^Metadata class-metadata
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Keyword key-key #^Keyword version-key #^ISeq attributes]
-  (apply
-   metadata
-   (apply make-class class-name superclass (mapcat (fn [[key type _]] [key type]) attributes))
-   key-key
-   version-key
-   attributes))
+  [#^String class-name #^Class superclass #^Collection attributes]
+  (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
+    (metadata (apply make-class class-name superclass class-attributes) attributes)))
 
 (defn #^Metadata seq-metadata [length]
   (new MetadataImpl
        (proxy [Creator] [] (create [args] (apply collection args)))
-       (collection 0 1)
        (apply 
 	collection
 	(map
@@ -217,13 +211,9 @@
   ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]
    (let [id-getter (.getAttributeGetter metadata (name key))
 	 version-getter (.getAttributeGetter metadata (name version))]
-     (new VersionedModelView model-name metadata id-getter version-getter)))
-  ([#^String model-name #^Metadata metadata]
-   (let [keys (.getAttributeKeys metadata)
-	 key-keys (.getKeyAttributeKeys metadata)
-	 id-getter (.getAttributeGetter metadata (first key-keys))
-	 version-getter (.getAttributeGetter metadata (second key-keys))]
-     (new VersionedModelView model-name metadata id-getter version-getter))))
+     ;;(new VersionedModelView model-name metadata id-getter version-getter)
+     (org.dada.core.ModelImpl. model-name metadata #(.get id-getter %) #(.get version-getter %))
+     )))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
@@ -231,7 +221,9 @@
 	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
-    (VersionedModelView. name metadata key-getter version-getter)))
+    ;;(VersionedModelView. name metadata key-getter version-getter)
+    (org.dada.core.ModelImpl. name metadata #(.get key-getter %) #(.get version-getter %))
+    ))
 
 (defn apply-getters [#^ISeq getters value]
   "apply a list of getters to a value returning a list of their results"
@@ -310,7 +302,7 @@
 
 (defn third [s] (nth s 2))
 
-(defn do-transform [#^String suffix #^Model src-model #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
+(defn do-transform [#^String suffix #^Model src-model & #^Collection attribute-descrips]
   (let [#^Metadata model-metadata (.getMetadata src-model)
 	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
 	attribute-keys (map first attribute-details)
@@ -319,7 +311,7 @@
 	attributes (interleave attribute-keys attribute-types)
 	class-name (name (gensym "org.dada.core.Transform"))
 	superclass Object
-	view-metadata (class-metadata class-name superclass key-key version-key attributes)
+	view-metadata (class-metadata class-name superclass attributes)
 	view-name (str (.getName src-model) "." suffix)
 	view (model view-name view-metadata)
 	transformer (make-transformer init-fns view-metadata view)]
@@ -333,15 +325,19 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^IFn src-name-fn #^Metadata src-metadata #^Symbol key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
-  (let [mutable (.getMutable (.getAttribute src-metadata (name key)))
+  [#^IFn src-name-fn #^Model src-model #^Symbol key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  (let [src-metadata (.getMetadata src-model)
+	src-keys (.getAttributeKeys src-metadata)
+	src-key (keyword (nth src-keys 0))     ;TODO
+	src-version (keyword (nth src-keys 1)) ;TODO
+	mutable (.getMutable (.getAttribute src-metadata (name key)))
 	map (new ConcurrentHashMap)
 	view-factory (proxy
 		      [Factory]
 		      []
 		      (create [key]
 			      (let [value (key-to-value key)
-				    view (model (src-name-fn value) src-metadata)]
+				    view (model (src-name-fn value) src-key src-version src-metadata)]
 				(.decouple
 				 #^ServiceFactory *internal-view-service-factory*
 				 (view-hook view value)))
@@ -363,7 +359,7 @@
   [#^Model src-model #^Keyword key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (connect src-model (make-splitter
 		      (fn [value] (str (.getName src-model) "." "split(" key "=" value")"))
-		      (.getMetadata src-model)
+		      src-model
 		      key value-to-keys key-to-value view-hook))
   )
 
@@ -383,7 +379,10 @@
 
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
 (defn #^Metadata sum-reducer-metadata [#^Class key-type]
-  (class-metadata (name (gensym "org.dada.core.reducer.Sum")) Object :key :version [[:key key-type false] [:version Integer true] [:sum Number true]]))
+  (class-metadata 
+   (name (gensym "org.dada.core.reducer.Sum"))
+   Object
+   [[:key key-type false] [:version Integer true] [:sum Number true]]))
 
 (defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
@@ -421,7 +420,10 @@
 
 ;; TODO: pass through reduction key - e.g. count(weight) - will java allow this ?
 (defn #^Metadata count-reducer-metadata [#^Class attribute-type]
-  (class-metadata (name (gensym "org.dada.core.reducer.Count")) Object :key :version [[:key attribute-type false] [:version Integer true] [:count Number true]]))
+  (class-metadata
+   (name (gensym "org.dada.core.reducer.Count"))
+   Object
+   [[:key attribute-type false] [:version Integer true] [:count Number true]]))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
   (let [creator (.getCreator tgt-metadata)]

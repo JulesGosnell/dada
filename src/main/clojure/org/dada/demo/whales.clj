@@ -146,10 +146,10 @@
 ;; nil
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
-(def #^Metadata whale-metadata (apply metadata Whale :id :version md-attributes))
-(def #^Model whales (model "Whales" whale-metadata))
+(def #^Metadata whale-metadata (metadata Whale md-attributes))
+(def #^Model whales (model "Whales" :id :version whale-metadata))
 
-(def num-whales 1000)
+(def num-whales 10000)
 
 (insert *metamodel* whales)
 
@@ -726,7 +726,7 @@
 			((apply reduction-monad split reduction-args))
 			[reduction-metadata reduction-key] (reduction-metadata-accessor)
 			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
-			tgt-model (model tgt-name reduction-metadata)]
+			tgt-model (model tgt-name :key :version reduction-metadata)]
 		    (insert *metamodel* tgt-model)
 		    (hook tgt-model tgt-key)
 		    (reduction-applicator
