@@ -85,6 +85,16 @@
     (def *metamodel* (start-server "Cetacea"))
     (start-client "Cetacea")))
 
+(def md-attributes
+     (list
+      [:id (Integer/TYPE) false]
+      [:version (Integer/TYPE) true]
+      [:time Date true]
+      [:type String true]
+      [:length (Float/TYPE) true]
+      [:weight (Float/TYPE) true]
+      ))
+
 (def attributes
      (list
       :id (Integer/TYPE)
@@ -136,7 +146,7 @@
 ;; nil
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
-(def #^Metadata whale-metadata (apply metadata Whale :id :version attributes))
+(def #^Metadata whale-metadata (apply metadata Whale :id :version md-attributes))
 (def #^Model whales (model "Whales" whale-metadata))
 
 (def num-whales 1000)

@@ -1,3 +1,4 @@
+
 (ns org.dada.core
     (:import (clojure.lang DynamicClassLoader ISeq IFn)
 	     (java.util
@@ -178,22 +179,26 @@
 	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
 		  (apply make-instance class args))))
 
-(defn #^Metadata metadata [#^Class class #^Keyword key #^Keyword version & attribute-key-types]
+(defn #^Metadata metadata [#^Class class #^Keyword key #^Keyword version & attribute-specs]
   "make Metadata for a given class"
-    (new MetadataImpl
-	 (creator class)
-	 (collection (name key) (name version))
-	 (map
-	  (fn [[key type]] (Attribute. (name key) ;; TODO: assumes key is a String
-				       type (getter class type key) true)) ;; TODO: mutable needs to be passed through from above
-	  (apply array-map attribute-key-types))))
+  (new MetadataImpl
+       (creator class)
+       (collection (name key) (name version))
+       (map
+	(fn [[key type mutable]]
+	    (Attribute.
+	     (name key) ;; TODO: assumes key is a String
+	     type 
+	     (getter class type key)
+	     mutable))
+	attribute-specs)))
 
 (defn #^Metadata class-metadata
   "create metadata for a Model containing instances of a Class"
   [#^String class-name #^Class superclass #^Keyword key-key #^Keyword version-key #^ISeq attributes]
   (apply
    metadata
-   (apply make-class class-name superclass attributes)
+   (apply make-class class-name superclass (mapcat (fn [[key type _]] [key type]) attributes))
    key-key
    version-key
    attributes))
@@ -377,7 +382,7 @@
 
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
 (defn #^Metadata sum-reducer-metadata [#^Class key-type]
-  (class-metadata (name (gensym "org.dada.core.reducer.Sum")) Object :key :version [:key key-type :version Integer :sum Number]))
+  (class-metadata (name (gensym "org.dada.core.reducer.Sum")) Object :key :version [[:key key-type false] [:version Integer true] [:sum Number true]]))
 
 (defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
@@ -415,7 +420,7 @@
 
 ;; TODO: pass through reduction key - e.g. count(weight) - will java allow this ?
 (defn #^Metadata count-reducer-metadata [#^Class attribute-type]
-  (class-metadata (name (gensym "org.dada.core.reducer.Count")) Object :key :version [:key attribute-type :version Integer :count Number]))
+  (class-metadata (name (gensym "org.dada.core.reducer.Count")) Object :key :version [[:key attribute-type false] [:version Integer true] [:count Number true]]))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
   (let [creator (.getCreator tgt-metadata)]
