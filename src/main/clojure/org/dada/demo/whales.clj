@@ -681,6 +681,47 @@
 
 ;; TODO - factory comes from core
 
+;;--------------------------------------------------------------------------------
+
+(defn mgroup [chain split-specs reduction-monad & reduction-args]
+  (fn []
+      (let [[chain-metadata-accessor chain-applicator] (chain)
+	    [chain-metadata chain-key] (chain-metadata-accessor)
+	    tgt-key (interpose "," (map (fn [[split-key & _]] (name split-key)) split-specs))]
+	[ ;; get metadata / key
+	 (fn [] [chain-metadata tgt-key])
+	 ;; apply
+	 (fn [hook]
+	     (chain-applicator
+	      (fn [src-model src-key]
+		  (let [new-applicator (fn [hook] (hook src-model src-key))
+			new-chain (fn [] [chain-metadata-accessor new-applicator])
+			split (reduce
+			       (fn [chain split-spec] (apply msplit chain split-spec))
+			       new-chain
+			       split-specs)
+			[reduction-metadata-accessor reduction-applicator reduction-name]
+			((apply reduction-monad split reduction-args))
+			[reduction-metadata reduction-key] (reduction-metadata-accessor)
+			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
+			tgt-model (model tgt-name reduction-metadata)]
+		    (insert *metamodel* tgt-model)
+		    (hook tgt-model tgt-key)
+		    (reduction-applicator
+		     (fn [src-model src-key]
+			 (connect src-model tgt-model)
+			 tgt-model))
+		    tgt-model))))
+	 "union"
+	 ])
+      ))
+
+(execute (mgroup my-whales [[:type false]] mcount))
+
+(execute (mgroup my-whales [[:type false]
+			    [:time false (fn [time] (list (or (.lower years time) time)))]]
+		 mcount))
+
 ;;----------------------------------------
 ;; TODO
 ;; simplify splitting - Sparse splitting should use Object keys, not only int
@@ -781,43 +822,3 @@
 ;; queries on both and compare result sets...
 ;; then run more data into both and compare result of db query and existing model state
 
-;;--------------------------------------------------------------------------------
-
-(defn mgroup [chain split-specs reduction-monad & reduction-args]
-  (fn []
-      (let [[chain-metadata-accessor chain-applicator] (chain)
-	    [chain-metadata chain-key] (chain-metadata-accessor)
-	    tgt-key (interpose "," (map (fn [[split-key & _]] (name split-key)) split-specs))]
-	[ ;; get metadata / key
-	 (fn [] [chain-metadata tgt-key])
-	 ;; apply
-	 (fn [hook]
-	     (chain-applicator
-	      (fn [src-model src-key]
-		  (let [new-applicator (fn [hook] (hook src-model src-key))
-			new-chain (fn [] [chain-metadata-accessor new-applicator])
-			split (reduce
-			       (fn [chain split-spec] (apply msplit chain split-spec))
-			       new-chain
-			       split-specs)
-			[reduction-metadata-accessor reduction-applicator reduction-name]
-			((apply reduction-monad split reduction-args))
-			[reduction-metadata reduction-key] (reduction-metadata-accessor)
-			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
-			tgt-model (model tgt-name reduction-metadata)]
-		    (insert *metamodel* tgt-model)
-		    (hook tgt-model tgt-key)
-		    (reduction-applicator
-		     (fn [src-model src-key]
-			 (connect src-model tgt-model)
-			 tgt-model))
-		    tgt-model))))
-	 "union"
-	 ])
-      ))
-
-(execute (mgroup my-whales [[:type false]] mcount))
-
-(execute (mgroup my-whales [[:type false]
-			    [:time false (fn [time] (list (or (.lower years time) time)))]]
-		 mcount))
