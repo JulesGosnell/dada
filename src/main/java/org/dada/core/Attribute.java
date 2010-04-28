@@ -22,7 +22,7 @@ public class Attribute<K, V> implements Serializable, Indexed {
 		return key;
 	}
 
-	public boolean isMutable() {
+	public boolean getMutable() {
 		return mutable;
 	}
 
