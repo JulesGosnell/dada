@@ -1,5 +1,5 @@
-
 (ns org.dada.core
+    (:use org.dada.core.ModelImpl)
     (:import (clojure.lang DynamicClassLoader ISeq IFn)
 	     (java.util
 	      ArrayList
@@ -24,6 +24,7 @@
 	      Attribute
 	      MetadataImpl
 	      Model
+	      ModelImpl
 	      Reducer
 	      Reducer$Strategy
 	      Splitter
@@ -211,8 +212,8 @@
   ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]
    (let [id-getter (.getAttributeGetter metadata (name key))
 	 version-getter (.getAttributeGetter metadata (name version))]
-     (new VersionedModelView model-name metadata id-getter version-getter)
-     ;;(org.dada.core.ModelImpl. model-name metadata #(.get id-getter %) #(.get version-getter %))
+     ;;(new VersionedModelView model-name metadata id-getter version-getter)
+     (ModelImpl. model-name metadata #(.get id-getter %) #(.get version-getter %))
      )))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
@@ -221,8 +222,8 @@
 	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
-    (VersionedModelView. name metadata key-getter version-getter)
-    ;;(org.dada.core.ModelImpl. name metadata #(.get key-getter %) #(.get version-getter %))
+    ;;(VersionedModelView. name metadata key-getter version-getter)
+    (ModelImpl. name metadata #(.get key-getter %) #(.get version-getter %))
     ))
 
 (defn apply-getters [#^ISeq getters value]

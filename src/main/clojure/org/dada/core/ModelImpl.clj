@@ -19,7 +19,7 @@
    ;; instance state
    (let [tgt-creator (.getCreator tgt-metadata)
 
-	 process-addition 
+	 process-addition
 	 (fn [[extant extinct i a d] #^Update addition]
 	     (let [new (.getNewValue addition)
 		   key (key-fn new)
@@ -36,42 +36,53 @@
 		 [(conj {key new} extant) extinct i (cons (Update. current new) a) d]
 		 )))
 
-	  process-deletion
-	  (fn [[extant extinct i a d] #^Update addition]
-	      ;; ensure row with key 
-	      ;; send insertion/alteration upstreamp
-	      [extant extinct i a d])
+	 process-deletion
+	 (fn [[extant extinct i a d] #^Update deletion]
+	     ;; ensure row with key 
+	     ;; send insertion/alteration upstreamp
+	     [extant extinct i a d])
 
-	  process-update
-	  (fn [extant extinct insertions alterations deletions]
-	      (reduce process-deletion
-		      (reduce process-addition
-			      (reduce process-addition
-				      [extant extinct '() '() '()]
-				      insertions)
-			      alterations)
-		      deletions))
+	 ;; TODO: perhaps we should raise the granularity at which we
+	 ;; compare-and-swap, in order to avoid starvation of larger
+	 ;; batches...
+	 swap-state-fn (fn [[extant extinct] insertions alterations deletions]
+			   (reduce process-deletion
+				   (reduce process-addition
+					   (reduce process-addition
+						   [extant extinct '() '() '()]
+						   insertions)
+					   alterations)
+				   deletions))
 
-	 update-fn (fn [[extant extinct] & updates]
-		       (apply process-update extant extinct updates))]
-     [(atom [{}{}]) update-fn])
+	 mutable-state (atom [{}{}])
+
+	 update-fn
+	 (fn [inputs]
+	     (let [[_ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
+	       [i a d]))
+	 
+	 getData-fn
+	 (fn []
+	     (let [[extant] @mutable-state]
+	       (or (vals extant) '())))
+	 ]
+     
+     [update-fn getData-fn])
    ])
 
 (defn -getData [#^org.dada.core.ModelImpl this]
-  (let [[mutable-state] (.state this)
-	[extant extinct] @mutable-state]
-    (or (vals extant) '())))
+  (let [[_ getData-fn] (.state this)]
+    (getData-fn)))
+
+;; TODO: lose this when Clojure collections are Serializable
+(defn #^java.util.Collection copy [& args]
+  (let [size (count args)
+	array-list (java.util.ArrayList. #^Integer size)]
+    (if (> size 0) (.addAll array-list args))
+    array-list))
 
 (defn -update [#^org.dada.core.ModelImpl this & inputs]
-  ;;(debug "MODELIMPL -update:" this inputs)
-  (let [[mutable-state update-fn] (.state this)
-	;;dummy (debug "MODELIMPL INPUT:" inputs)
-	[_ _ output-insertions output-alterations output-deletions]
-	(apply swap! mutable-state update-fn inputs)
-	;;dummy (debug "MODELIMPL OUTPUT:" output-insertions output-alterations output-deletions)
-	]
-    (apply
-     (fn [#^Collection insertions #^Collection alterations #^Collection deletions]
-	 (if (not (and (nil? insertions) (nil? alterations) (nil? deletions)))
-	   (.notifyUpdate this insertions alterations deletions)))
-     [output-insertions output-alterations output-deletions])))
+  (let [[update-fn] (.state this)
+	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
+    (if (not (and (nil? i) (nil? a) (nil? d)))
+      (.notifyUpdate this (apply copy i) (apply copy a) (apply copy d)))))
