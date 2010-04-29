@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
 
 // TODO: should be some sort of TransformedModelView - since output is a different shape from input
 
@@ -48,39 +49,50 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	private final Collection<Update<VO>> nil = Collections.emptyList();
 	
 	private final KO key;
-	private int version;
-	private V value;
+	
+	private static class Data<V> {
+		private final int version;
+		private final V value;
+		
+		private Data(V value, int version) {
+			this.value = value;
+			this.version = version;
+		}
+	}
+
+	private final AtomicReference<Data<V>> data;
 	
 	public Reducer(String name, Metadata<KO, VO> metadata, KO key, Strategy<VI, V, KO, VO> strategy) {
 		super(name, metadata);
 		this.key = key;
 		this.strategy = strategy;
-		version = 0;
-		value = this.strategy.initialValue();
+		data= new AtomicReference<Data<V>>(new Data<V>(this.strategy.initialValue(), 0));
 	}
 
 	@Override
 	public Collection<VO> getData() {
-		int snapshotVersion;
-		V snapshotValue;
-		synchronized (value) {
-			snapshotVersion = version;
-			snapshotValue = value;
-		}
-		return Collections.singleton(strategy.currentValue(key, snapshotVersion, snapshotValue));
+		Data<V> snapshot = data.get();
+		return Collections.singleton(strategy.currentValue(key, snapshot.version, snapshot.value));
 	}
 
 	@Override
 	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions) {
 		V delta = strategy.reduce(insertions, alterations, deletions);
-		V oldValue, newValue;
-		int oldVersion, newVersion;
-		synchronized (value) {
-			oldVersion = version;
-			oldValue = value;
-			newVersion = ++version;
-			newValue = value = strategy.apply(value, delta);
-		}
+		Data<V> oldData;
+		Data<V> newData;
+		V oldValue;
+		int oldVersion;
+		V newValue;
+		int newVersion;
+		do {
+			oldData= data.get();
+			oldValue = oldData.value;
+			oldVersion = oldData.version;
+			newValue = strategy.apply(oldValue, delta);
+			newVersion = oldVersion + 1;
+			newData= new Data<V>(newValue, newVersion);
+		} while (!data.compareAndSet(oldData, newData));
+		
 		notifyUpdate(nil, Collections.singleton(new Update<VO>(strategy.currentValue(key, oldVersion, oldValue), strategy.currentValue(key, newVersion, newValue))), nil);
 	}
 
