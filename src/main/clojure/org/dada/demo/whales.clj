@@ -149,7 +149,7 @@
 (def #^Metadata whale-metadata (metadata Whale md-attributes))
 (def #^Model whales (model "Whales" :id :version whale-metadata))
 
-(def num-whales 10000)
+(def num-whales 100000)
 
 (insert *metamodel* whales)
 
@@ -444,7 +444,7 @@
 
 ;; this won't do it...
 
-(defn mlift [model key]
+(defn mlift [#^Model model key]
   (fn []
       [;; get metadata / key
        (fn [] [(.getMetadata model) key])
@@ -617,7 +617,7 @@
 ;; count up whales by time by type
 (def #^NavigableSet years
      (TreeSet.
-      (list
+      (collection
        (Date. 0 0 1)
        (Date. 1 0 1)
        (Date. 2 0 1)
@@ -715,7 +715,7 @@
 	 ;; apply
 	 (fn [hook]
 	     (chain-applicator
-	      (fn [src-model src-key]
+	      (fn [#^Model src-model src-key]
 		  (let [new-applicator (fn [hook] (hook src-model src-key))
 			new-chain (fn [] [chain-metadata-accessor new-applicator])
 			split (reduce

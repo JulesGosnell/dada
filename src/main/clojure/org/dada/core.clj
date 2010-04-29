@@ -213,7 +213,10 @@
    (let [id-getter (.getAttributeGetter metadata (name key))
 	 version-getter (.getAttributeGetter metadata (name version))]
      ;;(new VersionedModelView model-name metadata id-getter version-getter)
-     (ModelImpl. model-name metadata #(.get id-getter %) #(.get version-getter %))
+     (ModelImpl. model-name metadata #(.get id-getter %)
+		 (fn [old new] (> (.get version-getter new) (.get version-getter old)))
+		 ;;(fn [old new] true)
+		 )
      )))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
@@ -223,7 +226,10 @@
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
     ;;(VersionedModelView. name metadata key-getter version-getter)
-    (ModelImpl. name metadata #(.get key-getter %) #(.get version-getter %))
+    (ModelImpl. name metadata #(.get key-getter %)
+		(fn [old new] (> (.get version-getter new) (.get version-getter old)))
+		;;(fn [old new] true)
+		)
     ))
 
 (defn apply-getters [#^ISeq getters value]

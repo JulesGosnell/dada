@@ -12,6 +12,8 @@
      )
     )
 
+;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
+
 (defn -init [#^String model-name #^Metadata tgt-metadata #^IFn key-fn #^IFn version-fn]
 
   [ ;; super ctor args
@@ -23,24 +25,57 @@
 	 (fn [[extant extinct i a d] #^Update addition]
 	     (let [new (.getNewValue addition)
 		   key (key-fn new)
-		   ;;dummy (println "PROCESS:" key new)
 		   current (extant key)]
 	       (if (nil? current)
+		 ;; insertion...
 		 (let [removed (extinct key)]
 		   (if (nil? removed)
-		     [(conj {key new} extant) extinct (cons (Update. nil new) i) a d] ;insertion
-		     ;; TODO - not extant but extinct
+		     ;; first time seen
+		     [(assoc extant key new) extinct (cons (Update. nil new) i) a d] ;insertion
+		     ;; already deleted
+		     (if (version-fn removed new)
+		       ;; later version - reinstated
+		       [(assoc extant key new) (dissoc extinct key) (cons (Update. nil new) i) a d]
+		       (do
+			 ;; out of order or duplicate version - ignored
+			 (println "WARN: OUT OF ORDER INSERT" current new)
+			 [extant extinct i a d]))
 		     )
 		   )
-		 ;; extant - alteration - TODO - check version
-		 [(conj {key new} extant) extinct i (cons (Update. current new) a) d]
+		 ;; alteration...
+		 (if (version-fn current new)
+		   ;; later version - accepted
+		   [(assoc extant key new) extinct i (cons (Update. current new) a) d] ;alteration
+		   (do
+		     ;; out of order or duplicate version - ignored
+		     (println "WARN: OUT OF ORDER UPDATE" current new)
+		     [extant extinct i a d]))
 		 )))
 
 	 process-deletion
 	 (fn [[extant extinct i a d] #^Update deletion]
-	     ;; ensure row with key 
-	     ;; send insertion/alteration upstreamp
-	     [extant extinct i a d])
+	     (let [new (.getNewValue deletion)
+		   key (key-fn new)
+		   current (extant key)]
+	       (if (nil? current)
+		 (let [removed (extinct key)]
+		   (if (nil? removed)
+		     ;; neither extant or extinct - mark extinct
+		     [extant (dissoc extinct key) i a d]
+		     (if (version-fn removed new)
+		       ;; later version - accepted
+		       [extant (assoc extinct key new) i a (cons (Update. removed new) d)]
+		       (do
+			 ;; earlier version - ignored
+			 (println "WARN: OUT OF ORDER DELETION" current new)
+			 [extant extinct i a d]))))
+		 (if (version-fn current new)
+		   ;; later version - accepted
+		   [(dissoc extant key) (assoc extinct key new) i a (cons (Update. current new) d)]
+		   (do
+		     ;; earlier version - ignored
+		     (println "WARN: OUT OF ORDER DELETION" current new)
+		     [extant extinct i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we
 	 ;; compare-and-swap, in order to avoid starvation of larger
@@ -84,5 +119,5 @@
 (defn -update [#^org.dada.core.ModelImpl this & inputs]
   (let [[update-fn] (.state this)
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
-    (if (not (and (nil? i) (nil? a) (nil? d)))
+    (if (not (and (empty? i) (empty? a) (empty? d)))
       (.notifyUpdate this (apply copy i) (apply copy a) (apply copy d)))))
