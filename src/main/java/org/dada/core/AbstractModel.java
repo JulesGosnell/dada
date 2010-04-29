@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
@@ -46,12 +47,10 @@ import org.dada.slf4j.LoggerFactory;
 public abstract class AbstractModel<K, V> implements Model<K, V> {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
+	protected final AtomicReference<Collection<View<V>>> views = new AtomicReference<Collection<View<V>>>(new ArrayList<View<V>>());
 
 	protected final String name;
 	protected final Metadata<K, V> metadata;
-	private final Object viewsLock = new Object();
-
-	protected volatile Collection<View<V>> views = new ArrayList<View<V>>();
 
 	public AbstractModel(String name, Metadata<K, V> metadata) {
 		this.name = name;
@@ -68,33 +67,40 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return metadata;
 	}
 
+	// I'm holding my Views in an ArrayList because, whilst insert/delete involves a slow copy, iterate should be
+	// nice and fast...
+	
 	@Override
 	public Registration<K, V> registerView(View<V> view) {
-		synchronized (viewsLock) {
-			//views = (IPersistentSet)views.cons(view);
-			Collection<View<V>> newViews = new ArrayList<View<V>>(views);
+		Collection<View<V>> oldViews;
+		Collection<View<V>> newViews;
+		do {
+			oldViews = views.get();
+			newViews = new ArrayList<View<V>>(oldViews);
 			newViews.add(view);
-			views = newViews;
-			logger.debug("{}: registered view: {}", name, view);
-		}
+		} while (!views.compareAndSet(oldViews, newViews));
+		logger.debug("{}: registered view: {} -> {}", name, view, newViews);
+
 		Collection<V> values = getData();
 		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
 	}
 
 	@Override
 	public Collection<V> deregisterView(View<V> view) {
-		synchronized (viewsLock) {
-			Collection<View<V>> newViews = new ArrayList<View<V>>(views);
+		Collection<View<V>> oldViews;
+		Collection<View<V>> newViews;
+		do {
+			oldViews = views.get();
+			newViews = new ArrayList<View<V>>(oldViews);
 			newViews.remove(view);
-			views = newViews;
-			logger.debug("" + this + " deregistered view:" + view + " -> " + views);
-		}
+		} while (!views.compareAndSet(oldViews, newViews));
+		logger.debug("{}: deregistered view: {} -> {}", name, view, newViews);
 		Collection<V> values = getData();
 		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
 	}
 
 	public void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
-		Collection<View<V>> snapshot = views;
+		Collection<View<V>> snapshot = views.get();
 		for (View<V> view : snapshot) {
 			if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)
 				logger.warn("{}: sending empty event", name);
