@@ -147,11 +147,11 @@
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
 (def #^Metadata whale-metadata (metadata Whale md-attributes))
-(def #^Model whales (model "Whales" :id :version whale-metadata))
+(def #^Model whales-model (model "Whales" :id :version whale-metadata))
 
 (def num-whales 100000)
 
-(insert *metamodel* whales)
+(insert *metamodel* whales-model)
 
 ;;----------------------------------------
 
@@ -319,8 +319,9 @@
   ((second (monad)) (fn [model key])))
 
 ;;--------------------------------------------------------------------------------
+;; some actual queries...
 
-(def my-whales (mlift whales :id 0))	;TODO - col should be optional
+(def whales (mlift whales-model :id 0))	;TODO - col should be optional
 
 (def #^NavigableSet years
      (TreeSet.
@@ -336,15 +337,12 @@
        (Date. 8 0 1)
        (Date. 9 0 1))))
 
-;;--------------------------------------------------------------------------------
 
+(execute (msum (mgroup whales [[:type]] mcount) :count))
+(execute (mcount whales))
 
-
-(execute (msum (mgroup my-whales [[:type]] mcount) :count))
-(execute (mcount my-whales))
-
-(execute (mgroup my-whales [[:type]
-			    [:time (fn [time] (list (or (.lower years time) time)))]]
+(execute (mgroup whales [[:type]
+			 [:time (fn [time] (list (or (.lower years time) time)))]]
 		 mcount))
 
 ;;----------------------------------------
@@ -356,14 +354,14 @@
 ;; create some whales...
 (time
  (doall
-  (let [batcher (Batcher. 999 1000 (list whales))
+  (let [batcher (Batcher. 999 1000 (list whales-model))
 	#^Creator creator (.getCreator whale-metadata)
 	max-length-x-100 (* max-length 100)
 	max-weight-x-100 (* max-weight 100)]
     (pmap
      (fn [id]
 	 (insert
-	  whales ;; batcher
+	  whales-model ;; batcher
 	  (.create
 	   creator
 	   (into-array
