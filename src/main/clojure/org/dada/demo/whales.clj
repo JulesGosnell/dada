@@ -331,10 +331,7 @@
 	    src-key-type Object
 	    tgt-metadata (count-reducer-metadata
 			  (map
-			   (fn [key]
-			       (let [[name type mutable] (.getAttribute src-metadata key)]
-				 [name type mutable] ;; TODO - try removing this deconstruction
-				 ))
+			   (fn [key] (.getAttribute src-metadata key))
 			   [src-key]))
 	    tgt-key "count"]
 	[ ;; get metadata / key
