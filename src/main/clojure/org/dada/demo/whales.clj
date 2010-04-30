@@ -169,7 +169,7 @@
   ([#^Model src-model key-value]
    (dcount src-model (type key-value) key-value))
   ([#^Model src-model #^Class key-type key-value]
-   (dcount src-model key-type key-value (count-reducer-metadata key-type)))
+   (dcount src-model key-type key-value (count-reducer-metadata :key key-type)))
   ([#^Model src-model #^Class key-type key-value #^Metadata metadata]
    (insert *metamodel* (do-reduce-count src-model key-type key-value metadata)))
   )
@@ -477,7 +477,7 @@
   (fn []
       (let [[downstream-metadata-accessor applicator] (chain)
 	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
-	    tgt-metadata (count-reducer-metadata src-key-type)
+	    tgt-metadata (count-reducer-metadata :key src-key-type)
 	    tgt-key "count"]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
@@ -500,7 +500,7 @@
   (fn []
       (let [[downstream-metadata-accessor applicator] (chain)
 	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
-	    tgt-metadata (sum-reducer-metadata src-key-type)
+	    tgt-metadata (sum-reducer-metadata :key src-key-type)
 	    tgt-key "sum"]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
@@ -709,7 +709,7 @@
 	    [chain-metadata chain-key] (chain-metadata-accessor)
 	    tgt-key (interpose "," (map (fn [[split-key & _]] (name split-key)) split-specs))]
 	[ ;; get metadata / key
-	 (fn [] [(count-reducer-metadata String) ;; TODO - filthy temporary hack
+	 (fn [] [(count-reducer-metadata :key String) ;; TODO - filthy temporary hack
 		 ;;chain-metadata
 		 tgt-key])
 	 ;; apply

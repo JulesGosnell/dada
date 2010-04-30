@@ -380,8 +380,8 @@
 (defn make-reducer
   [#^Model src-model key-key key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
   ;;[#^Model src-model #^Collection key-keys #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
-  (let [key-keys (Tuple. key-key)
-	key-values (Tuple. key-value)
+  (let [key-keys (Tuple. #^Object key-key)
+	key-values (Tuple. #^Object key-value)
 	key-name (apply str (interpose "," key-keys))
 	view-name (str (.getName src-model) "." (name-fn key-name))]
     (Reducer. view-name tgt-metadata key-values strategy)))
@@ -389,13 +389,18 @@
 ;; sum specific stuff - should be in its own file
 
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
-(defn #^Metadata sum-reducer-metadata [#^Class key-type]
-  (class-metadata 
-   (name (gensym "org.dada.core.reducer.Sum"))
-   Object
-   [[:key key-type false] [:version Integer true] [:sum Number true]]))
+(defn #^Metadata sum-reducer-metadata
+  ([key-name #^Class key-type]			;TODO: deprecated
+   (sum-reducer-metadata [[key-name key-type false]]))
+  ([#^Collection key-specs]
+   (class-metadata 
+    (name (gensym "org.dada.core.reducer.Sum"))
+    Object
+    (concat key-specs [[:version Integer true] [:sum Number true]])))
+  )
 
 (defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
+  ;; HERE - need to deal with multiple keys
   (let [getter (.getAttributeGetter src-metadata (name attribute-key))
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
@@ -419,7 +424,7 @@
 
 (defn do-reduce-sum
   ([#^Model model #^Keyword attribute-key attribute-type attribute-value]
-   (do-reduce-sum model attribute-key attribute-type attribute-value (sum-reducer-metadata attribute-type)))
+   (do-reduce-sum model attribute-key attribute-type attribute-value (sum-reducer-metadata :key attribute-type)))
   ([#^Model model #^Keyword attribute-key attribute-type attribute-value #^Metadata tgt-metadata]
    (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
 	 view-name-fn #(str "sum(" % ")")
@@ -430,11 +435,14 @@
 ;; count specific stuff - should be in its own file
 
 ;; TODO: pass through reduction key - e.g. count(weight) - will java allow this ?
-(defn #^Metadata count-reducer-metadata [#^Class attribute-type]
-  (class-metadata
-   (name (gensym "org.dada.core.reducer.Count"))
-   Object
-   [[:key attribute-type false] [:version Integer true] [:count Number true]]))
+(defn #^Metadata count-reducer-metadata
+  ([#^Class attribute-name attribute-type] ;; TODO: deprecated
+   (count-reducer-metadata [[attribute-name attribute-type false]]))
+  ([#^Collection attribute-specs]
+   (class-metadata
+    (name (gensym "org.dada.core.reducer.Count"))
+    Object
+    (concat attribute-specs [[:version Integer true] [:count Number true]]))))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
   (let [creator (.getCreator tgt-metadata)]
@@ -451,7 +459,7 @@
 
 (defn do-reduce-count
   ([#^Model model #^Class key-type key-value]
-   (do-reduce-count model key-type key-value (count-reducer-metadata key-type))
+   (do-reduce-count model key-type key-value (count-reducer-metadata :key key-type))
    )
   ([#^Model model key-type key-value #^Metadata tgt-metadata]
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
