@@ -58,6 +58,51 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 		this.values = new ArrayList<V>(values);
 	}
 	
+	public Tuple(V value1) {
+		this.values = new ArrayList<V>(1);
+		values.add(value1);
+	}
+	
+	public Tuple(V value1, V value2) {
+		this.values = new ArrayList<V>(2);
+		values.add(value1);
+		values.add(value2);
+	}
+	
+	public Tuple(V value1, V value2, V value3) {
+		this.values = new ArrayList<V>(3);
+		values.add(value1);
+		values.add(value2);
+		values.add(value3);
+	}
+	
+	public Tuple(V value1, V value2, V value3, V value4) {
+		this.values = new ArrayList<V>(4);
+		values.add(value1);
+		values.add(value2);
+		values.add(value3);
+		values.add(value4);
+	}
+	
+	public Tuple(V value1, V value2, V value3, V value4, V value5) {
+		this.values = new ArrayList<V>(5);
+		values.add(value1);
+		values.add(value2);
+		values.add(value3);
+		values.add(value4);
+		values.add(value5);
+	}
+	
+	public Tuple(V value1, V value2, V value3, V value4, V value5, V value6) {
+		this.values = new ArrayList<V>(1);
+		values.add(value1);
+		values.add(value2);
+		values.add(value3);
+		values.add(value4);
+		values.add(value5);
+		values.add(value6);
+	}
+	
 	// Indexed ...
 	
 	@Override
