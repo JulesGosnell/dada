@@ -162,138 +162,10 @@
 (defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
   ;; TODO: accept ready-made View ?
   ;; TODO: default key/version from src-model
-  
   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
-(defn dcount 
-  ([#^Model src-model key-value]
-   (dcount src-model (type key-value) key-value))
-  ([#^Model src-model #^Class key-type key-value]
-   (dcount src-model key-type key-value (count-reducer-metadata :key key-type)))
-  ([#^Model src-model #^Class key-type key-value #^Metadata metadata]
-   (insert *metamodel* (do-reduce-count src-model key-type key-value metadata)))
-  )
-
-(defn dsum
-  ([#^Model src-model #^Keyword attribute-key key-value]
-   (dsum src-model attribute-key (type key-value) key-value))
-  ([#^Model src-model #^Keyword attribute-key #^Class key-type key-value]
-   (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value)))
-  ([#^Model src-model #^Keyword attribute-key #^Class key-type key-value #^Metadata metadata]
-   (insert *metamodel* (do-reduce-sum src-model attribute-key key-type key-value metadata)))
-  )
-
-;; TODO: try to lose key-to-value and vice-versa then define dpivot...
-;; TODO: should mutability be part of metadata ?
-(defn dsplit
-  ([#^Model src-model #^Keyword key]
-   (dsplit
-    src-model
-    key
-    list
-    identity
-    (fn [#^Model model value]
-	(insert *metamodel* model)
-	model
-	)
-    ))
-  ([#^Model src-model #^Keyword key #^IFn tgt-hook]
-   (dsplit
-    src-model
-    key
-    list
-    identity
-    (fn [#^Model model value]
-	(insert *metamodel* model)
-	(tgt-hook model value)
-	)
-    ))
-  ([#^Model src-model #^Keyword key #^IFn value-to-keys #^IFn key-to-value #^IFn tgt-hook]
-   (do-split
-    src-model
-    key
-    value-to-keys
-    key-to-value
-    (fn [#^Model model value]
-	(insert *metamodel* model)
-	(tgt-hook model value)
-	)
-    ))
-  )
-
-(defn do-model [#^Model src-model #^String suffix #^Keyword key #^Keyword version]
-  (connect src-model (model (str (.getName src-model) "." suffix) key version (.getMetadata  src-model))))
-
-;; TODO
-;; dindex
-
-;;----------------------------------------
-
-;; demonstrate filtration - only selecting a subset of the values from
-;; one model into another - based on their contents.
-
-;;----------------------------------------
-
-;; (def median-length (/ max-length 2))
-;; (def median-weight (/ max-weight 2))
-
-;; (def longer-whales 
-;;      (dfilter whales (str "length>" median-length) '(:length) #(> % median-length)))
-
-;; (def heavier-whales
-;;      (dfilter whales (str "weight>" median-weight) '(:weight) #(> % median-weight)))
-
-;; ;;----------------------------------------
-;; ;; demonstrate transformation - only selecting a subset of the
-;; ;; attributes from one model into another. We may support synthetic
-;; ;; attributes...
-;; ;;----------------------------------------
-
-;; (def longer-whales-weight
-;;      (dtransform longer-whales "weight" :time :version :time :version :weight))
-
-;; (def #^Model heavier-whales-length
-;;      (dtransform heavier-whales "length" :time :version :time :version :length))
-
-;; ;;----------------------------------------
-;; ;; demonstrate transformation - a synthetic field - metric tons per metre
-;; ;;----------------------------------------
-
-;; (dtransform
-;;  whales
-;;  "tonsPerMetre"
-;;  :time
-;;  :version 
-;;  :time
-;;  :version 
-;;  (list
-;;   :tonsPerMetre
-;;   Number
-;;   '(:weight :length)
-;;   (fn [weight length] (if (= length 0) 0 (/ weight length))))
-;;  )
-
-;; ;;----------------------------------------
-;; ;; try a transformation on top of a filtration
-;; ;; e.g. select time, version, length from whales where type="narwhal"
-;; ;;----------------------------------------
-
-;; (def narwhals-length
-;;      (dtransform 
-;;       (dfilter 
-;;        whales
-;;        "type=narwhal" 
-;;        '(:type)
-;;        #(= "narwhal" %))
-;;       "length"
-;;       :time
-;;       :version
-;;       :time
-;;       :version
-;;       :length)
-;;      )
-
 ;;--------------------------------------------------------------------------------
+;; monads
 
 (defn mlift [#^Model model key value]
   (fn []
@@ -334,7 +206,7 @@
 	    ;;src-types (map
 	    src-key-type Object
 	    tgt-metadata (count-reducer-metadata (map (fn [key] (.getAttribute src-metadata key)) src-keys))
-	    tgt-key "count"]
+	    tgt-key :count]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
 	 ;; apply
@@ -345,9 +217,12 @@
 		  ;;                 Object       the-date count       split(type/time)
 		  (println "COUNT[2]: " src-key-type src-value tgt-key ": " src-model)
 		  (let [src-values [src-value] ;TODO
-			tgt-model (do-reduce-count src-model src-values tgt-metadata :count "dummy")] ;TODO - parameterise :count
+			tgt-model (do-reduce-count src-model src-values tgt-metadata tgt-key)]
+
+;; HERE - need multiple keys and values...
+
 		    (insert *metamodel* tgt-model)
-		    ;;(connect src-model tgt-model)
+		    (connect src-model tgt-model)
 		    (hook tgt-model tgt-key)
 		    tgt-model)))
 	     )
@@ -390,13 +265,13 @@
 	  ;; apply
 	  (fn [hook]
 	      (applicator
-	       (fn [src-model src-key]
-		   ;;(println "SPLIT: " src-key src-model)
-		   (dsplit src-model split-key split-fn identity
-			   (fn [tgt-model tgt-key]
-			       (insert *metamodel* tgt-model)
-			       (hook tgt-model tgt-key)
-			       tgt-model))
+	       (fn [src-model src-value]
+		   (do-split src-model split-key split-fn identity
+			     (fn [tgt-model tgt-key]
+				 (println "SPLIT: " src-value tgt-key)
+				 (insert *metamodel* tgt-model)
+				 (hook tgt-model tgt-key)
+				 tgt-model))
 		   src-model)))
 	  "split"
 	  ])
