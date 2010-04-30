@@ -3,7 +3,8 @@
     (:import (clojure.lang DynamicClassLoader ISeq IFn)
 	     (java.util
 	      ArrayList
-	      Collection)
+	      Collection
+	      Date)
 	     (java.util.concurrent
 	      ConcurrentHashMap)
 	     (java.beans
@@ -107,12 +108,18 @@
 ;; factory
 ;; "org.dada.tmp.Amount"
 ;; :id int :version int :amount double)
+
+(defmulti attribute-key (fn [arg] (class arg)))
+(defmethod attribute-key Date [#^Date date] (str "attribute_" (.getTime date)))
+(defmethod attribute-key String [#^String string] (.replace string "_" "_underscore_"))
+(defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
+
 (defn attribute-array [& attribute-key-types]
   (if (empty? attribute-key-types)
     nil
     (into-array (map 
-		 (fn [[#^Keyword key #^Class type]]
-		     (into-array (list (.getCanonicalName type) (name key))))
+		 (fn [[key #^Class type]]
+		     (into-array (list (.getCanonicalName type) (attribute-key key))))
 		 (apply array-map attribute-key-types)))))
 
 (def *classloader* (deref clojure.lang.Compiler/LOADER))
@@ -186,12 +193,7 @@
   (new MetadataImpl
        (creator class)
        (map
-	(fn [[key type mutable]]
-	    (Attribute.
-	     (name key) ;; TODO: assumes key is a String
-	     type 
-	     (getter class type key)
-	     mutable))
+	(fn [[key type mutable]] (Attribute. key type mutable (getter class type key)))
 	attribute-specs)))
 
 (defn #^Metadata class-metadata
@@ -210,9 +212,9 @@
 	 (range length)))))
 
 (defn model
-  ([#^String model-name #^Keyword key #^Keyword version #^Metadata metadata]
-   (let [id-getter (.getAttributeGetter metadata (name key))
-	 version-getter (.getAttributeGetter metadata (name version))]
+  ([#^String model-name key-key version-key #^Metadata metadata]
+   (let [id-getter (.getAttributeGetter metadata key-key)
+	 version-getter (.getAttributeGetter metadata version-key)]
      ;;(new VersionedModelView model-name metadata id-getter version-getter)
      (ModelImpl. model-name metadata #(.get id-getter %)
 		 (fn [old new] (> (.get version-getter new) (.get version-getter old)))
@@ -257,7 +259,7 @@
 (defn do-filter [view #^Model model #^ISeq keys #^IFn function]
   "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
-	getters (map #(.getAttributeGetter metadata (name %)) keys)
+	getters (map #(.getAttributeGetter metadata %) keys)
 	view (if (instance? String view)
 	       (clone-model model (str (.getName model) "." view))
 	       view)]
@@ -292,9 +294,8 @@
 ;; key -> [key type fn]
 (defmethod do-transform-attribute 
   clojure.lang.Keyword [#^Keyword key #^Metadata md]
-  (let [key-name (name key)
-	type(.getAttributeType md key-name)
-	getter (.getAttributeGetter md key-name)
+  (let [type(.getAttributeType md key)
+	getter (.getAttributeGetter md key)
 	value-fn (fn [value] (.get getter value))]
     [key type value-fn]))
 
@@ -303,7 +304,7 @@
 (defmethod do-transform-attribute
   clojure.lang.PersistentList [attribute #^Metadata md]
   (let [[key type keys transform-fn] attribute
-	getters (map #(.getAttributeGetter md (name %)) keys)
+	getters (map #(.getAttributeGetter md %) keys)
 	product-fn (fn [value] (map (fn [#^Getter getter] (.get getter value)) getters))
 	init-fn (fn [value] (apply transform-fn (product-fn value)))]
     (list key type init-fn)))
@@ -333,12 +334,12 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^IFn src-name-fn #^Model src-model #^Symbol key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  [#^IFn src-name-fn #^Model src-model key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (let [src-metadata (.getMetadata src-model)
 	src-keys (.getAttributeKeys src-metadata)
-	src-key (keyword (nth src-keys 0))     ;TODO
-	src-version (keyword (nth src-keys 1)) ;TODO
-	mutable (.getMutable (.getAttribute src-metadata (name key)))
+	src-key  (nth src-keys 0)	;TODO
+	src-version (nth src-keys 1)	;TODO
+	mutable (.getMutable (.getAttribute src-metadata key))
 	map (new ConcurrentHashMap)
 	view-factory (proxy
 		      [Factory]
@@ -352,7 +353,7 @@
 			      ))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
-	getter (.getAttributeGetter src-metadata (name key))]
+	getter (.getAttributeGetter src-metadata key)]
     (new
      Splitter
      (proxy
@@ -392,16 +393,16 @@
 (defn #^Metadata sum-reducer-metadata
   ([key-name #^Class key-type]			;TODO: deprecated
    (sum-reducer-metadata [[key-name key-type false]]))
-  ([#^Collection key-specs]
+  ([#^Collection attribute-specs]
    (class-metadata 
     (name (gensym "org.dada.core.reducer.Sum"))
     Object
-    (concat key-specs [[:version Integer true] [:sum Number true]])))
+    (concat attribute-specs [[:version Integer true] [:sum Number true]])))
   )
 
-(defn make-sum-reducer-strategy [#^Keyword attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
+(defn make-sum-reducer-strategy [attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
   ;; HERE - need to deal with multiple keys
-  (let [getter (.getAttributeGetter src-metadata (name attribute-key))
+  (let [getter (.getAttributeGetter src-metadata attribute-key)
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
@@ -411,7 +412,7 @@
      []
      (initialValue [] 0)
      (initialType [type] type)
-     (currentValue [& args] (.create creator (into-array Object args)))
+     (currentValue [keys & args] (.create creator (into-array Object (concat keys args))))
      (reduce [insertions alterations deletions]
 	     (-
 	      (+
@@ -451,7 +452,7 @@
      []
      (initialValue [] 0)
      (initialType [type] Integer)
-     (currentValue [& args] (.create creator (into-array Object args)))
+     (currentValue [keys & args] (.create creator (into-array Object (concat keys args))))
      (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
      )

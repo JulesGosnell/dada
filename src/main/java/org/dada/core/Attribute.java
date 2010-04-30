@@ -8,13 +8,13 @@ public class Attribute<K, V> implements Serializable, Indexed {
 	
 	private final K key;
 	private final Class<V> type;
-	private final Getter<K, V> getter;
 	private final boolean mutable;
+	private final Getter<K, V> getter;
 	
-	public Attribute(K key, Class<V> type, Getter<K, V> getter, boolean mutable) {
+	public Attribute(K key, Class<V> type, boolean mutable, Getter<K, V> getter) {
 		this.key = key;
-		this.mutable = mutable;
 		this.type = type;
+		this.mutable = mutable;
 		this.getter = getter;
 	}
 
@@ -22,12 +22,12 @@ public class Attribute<K, V> implements Serializable, Indexed {
 		return key;
 	}
 
-	public boolean getMutable() {
-		return mutable;
-	}
-
 	public Class<V> getType() {
 		return type;
+	}
+
+	public boolean getMutable() {
+		return mutable;
 	}
 
 	public Getter<K, V> getGetter() {
@@ -46,10 +46,14 @@ public class Attribute<K, V> implements Serializable, Indexed {
 		switch (i) {
 		case 0: return key;
 		case 1: return type;
-		case 2: return getter;
-		case 3: return mutable;
+		case 2: return mutable;
+		case 3: return getter;
 		default: throw new IndexOutOfBoundsException();
 		}
 	}
 
+	public String toString() {
+		return "<Attribute: " + key + " " + type + " " + mutable + " " + getter + ">";
+	}
+	
 }
