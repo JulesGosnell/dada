@@ -38,7 +38,7 @@
 		       [(assoc extant key new) (dissoc extinct key) (cons (Update. nil new) i) a d]
 		       (do
 			 ;; out of order or duplicate version - ignored
-			 (println "WARN: OUT OF ORDER INSERT" current new)
+			 ;;(println "WARN: OUT OF ORDER INSERT" current new)
 			 [extant extinct i a d]))
 		     )
 		   )
@@ -48,7 +48,7 @@
 		   [(assoc extant key new) extinct i (cons (Update. current new) a) d] ;alteration
 		   (do
 		     ;; out of order or duplicate version - ignored
-		     (println "WARN: OUT OF ORDER UPDATE" current new)
+		     ;;(println "WARN: OUT OF ORDER UPDATE" current new)
 		     [extant extinct i a d]))
 		 )))
 
@@ -67,14 +67,14 @@
 		       [extant (assoc extinct key new) i a (cons (Update. removed new) d)]
 		       (do
 			 ;; earlier version - ignored
-			 (println "WARN: OUT OF ORDER DELETION" current new)
+			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct i a d]))))
 		 (if (version-fn current new)
 		   ;; later version - accepted
 		   [(dissoc extant key) (assoc extinct key new) i a (cons (Update. current new) d)]
 		   (do
 		     ;; earlier version - ignored
-		     (println "WARN: OUT OF ORDER DELETION" current new)
+		     ;;(println "WARN: OUT OF ORDER DELETION" current new)
 		     [extant extinct i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we

@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Collections;
 
 public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, KO, VO> {
 
@@ -38,7 +39,7 @@ public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, K
 	}
 
 	public BigDecimalSum(String name, KI inputKey, KO outputKey, Metadata<KO, VO> metadata, final Factory<KO, VO, KI> factory, final Getter<BigDecimal, VI> getter) {
-		super(name, metadata, outputKey, new Strategy<VI, BigDecimal, KO, VO>() {
+		super(name, metadata, Collections.singleton(outputKey), new Strategy<VI, BigDecimal, KO, VO>() {
 
 			@Override
 			public BigDecimal initialValue() {
@@ -46,8 +47,8 @@ public class BigDecimalSum<KI, VI, KO, VO> extends Reducer<KI, VI, BigDecimal, K
 			}
 
 			@Override
-			public VO currentValue(KO key, int version, BigDecimal value) {
-				return factory.create(key, version, null, value);
+			public VO currentValue(Collection<KO> key, int version, BigDecimal value) {
+				return factory.create(key.iterator().next(), version, null, value);
 			}
 
 			@Override
