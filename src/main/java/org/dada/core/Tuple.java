@@ -36,6 +36,15 @@ import java.util.List;
 
 import clojure.lang.Indexed;
 
+/**
+ * Temporary class, needed whilst Clojure sequences are not Serializable - due to be remedied soon.
+ * I will use this for compound keys etc which must be Comparable (unlike standard Java Collections) and Serializable (unlike current Clojure sequences).
+ * We also implement Indexed, so we can be deconstructed in Clojure expressions e.g. (let [[a b c] (Tuple. 1 2 3)]...)
+ *  
+ * @author jules
+ *
+ * @param <V>
+ */
 public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializable, Indexed, Comparable<Tuple<V>> {
 	
 	private final List<V> values;
