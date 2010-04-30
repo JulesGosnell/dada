@@ -39,7 +39,7 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	public interface Strategy<VI, V, KO, VO> {
 		V initialValue();
 		Class<?> initialType(Class<?> type);
-		VO currentValue(KO key, int version, V value);
+		VO currentValue(Collection<KO> keys, int version, V value);
 		V reduce(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions);
 		V apply(V currentValue, V delta);
 	}
@@ -48,7 +48,7 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 
 	private final Collection<Update<VO>> nil = Collections.emptyList();
 	
-	private final KO key;
+	private final Collection<KO> keys;
 	
 	private static class Data<V> {
 		private final int version;
@@ -62,9 +62,9 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 
 	private final AtomicReference<Data<V>> data;
 	
-	public Reducer(String name, Metadata<KO, VO> metadata, KO key, Strategy<VI, V, KO, VO> strategy) {
+	public Reducer(String name, Metadata<KO, VO> metadata, Collection<KO> keys, Strategy<VI, V, KO, VO> strategy) {
 		super(name, metadata);
-		this.key = key;
+		this.keys = keys;
 		this.strategy = strategy;
 		data= new AtomicReference<Data<V>>(new Data<V>(this.strategy.initialValue(), 0));
 	}
@@ -72,7 +72,7 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	@Override
 	public Collection<VO> getData() {
 		Data<V> snapshot = data.get();
-		return Collections.singleton(strategy.currentValue(key, snapshot.version, snapshot.value));
+		return Collections.singleton(strategy.currentValue(keys, snapshot.version, snapshot.value));
 	}
 
 	@Override
@@ -93,7 +93,7 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 			newData= new Data<V>(newValue, newVersion);
 		} while (!data.compareAndSet(oldData, newData));
 		
-		notifyUpdate(nil, Collections.singleton(new Update<VO>(strategy.currentValue(key, oldVersion, oldValue), strategy.currentValue(key, newVersion, newValue))), nil);
+		notifyUpdate(nil, Collections.singleton(new Update<VO>(strategy.currentValue(keys, oldVersion, oldValue), strategy.currentValue(keys, newVersion, newValue))), nil);
 	}
 
 }

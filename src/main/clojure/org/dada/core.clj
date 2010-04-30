@@ -34,6 +34,7 @@
 	      SparseOpenLazyViewTable
 	      Transformer
 	      Transformer$StatelessStrategy
+	      Tuple
 	      Update
 	      VersionedModelView
 	      View
@@ -377,10 +378,13 @@
 ;;----------------------------------------
 
 (defn make-reducer
-  [#^Model src-model #^Keyword key-key key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
-  (let [key-name (name key-key)
+  [#^Model src-model key-key key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  ;;[#^Model src-model #^Collection key-keys #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  (let [key-keys (Tuple. key-key)
+	key-values (Tuple. key-value)
+	key-name (apply str (interpose "," key-keys))
 	view-name (str (.getName src-model) "." (name-fn key-name))]
-    (Reducer. view-name tgt-metadata key-value strategy)))
+    (Reducer. view-name tgt-metadata key-values strategy)))
 
 ;; sum specific stuff - should be in its own file
 
