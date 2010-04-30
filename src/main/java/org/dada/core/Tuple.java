@@ -211,4 +211,9 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 		return values.hashCode();
 	}
 	
+	@Override
+	public String toString() {
+		return values.toString();
+	}
+	
 }
