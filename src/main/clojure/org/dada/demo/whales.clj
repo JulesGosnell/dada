@@ -324,24 +324,28 @@
 	 ])
       ))
 
-(defn mcount [chain]
+(defn mcount [chain & src-keys]
   (fn []
+      ;; TODO - don't need src-key from src-metadata-accessor
       (let [[src-metadata-accessor applicator] (chain)
 	    [src-metadata src-key] (src-metadata-accessor)
+	    src-keys (if (empty? src-keys) [src-key] src-keys)
+	    dummy (println "COUNT[1]: " src-keys (.getAttributeKeys src-metadata))
+	    ;;src-types (map
 	    src-key-type Object
-	    tgt-metadata (count-reducer-metadata
-			  (map
-			   (fn [key] (.getAttribute src-metadata key))
-			   [src-key]))
+	    tgt-metadata (count-reducer-metadata (map (fn [key] (.getAttribute src-metadata key)) src-keys))
 	    tgt-key "count"]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
 	 ;; apply
 	 (fn [hook]
 	     (applicator
-	      (fn [src-model src-key]
-		  ;;(println "COUNT: " src-key src-model)
-		  (let [tgt-model (do-reduce-count src-model src-key-type src-key tgt-metadata tgt-key)]
+	      (fn [src-model src-value]	;TODO: should be src-values
+		  ;;                 Object       the-type count       split(type) 
+		  ;;                 Object       the-date count       split(type/time)
+		  (println "COUNT[2]: " src-key-type src-value tgt-key ": " src-model)
+		  (let [src-values [src-value] ;TODO
+			tgt-model (do-reduce-count src-model src-values tgt-metadata :count "dummy")] ;TODO - parameterise :count
 		    (insert *metamodel* tgt-model)
 		    ;;(connect src-model tgt-model)
 		    (hook tgt-model tgt-key)

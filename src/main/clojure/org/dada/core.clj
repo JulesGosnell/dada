@@ -458,6 +458,7 @@
      )
     ))
 
+;; does this need the type arg ?
 (defn do-reduce-count
   ([#^Model model #^Class key-type key-value]
    (do-reduce-count model key-type key-value (count-reducer-metadata :key key-type))
@@ -467,10 +468,10 @@
 	view-name-fn (fn [arg] "count()")
 	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
     (connect model reducer)))
-  ([#^Model model key-type key-value #^Metadata tgt-metadata model-key]
+  ([#^Model model #^Collection [value] #^Metadata tgt-metadata count-key _] ;TODO - pass plural values all way through
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")
-	reducer (make-reducer model :count key-value strategy tgt-metadata view-name-fn)]
+	reducer (make-reducer model count-key value strategy tgt-metadata view-name-fn)]
     (connect model reducer))))
 
 ;;----------------------------------------
