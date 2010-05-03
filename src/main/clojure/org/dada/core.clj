@@ -379,10 +379,10 @@
 ;;----------------------------------------
 
 (defn make-reducer
-  [#^Model src-model key-key key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  [#^Model src-model #^Object key-key #^Object key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
   ;;[#^Model src-model #^Collection key-keys #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
-  (let [key-keys (Tuple. #^Object key-key)
-	key-values (Tuple. #^Object key-value)
+  (let [key-keys (Tuple. key-key)
+	key-values (Tuple. key-value)
 	key-name (apply str (interpose "," key-keys))
 	view-name (str (.getName src-model) "." (name-fn key-name))]
     (Reducer. view-name tgt-metadata key-values strategy)))
