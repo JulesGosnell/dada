@@ -268,7 +268,7 @@
 	       (fn [src-model src-value]
 		   (do-split src-model split-key split-fn identity
 			     (fn [tgt-model tgt-key]
-				 (println "SPLIT: " src-value tgt-key)
+				 (println "SPLIT: " src-value tgt-key split-key)
 				 (insert *metamodel* tgt-model)
 				 (hook tgt-model tgt-key)
 				 tgt-model))
@@ -323,6 +323,16 @@
 
 (def whales (mlift whales-model :id 0))	;TODO - col should be optional
 
+;; count the whales
+
+(execute (mcount whales))
+
+;; count up whales by type then sum these counts...
+
+(execute (msum (mgroup whales [[:type]] mcount) :count))
+
+;; count whales by type/time - not yet working...
+
 (def #^NavigableSet years
      (TreeSet.
       (collection
@@ -337,13 +347,12 @@
        (Date. 8 0 1)
        (Date. 9 0 1))))
 
-
-(execute (msum (mgroup whales [[:type]] mcount) :count))
-(execute (mcount whales))
-
-(execute (mgroup whales [[:type]
-			 [:time (fn [time] (list (or (.lower years time) time)))]]
-		 mcount))
+(execute
+ (mgroup
+  whales
+  [[:type]
+   [:time (fn [time] (list (or (.lower years time) time)))]]
+  mcount))
 
 ;;----------------------------------------
 ;; TODO
@@ -377,7 +386,6 @@
      (range num-whales)))))
 
 (println "LOADED: " num-whales)
-
 
 ;; need some form of pluggable sorting algorithm
 
