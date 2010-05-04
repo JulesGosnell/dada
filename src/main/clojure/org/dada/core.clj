@@ -124,7 +124,9 @@
      })
 
 (defmethod attribute-key String [#^String string] 
-  (reduce (fn [string [key value]] (.replace string key value)) string string-replacements))
+  (reduce (fn [#^String string [#^String key #^String value]] (.replace string key value))
+	  string
+	  string-replacements))
 
 (defn attribute-array [& attribute-key-types]
   (if (empty? attribute-key-types)
