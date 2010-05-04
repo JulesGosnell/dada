@@ -111,8 +111,20 @@
 
 (defmulti attribute-key (fn [arg] (class arg)))
 (defmethod attribute-key Date [#^Date date] (str "attribute_" (.getTime date)))
-(defmethod attribute-key String [#^String string] (.replace string "_" "_underscore_"))
 (defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
+
+(def string-replacements {
+     "_" "_underscore_"
+     "*" "_asterisk_"
+     "+" "_plus_"
+     "-" "_minus_"
+     "/" "_divide_"
+     "(" "_openroundbracket_"
+     ")" "_closeroundbracket_"
+     })
+
+(defmethod attribute-key String [#^String string] 
+  (reduce (fn [string [key value]] (.replace string key value)) string string-replacements))
 
 (defn attribute-array [& attribute-key-types]
   (if (empty? attribute-key-types)
@@ -164,9 +176,9 @@
     (eval `(proxy [Getter] [] 
 		  (#^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol))))))
 
-(defn getter [#^Class input-type #^Class output-type #^Keyword key]
+(defn getter [#^Class input-type #^Class output-type key]
   "return a Getter taking input-type returning output-type and calling get<Key>"
-  (getter-2 input-type output-type (make-getter-name (name key))))
+  (getter-2 input-type output-type (make-getter-name (attribute-key key))))
 
 ;; (defn accessor-2 [#^Class input-type #^Class output-type #^String method-name]
 ;;   (let [method-symbol (symbol (str "." method-name))
@@ -435,15 +447,14 @@
 
 ;; count specific stuff - should be in its own file
 
-;; TODO: pass through reduction key - e.g. count(weight) - will java allow this ?
-(defn #^Metadata count-reducer-metadata
-  ([#^Class attribute-name attribute-type] ;; TODO: deprecated
-   (count-reducer-metadata [[attribute-name attribute-type false]]))
-  ([#^Collection attribute-specs]
-   (class-metadata
-    (name (gensym "org.dada.core.reducer.Count"))
-    Object
-    (concat attribute-specs [[:version Integer true] [:count Number true]]))))
+(defn #^Metadata count-reducer-metadata [count-key #^Collection attribute-specs]
+  (class-metadata
+   (name (gensym "org.dada.core.reducer.Count"))
+   Object
+   (concat
+    attribute-specs
+    [[:version Integer true]
+     [(keyword (str "count(" (or count-key "*")  ")")) Number true]])))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
   (let [creator (.getCreator tgt-metadata)]
@@ -463,7 +474,7 @@
   ([#^Model model key-value #^Metadata tgt-metadata]
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")]
-     (make-reducer model :count key-value strategy tgt-metadata view-name-fn)))
+     (make-reducer model :count4 key-value strategy tgt-metadata view-name-fn)))
   ([#^Model model #^Collection [value] #^Metadata tgt-metadata count-key] ;TODO - pass plural values all way through
    (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")]

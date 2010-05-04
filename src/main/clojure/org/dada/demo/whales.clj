@@ -205,11 +205,12 @@
 	    dummy (println "COUNT[1]: " src-keys (.getAttributeKeys src-metadata))
 	    ;;src-types (map
 	    src-key-type Object
-	    tgt-metadata (count-reducer-metadata (map (fn [key] (.getAttribute src-metadata key)) src-keys))
-	    tgt-key :count]
+	    count-key nil		;attribute we are counting - should be exposed
+	    tgt-metadata (count-reducer-metadata count-key (map (fn [key] (.getAttribute src-metadata key)) src-keys))
+	    tgt-key :count2]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
-	 ;; apply
+	 ;; applyp
 	 (fn [hook]
 	     (applicator
 	      (fn [src-model src-value]	;TODO: should be src-values
@@ -285,7 +286,7 @@
 	    reduction-specs (map (fn [[key & _]] (.getAttribute chain-metadata key)) split-specs)
 	    ]
 	[ ;; get metadata / key
-	 (fn [] [(count-reducer-metadata reduction-specs) ;; TODO - filthy temporary hack
+	 (fn [] [(count-reducer-metadata nil reduction-specs) ;; TODO - filthy temporary hack
 		 ;;chain-metadata
 		 tgt-key])
 	 ;; apply
@@ -329,30 +330,30 @@
 
 ;; count up whales by type then sum these counts...
 
-(execute (msum (mgroup whales [[:type]] mcount) :count))
+;; (execute (msum (mgroup whales [[:type]] mcount) :count))
 
-;; count whales by type/time - not yet working...
+;; ;; count whales by type/time - not yet working...
 
-(def #^NavigableSet years
-     (TreeSet.
-      (collection
-       (Date. 0 0 1)
-       (Date. 1 0 1)
-       (Date. 2 0 1)
-       (Date. 3 0 1)
-       (Date. 4 0 1)
-       (Date. 5 0 1)
-       (Date. 6 0 1)
-       (Date. 7 0 1)
-       (Date. 8 0 1)
-       (Date. 9 0 1))))
+;; (def #^NavigableSet years
+;;      (TreeSet.
+;;       (collection
+;;        (Date. 0 0 1)
+;;        (Date. 1 0 1)
+;;        (Date. 2 0 1)
+;;        (Date. 3 0 1)
+;;        (Date. 4 0 1)
+;;        (Date. 5 0 1)
+;;        (Date. 6 0 1)
+;;        (Date. 7 0 1)
+;;        (Date. 8 0 1)
+;;        (Date. 9 0 1))))
 
-(execute
- (mgroup
-  whales
-  [[:type]
-   [:time (fn [time] (list (or (.lower years time) time)))]]
-  mcount))
+;; (execute
+;;  (mgroup
+;;   whales
+;;   [[:type]
+;;    [:time (fn [time] (list (or (.lower years time) time)))]]
+;;   mcount))
 
 ;;----------------------------------------
 ;; TODO
@@ -454,3 +455,5 @@
 ;; queries on both and compare result sets...
 ;; then run more data into both and compare result of db query and existing model state
 
+;TODO: ensure that count() can accept 0=* or 1 (e.g.=:type) keys to
+;count and 0-n key/val selected-pairs
