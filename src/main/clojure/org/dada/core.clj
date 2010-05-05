@@ -202,55 +202,35 @@
 	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
 		  (apply make-instance class args))))
 
-(defn #^Metadata metadata [#^Class class attribute-specs]
+(defn #^Metadata metadata [#^Class class keys attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
        (creator class)
+       keys
        (map
 	(fn [[key type mutable]] (Attribute. key type mutable (getter class type key)))
 	attribute-specs)))
 
 (defn #^Metadata class-metadata
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection attributes]
+  [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
-    (metadata (apply make-class class-name superclass class-attributes) attributes)))
+    (metadata (apply make-class class-name superclass class-attributes) keys attributes)))
 
 (defn #^Metadata seq-metadata [length]
   (new MetadataImpl
        (proxy [Creator] [] (create [args] (apply collection args)))
+       [0]
        (apply 
 	collection
 	(map
 	 (fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	 (range length)))))
 
-(defmulti model-key-fn (fn [arg metadata] (class arg)))
-
-;; compound key
-(defmethod model-key-fn java.util.Collection [#^Collection keys #^Metadata metadata]
-  (let [getters (doall (map (fn [key] (.getAttributeGetter metadata key)) keys))]
-    (fn [value] (Tuple. (into-array Comparable (map (fn [getter] (.get getter value)) getters))))))
-	
-;; custom key fn
-(defmethod model-key-fn clojure.lang.IFn [#^IFn fn #^Metadata metadata]
-  fn)
-
-;; simple key - keywords are fns so need their own explicit rule
-(defmethod model-key-fn clojure.lang.Keyword [#^Keyword key #^Metadata metadata]
-  (let [getter (.getAttributeGetter metadata key)]
-    (fn [value] (.get getter value))))
-
-;; simple key
-(defmethod model-key-fn :default [#^Object key #^Metadata metadata]
-  (let [getter (.getAttributeGetter metadata key)]
-    (fn [value] (.get getter value))))
-
-(defn model [#^String model-name key-strategy version-key #^Metadata metadata]
-  (let [key-fn (model-key-fn key-strategy metadata)
-	version-getter (.getAttributeGetter metadata version-key)
+(defn model [#^String model-name version-key #^Metadata metadata]
+  (let [version-getter (.getAttributeGetter metadata version-key)
 	version-fn (fn [old new] (> (.get version-getter new) (.get version-getter old)))]
-    (ModelImpl. model-name metadata key-fn version-fn)))
+    (ModelImpl. model-name metadata version-fn)))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
@@ -258,12 +238,10 @@
 	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
-    ;;(VersionedModelView. name metadata key-getter version-getter)
-    (ModelImpl. name metadata #(.get key-getter %)
-		(fn [old new] (> (.get version-getter new) (.get version-getter old)))
-		;;(fn [old new] true)
-		)
-    ))
+    (ModelImpl.
+     name
+     metadata
+     (fn [old new] (> (.get version-getter new) (.get version-getter old))))))
 
 (defn apply-getters [#^ISeq getters value]
   "apply a list of getters to a value returning a list of their results"
@@ -350,7 +328,7 @@
 	attributes (interleave attribute-keys attribute-types)
 	class-name (name (gensym "org.dada.core.Transform"))
 	superclass Object
-	view-metadata (class-metadata class-name superclass attributes)
+	view-metadata (class-metadata [(first attribute-keys)] class-name superclass attributes)
 	view-name (str (.getName src-model) "." suffix)
 	view (model view-name view-metadata)
 	transformer (make-transformer init-fns view-metadata view)]
@@ -376,7 +354,7 @@
 		      []
 		      (create [key]
 			      (let [value (key-to-value key)
-				    view (model (src-name-fn value) src-key src-version src-metadata)]
+				    view (model (src-name-fn value) src-version src-metadata)]
 				(.decouple
 				 #^ServiceFactory *internal-view-service-factory*
 				 (view-hook view value)))
@@ -412,12 +390,13 @@
 
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
 (defn #^Metadata sum-reducer-metadata
-  ([key-name #^Class key-type]			;TODO: deprecated
-   (sum-reducer-metadata [[key-name key-type false]]))
-  ([#^Collection attribute-specs]
+  ([#^Collection keys key-name #^Class key-type]			;TODO: deprecated
+   (sum-reducer-metadata keys [[key-name key-type false]]))
+  ([#^Collection keys #^Collection attribute-specs]
    (class-metadata 
     (name (gensym "org.dada.core.reducer.Sum"))
     Object
+    keys
     (concat attribute-specs [[:version Integer true] [:sum Number true]])))
   )
 
@@ -459,10 +438,12 @@
 (defn count-value-key [count-key]
   (str "count(" (or count-key "*")  ")"))
 
-(defn #^Metadata count-reducer-metadata [count-key #^Collection extra-attribute-specs]
+(defn #^Metadata count-reducer-metadata
+  [#^Collection keys count-key #^Collection extra-attribute-specs]
   (class-metadata
    (name (gensym "org.dada.core.reducer.Count"))
    Object
+   keys
    (concat
     extra-attribute-specs
     [[:version Integer true]

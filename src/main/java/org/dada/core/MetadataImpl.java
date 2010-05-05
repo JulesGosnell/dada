@@ -34,12 +34,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MetadataImpl<K, V> implements Metadata<K, V> {
+public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
 	private final List<Class<?>> attributeTypes;
 	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
+	private final List<Object> keys;
 	private final Getter<K, V> keyGetter;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
 	private final Map<Object, Class<?>> keyToType;
@@ -47,8 +48,9 @@ public class MetadataImpl<K, V> implements Metadata<K, V> {
 
 	private final Getter<?, V>[] getters; // for fast lookup
 	
-	public MetadataImpl(Creator<V> creator, Collection<Attribute<Object, V>> attributes) {
+	public MetadataImpl(Creator<V> creator, Collection<Object> keys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
+		this.keys = new ArrayList(keys);
 
 		int size = attributes.size();
 		attributeKeys = new ArrayList<Object>(size);
@@ -70,8 +72,26 @@ public class MetadataImpl<K, V> implements Metadata<K, V> {
 			attributeGetters.add(getter);
 		}
 		this.getters = attributeGetters.toArray(new Getter[size]);
-		this.keyGetter = (Getter<K, V>)this.getters[0]; // TODO: assumes simple PK
-	}
+
+		if (keys.size() == 1) {
+			keyGetter = (Getter<K, V>)keyToGetter.get(keys.iterator().next());
+		} else {
+			final Getter<Comparable<K>, V>[] getters = new Getter[keys.size()];
+			int i = 0;
+			for (Object key : keys)
+				getters[i++] = (Getter<Comparable<K>, V>)keyToGetter.get(key);
+			keyGetter = new Getter<K, V>() {
+				@Override
+				public K get(V value) {
+					Comparable<K>[] args = new Comparable[getters.length];
+					int i = 0;
+					for (Getter<Comparable<K>, V> getter : getters)
+						args[i++] = getter.get(value);
+					return (K)new Tuple(args);
+				}
+			};
+		}
+}
 
 	@Override
 	public List<Class<?>> getAttributeTypes() {
@@ -91,6 +111,11 @@ public class MetadataImpl<K, V> implements Metadata<K, V> {
 	@Override
 	public K getKey(V value) {
 		return keyGetter.get(value);
+	}
+
+	@Override
+	public Getter<K, V> getKeyGetter() {
+		return keyGetter;
 	}
 
 	@Override

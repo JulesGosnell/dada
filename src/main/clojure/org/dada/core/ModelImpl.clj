@@ -5,7 +5,7 @@
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
-     :constructors {[String org.dada.core.Metadata clojure.lang.IFn clojure.lang.IFn] [String org.dada.core.Metadata]}
+     :constructors {[String org.dada.core.Metadata clojure.lang.IFn] [String org.dada.core.Metadata]}
      :methods []
      :init init
      :state state
@@ -14,12 +14,14 @@
 
 ;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
 
-(defn -init [#^String model-name #^Metadata tgt-metadata #^IFn key-fn #^IFn version-fn]
+(defn -init [#^String model-name #^Metadata tgt-metadata #^IFn version-fn]
 
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
    (let [tgt-creator (.getCreator tgt-metadata)
+	 key-getter (.getKeyGetter tgt-metadata)
+	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition
 	 (fn [[extant extinct i a d] #^Update addition]

@@ -105,8 +105,8 @@
       :weight (Float/TYPE)))
 
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
-(def #^Metadata whale-metadata (metadata Whale md-attributes))
-(def #^Model whales-model (model "Whales" :id :version whale-metadata))
+(def #^Metadata whale-metadata (metadata Whale [:id] md-attributes))
+(def #^Model whales-model (model "Whales" :version whale-metadata))
 
 (def num-whales 1000)
 
@@ -225,7 +225,7 @@
 
 (defn metamodel [#^Model src-model]
   (let [metametadata (seq-metadata 1)
-	metamodel (model (str "Meta-" (.getName src-model)) 0 nil metametadata)]
+	metamodel (model (str "Meta-" (.getName src-model)) nil metametadata)]
     (insert *metamodel* metamodel)
     (insert metamodel [src-model])
     [metamodel (.getMetadata src-model) []]))
@@ -235,7 +235,7 @@
 
 (defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
 	     & [split-key-fn]]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") 0 nil (.getMetadata src-metamodel))]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") nil (.getMetadata src-metamodel))]
     (insert *metamodel* tgt-metamodel)
     (connect
      src-metamodel
@@ -263,9 +263,9 @@
 ;; each split adds an extra key/value downstream that we may need to unwrap upstream
 (defn ccount [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys]
 	      & [count-key]]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".count(" (or count-key "") ")") 0 nil (.getMetadata src-metamodel))
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".count(" (or count-key "") ")") nil (.getMetadata src-metamodel))
 	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
-	tgt-metadata (count-reducer-metadata count-key extra-attributes)]
+	tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
     (insert *metamodel* tgt-metamodel)
     (connect
      src-metamodel
@@ -289,8 +289,8 @@
 
 
 (defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") 0 nil (.getMetadata src-metamodel))
-	tgt-model (model (str prefix ".union()") extra-keys (fn [& _] true) src-metadata)]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") nil (.getMetadata src-metamodel))
+	tgt-model (model (str prefix ".union()") (fn [& _] true) src-metadata)]
     (insert *metamodel* tgt-metamodel)
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])

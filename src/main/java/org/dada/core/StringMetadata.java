@@ -112,4 +112,10 @@ public class StringMetadata implements Metadata<String, String> {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
+
+	@Override
+	public Getter<String, String> getKeyGetter() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
 }
