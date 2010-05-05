@@ -392,11 +392,6 @@
 ;; TODO: count, average (sum/count), mean, mode, minimum, maximum - min/max more tricky, need to carry state
 ;;----------------------------------------
 
-(defn make-reducer
-  [#^String name-prefix #^Object reduction-key #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
-  (let [view-name (str name-prefix "." (name-fn reduction-key))]
-    (Reducer. view-name tgt-metadata key-values strategy)))
-
 ;; sum specific stuff - should be in its own file
 
 ;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
@@ -438,8 +433,8 @@
    (do-reduce-sum model attribute-key attribute-type attribute-value (sum-reducer-metadata :key attribute-type)))
   ([#^Model model #^Keyword attribute-key attribute-type attribute-value #^Metadata tgt-metadata]
    (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
-	 view-name-fn #(str "sum(" % ")")
-	 reducer (make-reducer (.getName model) attribute-key [attribute-value] strategy tgt-metadata view-name-fn)]
+	 value-name (str "sum(" attribute-key ")")
+	 reducer (Reducer. (str (.getName model) "." value-name) tgt-metadata [attribute-value] strategy)]
      (connect model reducer)))
   )
 
@@ -470,9 +465,10 @@
 ;TODO - pass plural values all way through
 
 (defn do-reduce-count [#^Model model #^Collection values #^Metadata tgt-metadata count-key]
-  (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
+  (let [value-name (str "count(" (or count-key "") ")")
+	strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")]
-    (make-reducer (.getName model) count-key values strategy tgt-metadata view-name-fn)))
+    (Reducer. (str (.getName model) "." value-name) tgt-metadata values strategy)))
 
 ;;----------------------------------------
 ;; refactored to here
