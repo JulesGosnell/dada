@@ -207,18 +207,22 @@
 	    src-key-type Object
 	    count-key nil		;attribute we are counting - should be exposed
 	    tgt-metadata (count-reducer-metadata count-key (map (fn [key] (.getAttribute src-metadata key)) src-keys))
-	    tgt-key :count2]
+	    tgt-key :count]
 	[ ;; get metadata / key
 	 (fn [] [tgt-metadata tgt-key])
-	 ;; applyp
+	 ;; apply
 	 (fn [hook]
 	     (applicator
 	      (fn [src-model src-value]	;TODO: should be src-values
 		  ;;                 Object       the-type count       split(type) 
 		  ;;                 Object       the-date count       split(type/time)
 		  (println "COUNT[2]: " src-key-type src-value tgt-key ": " src-model)
-		  (let [src-values [src-value] ;TODO
-			tgt-model (do-reduce-count src-model src-values tgt-metadata tgt-key)]
+		  (let [extra-values [src-value] ;TODO
+			tgt-model (do-reduce-count (.getName src-model)
+						   (.getMetadata src-model)
+						   tgt-metadata
+						   tgt-key
+						   extra-values)]
 
 ;; HERE - need multiple keys and values...
 

@@ -440,14 +440,17 @@
 
 ;; count specific stuff - should be in its own file
 
-(defn #^Metadata count-reducer-metadata [count-key #^Collection attribute-specs]
+(defn count-value-key [count-key]
+  (str "count(" (or count-key "*")  ")"))
+
+(defn #^Metadata count-reducer-metadata [count-key #^Collection extra-attribute-specs]
   (class-metadata
    (name (gensym "org.dada.core.reducer.Count"))
    Object
    (concat
-    attribute-specs
+    extra-attribute-specs
     [[:version Integer true]
-     [(keyword (str "count(" (or count-key "*")  ")")) Number true]])))
+     [(keyword (count-value-key count-key)) Number true]])))
 
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
   (let [creator (.getCreator tgt-metadata)]
@@ -456,19 +459,17 @@
      []
      (initialValue [] 0)
      (initialType [type] Integer)
-     (currentValue [keys & args] (.create creator (into-array Object (concat keys args))))
+     (currentValue [extra-values & values] ;TODO - should not need (into-array)
+		   (.create creator (into-array Object (concat extra-values values))))
      (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
      )
     ))
 
-;TODO - pass plural values all way through
-
-(defn do-reduce-count [#^Model model #^Collection values #^Metadata tgt-metadata count-key]
-  (let [value-name (str "count(" (or count-key "") ")")
-	strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
-	view-name-fn (fn [arg] "count()")]
-    (Reducer. (str (.getName model) "." value-name) tgt-metadata values strategy)))
+(defn do-reduce-count
+  [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata count-key #^Collection extra-values]
+  (let [strategy (make-count-reducer-strategy src-metadata tgt-metadata)]
+    (Reducer. (str src-name "." (count-value-key count-key)) tgt-metadata extra-values strategy)))
 
 ;;----------------------------------------
 ;; refactored to here
