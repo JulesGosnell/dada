@@ -1,6 +1,6 @@
 (ns org.dada.core
     (:use org.dada.core.ModelImpl)
-    (:import (clojure.lang DynamicClassLoader ISeq IFn)
+    (:import (clojure.lang DynamicClassLoader ISeq IFn Keyword)
 	     (java.util
 	      ArrayList
 	      Collection
@@ -222,19 +222,35 @@
        (apply 
 	collection
 	(map
-	 (fn [i] (Attribute. i Object (proxy [Getter] [] (get [s] (nth s i))) (= i 0)))
+	 (fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	 (range length)))))
 
-(defn model
-  ([#^String model-name key-key version-key #^Metadata metadata]
-   (let [id-getter (.getAttributeGetter metadata key-key)
-	 version-getter (.getAttributeGetter metadata version-key)]
-     ;;(new VersionedModelView model-name metadata id-getter version-getter)
-     (ModelImpl. model-name metadata #(.get id-getter %)
-		 (fn [old new] (> (.get version-getter new) (.get version-getter old)))
-		 ;;(fn [old new] true)
-		 )
-     )))
+(defmulti model-key-fn (fn [arg metadata] (class arg)))
+
+;; compound key
+(defmethod model-key-fn java.util.Collection [#^Collection keys #^Metadata metadata]
+  (let [getters (doall (map (fn [key] (.getAttributeGetter metadata key)) keys))]
+    (fn [value] (Tuple. (into-array Comparable (map (fn [getter] (.get getter value)) getters))))))
+	
+;; custom key fn
+(defmethod model-key-fn clojure.lang.IFn [#^IFn fn #^Metadata metadata]
+  fn)
+
+;; simple key - keywords are fns so need their own explicit rule
+(defmethod model-key-fn clojure.lang.Keyword [#^Keyword key #^Metadata metadata]
+  (let [getter (.getAttributeGetter metadata key)]
+    (fn [value] (.get getter value))))
+
+;; simple key
+(defmethod model-key-fn :default [#^Object key #^Metadata metadata]
+  (let [getter (.getAttributeGetter metadata key)]
+    (fn [value] (.get getter value))))
+
+(defn model [#^String model-name key-strategy version-key #^Metadata metadata]
+  (let [key-fn (model-key-fn key-strategy metadata)
+	version-getter (.getAttributeGetter metadata version-key)
+	version-fn (fn [old new] (> (.get version-getter new) (.get version-getter old)))]
+    (ModelImpl. model-name metadata key-fn version-fn)))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]

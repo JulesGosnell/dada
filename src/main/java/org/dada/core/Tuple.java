@@ -208,6 +208,7 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 
 	@Override
 	public int hashCode() {
+	    // TODO: we might want to implement this for ourselves...
 		return values.hashCode();
 	}
 	

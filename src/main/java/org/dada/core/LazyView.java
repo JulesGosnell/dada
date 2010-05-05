@@ -64,7 +64,8 @@ public class LazyView<K, V> implements View<V> {
 		// IMPORTANT: double checked locking (method is sync) - OK because 'view' is volatile... - requires >=1.5 JVM
 		if (view == null) {
 			view = factory.create(key);
-			map.replace(key, this, view);
+			if (!map.replace(key, this, view))
+			    throw new IllegalStateException("Failed to replace ourselves with lazily constructed View");
 		}
 	}
 

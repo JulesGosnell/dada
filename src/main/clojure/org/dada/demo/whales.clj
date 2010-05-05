@@ -104,52 +104,11 @@
       :length (Float/TYPE)
       :weight (Float/TYPE)))
 
-;; could try using deftype thus:
-;; (deftype Cetacean [#^String key #^Integer version])
-;; you can use dates as field names !
-;;  user=> (def field-symbol (symbol (.toString (java.util.Date.))))
-;;  #'user/field-symbol
-;;  user=> (eval (list 'deftype 'Test [field-symbol]))
-;;  #'user/Test
-;;  user=> (def myTest (Test "foo"))
-;;  #'user/myTest
-;;  user=> myTest
-;;  #:Test{:Wed Apr 07 08:26:46 BST 2010 "foo"}
-;;  user=> (def field-key (keyword field-symbol))
-;;  #'user/field-key
-;;  user=> (field-key myTest)
-;;  "foo"
-;;  user=> 
-;; but clojure does NOT define accessors only:
-;;  public clojure.lang.IObj user.Test__254.withMeta(clojure.lang.IPersistentMap)
-;;  public clojure.lang.IPersistentMap user.Test__254.meta()
-;;  public java.lang.Object user.Test__254.valAt(java.lang.Object)
-;;  public java.lang.Object user.Test__254.valAt(java.lang.Object,java.lang.Object)
-;;  public clojure.lang.ILookupThunk user.Test__254.getLookupThunk(clojure.lang.Keyword)
-;;  public clojure.lang.Keyword user.Test__254.getDynamicType()
-;;  public java.lang.Object user.Test__254.getDynamicField(clojure.lang.Keyword,java.lang.Object)
-;;  public clojure.lang.IPersistentMap user.Test__254.getExtensionMap()
-;; interestingly, clojure does define the following instance fields:
-;;  public final java.lang.Object user.Test__254.Wed Apr 07 08_COLON_26_COLON_46 BST 2010
-;;  public final java.lang.Object user.Test__254.__meta
-;;  public final java.lang.Object user.Test__254.__extmap
-
-;; a deftyped instance has slower access times - see below -
-;; getter1/test1 uses a deftyped object, whereas getter2/test2 uses a
-;; ClassFactory-ed object:
-
-;; user=> (time (dotimes [n 100000000] (getter1 test1)))
-;; "Elapsed time: 8615.820346 msecs"
-;; nil
-;; user=> (time (dotimes [n 100000000] (getter2 test2)))
-;; "Elapsed time: 5298.08904 msecs"
-;; nil
-
 (def #^Class Whale (apply make-class "org.dada.demo.whales.Whale" Object attributes))
 (def #^Metadata whale-metadata (metadata Whale md-attributes))
 (def #^Model whales-model (model "Whales" :id :version whale-metadata))
 
-(def num-whales 100000)
+(def num-whales 1000)
 
 (insert *metamodel* whales-model)
 
@@ -165,207 +124,8 @@
   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
 ;;--------------------------------------------------------------------------------
-;; monads
-
-(defn mlift [#^Model model key value]
-  (fn []
-      [;; get metadata / key
-       (fn [] [(.getMetadata model) key])
-       ;; apply
-       (fn [hook] (hook model value))
-       ]))
-
-(defn munion [chain tgt-key]
-  (fn []
-      (let [[downstream-metadata-accessor applicator] (chain)
-	    [src-metadata src-key] (downstream-metadata-accessor)]
-	[ ;; get metadata / key
-	 (fn [] [src-metadata tgt-key])
-	 ;; apply
-	 (fn [src-name hook]
-	     (println "UNION[1]: " src-name)
-	     (let [tgt-name (str src-name ".union(" tgt-key ")")
-		   tgt-model (model tgt-name src-metadata)]
-	       (insert *metamodel* tgt-model)
-	       (hook tgt-model tgt-key)
-	       (applicator
-		(fn [src-model src-key]
-		    (println "UNION[2]: " src-key src-model)
-		    (connect src-model tgt-model)
-		    tgt-model))))
-	 ])
-      ))
-
-(defn mcount [chain & src-keys]
-  (fn []
-      ;; TODO - don't need src-key from src-metadata-accessor
-      (let [[src-metadata-accessor applicator] (chain)
-	    [#^Metadata src-metadata src-key] (src-metadata-accessor)
-	    src-keys (if (empty? src-keys) [src-key] src-keys)
-	    dummy (println "COUNT[1]: " src-keys (.getAttributeKeys src-metadata))
-	    ;;src-types (map
-	    src-key-type Object
-	    count-key nil		;attribute we are counting - should be exposed
-	    tgt-metadata (count-reducer-metadata count-key (map (fn [key] (.getAttribute src-metadata key)) src-keys))
-	    tgt-key :count]
-	[ ;; get metadata / key
-	 (fn [] [tgt-metadata tgt-key])
-	 ;; apply
-	 (fn [hook]
-	     (applicator
-	      (fn [src-model src-value]	;TODO: should be src-values
-		  ;;                 Object       the-type count       split(type) 
-		  ;;                 Object       the-date count       split(type/time)
-		  (println "COUNT[2]: " src-key-type src-value tgt-key ": " src-model)
-		  (let [extra-values [src-value] ;TODO
-			tgt-model (do-reduce-count (.getName src-model)
-						   (.getMetadata src-model)
-						   tgt-metadata
-						   tgt-key
-						   extra-values)]
-
-;; HERE - need multiple keys and values...
-
-		    (insert *metamodel* tgt-model)
-		    (connect src-model tgt-model)
-		    (hook tgt-model tgt-key)
-		    tgt-model)))
-	     )
-	 "count"
-	 ]
-	)))
-
-(defn msum [chain key]
-  (fn []
-      (let [[src-metadata-accessor applicator] (chain)
-	    src-key-type Object ;; TODO: problem - we don't know the src-key yet
-	    tgt-metadata (sum-reducer-metadata :key src-key-type)
-	    tgt-key "sum"]
-	[ ;; get metadata / key
-	 (fn [] [tgt-metadata tgt-key])
-	 ;; apply
-	 (fn [hook]
-	     (applicator
-	      (fn [src-model src-key]
-		  ;;(println "SUM: " src-key src-model)
-		  (let [tgt-model (do-reduce-sum src-model key src-key-type tgt-key tgt-metadata)]
-		    (insert *metamodel* tgt-model)
-		    ;;(connect src-model tgt-model)
-		    (hook tgt-model tgt-key)
-		    tgt-model)))
-	     )
-	 "sum"
-	 ]
-	)))
-
-(defn msplit
-  ([chain split-key]
-   (msplit chain split-key list))
-  ([chain split-key split-fn]
-   (fn []
-       (let [[src-metadata-accessor applicator] (chain)
-	     [src-metadata src-key] (src-metadata-accessor)]
-	 [ ;; get metadata / key
-	  (fn [] [src-metadata split-key])
-	  ;; apply
-	  (fn [hook]
-	      (applicator
-	       (fn [src-model src-value]
-		   (do-split src-model split-key split-fn identity
-			     (fn [tgt-model tgt-key]
-				 (println "SPLIT: " src-value tgt-key split-key)
-				 (insert *metamodel* tgt-model)
-				 (hook tgt-model tgt-key)
-				 tgt-model))
-		   src-model)))
-	  "split"
-	  ])
-       )))
-
-(defn mgroup [chain split-specs reduction-monad & reduction-args]
-  (fn []
-      (let [[chain-metadata-accessor chain-applicator] (chain)
-	    [#^Metadata chain-metadata chain-key] (chain-metadata-accessor)
-	    tgt-key (interpose "," (map (fn [[split-key & _]] split-key) split-specs))
-	    reduction-specs (map (fn [[key & _]] (.getAttribute chain-metadata key)) split-specs)
-	    ]
-	[ ;; get metadata / key
-	 (fn [] [(count-reducer-metadata nil reduction-specs) ;; TODO - filthy temporary hack
-		 ;;chain-metadata
-		 tgt-key])
-	 ;; apply
-	 (fn [hook]
-	     (chain-applicator
-	      (fn [#^Model src-model src-key]
-		  (let [new-applicator (fn [hook] (hook src-model src-key))
-			new-chain (fn [] [chain-metadata-accessor new-applicator])
-			split (reduce
-			       (fn [chain split-spec] (apply msplit chain split-spec))
-			       new-chain
-			       split-specs)
-			[reduction-metadata-accessor reduction-applicator reduction-name]
-			((apply reduction-monad split reduction-args))
-			[#^Metadata reduction-metadata reduction-key] (reduction-metadata-accessor)
-			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
-			[reduction-key-key reduction-version-key] (.getAttributeKeys reduction-metadata)
-			tgt-model (model tgt-name reduction-key-key reduction-version-key reduction-metadata)]
-		    (insert *metamodel* tgt-model)
-		    (hook tgt-model tgt-key)
-		    (reduction-applicator
-		     (fn [src-model src-key]
-			 (connect src-model tgt-model)
-			 tgt-model))
-		    tgt-model))))
-	 "union"
-	 ])
-      ))
-
-(defn execute [monad]
-  ((second (monad)) (fn [model key])))
-
-;;--------------------------------------------------------------------------------
-;; some actual queries...
-
-(def whales (mlift whales-model :id 0))	;TODO - col should be optional
-
-;; count the whales
-
-(execute (mcount whales))
-
-;; count up whales by type then sum these counts...
-
-;; (execute (msum (mgroup whales [[:type]] mcount) :count))
-
-;; ;; count whales by type/time - not yet working...
-
-;; (def #^NavigableSet years
-;;      (TreeSet.
-;;       (collection
-;;        (Date. 0 0 1)
-;;        (Date. 1 0 1)
-;;        (Date. 2 0 1)
-;;        (Date. 3 0 1)
-;;        (Date. 4 0 1)
-;;        (Date. 5 0 1)
-;;        (Date. 6 0 1)
-;;        (Date. 7 0 1)
-;;        (Date. 8 0 1)
-;;        (Date. 9 0 1))))
-
-;; (execute
-;;  (mgroup
-;;   whales
-;;   [[:type]
-;;    [:time (fn [time] (list (or (.lower years time) time)))]]
-;;   mcount))
-
-;;----------------------------------------
-;; TODO
-;; simplify splitting - Sparse splitting should use Object keys, not only int
-;; transform needs to suppport synthetic attributes
-
-
 ;; create some whales...
+
 (time
  (doall
   (let [batcher (Batcher. 999 1000 (list whales-model))
@@ -454,10 +214,124 @@
 
 ;;(select/query :from <src-model> :where <filter> :groupby <split/union>)
 
-
 ;; testsuite should insert whales into db and model then run analagous
 ;; queries on both and compare result sets...
 ;; then run more data into both and compare result of db query and existing model state
 
 ;TODO: ensure that count() can accept 0=* or 1 (e.g.=:type) keys to
 ;count and 0-n key/val selected-pairs
+
+;;--------------------------------------------------------------------------------
+
+(defn metamodel [#^Model src-model]
+  (let [metametadata (seq-metadata 1)
+	metamodel (model (str "Meta-" (.getName src-model)) 0 nil metametadata)]
+    (insert *metamodel* metamodel)
+    (insert metamodel [src-model])
+    [metamodel (.getMetadata src-model) []]))
+
+(import org.dada.core.View)
+(import org.dada.core.Update)
+
+(defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
+	     & [split-key-fn]]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") 0 nil (.getMetadata src-metamodel))]
+    (insert *metamodel* tgt-metamodel)
+    (connect
+     src-metamodel
+     (proxy [View] []
+	    (update [insertions alterations deletions]
+		    (doall
+		     (map
+		      (fn [#^Update insertion]
+			  (let [[model & extra-values] (.getNewValue insertion)]
+			    (do-split
+			     model
+			     split-key
+			     (or split-key-fn list)
+			     identity
+			     (fn [#^Model model extra-value]
+				 (let [model-entry (list* model (concat extra-values [extra-value]))]
+				   (insert tgt-metamodel model-entry)
+				   (insert *metamodel* model)
+				   )))))
+		      insertions)))))
+    [tgt-metamodel src-metadata (concat extra-keys [split-key])]))
+
+;; extra keys are inserted into attribute list
+;; extra values are carried in model's row in metamodel
+;; each split adds an extra key/value downstream that we may need to unwrap upstream
+(defn ccount [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys]
+	      & [count-key]]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".count(" (or count-key "") ")") 0 nil (.getMetadata src-metamodel))
+	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
+	tgt-metadata (count-reducer-metadata count-key extra-attributes)]
+    (insert *metamodel* tgt-metamodel)
+    (connect
+     src-metamodel
+     (proxy [View] []
+	    (update [insertions alterations deletions]
+		    (doall
+		     (map
+		      (fn [#^Update insertion]
+			  (let [[src-model & extra-values] (.getNewValue insertion)
+				count-model (do-reduce-count 
+					     (.getName src-model)
+					     (.getMetadata src-model)
+					     tgt-metadata
+					     count-key
+					     extra-values)]
+			    (insert *metamodel* count-model)
+			    (insert tgt-metamodel (list* count-model extra-values))
+			    (connect src-model count-model)))
+		      insertions)))))
+    [tgt-metamodel tgt-metadata extra-keys]))
+
+
+(defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") 0 nil (.getMetadata src-metamodel))
+	tgt-model (model (str prefix ".union()") extra-keys (fn [& _] true) src-metadata)]
+    (insert *metamodel* tgt-metamodel)
+    (insert *metamodel* tgt-model)
+    (insert tgt-metamodel [tgt-model])
+    (connect
+     src-metamodel
+     (proxy [View] []
+	   (update [insertions alterations deletions]
+		   (doall
+		    (map
+		     (fn [#^Update insertion]
+			 (let [[src-model & extra-values] (.getNewValue insertion)]
+			   (connect src-model tgt-model)))
+		     insertions)))))
+    [tgt-metamodel src-metadata extra-keys]))
+
+;;--------------------------------------------------------------------------------
+
+(def all-whales (metamodel whales-model))
+(def counted-whales (ccount all-whales))
+
+(def whales-by-type (split all-whales :type))
+(def counted-whales-by-type (ccount whales-by-type))
+(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
+
+(def #^NavigableSet years
+     (TreeSet.
+      (collection
+       (Date. 0 0 1)
+       (Date. 1 0 1)
+       (Date. 2 0 1)
+       (Date. 3 0 1)
+       (Date. 4 0 1)
+       (Date. 5 0 1)
+       (Date. 6 0 1)
+       (Date. 7 0 1)
+       (Date. 8 0 1)
+       (Date. 9 0 1))))
+
+(def whales-by-type-and-year (split whales-by-type
+				    :time 
+				    (fn [time] (list (or (.lower years time) time)))))
+
+(def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
+(def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
