@@ -200,7 +200,7 @@
   (fn []
       ;; TODO - don't need src-key from src-metadata-accessor
       (let [[src-metadata-accessor applicator] (chain)
-	    [src-metadata src-key] (src-metadata-accessor)
+	    [#^Metadata src-metadata src-key] (src-metadata-accessor)
 	    src-keys (if (empty? src-keys) [src-key] src-keys)
 	    dummy (println "COUNT[1]: " src-keys (.getAttributeKeys src-metadata))
 	    ;;src-types (map
@@ -281,7 +281,7 @@
 (defn mgroup [chain split-specs reduction-monad & reduction-args]
   (fn []
       (let [[chain-metadata-accessor chain-applicator] (chain)
-	    [chain-metadata chain-key] (chain-metadata-accessor)
+	    [#^Metadata chain-metadata chain-key] (chain-metadata-accessor)
 	    tgt-key (interpose "," (map (fn [[split-key & _]] split-key) split-specs))
 	    reduction-specs (map (fn [[key & _]] (.getAttribute chain-metadata key)) split-specs)
 	    ]
@@ -301,7 +301,7 @@
 			       split-specs)
 			[reduction-metadata-accessor reduction-applicator reduction-name]
 			((apply reduction-monad split reduction-args))
-			[reduction-metadata reduction-key] (reduction-metadata-accessor)
+			[#^Metadata reduction-metadata reduction-key] (reduction-metadata-accessor)
 			tgt-name (str (.getName src-model) "." (apply str tgt-key) "=*." reduction-name)
 			[reduction-key-key reduction-version-key] (.getAttributeKeys reduction-metadata)
 			tgt-model (model tgt-name reduction-key-key reduction-version-key reduction-metadata)]
