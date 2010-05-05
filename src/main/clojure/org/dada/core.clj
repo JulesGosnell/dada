@@ -393,10 +393,9 @@
 ;;----------------------------------------
 
 (defn make-reducer
-  [#^Model src-model #^Object key-key #^Object key-value #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
+  [#^Model src-model #^Object key-key #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
   ;;[#^Model src-model #^Collection key-keys #^Collection key-values #^Reducer$Strategy strategy #^Metadata tgt-metadata name-fn]
   (let [key-keys (Tuple. key-key)
-	key-values (Tuple. key-value)
 	key-name (apply str (interpose "," key-keys))
 	view-name (str (.getName src-model) "." (name-fn key-name))]
     (Reducer. view-name tgt-metadata key-values strategy)))
@@ -443,7 +442,7 @@
   ([#^Model model #^Keyword attribute-key attribute-type attribute-value #^Metadata tgt-metadata]
    (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
 	 view-name-fn #(str "sum(" % ")")
-	 reducer (make-reducer model attribute-key attribute-value strategy tgt-metadata view-name-fn)]
+	 reducer (make-reducer model attribute-key [attribute-value] strategy tgt-metadata view-name-fn)]
      (connect model reducer)))
   )
 
@@ -473,10 +472,10 @@
 
 ;TODO - pass plural values all way through
 
-(defn do-reduce-count [#^Model model #^Collection [value] #^Metadata tgt-metadata count-key]
+(defn do-reduce-count [#^Model model #^Collection values #^Metadata tgt-metadata count-key]
   (let [strategy (make-count-reducer-strategy (.getMetadata model) tgt-metadata)
 	view-name-fn (fn [arg] "count()")]
-    (make-reducer model count-key value strategy tgt-metadata view-name-fn)))
+    (make-reducer model count-key values strategy tgt-metadata view-name-fn)))
 
 ;;----------------------------------------
 ;; refactored to here
