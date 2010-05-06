@@ -274,7 +274,7 @@
 		    (doall
 		     (map
 		      (fn [#^Update insertion]
-			  (let [[src-model & extra-values] (.getNewValue insertion)
+			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
 				count-model (do-reduce-count 
 					     (.getName src-model)
 					     (.getMetadata src-model)
@@ -299,7 +299,7 @@
 		    (doall
 		     (map
 		      (fn [#^Update insertion]
-			  (let [[src-model & extra-values] (.getNewValue insertion)
+			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
 				sum-model (do-reduce-sum 
 					   (.getName src-model)
 					   (.getMetadata src-model)
