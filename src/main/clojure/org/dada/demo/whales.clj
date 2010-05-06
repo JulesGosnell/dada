@@ -287,6 +287,30 @@
 		      insertions)))))
     [tgt-metamodel tgt-metadata extra-keys]))
 
+(defn sum [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] sum-key]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) ".sum(" sum-key ")") nil (.getMetadata src-metamodel))
+	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
+	tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
+    (insert *metamodel* tgt-metamodel)
+    (connect
+     src-metamodel
+     (proxy [View] []
+	    (update [insertions alterations deletions]
+		    (doall
+		     (map
+		      (fn [#^Update insertion]
+			  (let [[src-model & extra-values] (.getNewValue insertion)
+				sum-model (do-reduce-sum 
+					   (.getName src-model)
+					   (.getMetadata src-model)
+					   tgt-metadata
+					   sum-key
+					   extra-values)]
+			    (insert *metamodel* sum-model)
+			    (insert tgt-metamodel (list* sum-model extra-values))
+			    (connect src-model sum-model)))
+		      insertions)))))
+    [tgt-metamodel tgt-metadata extra-keys]))
 
 (defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") nil (.getMetadata src-metamodel))
@@ -304,7 +328,7 @@
 			 (let [[src-model & extra-values] (.getNewValue insertion)]
 			   (connect src-model tgt-model)))
 		     insertions)))))
-    [tgt-metamodel src-metadata extra-keys]))
+    [tgt-metamodel src-metadata []]))
 
 ;;--------------------------------------------------------------------------------
 
@@ -314,6 +338,7 @@
 (def whales-by-type (split all-whales :type))
 (def counted-whales-by-type (ccount whales-by-type))
 (def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
+(def summed-grouped-counted-whales-by-type (sum grouped-counted-whales-by-type (keyword "count(*)")))
 
 (def #^NavigableSet years
      (TreeSet.
@@ -335,3 +360,4 @@
 
 (def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
 (def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
+(def summed-grouped-counted-whales-by-type-and-year (sum grouped-counted-whales-by-type-and-year (keyword "count(*)")))

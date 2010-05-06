@@ -121,6 +121,7 @@
      "/" "_divide_"
      "(" "_openroundbracket_"
      ")" "_closeroundbracket_"
+     ":" "_colon_"
      })
 
 (defmethod attribute-key String [#^String string] 
@@ -386,23 +387,31 @@
 ;; TODO: count, average (sum/count), mean, mode, minimum, maximum - min/max more tricky, need to carry state
 ;;----------------------------------------
 
+(defn reducer
+  [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata reduction-key #^Collection extra-values #^IFn strategy-fn #^IFn value-key-fn]
+  (let [strategy (strategy-fn src-metadata tgt-metadata reduction-key)]
+    (Reducer. (str src-name "." (value-key-fn reduction-key))
+	      tgt-metadata extra-values strategy)))
+
 ;; sum specific stuff - should be in its own file
 
-;; TODO - should just be a class, not a fn - but then we wouldn't be able to compile this file
+(defn sum-value-key [key]
+  (str "sum(" key ")"))
+  
 (defn #^Metadata sum-reducer-metadata
-  ([#^Collection keys key-name #^Class key-type]			;TODO: deprecated
-   (sum-reducer-metadata keys [[key-name key-type false]]))
-  ([#^Collection keys #^Collection attribute-specs]
-   (class-metadata 
-    (name (gensym "org.dada.core.reducer.Sum"))
-    Object
-    keys
-    (concat attribute-specs [[:version Integer true] [:sum Number true]])))
+  [#^Collection keys sum-key #^Collection extra-attribute-specs]
+  (class-metadata 
+   (name (gensym "org.dada.core.reducer.Sum"))
+   Object
+   keys
+   (concat
+    extra-attribute-specs
+    [[:version Integer true]
+     [(keyword (sum-value-key sum-key)) Number true]]))
   )
 
-(defn make-sum-reducer-strategy [attribute-key #^Metadata src-metadata #^Metadata tgt-metadata]
-  ;; HERE - need to deal with multiple keys
-  (let [getter (.getAttributeGetter src-metadata attribute-key)
+(defn make-sum-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata sum-key]
+  (let [getter (.getAttributeGetter src-metadata sum-key)
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
@@ -424,14 +433,8 @@
      )))
 
 (defn do-reduce-sum
-  ([#^Model model #^Keyword attribute-key attribute-type attribute-value]
-   (do-reduce-sum model attribute-key attribute-type attribute-value (sum-reducer-metadata :key attribute-type)))
-  ([#^Model model #^Keyword attribute-key attribute-type attribute-value #^Metadata tgt-metadata]
-   (let [strategy (make-sum-reducer-strategy attribute-key (.getMetadata model) tgt-metadata)
-	 value-name (str "sum(" attribute-key ")")
-	 reducer (Reducer. (str (.getName model) "." value-name) tgt-metadata [attribute-value] strategy)]
-     (connect model reducer)))
-  )
+  [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata sum-key #^Collection extra-values]
+  (reducer src-name src-metadata tgt-metadata sum-key extra-values make-sum-reducer-strategy sum-value-key))
 
 ;; count specific stuff - should be in its own file
 
@@ -449,7 +452,8 @@
     [[:version Integer true]
      [(keyword (count-value-key count-key)) Number true]])))
 
-(defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata]
+(defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata & [count-key]]
+  ;; TODO - use count-key
   (let [creator (.getCreator tgt-metadata)]
     (proxy
      [Reducer$Strategy]
@@ -465,8 +469,7 @@
 
 (defn do-reduce-count
   [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata count-key #^Collection extra-values]
-  (let [strategy (make-count-reducer-strategy src-metadata tgt-metadata)]
-    (Reducer. (str src-name "." (count-value-key count-key)) tgt-metadata extra-values strategy)))
+  (reducer src-name src-metadata tgt-metadata count-key extra-values make-count-reducer-strategy count-value-key))
 
 ;;----------------------------------------
 ;; refactored to here
