@@ -108,9 +108,25 @@
 (def #^Metadata whale-metadata (metadata Whale [:id] md-attributes))
 (def #^Model whales-model (model "Whales" :version whale-metadata))
 
-(def num-whales 1000)
-
 (insert *metamodel* whales-model)
+
+(let [#^Creator creator (.getCreator whale-metadata)
+      max-length-x-100 (* max-length 100)
+      max-weight-x-100 (* max-weight 100)]
+
+  (defn whale [id]
+    (.create
+     creator
+     (into-array
+      Object
+      [id
+       0
+       (Date. (rand-int 10)
+	      (rand-int 12)
+	      (+ (rand-int 28) 1))
+       (rnd types)
+       (/ (rand-int max-length-x-100) 100)
+       (/ (rand-int max-weight-x-100) 100)]))))
 
 ;;----------------------------------------
 
@@ -126,29 +142,12 @@
 ;;--------------------------------------------------------------------------------
 ;; create some whales...
 
+(def num-whales 1000)
+
 (time
  (doall
-  (let [batcher (Batcher. 999 1000 (list whales-model))
-	#^Creator creator (.getCreator whale-metadata)
-	max-length-x-100 (* max-length 100)
-	max-weight-x-100 (* max-weight 100)]
-    (pmap
-     (fn [id]
-	 (insert
-	  whales-model ;; batcher
-	  (.create
-	   creator
-	   (into-array
-	    Object
-	    [id
-	     0
-	     (Date. (rand-int 10)
-		    (rand-int 12)
-		    (+ (rand-int 28) 1))
-	     (rnd types)
-	     (/ (rand-int max-length-x-100) 100)
-	     (/ (rand-int max-weight-x-100) 100)]))))
-     (range num-whales)))))
+  (let [batcher (Batcher. 999 1000 (list whales-model))]
+    (pmap (fn [id] (insert whales-model (whale id))) (range num-whales)))))
 
 (println "LOADED: " num-whales)
 
