@@ -252,11 +252,11 @@
 		    tgt-metamodel
 		    (fn [tgt-metamodel2 model & extra-values]
 			;;(insert tgt-metamodel tgt-metamodel2)
-			(insert tgt-metamodel2 model-entry)
+			(insert tgt-metamodel2 [model])
 			;;(insert *metamodel* model)
 			))
 		   src-metadata
-		   (concat extra-keys [split-key])]))
+		   []]))
 	       model
 	       )))))
    src-metadata
@@ -293,19 +293,23 @@
     (insert tgt-metamodel [tgt-model])
     [tgt-metamodel src-metadata extra-keys]))
 
+(defn pivot-metadata [#^Metadata src-metadata #^Collection keys #^Collection pivot-values value-key]
+  (let [value-type (.getAttributeType src-metadata value-key)]
+    (class-metadata 
+     (name (gensym "org.dada.core.Pivot"))
+     Object
+     keys
+     (concat
+      (map #(.getAttribute src-metadata %) keys)
+      [[:version Integer true]]
+      (map #(vector % value-type true) pivot-values)))))
+
 ;; pivot-key - e.g. :time
 ;; pivot-values - e.g. years
 ;; value-key - e.g. :count(*) - needed to find type of new columns
 (defn pivot [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] pivot-key pivot-values value-key]
   (let [pivot-name (str ".pivot(" value-key "/" pivot-key")")
-	value-type (.getAttributeType src-metadata value-key)
-	pivot-metadata (class-metadata 
-			(name (gensym "org.dada.core.Pivot"))
-			Object
-			extra-keys
-			(concat
-			 (map #(.getAttribute src-metadata %) extra-keys)
-			 (map #(vector % value-type true) pivot-values)))
+	pivot-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
 	tgt-metamodel (meta-view
 		       pivot-key
 		       src-metamodel
