@@ -221,29 +221,31 @@
 (import org.dada.core.View)
 (import org.dada.core.Update)
 
-(defn meta-view [f]
-  (proxy [View] []
-	 (update [insertions alterations deletions]
-		 (doall (map (fn [#^Update insertion] (apply f (.getNewValue insertion))) insertions)))))
+(defn meta-view [#^Model src-metamodel tgt-metamodel f]
+  (insert *metamodel* tgt-metamodel)
+  (connect
+   src-metamodel
+   (proxy [View] []
+	  (update [insertions alterations deletions]
+		  (doall (map (fn [#^Update insertion] (apply f (.getNewValue insertion))) insertions))))))
 
 (defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
 	     & [split-key-fn]]
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") nil (.getMetadata src-metamodel))]
-    (insert *metamodel* tgt-metamodel)
-    (connect
+    (meta-view
      src-metamodel
-     (meta-view
-      (fn [model & extra-values]
-	  (do-split
-	   model
-	   split-key
-	   (or split-key-fn list)
-	   identity
-	   (fn [#^Model model extra-value]
-	       (let [model-entry (list* model (concat extra-values [extra-value]))]
-		 (insert tgt-metamodel model-entry)
-		 (insert *metamodel* model)
-		 ))))))
+     tgt-metamodel
+     (fn [model & extra-values]
+	 (do-split
+	  model
+	  split-key
+	  (or split-key-fn list)
+	  identity
+	  (fn [#^Model model extra-value]
+	      (let [model-entry (list* model (concat extra-values [extra-value]))]
+		(insert tgt-metamodel model-entry)
+		(insert *metamodel* model)
+		)))))
     [tgt-metamodel src-metadata (concat extra-keys [split-key])]))
 
 ;; extra keys are inserted into attribute list
@@ -254,30 +256,28 @@
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".count(" (or count-key "") ")") nil (.getMetadata src-metamodel))
 	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
-    (insert *metamodel* tgt-metamodel)
-    (connect
+    (meta-view
      src-metamodel
-     (meta-view
-      (fn [#^Model src-model & extra-values]
-	  (let [count-model (do-reduce-count 
-			     (.getName src-model)
-			     (.getMetadata src-model)
-			     tgt-metadata
-			     count-key
-			     extra-values)]
-	    (insert *metamodel* count-model)
-	    (insert tgt-metamodel (list* count-model extra-values))
-	    (connect src-model count-model)))))
+     tgt-metamodel
+     (fn [#^Model src-model & extra-values]
+	 (let [count-model (do-reduce-count 
+			    (.getName src-model)
+			    (.getMetadata src-model)
+			    tgt-metadata
+			    count-key
+			    extra-values)]
+	   (insert *metamodel* count-model)
+	   (insert tgt-metamodel (list* count-model extra-values))
+	   (connect src-model count-model))))
     [tgt-metamodel tgt-metadata extra-keys]))
 
 
 (defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") nil (.getMetadata src-metamodel))
 	tgt-model (model (str prefix ".union()") nil src-metadata)]
-    (insert *metamodel* tgt-metamodel)
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
-    (connect src-metamodel (meta-view (fn [src-model & extra-values] (connect src-model tgt-model))))
+    (meta-view src-metamodel tgt-metamodel (fn [src-model & extra-values] (connect src-model tgt-model)))
     [tgt-metamodel src-metadata extra-keys]))
 
 ;;--------------------------------------------------------------------------------
