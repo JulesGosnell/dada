@@ -257,22 +257,17 @@
     (insert *metamodel* tgt-metamodel)
     (connect
      src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall
-		     (map
-		      (fn [#^Update insertion]
-			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
-				count-model (do-reduce-count 
-					     (.getName src-model)
-					     (.getMetadata src-model)
-					     tgt-metadata
-					     count-key
-					     extra-values)]
-			    (insert *metamodel* count-model)
-			    (insert tgt-metamodel (list* count-model extra-values))
-			    (connect src-model count-model)))
-		      insertions)))))
+     (meta-view
+      (fn [#^Model src-model & extra-values]
+	  (let [count-model (do-reduce-count 
+			     (.getName src-model)
+			     (.getMetadata src-model)
+			     tgt-metadata
+			     count-key
+			     extra-values)]
+	    (insert *metamodel* count-model)
+	    (insert tgt-metamodel (list* count-model extra-values))
+	    (connect src-model count-model)))))
     [tgt-metamodel tgt-metadata extra-keys]))
 
 
@@ -282,16 +277,7 @@
     (insert *metamodel* tgt-metamodel)
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
-    (connect
-     src-metamodel
-     (proxy [View] []
-	   (update [insertions alterations deletions]
-		   (doall
-		    (map
-		     (fn [#^Update insertion]
-			 (let [[src-model & extra-values] (.getNewValue insertion)]
-			   (connect src-model tgt-model)))
-		     insertions)))))
+    (connect src-metamodel (meta-view (fn [src-model & extra-values] (connect src-model tgt-model))))
     [tgt-metamodel src-metadata extra-keys]))
 
 ;;--------------------------------------------------------------------------------
