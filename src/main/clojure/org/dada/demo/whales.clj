@@ -140,17 +140,6 @@
   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
 ;;--------------------------------------------------------------------------------
-;; create some whales...
-
-(def num-whales 1000)
-
-(time
- (doall
-  (let [batcher (Batcher. 999 1000 (list whales-model))]
-    (pmap (fn [id] (insert whales-model (whale id))) (range num-whales)))))
-
-(println "LOADED: " num-whales)
-
 ;; need some form of pluggable sorting algorithm
 
 ;; operations are:
@@ -289,7 +278,7 @@
 
 (defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") nil (.getMetadata src-metamodel))
-	tgt-model (model (str prefix ".union()") (fn [& _] true) src-metadata)]
+	tgt-model (model (str prefix ".union()") nil src-metadata)]
     (insert *metamodel* tgt-metamodel)
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
@@ -334,3 +323,18 @@
 
 (def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
 (def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
+
+;;--------------------------------------------------------------------------------
+
+;; create some whales...
+
+(def num-whales 1000)
+
+(time
+ (doall
+  (let [batcher (Batcher. 999 1000 (list whales-model))]
+    (pmap (fn [id] (insert whales-model (whale id))) (range num-whales)))))
+
+(println "LOADED: " num-whales)
+
+;;--------------------------------------------------------------------------------

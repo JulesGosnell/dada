@@ -228,9 +228,11 @@
 	 (range length)))))
 
 (defn model [#^String model-name version-key #^Metadata metadata]
-  (let [version-getter (.getAttributeGetter metadata version-key)
-	version-fn (fn [old new] (> (.get version-getter new) (.get version-getter old)))]
-    (ModelImpl. model-name metadata version-fn)))
+  (let [version-fn (if version-key
+		     (let [version-getter (.getAttributeGetter metadata version-key)]
+		       (fn [old new] (> (.get version-getter new) (.get version-getter old))))
+		     (fn [_ new] new))]
+    (ModelImpl. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
