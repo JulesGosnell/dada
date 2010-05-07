@@ -221,29 +221,29 @@
 (import org.dada.core.View)
 (import org.dada.core.Update)
 
+(defn meta-view [f]
+  (proxy [View] []
+	 (update [insertions alterations deletions]
+		 (doall (map (fn [#^Update insertion] (apply f (.getNewValue insertion))) insertions)))))
+
 (defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
 	     & [split-key-fn]]
   (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") nil (.getMetadata src-metamodel))]
     (insert *metamodel* tgt-metamodel)
     (connect
      src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall
-		     (map
-		      (fn [#^Update insertion]
-			  (let [[model & extra-values] (.getNewValue insertion)]
-			    (do-split
-			     model
-			     split-key
-			     (or split-key-fn list)
-			     identity
-			     (fn [#^Model model extra-value]
-				 (let [model-entry (list* model (concat extra-values [extra-value]))]
-				   (insert tgt-metamodel model-entry)
-				   (insert *metamodel* model)
-				   )))))
-		      insertions)))))
+     (meta-view
+      (fn [model & extra-values]
+	  (do-split
+	   model
+	   split-key
+	   (or split-key-fn list)
+	   identity
+	   (fn [#^Model model extra-value]
+	       (let [model-entry (list* model (concat extra-values [extra-value]))]
+		 (insert tgt-metamodel model-entry)
+		 (insert *metamodel* model)
+		 ))))))
     [tgt-metamodel src-metadata (concat extra-keys [split-key])]))
 
 ;; extra keys are inserted into attribute list
@@ -262,7 +262,7 @@
 		    (doall
 		     (map
 		      (fn [#^Update insertion]
-			  (let [[src-model & extra-values] (.getNewValue insertion)
+			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
 				count-model (do-reduce-count 
 					     (.getName src-model)
 					     (.getMetadata src-model)
