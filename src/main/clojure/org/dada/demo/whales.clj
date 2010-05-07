@@ -231,8 +231,7 @@
 		  (doall (map (fn [#^Update insertion] (apply f tgt-metamodel (.getNewValue insertion))) insertions)))))
   tgt-metamodel))
 
-(defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
-	     & [split-key-fn]]
+(defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key & [split-key-fn subchain]]
   [(meta-view
     (str ".split(" split-key")")
     src-metamodel
@@ -246,6 +245,19 @@
 	     (let [model-entry (list* model (concat extra-values [extra-value]))]
 	       (insert tgt-metamodel model-entry)
 	       (insert *metamodel* model)
+	       (if subchain
+		 (subchain
+		  [(meta-view
+		    (str "=" extra-value)
+		    tgt-metamodel
+		    (fn [tgt-metamodel2 model & extra-values]
+			;;(insert tgt-metamodel tgt-metamodel2)
+			(insert tgt-metamodel2 model-entry)
+			;;(insert *metamodel* model)
+			))
+		   src-metadata
+		   (concat extra-keys [split-key])]))
+	       model
 	       )))))
    src-metadata
    (concat extra-keys [split-key])])
@@ -274,8 +286,8 @@
      extra-keys]))
 
 
-(defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
-  (let [tgt-model (model (str prefix ".union()") nil src-metadata)
+(defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] & [#^String prefix]]
+  (let [tgt-model (model (str (or prefix (name (gensym "HERE"))) ".union()") nil src-metadata)
 	tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model & extra-values] (connect src-model tgt-model)))]
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
@@ -285,10 +297,6 @@
 
 (def all-whales (metamodel whales-model))
 (def counted-whales (ccount all-whales))
-
-(def whales-by-type (split all-whales :type))
-(def counted-whales-by-type (ccount whales-by-type))
-(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
 
 (def #^NavigableSet years
      (TreeSet.
@@ -304,18 +312,31 @@
        (Date. 8 0 1)
        (Date. 9 0 1))))
 
-(def whales-by-type-and-year (split whales-by-type
-				    :time 
-				    (fn [time] (list (or (.lower years time) time)))))
+(def whales-by-type
+     (split
+      all-whales
+      :type
+      nil
+      #(union
+	(ccount
+	 (split
+	  %
+	  :time
+	  (fn [time] (list (or (.lower years time) time)))
+	  )))
+      ))
 
-(def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
-(def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
+;;(def counted-whales-by-type (ccount whales-by-type))
+;;(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
+
+;;(def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
+;;(def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
 
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
 
-(def num-whales 1000)
+(def num-whales 1000000)
 
 (time
  (doall
