@@ -287,10 +287,36 @@
 
 
 (defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] & [#^String prefix]]
-  (let [tgt-model (model (str (or prefix (name (gensym "HERE"))) ".union()") nil src-metadata)
+  (let [tgt-model (model (str (or prefix (name (gensym "UNION"))) ".union()") nil src-metadata)
 	tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model & extra-values] (connect src-model tgt-model)))]
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
+    [tgt-metamodel src-metadata extra-keys]))
+
+;; pivot-key - e.g. :time
+;; pivot-values - e.g. years
+;; value-key - e.g. :count(*) - needed to find type of new columns
+(defn pivot [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] pivot-key pivot-values value-key]
+  (let [pivot-name (str ".pivot(" value-key "/" pivot-key")")
+	value-type (.getAttributeType src-metadata value-key)
+	pivot-metadata (class-metadata 
+			(name (gensym "org.dada.core.Pivot"))
+			Object
+			extra-keys
+			(concat
+			 (map #(.getAttribute src-metadata %) extra-keys)
+			 (map #(vector % value-type true) pivot-values)))
+	tgt-metamodel (meta-view
+		       pivot-key
+		       src-metamodel
+		       (fn [tgt-metamodel src-model & extra-values]
+			   ;; we'll neesd to build the metadata here
+			   (let [tgt-model (model (str (name (gensym "PIVOT")) pivot-name) nil pivot-metadata)]
+			     (println "PIVOT"  extra-keys pivot-key pivot-values value-key extra-values)
+			     (insert *metamodel* tgt-model)
+			     (insert tgt-metamodel [tgt-model])
+			     ;;(connect src-model tgt-model)
+			     )))]
     [tgt-metamodel src-metadata extra-keys]))
 
 ;;--------------------------------------------------------------------------------
@@ -317,13 +343,17 @@
       all-whales
       :type
       nil
-      #(union
-	(ccount
-	 (split
-	  %
-	  :time
-	  (fn [time] (list (or (.lower years time) time)))
-	  )))
+      #(pivot
+	(union
+	 (ccount
+	  (split
+	   %
+	   :time
+	   (fn [time] (list (or (.lower years time) time)))
+	   )))
+	:time
+	years
+	(keyword (count-value-key nil)))
       ))
 
 ;;(def counted-whales-by-type (ccount whales-by-type))
@@ -336,7 +366,7 @@
 
 ;; create some whales...
 
-(def num-whales 1000000)
+(def num-whales 1000)
 
 (time
  (doall
