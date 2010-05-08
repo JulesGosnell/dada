@@ -1,5 +1,5 @@
 (ns org.dada.core
-    (:use org.dada.core.ModelImpl)
+    (:use org.dada.core.UnionModel)
     (:import (clojure.lang DynamicClassLoader ISeq IFn Keyword)
 	     (java.util
 	      ArrayList
@@ -25,7 +25,7 @@
 	      Attribute
 	      MetadataImpl
 	      Model
-	      ModelImpl
+	      UnionModel
 	      Reducer
 	      Reducer$Strategy
 	      Splitter
@@ -234,7 +234,7 @@
 		     (let [version-getter (.getAttributeGetter metadata version-key)]
 		       (fn [old new] (> (.get version-getter new) (.get version-getter old))))
 		     (fn [_ new] new))]
-    (ModelImpl. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
+    (UnionModel. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
@@ -242,7 +242,7 @@
 	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
-    (ModelImpl.
+    (UnionModel.
      name
      metadata
      (fn [old new] (> (.get version-getter new) (.get version-getter old))))))
