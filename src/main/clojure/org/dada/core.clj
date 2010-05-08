@@ -110,11 +110,13 @@
 ;; :id int :version int :amount double)
 
 (defmulti attribute-key (fn [arg] (class arg)))
-(defmethod attribute-key Date [#^Date date] (str "attribute_" (.getTime date)))
+(defmethod attribute-key Date [#^Date date] (attribute-key (str "attribute" date)))
 (defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
 
 (def string-replacements {
      "_" "_underscore_"
+     " " "_space_"
+     ":" "_colon_"
      "*" "_asterisk_"
      "+" "_plus_"
      "-" "_minus_"

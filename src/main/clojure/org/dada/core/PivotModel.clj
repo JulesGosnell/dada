@@ -1,30 +1,32 @@
-(ns org.dada.core.PivotModelView
-    (:use org.dada.core)
+(ns org.dada.core.PivotModel
     (:import
-     [java.util Collection LinkedHashMap]
-     [org.dada.core AbstractModel Metadata]
+     [java.util Collection LinkedHashMap Map]
+     [org.dada.core AbstractModel Getter Metadata Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
-     :constructors {
-     [String clojure.lang.Keyword clojure.lang.Keyword java.util.Collection org.dada.core.Metadata org.dada.core.Metadata]
-     [String org.dada.core.Metadata]}
+     :constructors {[String org.dada.core.Metadata clojure.lang.IFn Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
+     :methods []
      :init init
      :state state
      )
     )
 
+;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
+
 ;; create a map of pivot-key : list of (fn [new-value old-values] ...) where e.g.
 ;; (apply tgt-creator (map #(% new-value old-values) (pivot-map key)))
 ;; will copy the value into a new version of the correctly keyed pivotted row...
 
-(defn make-pivot-map [pivot-keys tgt-metadata]
-  (let [getter-map
+(defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
+  (let [version-getter (.getAttributeGetter tgt-metadata :version) ;HACK
+	time-getter (.getAttributeGetter tgt-metadata :time)	   ;HACK
+	#^Map getter-map ;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
 	(apply
 	 array-map
 	 (interleave (.getAttributeKeys tgt-metadata)
 		     (map
-		      #(fn [new-value old-values] (.get % old-values))
+		      #(fn [new-value old-values] (.get #^Getter % old-values))
 		      (.getAttributeGetters tgt-metadata))))]
     (apply
      hash-map
@@ -32,135 +34,154 @@
       concat     
       (map
        (fn [pivot-key]
-	   (let [xxx (LinkedHashMap. getter-map)]
-	     (.put xxx pivot-key (fn [new-value old-values] new-value))
-	     ;; TODO: increment version...
-	     [pivot-key (vals xxx)]))
+	   (let [#^Map pivot-map (LinkedHashMap. getter-map)]
+	     (.put pivot-map pivot-key (fn [new-value old-values] new-value))
+	     ;; TODO: increment version...properly...
+	     (.put pivot-map :version (fn [new-value old-values] (let [version (.get version-getter old-values)] (if version (+ version 1) 0))))
+	     ;; TODO - hack
+	     (.put pivot-map :time (fn [new-value old-values] (let [time (.get time-getter old-values)] (if time time (java.util.Date.)))))
+	     [pivot-key (vals pivot-map)]))
        pivot-keys)))
     ))
 
-;; pivot-metadata should probably be created in this init function ...
-
-(defn -init [#^String model-name      ;e.g. "Count/Day"
-	     #^Keyword src-key-key    ;e.g. :day
-	     #^Keyword src-value-key  ;e.g. :count
-	     #^Collection pivot-keys  ;e.g. [:mon :tue :wed :thu :fri]
+(defn -init [#^String model-name
 	     #^Metadata src-metadata  ;e.g. [day count]
-	     #^Metadata tgt-metadata] ;e.g. [type mon tue wed thu fri]
-  [;; super ctor args
+	     #^IFn version-fn	      ;     src version fn
+	     #^Comparable src-value-key  ;e.g. :count
+	     #^Collection tgt-keys    ;e.g. [:mon :tue :wed :thu :fri]
+  	     #^Metadata tgt-metadata] ;e.g. [type mon tue wed thu fri]
+  [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
-   ;; atomically updateable input and output maps pairs [extant extinct]
-   (let [tgt-creator (.getCreator tgt-metadata)
-	 src-key-getter (.getAttributeGetter src-metadata (name src-key-key))
-	 src-value-getter (.getAttributeGetter src-metadata (name src-value-key))
-	 pivot-map (make-pivot-map (map name pivot-keys) tgt-metadata)
-	 pivot-fn (fn [tgt-key src-value output-extant] ;e.g. ["Sei Whale" [Mon ... 20 ...]]
-		      (let [src-value-key (.get src-key-getter src-value) ;; e.g. Mon
-			    src-value-value (.get src-value-getter src-value) ;; e.g. 20
-			    old-tgt-value (output-extant tgt-key) ;; e.g.["Sei Whale"  20  30 ...]
-			    pivot-fns (pivot-map src-value-key)]
-			(apply
-			 ;; a creator-fn for the pivoted row
-			 (fn [& args] (.create tgt-creator args))
-			 ;; the pivoted creator-fn args - 
-			 (map #(% src-value-value old-tgt-value) pivot-fns))))
-		       
-	 update-fn (fn [old-state &inputs]
-		       ;; (apply
-		       ;; 	process-update
-		       ;; 	in-extant in-extinct out-extant out-extinct pivot-fn inputs)
-		       )]
-     [(atom [{}{}{}{}]) update-fn])
+   (let [key-getter (.getKeyGetter src-metadata)
+	 key-fn (fn [value] (.get key-getter value))
+
+	 ;;----------------------------------------
+	 ;; pivot stuff
+
+	 pivot-creator (.getCreator tgt-metadata)
+	 pivot-initial-value (.create pivot-creator (into-array Object (take (.size (.getAttributeGetters tgt-metadata)) (repeat nil))))
+	 src-value-getter (.getAttributeGetter src-metadata src-value-key)
+	 pivot-map (make-pivot-map tgt-keys tgt-metadata)
+
+	 pivot-fn (fn [old-pivotted key src-value] ;e.g. [["Sei Whale" Mon ... 20 ...] Mon [Mon 21]]
+		      (let [src-value-value (.get src-value-getter src-value) ;; e.g. 20
+			    ;;dummy (println "PIVOT-FN:" key src-value-value)
+			    pivot-fns (pivot-map key)
+			    pivot-values (map #(% src-value-value old-pivotted) pivot-fns)
+			    ;;dummy (println "PIVOT-VALUES:" pivot-values)
+			    new-pivotted (.create pivot-creator (into-array Object pivot-values))]
+			;;(println "PIVOT-FN:" key)
+			new-pivotted))
+
+	 unpivot-fn (fn [old-pivotted key]
+			;; TODO
+			old-pivotted)			
+
+	 ;;----------------------------------------
+
+	 process-addition
+	 (fn [[extant extinct pivotted i a d] #^Update addition]
+	     (let [new (.getNewValue addition)
+		   key (key-fn new)
+		   current (extant key)]
+	       (if (nil? current)
+		 ;; insertion...
+		 (let [removed (extinct key)]
+		   (if (nil? removed)
+		     ;; first time seen
+		     (let [new-pivotted (pivot-fn pivotted key new)]
+		       [(assoc extant key new) extinct new-pivotted (cons (Update. nil new-pivotted) i) a d]) ;insertion
+		     ;; already deleted
+		     (if (version-fn removed new)
+		       ;; later version - reinstated
+		       (let [new-pivotted (pivot-fn pivotted key new)]
+			 [(assoc extant key new) (dissoc extinct key) new-pivotted (cons (Update. nil new-pivotted) i) a d])
+		       (do
+			 ;; out of order or duplicate version - ignored
+			 ;;(println "WARN: OUT OF ORDER INSERT" current new)
+			 [extant extinct pivotted i a d]))
+		     )
+		   )
+		 ;; alteration...
+		 (if (version-fn current new)
+		   ;; later version - accepted
+		   (let [new-pivotted (pivot-fn pivotted key new)]
+		     [(assoc extant key new) extinct new-pivotted i (cons (Update. pivotted new-pivotted) a) d]) ;alteration
+		   (do
+		     ;; out of order or duplicate version - ignored
+		     ;;(println "WARN: OUT OF ORDER UPDATE" current new)
+		     [extant extinct pivotted i a d]))
+		 )))
+
+	 process-deletion
+	 (fn [[extant extinct pivotted i a d] #^Update deletion]
+	     (let [new (.getNewValue deletion)
+		   key (key-fn new)
+		   current (extant key)]
+	       (if (nil? current)
+		 (let [removed (extinct key)]
+		   (if (nil? removed)
+		     ;; neither extant or extinct - mark extinct
+		     [extant (dissoc extinct key) pivotted i a d]
+		     (if (version-fn removed new)
+		       ;; later version - accepted
+		       (let [new-pivotted  (pivot-fn pivotted key new)]
+			 [extant (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)]) ;TODO - is this right ?
+		       (do
+			 ;; earlier version - ignored
+			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
+			 [extant extinct pivotted i a d]))))
+		 (if (version-fn current new)
+		   ;; later version - accepted
+		   (let [new-pivotted (unpivot-fn pivotted key)]
+		     [(dissoc extant key) (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)])
+		   (do
+		     ;; earlier version - ignored
+		     ;;(println "WARN: OUT OF ORDER DELETION" current new)
+		     [extant extinct pivotted i a d])))))
+
+	 ;; TODO: perhaps we should raise the granularity at which we
+	 ;; compare-and-swap, in order to avoid starvation of larger
+	 ;; batches...
+	 swap-state-fn (fn [[extant extinct pivotted] insertions alterations deletions]
+			   (reduce process-deletion
+				   (reduce process-addition
+					   (reduce process-addition
+						   [extant extinct pivotted '() '() '()]
+						   insertions)
+					   alterations)
+				   deletions))
+
+	 mutable-state (atom [{}{} pivot-initial-value])
+
+	 update-fn
+	 (fn [inputs]
+	     (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
+	       [i a d]))
+	 
+	 getData-fn
+	 (fn []
+	     (let [[_ _ pivotted] @mutable-state]
+	       [pivotted]))
+	 ]
+     
+     [update-fn getData-fn])
    ])
 
-    ;; 	;; this should all be done in init and a fn produced to be passed to swap...
-    ;; 	i (.iterator (.getKeyAttributeKeys src-metadata))
-    ;; 	src-key-getter (.getAttributeGetter (.next i))
-    ;; 	src-version-getter (.getAttributeGetter (.next i))]
-    ;; (doall
-    ;;  (map
-    ;;   (fn [insertion]
-    ;; 	  (println ["PIVOT INSERTION:" insertion])
-    ;; 	  (swap!
-    ;; 	   mutable-state
-    ;; 	   (fn [[inExtant inExtinct outExtant outExtinct src-key-getter src-version-getter] insertion]
-    ;; 	       (let [src-key (src-key-getter insertion)
-    ;; 		     src-version (src-version-getter insertion)
-    ;; 		     current (inExtant src-key)
-    ;; 		     current-version (src-version-getter current)]
-    ;; 		 (debug "PIVOT INSERTION:" src-key src-version current-version)
-    ;; 		 ;; (if (> src-version current-version)
-    ;; 		 ;; 	 (let [transformed ]
-		 
-    ;; 		 ;; 	   )
-    ;; 		 ;; 	 (debug "out of order version:" src-key "-" src-version "<=" current-version))
-    ;; 		 ;;[(conj {src-key transformed} inExtant) inExtinct outExtant outExtinct]
-    ;; 		 )))
-    ;; 	  ;; don't forget to call notifyUpdate
-    ;; 	  )
-    ;;   insertions
-    ;;   )))
+(defn -getData [#^org.dada.core.PivotModel this]
+  (let [[_ getData-fn] (.state this)]
+    (getData-fn)))
 
-;; e.g.
-;; Split by type:
-;;  Sei Whale model :
-;;    Mon : 20
-;;    Tue : 30
-;;    Wed : 35
-;;    Thu : 40
-;;    Fri : 43
-;; Blue Whale model:
-;;    Mon : 10
-;;    Tue : 11
-;;    Wed : 12
-;;    Thu : 11
-;;    Fri : 09
-;; etc...
-;; -->
-;;    Type       Mon Tue Wed Thu Fri
-;;    Sei Whale  20  30  35  40  43
-;;    Blue Whale 10  11  12  11  09
-;;    etc...
+;; TODO: lose this when Clojure collections are Serializable
+(defn #^java.util.Collection copy [& args]
+  (let [size (count args)
+	array-list (java.util.ArrayList. #^Integer size)]
+    (if (> size 0) (.addAll array-list args))
+    array-list))
 
-(defn process-addition [in-extant in-extinct out-extant out-extinct pivot-fn addition]
-  ;; ensure row with key 
-  ;; copy row forward into new row, overlaying field with incoming key's value
-
-;;  (pivot-fn tgt-key src-value output-extant)
-  
-  ;; TODO - start here
-
-  ;; increment version
-  ;; keep input and output models
-  ;; send insertion/alteration upstream
-  [nil nil nil])
-
-(defn process-deletion [in-extant in-extinct out-extant out-extinct pivot-fn deletion]
-  [nil nil nil])
-
-(defn process-update [in-extant in-extinct out-extant out-extinct pivot-fn
-		      insertions alterations deletions]
-  ;;TODO - sort out state required...
-  (reduce
-   (fn [[oi oa od] [ii ia id]] [(if ii (concat ii oi) oi) (if ia (concat ia oa) oa) (if id (concat id od) od)])
-   [nil nil nil]
-   (concat
-    (map #(process-addition in-extant in-extinct out-extant out-extinct pivot-fn %) insertions)
-    (map #(process-addition in-extant in-extinct out-extant out-extinct pivot-fn %) alterations)
-    (map #(process-deletion in-extant in-extinct out-extant out-extinct pivot-fn %) deletions))))
-
-(defn -getData [this]
-  (let [[[in-extant in-extinct out-extant out-extinct]] @(.state this)]
-    (or (vals out-extant) '())))
-
-(defn -update [#^AbstractModel this & inputs]
-  (let [[mutable-state update-fn] @(.state this)
-	dummy (debug "Pivot input:" inputs)
-	[_ _ outputs] (apply swap! mutable-state update-fn inputs)]
-    (debug "Pivot output:" outputs)
-    (apply
-     (fn [#^Collection insertions #^Collection alterations #^Collection deletions]
-	 (if (not (and (nil? insertions) (nil? alterations) (nil? deletions)))
-	   (.notifyUpdate this insertions alterations deletions)))
-     outputs)))
+(defn -update [#^org.dada.core.PivotModel this & inputs]
+  (let [[update-fn] (.state this)
+	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
+    (if (not (and (empty? i) (empty? a) (empty? d)))
+      (.notifyUpdate this (apply copy i) (apply copy a) (apply copy d)))))

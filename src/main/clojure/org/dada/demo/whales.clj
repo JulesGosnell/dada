@@ -2,6 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use [org.dada.core])
+ (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ])
  (:import [java.math
@@ -16,6 +17,7 @@
 	   Creator
 	   Metadata
 	   Model
+	   PivotModel
 	   ])
  )
 
@@ -314,14 +316,24 @@
 		       pivot-key
 		       src-metamodel
 		       (fn [tgt-metamodel src-model & extra-values]
-			   ;; we'll neesd to build the metadata here
-			   (let [tgt-model (model (str (name (gensym "PIVOT")) pivot-name) nil pivot-metadata)]
-			     (println "PIVOT"  extra-keys pivot-key pivot-values value-key extra-values)
+			   ;; we'll need to build the metadata here
+			   (let [tgt-model
+				 (PivotModel. 
+				  (str (name (gensym "PIVOT")) pivot-name)
+				  src-metadata
+				  (fn [old new] new)
+				  value-key
+				  pivot-values
+				  pivot-metadata)
+				 ]
+			     ;;(println "PIVOT"  extra-keys pivot-key pivot-values value-key extra-values)
 			     (insert *metamodel* tgt-model)
 			     (insert tgt-metamodel [tgt-model])
-			     ;;(connect src-model tgt-model)
+			     (connect src-model tgt-model)
 			     )))]
     [tgt-metamodel src-metadata extra-keys]))
+
+;;CHECK IN, THEN FIGURE OUT HOW A PIVOT DIFFERS FROM A UNION - COMPARE PIVOT AND UNION FNS - i THINK PIVOT IS DOING TO MUCH WORK...
 
 ;;--------------------------------------------------------------------------------
 
@@ -343,22 +355,25 @@
        (Date. 9 0 1))))
 
 (def whales-by-type
-     (split
-      all-whales
-      :type
-      nil
-      #(pivot
-	(union
-	 (ccount
-	  (split
-	   %
-	   :time
-	   (fn [time] (list (or (.lower years time) time)))
-	   )))
-	:time
-	years
-	(keyword (count-value-key nil)))
-      ))
+     (union
+      (split
+       all-whales
+       :type
+       nil
+       #(pivot
+	 (union
+	  (ccount
+	   (split
+	    %
+	    :time
+	    (fn [time] (list (or (.lower years time) time)))
+	    ))
+	  )
+	 :time
+	 years
+	 (keyword (count-value-key nil)))
+       )
+      "HEHE"))
 
 ;;(def counted-whales-by-type (ccount whales-by-type))
 ;;(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))

@@ -1,6 +1,6 @@
 (ns org.dada.core.ModelImpl
     (:import
-     [java.util Collection LinkedHashMap]
+     [java.util Collection]
      [org.dada.core AbstractModel Metadata Update]
      )
     (:gen-class
@@ -19,8 +19,7 @@
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
-   (let [tgt-creator (.getCreator tgt-metadata)
-	 key-getter (.getKeyGetter tgt-metadata)
+   (let [key-getter (.getKeyGetter tgt-metadata)
 	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition
