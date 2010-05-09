@@ -2,6 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use [org.dada.core])
+ (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ])
  (:import [java.math
@@ -16,6 +17,7 @@
 	   Creator
 	   Metadata
 	   Model
+	   PivotModel
 	   ])
  )
 
@@ -108,9 +110,25 @@
 (def #^Metadata whale-metadata (metadata Whale [:id] md-attributes))
 (def #^Model whales-model (model "Whales" :version whale-metadata))
 
-(def num-whales 1000)
-
 (insert *metamodel* whales-model)
+
+(let [#^Creator creator (.getCreator whale-metadata)
+      max-length-x-100 (* max-length 100)
+      max-weight-x-100 (* max-weight 100)]
+
+  (defn whale [id]
+    (.create
+     creator
+     (into-array
+      Object
+      [id
+       0
+       (Date. (rand-int 10)
+	      (rand-int 12)
+	      (+ (rand-int 28) 1))
+       (rnd types)
+       (/ (rand-int max-length-x-100) 100)
+       (/ (rand-int max-weight-x-100) 100)]))))
 
 ;;----------------------------------------
 
@@ -124,34 +142,6 @@
   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
 ;;--------------------------------------------------------------------------------
-;; create some whales...
-
-(time
- (doall
-  (let [batcher (Batcher. 999 1000 (list whales-model))
-	#^Creator creator (.getCreator whale-metadata)
-	max-length-x-100 (* max-length 100)
-	max-weight-x-100 (* max-weight 100)]
-    (pmap
-     (fn [id]
-	 (insert
-	  whales-model ;; batcher
-	  (.create
-	   creator
-	   (into-array
-	    Object
-	    [id
-	     0
-	     (Date. (rand-int 10)
-		    (rand-int 12)
-		    (+ (rand-int 28) 1))
-	     (rnd types)
-	     (/ (rand-int max-length-x-100) 100)
-	     (/ (rand-int max-weight-x-100) 100)]))))
-     (range num-whales)))))
-
-(println "LOADED: " num-whales)
-
 ;; need some form of pluggable sorting algorithm
 
 ;; operations are:
@@ -233,112 +223,122 @@
 (import org.dada.core.View)
 (import org.dada.core.Update)
 
-(defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key
-	     & [split-key-fn]]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".split(" split-key")") nil (.getMetadata src-metamodel))]
-    (insert *metamodel* tgt-metamodel)
-    (connect
-     src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall
-		     (map
-		      (fn [#^Update insertion]
-			  (let [[model & extra-values] (.getNewValue insertion)]
-			    (do-split
-			     model
-			     split-key
-			     (or split-key-fn list)
-			     identity
-			     (fn [#^Model model extra-value]
-				 (let [model-entry (list* model (concat extra-values [extra-value]))]
-				   (insert tgt-metamodel model-entry)
-				   (insert *metamodel* model)
-				   )))))
-		      insertions)))))
-    [tgt-metamodel src-metadata (concat extra-keys [split-key])]))
+(defn meta-view [#^String suffix #^Model src-metamodel f]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) suffix) nil (.getMetadata src-metamodel))]
+  (insert *metamodel* tgt-metamodel)
+  (connect
+   src-metamodel
+   (proxy [View] []
+	  (update [insertions alterations deletions]
+		  (doall (map (fn [#^Update insertion] (apply f tgt-metamodel (.getNewValue insertion))) insertions)))))
+  tgt-metamodel))
+
+(defn split [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] split-key & [split-key-fn subchain]]
+  [(meta-view
+    (str ".split(" split-key")")
+    src-metamodel
+    (fn [tgt-metamodel model & extra-values]
+	(do-split
+	 model
+	 split-key
+	 (or split-key-fn list)
+	 identity
+	 (fn [#^Model model extra-value]
+	     (let [model-entry (list* model (concat extra-values [extra-value]))]
+	       (insert tgt-metamodel model-entry)
+	       (insert *metamodel* model)
+	       (if subchain
+		 (subchain
+		  [(meta-view
+		    (str "=" extra-value)
+		    tgt-metamodel
+		    (fn [tgt-metamodel2 model & extra-values]
+			;;(insert tgt-metamodel tgt-metamodel2)
+			(insert tgt-metamodel2 [model])
+			;;(insert *metamodel* model)
+			))
+		   src-metadata
+		   []]))
+	       model
+	       )))))
+   src-metadata
+   (concat extra-keys [split-key])])
 
 ;; extra keys are inserted into attribute list
 ;; extra values are carried in model's row in metamodel
 ;; each split adds an extra key/value downstream that we may need to unwrap upstream
 (defn ccount [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys]
 	      & [count-key]]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".count(" (or count-key "") ")") nil (.getMetadata src-metamodel))
-	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
+  (let [extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
-    (insert *metamodel* tgt-metamodel)
-    (connect
-     src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall
-		     (map
-		      (fn [#^Update insertion]
-			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
-				count-model (do-reduce-count 
-					     (.getName src-model)
-					     (.getMetadata src-model)
-					     tgt-metadata
-					     count-key
-					     extra-values)]
-			    (insert *metamodel* count-model)
-			    (insert tgt-metamodel (list* count-model extra-values))
-			    (connect src-model count-model)))
-		      insertions)))))
-    [tgt-metamodel tgt-metadata extra-keys]))
+    [(meta-view
+      (str "." (count-value-key count-key))
+      src-metamodel
+      (fn [tgt-metamodel #^Model src-model & extra-values]
+	  (let [count-model (do-reduce-count 
+			     (.getName src-model)
+			     (.getMetadata src-model)
+			     tgt-metadata
+			     count-key
+			     extra-values)]
+	    (insert *metamodel* count-model)
+	    (insert tgt-metamodel (list* count-model extra-values))
+	    (connect src-model count-model))))
+     tgt-metadata
+     extra-keys]))
 
-(defn sum [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] sum-key]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".sum(" sum-key ")") nil (.getMetadata src-metamodel))
-	extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
-	tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
-    (insert *metamodel* tgt-metamodel)
-    (connect
-     src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall
-		     (map
-		      (fn [#^Update insertion]
-			  (let [[#^Model src-model & extra-values] (.getNewValue insertion)
-				sum-model (do-reduce-sum 
-					   (.getName src-model)
-					   (.getMetadata src-model)
-					   tgt-metadata
-					   sum-key
-					   extra-values)]
-			    (insert *metamodel* sum-model)
-			    (insert tgt-metamodel (list* sum-model extra-values))
-			    (connect src-model sum-model)))
-		      insertions)))))
-    [tgt-metamodel tgt-metadata extra-keys]))
 
-(defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] #^String prefix]
-  (let [tgt-metamodel (model (str (.getName src-metamodel) ".union()") nil (.getMetadata src-metamodel))
-	tgt-model (model (str prefix ".union()") (fn [& _] true) src-metadata)]
-    (insert *metamodel* tgt-metamodel)
+(defn union [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] & [#^String prefix]]
+  (let [tgt-model (model (str (or prefix (name (gensym "UNION"))) ".union()") nil src-metadata)
+	tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model & extra-values] (connect src-model tgt-model)))]
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model])
-    (connect
-     src-metamodel
-     (proxy [View] []
-	   (update [insertions alterations deletions]
-		   (doall
-		    (map
-		     (fn [#^Update insertion]
-			 (let [[src-model & extra-values] (.getNewValue insertion)]
-			   (connect src-model tgt-model)))
-		     insertions)))))
-    [tgt-metamodel src-metadata []]))
+    [tgt-metamodel src-metadata extra-keys]))
+
+(defn pivot-metadata [#^Metadata src-metadata #^Collection keys #^Collection pivot-values value-key]
+  (let [value-type (.getAttributeType src-metadata value-key)]
+    (class-metadata 
+     (name (gensym "org.dada.core.Pivot"))
+     Object
+     keys
+     (concat
+      (map #(.getAttribute src-metadata %) keys)
+      [[:version Integer true]]
+      (map #(vector % value-type true) pivot-values)))))
+
+;; pivot-key - e.g. :time
+;; pivot-values - e.g. years
+;; value-key - e.g. :count(*) - needed to find type of new columns
+(defn pivot [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] pivot-key pivot-values value-key]
+  (let [pivot-name (str ".pivot(" value-key "/" pivot-key")")
+	pivot-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
+	tgt-metamodel (meta-view
+		       pivot-key
+		       src-metamodel
+		       (fn [tgt-metamodel src-model & extra-values]
+			   ;; we'll need to build the metadata here
+			   (let [tgt-model
+				 (PivotModel. 
+				  (str (name (gensym "PIVOT")) pivot-name)
+				  src-metadata
+				  (fn [old new] new)
+				  value-key
+				  pivot-values
+				  pivot-metadata)
+				 ]
+			     ;;(println "PIVOT"  extra-keys pivot-key pivot-values value-key extra-values)
+			     (insert *metamodel* tgt-model)
+			     (insert tgt-metamodel [tgt-model])
+			     (connect src-model tgt-model)
+			     )))]
+    [tgt-metamodel src-metadata extra-keys]))
+
+;;CHECK IN, THEN FIGURE OUT HOW A PIVOT DIFFERS FROM A UNION - COMPARE PIVOT AND UNION FNS - i THINK PIVOT IS DOING TO MUCH WORK...
 
 ;;--------------------------------------------------------------------------------
 
 (def all-whales (metamodel whales-model))
 (def counted-whales (ccount all-whales))
-
-(def whales-by-type (split all-whales :type))
-(def counted-whales-by-type (ccount whales-by-type))
-(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
-(def summed-grouped-counted-whales-by-type (sum grouped-counted-whales-by-type (keyword "count(*)")))
 
 (def #^NavigableSet years
      (TreeSet.
@@ -354,10 +354,44 @@
        (Date. 8 0 1)
        (Date. 9 0 1))))
 
-(def whales-by-type-and-year (split whales-by-type
-				    :time 
-				    (fn [time] (list (or (.lower years time) time)))))
+(def whales-by-type
+     (union
+      (split
+       all-whales
+       :type
+       nil
+       #(pivot
+	 (union
+	  (ccount
+	   (split
+	    %
+	    :time
+	    (fn [time] (list (or (.lower years time) time)))
+	    ))
+	  )
+	 :time
+	 years
+	 (keyword (count-value-key nil)))
+       )
+      "HEHE"))
 
-(def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
-(def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
-(def summed-grouped-counted-whales-by-type-and-year (sum grouped-counted-whales-by-type-and-year (keyword "count(*)")))
+;;(def counted-whales-by-type (ccount whales-by-type))
+;;(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
+
+;;(def counted-whales-by-type-and-year (ccount whales-by-type-and-year))
+;;(def grouped-counted-whales-by-type-and-year (union counted-whales-by-type-and-year "Whales.split(:type).split(:time).count()"))
+
+;;--------------------------------------------------------------------------------
+
+;; create some whales...
+
+(def num-whales 1000)
+
+(time
+ (doall
+  (let [batcher (Batcher. 999 1000 (list whales-model))]
+    (pmap (fn [id] (insert whales-model (whale id))) (range num-whales)))))
+
+(println "LOADED: " num-whales)
+
+;;--------------------------------------------------------------------------------

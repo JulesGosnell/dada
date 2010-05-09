@@ -1,5 +1,5 @@
 (ns org.dada.core
-    (:use org.dada.core.ModelImpl)
+    (:use org.dada.core.UnionModel)
     (:import (clojure.lang DynamicClassLoader ISeq IFn Keyword)
 	     (java.util
 	      ArrayList
@@ -25,7 +25,7 @@
 	      Attribute
 	      MetadataImpl
 	      Model
-	      ModelImpl
+	      UnionModel
 	      Reducer
 	      Reducer$Strategy
 	      Splitter
@@ -110,11 +110,13 @@
 ;; :id int :version int :amount double)
 
 (defmulti attribute-key (fn [arg] (class arg)))
-(defmethod attribute-key Date [#^Date date] (str "attribute_" (.getTime date)))
+(defmethod attribute-key Date [#^Date date] (attribute-key (str "attribute" date)))
 (defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
 
 (def string-replacements {
      "_" "_underscore_"
+     " " "_space_"
+     ":" "_colon_"
      "*" "_asterisk_"
      "+" "_plus_"
      "-" "_minus_"
@@ -229,9 +231,11 @@
 	 (range length)))))
 
 (defn model [#^String model-name version-key #^Metadata metadata]
-  (let [version-getter (.getAttributeGetter metadata version-key)
-	version-fn (fn [old new] (> (.get version-getter new) (.get version-getter old)))]
-    (ModelImpl. model-name metadata version-fn)))
+  (let [version-fn (if version-key
+		     (let [version-getter (.getAttributeGetter metadata version-key)]
+		       (fn [old new] (> (.get version-getter new) (.get version-getter old))))
+		     (fn [_ new] new))]
+    (UnionModel. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
@@ -239,7 +243,7 @@
 	keys (.getKeyAttributeKeys metadata)
 	key-getter (.getAttributeGetter metadata (first keys))
 	version-getter (.getAttributeGetter metadata (second keys))]
-    (ModelImpl.
+    (UnionModel.
      name
      metadata
      (fn [old new] (> (.get version-getter new) (.get version-getter old))))))

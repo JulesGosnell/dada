@@ -1,6 +1,6 @@
-(ns org.dada.core.ModelImpl
+(ns org.dada.core.UnionModel
     (:import
-     [java.util Collection LinkedHashMap]
+     [java.util Collection]
      [org.dada.core AbstractModel Metadata Update]
      )
     (:gen-class
@@ -19,8 +19,7 @@
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
-   (let [tgt-creator (.getCreator tgt-metadata)
-	 key-getter (.getKeyGetter tgt-metadata)
+   (let [key-getter (.getKeyGetter tgt-metadata)
 	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition
@@ -107,7 +106,7 @@
      [update-fn getData-fn])
    ])
 
-(defn -getData [#^org.dada.core.ModelImpl this]
+(defn -getData [#^org.dada.core.UnionModel this]
   (let [[_ getData-fn] (.state this)]
     (getData-fn)))
 
@@ -118,7 +117,7 @@
     (if (> size 0) (.addAll array-list args))
     array-list))
 
-(defn -update [#^org.dada.core.ModelImpl this & inputs]
+(defn -update [#^org.dada.core.UnionModel this & inputs]
   (let [[update-fn] (.state this)
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))

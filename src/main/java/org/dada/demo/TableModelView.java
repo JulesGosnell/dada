@@ -28,7 +28,12 @@
  */
 package org.dada.demo;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -42,10 +47,79 @@ import org.dada.slf4j.LoggerFactory;
 
 public class TableModelView<K, V> extends AbstractTableModel implements View<V> {
 
+	private class IndexedMap<K, V> {
+		
+		private class Entry implements Map.Entry<K, V> {
+
+			private final K key;
+			private V value;
+			
+			private Entry(K key, V value) {
+				this.key = key;
+				this.value = value;
+			}
+			
+			@Override
+			public K getKey() {
+				return key;
+			}
+
+			@Override
+			public V getValue() {
+				return value;
+			}
+
+			@Override
+			public V setValue(V newValue) {
+				V oldValue = this.value;
+				this.value = newValue;
+				return oldValue;
+			}
+			
+		}
+		
+		private List<Entry> list = new ArrayList<Entry>();
+		private Comparator<Entry> comparator = new Comparator<Entry>() {@Override public int compare(Entry o1, Entry o2) {return ((Comparable<K>)o1.getKey()).compareTo(o2.getKey());}};
+
+		
+		public int put(K key, V value) {
+			Entry entry = new Entry(key, value);
+			int i = Collections.binarySearch(list, entry, comparator);
+			if (i > -1) {
+				list.set(i, entry);
+				return i;
+			} else {
+				int index = (i + 1) * -1;
+				list.add(index, entry);
+				return index;
+			}
+		}
+		
+		public int remove(K key) {
+			Entry entry = new Entry(key, null);
+			int i = Collections.binarySearch(list, entry, comparator);
+			if (i > -1) {
+				list.remove(i);
+				return i;
+			} else {
+				return -1;
+			}
+		}
+		
+		public V get(int i) {
+			return list.get(i).getValue();
+		}
+
+		public int size() {
+			return list.size();
+		}
+	}
+	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final CountDownLatch latch = new CountDownLatch(1);
 	private Metadata<K, V> metadata;
-	private final ConcurrentSkipListMap<K, V> map = new ConcurrentSkipListMap<K, V>();
+	//private final ConcurrentSkipListMap<K, V> map = new ConcurrentSkipListMap<K, V>();
+	private final IndexedMap<K, V> map = new IndexedMap<K, V>();
 	private final String name;
 	
 	public TableModelView(String name) {
@@ -70,53 +144,55 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 
 	// Listener
 
+	
+	
 	@Override
 	public synchronized void update(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
 		logger.trace("{}:  input: insertions={}, alterations={}, deletions={}", name, insertions.size(), alterations.size(), deletions.size());
 
+		// TODO - what about extinct values ?
+		
 		Metadata<K, V> metadata = getMetadata();
 		for (Update<V> insertion : insertions) {
 			V newValue = insertion.getNewValue();
 			K key = metadata.getKey(newValue);
-			map.put(key, newValue);
-			int index = map.headMap(key).size();
+			int index = map.put(key, newValue);
 			fireTableRowsInserted(index, index);
 		}
+
 		for (Update<V> update : alterations) {
-			V oldValue = update.getOldValue();
-			K oldKey = metadata.getKey(oldValue);
+
 			V newValue = update.getNewValue();
 			K newKey = metadata.getKey(newValue);
+
+			V oldValue = update.getOldValue();
+			K oldKey = metadata.getKey(oldValue);
+
+			int oldIndex;
+			int newIndex;
+
 			if (newKey.equals(oldKey)) {
-				map.put(newKey, newValue);
-				int index = map.headMap(newKey).size();
-				fireTableRowsUpdated(index, index);
+				oldIndex = newIndex = map.put(newKey, newValue); 
 			} else {
-				int oldIndex = map.headMap(oldKey, true).size();
-				if (oldIndex > 0) {
-					map.remove(oldKey);
-					oldIndex--;
-					fireTableRowsDeleted(oldIndex, oldIndex);
-				}
-				Object currentValue = map.put(newKey, newValue);
-				int newIndex = map.headMap(newKey).size();
-				if (currentValue == null)
-					fireTableRowsInserted(newIndex, newIndex);
-				else
-					fireTableRowsUpdated(newIndex, newIndex);
-				// TODO: if both indeces are the same...
+				newIndex = map.put(newKey, newValue);
+				oldIndex = map.remove(oldKey);
+			}
+			
+			if (oldIndex == newIndex)
+				fireTableRowsUpdated(newIndex, newIndex);
+			else {
+				if (oldIndex > -1) fireTableRowsDeleted(oldIndex, oldIndex);
+				fireTableRowsInserted(newIndex, newIndex);
 			}
 		}
 		for (Update<V> deletion : deletions) {
 			V value = deletion.getOldValue();
 			K key = metadata.getKey(value);
-			int index = map.headMap(key, true).size();
-			if (index > 0) {
-				map.remove(key);
-				index--;
-				fireTableRowsDeleted(index, index);
-			}
+			int index= map.remove(key);
+			if (index > -1) fireTableRowsDeleted(index, index);
 		}
+		
+		// TODO: can we collapse i/a/d into dirty blocks and make single UI updates ?
 	}
 
 	@Override
@@ -130,15 +206,14 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 	}
 
 	@Override
-	public int getRowCount() {
+	public synchronized int getRowCount() {
 		return map.size();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Object getValueAt(int rowIndex, int columnIndex) {
-		V value = (V) map.values().toArray()[rowIndex]; // TODO: yikes !!
-		return getMetadata().getAttributeValue(value, columnIndex);
+	public synchronized Object getValueAt(int rowIndex, int columnIndex) {
+		return getMetadata().getAttributeValue(map.get(rowIndex), columnIndex);
 	}
 
 }
