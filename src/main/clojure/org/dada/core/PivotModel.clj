@@ -66,10 +66,10 @@
 
 	 pivot-fn (fn [old-pivotted key src-value] ;e.g. [["Sei Whale" Mon ... 20 ...] Mon [Mon 21]]
 		      (let [src-value-value (.get src-value-getter src-value) ;; e.g. 20
-			    ;;dummy (println "PIVOT-FN:" key src-value-value)
+			    dummy (println "PIVOT-FN:" key src-value-value old-pivotted)
 			    pivot-fns (pivot-map key)
 			    pivot-values (map #(% src-value-value old-pivotted) pivot-fns)
-			    ;;dummy (println "PIVOT-VALUES:" pivot-values)
+			    dummy (println "PIVOT-VALUES:" pivot-values)
 			    new-pivotted (.create pivot-creator (into-array Object pivot-values))]
 			;;(println "PIVOT-FN:" key)
 			new-pivotted))
