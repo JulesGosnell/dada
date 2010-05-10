@@ -312,28 +312,21 @@
 (defn pivot [[#^Model src-metamodel #^Metadata src-metadata #^Collection extra-keys] pivot-key pivot-values value-key]
   (let [pivot-name (str ".pivot(" value-key "/" pivot-key")")
 	pivot-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
+	tgt-model (PivotModel. 
+		   (str (name (gensym "PIVOT")) pivot-name)
+		   src-metadata
+		   (fn [old new] new)
+		   value-key
+		   pivot-values
+		   pivot-metadata)
 	tgt-metamodel (meta-view
 		       pivot-key
 		       src-metamodel
 		       (fn [tgt-metamodel src-model & extra-values]
-			   ;; we'll need to build the metadata here
-			   (let [tgt-model
-				 (PivotModel. 
-				  (str (name (gensym "PIVOT")) pivot-name)
-				  src-metadata
-				  (fn [old new] new)
-				  value-key
-				  pivot-values
-				  pivot-metadata)
-				 ]
-			     ;;(println "PIVOT"  extra-keys pivot-key pivot-values value-key extra-values)
-			     (insert *metamodel* tgt-model)
-			     (insert tgt-metamodel [tgt-model])
-			     (connect src-model tgt-model)
-			     )))]
+			   (connect src-model tgt-model)))]
+    (insert *metamodel* tgt-model)
+    (insert tgt-metamodel [tgt-model])
     [tgt-metamodel src-metadata extra-keys]))
-
-;;CHECK IN, THEN FIGURE OUT HOW A PIVOT DIFFERS FROM A UNION - COMPARE PIVOT AND UNION FNS - i THINK PIVOT IS DOING TO MUCH WORK...
 
 ;;--------------------------------------------------------------------------------
 
@@ -361,14 +354,12 @@
        :type
        nil
        #(pivot
-	 (union
 	  (ccount
 	   (split
 	    %
 	    :time
 	    (fn [time] (list (or (.lower years time) time)))
 	    ))
-	  )
 	 :time
 	 years
 	 (keyword (count-value-key nil)))
