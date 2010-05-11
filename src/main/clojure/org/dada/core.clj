@@ -362,7 +362,8 @@
 				    view (model (src-name-fn value) src-version src-metadata)]
 				(.decouple
 				 #^ServiceFactory *internal-view-service-factory*
-				 (view-hook view value)))
+				 (view-hook view value))
+				view)
 			      ))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)

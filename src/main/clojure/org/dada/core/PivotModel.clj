@@ -47,7 +47,7 @@
 (defn -init [#^String model-name
 	     #^Metadata src-metadata  ;e.g. [day count]
 	     #^Comparable the-key     ; e.g. "orca"
-	     #^IFn version-fn	      ;     src version fn
+	     #^IFn version-fn	      ; src version fn
 	     #^Comparable src-value-key  ;e.g. :count
 	     #^Collection tgt-keys    ;e.g. [:mon :tue :wed :thu :fri]
   	     #^Metadata tgt-metadata] ;e.g. [type mon tue wed thu fri]

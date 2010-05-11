@@ -122,7 +122,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 
 	@Override
 	public String toString() {
-		return "<" + getClass().getSimpleName() + ": " + name + ">";
+	    return "0x" + Integer.toHexString(System.identityHashCode(this)) + ":" + name;
 	}
 
 }
