@@ -66,12 +66,9 @@
 
 	 pivot-fn (fn [old-pivotted key src-value] ;e.g. [["Sei Whale" Mon ... 20 ...] Mon [Mon 21]]
 		      (let [src-value-value (.get src-value-getter src-value) ;; e.g. 20
-			    dummy (println "PIVOT-FN:" key src-value-value old-pivotted)
 			    pivot-fns (pivot-map key)
 			    pivot-values (map #(% src-value-value old-pivotted) pivot-fns)
-			    dummy (println "PIVOT-VALUES:" pivot-values)
 			    new-pivotted (.create pivot-creator (into-array Object pivot-values))]
-			;;(println "PIVOT-FN:" key)
 			new-pivotted))
 
 	 unpivot-fn (fn [old-pivotted key]
@@ -83,7 +80,7 @@
 	 process-addition
 	 (fn [[extant extinct pivotted i a d] #^Update addition]
 	     (let [new (.getNewValue addition)
-		   key (key-fn new)
+		   key (last (key-fn new)) ;TODO - last is a hack - pivot-map keyed differently from data
 		   current (extant key)]
 	       (if (nil? current)
 		 ;; insertion...
@@ -117,7 +114,7 @@
 	 process-deletion
 	 (fn [[extant extinct pivotted i a d] #^Update deletion]
 	     (let [new (.getNewValue deletion)
-		   key (key-fn new)
+		   key (last (key-fn new))
 		   current (extant key)]
 	       (if (nil? current)
 		 (let [removed (extinct key)]
