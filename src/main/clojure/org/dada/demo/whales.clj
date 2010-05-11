@@ -80,7 +80,7 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-(if true
+(if false
   (def *metamodel*
        (new org.dada.core.MetaModelImpl
 	    "Cetacea"
@@ -255,7 +255,7 @@
 	 (or split-key-fn list)
 	 identity
 	 ;; each time a model is inserted into this metamodel, create
-	 ;; a new metamodel for branch of our parent and kick off a
+	 ;; a new metamodel for this branch of our parent and kick off a
 	 ;; fresh split into it...
 	 (fn [#^Model model extra-value]
 	     (let [model-entry (list model (concat extra-values [extra-value]))]
@@ -307,9 +307,9 @@
      extra-keys]))
 
 
-(defn union [[#^Model src-metamodel #^Metadata src-metadata prefix #^Collection extra-keys] & [#^String prefix]]
-  (let [tgt-model (model (str (or prefix (name (gensym "UNION"))) ".union()") nil src-metadata)
-	tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model & extra-values] (connect src-model tgt-model)))]
+(defn union [[#^Model src-metamodel #^Metadata src-metadata prefix #^Collection extra-keys]]
+  (let [tgt-model (model (str prefix ".union()") nil src-metadata)
+	tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model extra-values] (connect src-model tgt-model)))]
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model '()])
     [tgt-metamodel src-metadata (str prefix ".union()") extra-keys]))
@@ -335,6 +335,7 @@
 	tgt-model (PivotModel. 
 		   (str prefix pivot-name)
 		   src-metadata
+		   "testing23"
 		   (fn [old new] new)	;TODO - sort out version-fn
 		   value-key
 		   pivot-values
@@ -342,8 +343,7 @@
 	tgt-metamodel (meta-view
 		       pivot-key
 		       src-metamodel
-		       (fn [tgt-metamodel src-model & extra-values]
-			   (println "PIVOT DATA:" extra-values)
+		       (fn [tgt-metamodel src-model extra-values]
 			   (connect src-model tgt-model)))]
     (insert *metamodel* tgt-model)
     (insert tgt-metamodel [tgt-model '()])
@@ -357,7 +357,7 @@
 (def #^NavigableSet years (TreeSet. (apply collection (map #(Date. % 0 1) (range num-years)))))
 
 (def whales-by-type
-     ;;(union
+     (union
       (split
        all-whales
        :type
@@ -374,8 +374,8 @@
 	 years
 	 (keyword (count-value-key nil)))
        )
-;;      "HEHE")
-)
+      )
+     )
 
 ;;(def counted-whales-by-type (ccount whales-by-type))
 ;;(def grouped-counted-whales-by-type (union counted-whales-by-type "Whales.split(:type).count()"))
