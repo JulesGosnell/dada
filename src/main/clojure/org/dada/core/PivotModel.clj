@@ -20,7 +20,6 @@
 
 (defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
   (let [version-getter (.getAttributeGetter tgt-metadata :version) ;HACK
-	time-getter (.getAttributeGetter tgt-metadata :time)	   ;HACK
 	#^Map getter-map ;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
 	(apply
 	 array-map
@@ -38,8 +37,6 @@
 	     (.put pivot-map pivot-key (fn [new-value old-values] new-value))
 	     ;; TODO: increment version...properly...
 	     (.put pivot-map :version (fn [new-value old-values] (let [version (.get version-getter old-values)] (if version (+ version 1) 0))))
-	     ;; TODO - hack
-	     (.put pivot-map :time (fn [new-value old-values] (let [time (.get time-getter old-values)] (if time time (java.util.Date.)))))
 	     [pivot-key (vals pivot-map)]))
        pivot-keys)))
     ))

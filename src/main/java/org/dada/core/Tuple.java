@@ -192,7 +192,21 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 		else {
 			int size = values.size();
 			for (int i = 0; i < size; i++) {
-				int comparison = this.values.get(i).compareTo(that.values.get(i));
+				V lhs = this.values.get(i);
+				V rhs = that.values.get(i);
+				if (lhs == null) {
+					if (rhs == null)
+						return 0;
+					else
+						return 1;
+				} else {
+					if (rhs == null)
+						return -1;
+				}
+				
+				
+				
+				int comparison = lhs.compareTo(rhs);
 				if (comparison != 0) return comparison;
 			}
 			return 0;

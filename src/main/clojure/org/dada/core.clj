@@ -214,11 +214,26 @@
 	(fn [[key type mutable]] (Attribute. key type mutable (getter class type key)))
 	attribute-specs)))
 
-(defn #^Metadata class-metadata
-  "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
-  (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
-    (metadata (apply make-class class-name superclass class-attributes) keys attributes)))
+  (defn #^Metadata class-metadata2
+    "create metadata for a Model containing instances of a Class"
+    [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
+    (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
+      (metadata (apply make-class class-name superclass class-attributes) keys attributes)))
+
+(let [class-metadata-cache (atom {})]
+
+  (defn #^Metadata class-metadata
+    "create metadata for a Model containing instances of a Class"
+    [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
+    (let [cache-key [superclass keys attributes]]
+      ((swap!
+	class-metadata-cache 
+	(fn [cache key]
+	    (if (contains? cache key) cache (assoc cache key (class-metadata2 class-name superclass keys attributes))))
+	cache-key)
+       cache-key)))
+
+  )
 
 (defn #^Metadata seq-metadata [length]
   (new MetadataImpl

@@ -1,3 +1,10 @@
+;;--------------------------------------------------------------------------------
+;; THOUGHTS:
+
+;; testsuite should insert whales into db and model then run analagous
+;; queries on both and compare result sets...
+;; then run more data into both and compare result of db query and existing model state
+
 
 (use 'clojure.contrib.sql)
 
