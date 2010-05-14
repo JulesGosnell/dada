@@ -29,14 +29,14 @@
     <cobertura.site>target/site/cobertura</cobertura.site>
     <cobertura.version>1.9.4.1</cobertura.version>
     <spring.version>3.0.2.RELEASE</spring.version>
-    <slf4j.version>1.5.11</slf4j.version>
+    <slf4j.version>1.6.0</slf4j.version>
     <jmock.version>2.5.1</jmock.version>
     <junit.version>3.8.1</junit.version>
     <java.version>1.6</java.version>
     <!-- <clojure.version>1.1.0</clojure.version> -->
     <clojure.version>1.1.0-new-SNAPSHOT</clojure.version>
     <asm.version>3.2</asm.version>
-    <activemq.version>5.3.0</activemq.version>
+    <activemq.version>5.3.2</activemq.version>
     <commons-lang.version>2.5</commons-lang.version>
     <derby.version>10.5.3.0_1</derby.version>
     <maven.compile.debug>true</maven.compile.debug>
@@ -190,7 +190,7 @@
     <dependency>
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>  <!-- seems to include aspectjrt -->
-      <version>1.6.7</version>
+      <version>1.6.8</version>
     </dependency>
     <dependency>
       <groupId>joda-time</groupId>
