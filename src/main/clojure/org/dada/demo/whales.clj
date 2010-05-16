@@ -88,7 +88,7 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-(if false
+(if true
   (def *metamodel*
        (new org.dada.core.MetaModelImpl
 	    "Cetacea"
@@ -449,28 +449,28 @@
 
 ;; create some whales...
 
-(def num-whales 1000000)
+(def num-whales 1000)
 
-(def some-whales
+(def some-whales1
      (pmap (fn [id] (whale id)) (range num-whales)))
 
-(def some-whales2
+(def some-whales
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))
-	(list
-	 [0 0 (Date. 0 1 1) "blue" 100 0]
-	 [1 0 (Date. 0 1 1) "blue" 200 0]
-	 [2 0 (Date. 0 1 1) "grey" 100 0]
-	 [3 0 (Date. 0 1 1) "grey" 200 0]
-	 [4 0 (Date. 1 1 1) "blue" 100 0]
-	 [5 0 (Date. 1 1 1) "blue" 200 0]
-	 [6 0 (Date. 1 1 1) "grey" 100 0]
-	 [7 0 (Date. 1 1 1) "grey" 200 0]
+	(list 
+	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 0]
+	 [1 0 (Date. 0 1 1) "blue whale" "indian" 200 0]
+	 [2 0 (Date. 0 1 1) "gray whale" "arctic" 101 0]
+	 [3 0 (Date. 0 1 1) "gray whale" "indian" 200 0]
+	 [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 0]
+	 [5 0 (Date. 1 1 1) "blue whale" "indian" 200 0]
+	 [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 0]
+	 [7 0 (Date. 1 1 1) "gray whale" "indian" 200 0]
 	 ))
        ))
 
-;;(println "WHALES:" some-whales)
+(doall (map #(println "WHALES:" (bean %)) some-whales))
 
 (time
  (doall
