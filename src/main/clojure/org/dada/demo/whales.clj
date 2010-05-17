@@ -88,7 +88,7 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-(if true
+(if false
   (def *metamodel*
        (new org.dada.core.MetaModelImpl
 	    "Cetacea"
@@ -236,8 +236,8 @@
 ;; each split adds an extra key/value downstream that we may need to unwrap upstream
 (defn ccount [& [count-key]]
   (fn [[metadata-fn data-fn]]
-      (let [[src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (println "COUNT METADATA" metaprefix extra-keys)
+      (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
+	    ;;dummy (println "COUNT METADATA" metaprefix extra-keys)
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
 	[ ;; metadata
@@ -263,6 +263,37 @@
 					  (insert *metamodel* count-model)
 					  (insert tgt-metamodel [count-model extra-pairs])
 					  (connect src-model count-model))))]
+		 [tgt-metamodel new-prefix extra-pairs])))])))
+
+(defn sum [& [sum-key]]
+  (fn [[metadata-fn data-fn]]
+      (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
+	    ;;dummy (println "SUM METADATA" metaprefix extra-keys)
+	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
+	    tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
+	[ ;; metadata
+	 (fn []
+	     [tgt-metadata (str metaprefix "." (sum-value-key sum-key)) extra-keys])
+	 ;; direct
+	 (if data-fn
+	   (fn []
+	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
+		     new-prefix (str prefix "." (sum-value-key sum-key))
+		     tgt-model (model new-prefix nil src-metadata)
+		     tgt-metamodel (meta-view
+				    (str "." (sum-value-key sum-key))
+				    src-metamodel
+				    (fn [tgt-metamodel #^Model src-model extra-pairs]
+					;;(println "SUM DATA:" extra-values)
+					(let [sum-model (do-reduce-sum 
+							 (.getName src-model)
+							 (.getMetadata src-model)
+							 tgt-metadata
+							 sum-key
+							 extra-pairs)]
+					  (insert *metamodel* sum-model)
+					  (insert tgt-metamodel [sum-model extra-pairs])
+					  (connect src-model sum-model))))]
 		 [tgt-metamodel new-prefix extra-pairs])))])))
 
 (defn split-key-value [key]
@@ -379,7 +410,7 @@
 (defn pivot [pivot-key pivot-values value-key]
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (println "PIVOT METADATA" pivot-key keys value-key)
+	    ;;dummy (println "PIVOT METADATA" pivot-key keys value-key)
 	    tgt-metadata (pivot-metadata src-metadata (remove #(= % pivot-key) extra-keys) pivot-values value-key)
 	    tgt-name (str ".pivot(" value-key "/" pivot-key")")]
 	[ ;; metadata
@@ -388,7 +419,7 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   dummy (println "PIVOT" extra-pairs)
+		   ;;dummy (println "PIVOT" extra-pairs)
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata
@@ -414,6 +445,8 @@
 
 ;; (?2 [(union)] all-whales)
 ;; (?2 [(ccount)] all-whales)
+;; (?2 [(sum :weight)] all-whales)
+
 ;; (?2 [(split :type)] all-whales)
 
 ;; (?2 [(ccount)(ccount)] all-whales)
@@ -437,11 +470,15 @@
 
 ;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
 
-(?2 [(union "count(type/year)")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
+(?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
 
-(?2 [(union "count(type/ocean)")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+(?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
 
-(?2 [(union "count(ocean/type)")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+(?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
+
+(?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+
+(?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
 ;;(?2 [(split :ocean nil [(union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])])] all-whales)
 
@@ -449,28 +486,26 @@
 
 ;; create some whales...
 
-(def num-whales 1000)
-
-(def some-whales1
-     (pmap (fn [id] (whale id)) (range num-whales)))
+(def num-whales 100000)
 
 (def some-whales
+     (pmap (fn [id] (whale id)) (range num-whales)))
+
+(def some-whales2
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))
 	(list 
-	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 0]
-	 [1 0 (Date. 0 1 1) "blue whale" "indian" 200 0]
-	 [2 0 (Date. 0 1 1) "gray whale" "arctic" 101 0]
-	 [3 0 (Date. 0 1 1) "gray whale" "indian" 200 0]
-	 [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 0]
-	 [5 0 (Date. 1 1 1) "blue whale" "indian" 200 0]
-	 [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 0]
-	 [7 0 (Date. 1 1 1) "gray whale" "indian" 200 0]
+	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 100]
+	 [1 0 (Date. 0 1 1) "blue whale" "indian" 200 100]
+	 [2 0 (Date. 0 1 1) "gray whale" "arctic" 100 100]
+	 [3 0 (Date. 0 1 1) "gray whale" "indian" 200 100]
+	 [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 100]
+	 [5 0 (Date. 1 1 1) "blue whale" "indian" 200 100]
+	 [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 100]
+	 [7 0 (Date. 1 1 1) "gray whale" "indian" 200 100]
 	 ))
        ))
-
-(doall (map #(println "WHALES:" (bean %)) some-whales))
 
 (time
  (doall
@@ -480,3 +515,6 @@
 (println "LOADED")
 
 nil
+
+;;--------------------------------------------------------------------------------
+;; fix so that a split/pivot can handle undeclared keys
