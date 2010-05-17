@@ -411,7 +411,8 @@
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)
 	    ;;dummy (println "PIVOT METADATA" pivot-key keys value-key)
-	    tgt-metadata (pivot-metadata src-metadata (remove #(= % pivot-key) extra-keys) pivot-values value-key)
+	    extra-keys (remove #(= % pivot-key) extra-keys)
+	    tgt-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
 	    tgt-name (str ".pivot(" value-key "/" pivot-key")")]
 	[ ;; metadata
 	 (fn []
@@ -419,7 +420,9 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   ;;dummy (println "PIVOT" extra-pairs)
+		   dummy (println "PIVOT BEFORE" extra-pairs)
+		   extra-pairs (remove #(= (first %) pivot-key) extra-pairs)
+		   dummy (println "PIVOT AFTER " extra-pairs)
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata
@@ -452,6 +455,7 @@
 ;; (?2 [(ccount)(ccount)] all-whales)
 ;; (?2 [(union)(union)] all-whales)
 ;; (?2 [(ccount)(union)] all-whales)
+;; (?2 [(sum :weight)(union)] all-whales)
 ;; (?2 [(union)(ccount)] all-whales)
 ;; (?2 [(union)(split :type)] all-whales)
 ;; (?2 [(ccount)(split :type)] all-whales)
@@ -480,18 +484,24 @@
 
 (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
-;;(?2 [(split :ocean nil [(union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])])] all-whales)
+;; (?2
+;;  ;;[(split :ocean nil
+;; 	 [
+;; 	  (sum :version)
+;; 	  (union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])]
+;; 	 ;;)]
+;;  all-whales)
 
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
 
-(def num-whales 100000)
+(def num-whales 10000)
 
 (def some-whales
      (pmap (fn [id] (whale id)) (range num-whales)))
 
-(def some-whales2
+(def some-whales
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))
