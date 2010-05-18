@@ -29,10 +29,9 @@
 package org.dada.core;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import clojure.lang.Indexed;
 
@@ -45,74 +44,75 @@ import clojure.lang.Indexed;
  *
  * @param <V>
  */
-public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializable, Indexed, Comparable<Tuple<V>> {
+public class Tuple<V> implements Collection<V>, Serializable, Indexed, Comparable<Tuple<V>> {
 	
-	private final List<V> values;
+	private final Object[] values;
 	
 	public Tuple(V... values) {
-		this.values = new ArrayList<V>(values.length);
-		for (V value : values) this.values.add(value);
+		this.values = new Object[values.length];
+		int n =0;
+		for (V value : values) this.values[n++] = value;
 	}
 
 	public Tuple(Collection<V> values) {
-		this.values = new ArrayList<V>(values);
+		this.values = values.toArray();
 	}
 	
 	public Tuple(V value1) {
-		this.values = new ArrayList<V>(1);
-		values.add(value1);
+		this.values = new Object[1];
+		values[0] = value1;
 	}
 	
 	public Tuple(V value1, V value2) {
-		this.values = new ArrayList<V>(2);
-		values.add(value1);
-		values.add(value2);
+		this.values = new Object[2];
+		values[0] = value1;
+		values[1] = value2;
 	}
 	
 	public Tuple(V value1, V value2, V value3) {
-		this.values = new ArrayList<V>(3);
-		values.add(value1);
-		values.add(value2);
-		values.add(value3);
+		this.values = new Object[3];
+		values[0] = value1;
+		values[1] = value2;
+		values[2] = value3;
 	}
 	
 	public Tuple(V value1, V value2, V value3, V value4) {
-		this.values = new ArrayList<V>(4);
-		values.add(value1);
-		values.add(value2);
-		values.add(value3);
-		values.add(value4);
+		this.values = new Object[4];
+		values[0] = value1;
+		values[1] = value2;
+		values[2] = value3;
+		values[3] = value4;
 	}
 	
 	public Tuple(V value1, V value2, V value3, V value4, V value5) {
-		this.values = new ArrayList<V>(5);
-		values.add(value1);
-		values.add(value2);
-		values.add(value3);
-		values.add(value4);
-		values.add(value5);
+		this.values = new Object[5];
+		values[0] = value1;
+		values[1] = value2;
+		values[2] = value3;
+		values[3] = value4;
+		values[4] = value5;
 	}
 	
 	public Tuple(V value1, V value2, V value3, V value4, V value5, V value6) {
-		this.values = new ArrayList<V>(1);
-		values.add(value1);
-		values.add(value2);
-		values.add(value3);
-		values.add(value4);
-		values.add(value5);
-		values.add(value6);
+		this.values = new Object[6];
+		values[0] = value1;
+		values[1] = value2;
+		values[2] = value3;
+		values[3] = value4;
+		values[4] = value5;
+		values[5] = value6;
 	}
 	
 	// Indexed ...
 	
 	@Override
 	public Object nth(int i) {
-		return values.get(i);
+		return values[i];
 	}
 
 	@Override
 	public int count() {
-		return values.size();
+		return values.length;
 	}
 
 	// Collection
@@ -134,22 +134,44 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 
 	@Override
 	public boolean contains(Object o) {
-		return values.contains(o);
+		for (Object value : values)
+			if (value == o) return true;
+		return false;
 	}
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		return values.containsAll(c);
+		for (Object o : c)
+			if (!contains(o)) return false;
+		return true;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return values.isEmpty();
+		return false;
 	}
 
 	@Override
 	public Iterator<V> iterator() {
-		return values.iterator();
+		return new Iterator<V>() {
+
+			private int i = 0;
+			
+			@Override
+			public boolean hasNext() {
+				return i < values.length;
+			}
+
+			@Override
+			public V next() {
+				return (V)values[i++];
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException("Tuples are Immutable");
+			}
+		};
 	}
 
 	@Override
@@ -169,17 +191,17 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 
 	@Override
 	public int size() {
-		return values.size();
+		return values.length;
 	}
 
 	@Override
 	public Object[] toArray() {
-		return values.toArray();
+		return values;
 	}
 
 	@Override
 	public <T> T[] toArray(T[] a) {
-		return values.toArray(a);
+		throw new UnsupportedOperationException("NYI");
 	}
 
 	// Comparable
@@ -190,23 +212,9 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 		if (diff != 0)
 			return diff;
 		else {
-			int size = values.size();
+			int size = values.length;
 			for (int i = 0; i < size; i++) {
-				V lhs = this.values.get(i);
-				V rhs = that.values.get(i);
-				if (lhs == null) {
-					if (rhs == null)
-						return 0;
-					else
-						return 1;
-				} else {
-					if (rhs == null)
-						return -1;
-				}
-				
-				
-				
-				int comparison = lhs.compareTo(rhs);
+				int comparison = ((Comparable)this.values[i]).compareTo(that.values[i]);
 				if (comparison != 0) return comparison;
 			}
 			return 0;
@@ -217,18 +225,17 @@ public class Tuple<V extends Comparable<V>> implements Collection<V>, Serializab
 	
 	@Override
 	public boolean equals(Object that) {
-		return this.values.equals(((Tuple<V>)that).values);
+		return Arrays.deepEquals(values, ((Tuple)that).values);
 	}
 
 	@Override
 	public int hashCode() {
-	    // TODO: we might want to implement this for ourselves...
-		return values.hashCode();
+		return Arrays.deepHashCode(values);
 	}
 	
 	@Override
 	public String toString() {
-		return values.toString();
+		return Arrays.deepToString(values);
 	}
 	
 }
