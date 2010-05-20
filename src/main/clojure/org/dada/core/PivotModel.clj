@@ -5,7 +5,7 @@
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
-     :constructors {[String org.dada.core.Metadata java.lang.Comparable clojure.lang.IFn Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
+     :constructors {[String org.dada.core.Metadata java.util.Collection clojure.lang.IFn Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
      :methods []
      :init init
      :state state
@@ -43,7 +43,7 @@
 
 (defn -init [#^String model-name
 	     #^Metadata src-metadata  ;e.g. [day count]
-	     #^Comparable the-key     ; e.g. "orca"
+	     #^Collection const-keys  ; e.g. ["orca" "atlantic"]
 	     #^IFn version-fn	      ; src version fn
 	     #^Comparable src-value-key  ;e.g. :count
 	     #^Collection tgt-keys    ;e.g. [:mon :tue :wed :thu :fri]
@@ -62,8 +62,9 @@
 			      pivot-creator
 			      (into-array
 			       Object
-			       (cons the-key
-				     (take (- (.size (.getAttributeGetters tgt-metadata)) 1) (repeat nil)))))
+			       (concat
+				const-keys
+				(take (- (.size (.getAttributeGetters tgt-metadata)) (count const-keys)) (repeat nil)))))
 	 src-value-getter (.getAttributeGetter src-metadata src-value-key)
 	 pivot-map (make-pivot-map tgt-keys tgt-metadata)
 

@@ -426,7 +426,7 @@
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata
-			      (second (first extra-pairs)) ; TODO:hack
+			      (list (second (first extra-pairs))) ; TODO:hack
 			      (fn [old new] new) ;TODO - sort out version-fn
 			      value-key
 			      pivot-values
@@ -501,7 +501,7 @@
 (def some-whales
      (pmap (fn [id] (whale id)) (range num-whales)))
 
-(def some-whales
+(def some-whales2
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))
