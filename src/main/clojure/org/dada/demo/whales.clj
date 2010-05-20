@@ -453,6 +453,8 @@
 (def #^Collection some-years (map #(Date. % 0 1) (range num-years)))
 (def #^NavigableSet years (TreeSet. some-years))
 
+(defn by-year [time] (list (or (.lower years time) time)))
+
 ;; (?2 [] all-whales)
 
 ;; (?2 [(union)] all-whales)
@@ -481,9 +483,9 @@
 ;; (?2 [(split :type nil [(ccount)(split :time)])] all-whales)
 ;; (?2 [(split :type nil [(split :time nil)(split :length)])] all-whales)
 
-;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
+;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
 
-;; (?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
+;; (?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
 
 ;; (?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
 
@@ -493,11 +495,13 @@
 
 ;; (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
-(def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])
+(def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
 
 (?2 [(split :ocean nil [(union)(split :type nil subquery)])] all-whales)
 
 (?2 [(union)(split :ocean nil subquery)] all-whales)
+
+;;(?2 [(pivot :time years (keyword (count-value-key nil)))(split :time by-year [(ccount)])] all-whales)
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
@@ -513,7 +517,7 @@
 	#(.create creator (into-array Object %))
 	(list 
 	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 100]
-	 [1 0 (Date. 0 1 1) "blue whale" "indian" 200 100]
+	 ;;[1 0 (Date. 0 1 1) "blue whale" "indian" 200 100]
 	 ;; [2 0 (Date. 0 1 1) "gray whale" "arctic" 100 100]
 	 ;; [3 0 (Date. 0 1 1) "gray whale" "indian" 200 100]
 	 ;; [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 100]
