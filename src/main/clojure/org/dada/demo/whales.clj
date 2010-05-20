@@ -247,25 +247,26 @@
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
+		     ;;dummy (println "COUNT extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (count-value-key count-key))
 		     tgt-model (model new-prefix nil src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (count-value-key count-key))
 				    src-metamodel
 				    (fn [tgt-metamodel #^Model src-model extra-pairs]
-					;;(println "CCOUNT DATA:" extra-values)
+					;;(println "COUNT extra-pairs [1]:" extra-pairs)
 					(let [count-model (do-reduce-count 
 							   (.getName src-model)
 							   (.getMetadata src-model)
 							   tgt-metadata
 							   count-key
-							   extra-pairs)]
+							   (map second extra-pairs))]
 					  (insert *metamodel* count-model)
 					  (insert tgt-metamodel [count-model extra-pairs])
 					  (connect src-model count-model))))]
 		 [tgt-metamodel new-prefix extra-pairs])))])))
 
-(defn sum [& [sum-key]]
+(defn sum [sum-key]
   (fn [[metadata-fn data-fn]]
       (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
 	    ;;dummy (println "SUM METADATA" metaprefix extra-keys)
@@ -278,19 +279,20 @@
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
+		     ;;dummy (println "SUM extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (sum-value-key sum-key))
 		     tgt-model (model new-prefix nil src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (sum-value-key sum-key))
 				    src-metamodel
 				    (fn [tgt-metamodel #^Model src-model extra-pairs]
-					;;(println "SUM DATA:" extra-values)
+					;;(println "SUM extra-pairs [1]:" extra-pairs)
 					(let [sum-model (do-reduce-sum 
 							 (.getName src-model)
 							 (.getMetadata src-model)
 							 tgt-metadata
 							 sum-key
-							 extra-pairs)]
+							 (map second extra-pairs))]
 					  (insert *metamodel* sum-model)
 					  (insert tgt-metamodel [sum-model extra-pairs])
 					  (connect src-model sum-model))))]
@@ -327,9 +329,12 @@
 	 (fn []
 	     (let [src-data-tuple (direct-fn)
 		   [#^Model src-metamodel src-prefix #^Collection src-extra-pairs] src-data-tuple
+		   ;;dummy (println "SPLIT src-extra-pairs" src-extra-pairs)
 		   tgt-metamodel (model (str (.getName src-metamodel) suffix) nil (.getMetadata src-metamodel))
 		   tgt-prefix (str src-prefix "." split-key)
-		   tgt-data-tuple [tgt-metamodel tgt-prefix (concat src-extra-pairs [[split-key "*"]])]]
+		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
+		   ;;dummy (println "SPLIT tgt-extra-pairs" tgt-extra-pairs)
+		   tgt-data-tuple [tgt-metamodel tgt-prefix tgt-extra-pairs]]
 	       ;; register it with the global metamodel
 	       ;;(println "SPLIT DATA SRC  " src-data-tuple)
 	       (insert *metamodel* tgt-metamodel)
@@ -349,12 +354,16 @@
 							  (let [split-metamodel (model (str (.getName src-metamodel) (str suffix "=" split-extra-value)) nil (.getMetadata src-metamodel))
 								split-prefix (str tgt-prefix "=" split-extra-value)
 								split-extra-pairs (concat src-extra-pairs [[split-key split-extra-value]])
+								;;dummy (println "SPLIT split-extra-pairs" split-extra-pairs)
+
 								split-data-tuple [split-metamodel split-prefix split-extra-pairs]
 								split-data-fn (fn [] split-data-tuple)
 								[_ sub-data-fn] (thread-chain subchain [split-metadata-fn split-data-fn])
 								sub-data-tuple (sub-data-fn)
 								[sub-metamodel sub-prefix sub-extra-pairs] sub-data-tuple
-								split-model-tuple [split-model (concat src-extra-values [split-extra-value])]]
+								;;dummy (println "SPLIT sub-extra-pairs" sub-extra-pairs)
+
+								split-model-tuple [split-model sub-extra-pairs]]
 							    
 							    ;;(println "SPLIT DATA SPLIT" split-data-tuple)
 							    ;;(println "SPLIT DATA SUB" split-data-tuple)
@@ -369,7 +378,7 @@
 									    (doall
 									     (map
 									      (fn [#^Update insertion]
-										  (let [sub-model-tuple (.getNewValue insertion)] ;; [sub-model sub-extra-values]
+										  (let [sub-model-tuple (.getNewValue insertion)] ;; [sub-model sub-extra-pairs]
 										    ;; UNCOMMENT HERE AND WORK IT OUT
 										    (insert tgt-metamodel sub-model-tuple)
 										    ))
@@ -377,7 +386,7 @@
 						      ;; plug split -> tgt
 						      (fn [#^Model split-model split-extra-value]
 							  ;;(println "SPLIT - producing new model" split-model split-extra-value)
-							  (let [split-model-tuple (list split-model (concat src-extra-values [split-extra-value]))]
+							  (let [split-model-tuple (list split-model (concat src-extra-values [[split-key split-extra-value]]))]
 							    (insert *metamodel* split-model) ;add to global metamodel
 							    (insert tgt-metamodel split-model-tuple) ;add to metamodel that has been passed downstream
 							    ))
@@ -420,9 +429,9 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   dummy (println "PIVOT BEFORE" extra-pairs)
+		   ;;dummy (println "PIVOT extra-pairs before pivot:" extra-pairs)
 		   extra-pairs (remove #(= (first %) pivot-key) extra-pairs)
-		   dummy (println "PIVOT AFTER " extra-pairs)
+		   ;;dummy (println "PIVOT extra-pairs after pivot: " extra-pairs)
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata
@@ -474,29 +483,29 @@
 
 ;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
 
-(?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
+;; (?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])] all-whales)
 
-(?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+;; (?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
 
-(?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
+;; (?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
 
-(?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+;; (?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
 
-(?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
+;; (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
-;; (?2
-;;  ;;[(split :ocean nil
-;; 	 [
-;; 	  (sum :version)
-;; 	  (union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])]
-;; 	 ;;)]
-;;  all-whales)
+(?2
+ [(split :ocean nil
+	 [
+	  ;;(sum :version)
+	  (union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])]
+	 )]
+ all-whales)
 
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
 
-(def num-whales 10000)
+(def num-whales 100000)
 
 (def some-whales
      (pmap (fn [id] (whale id)) (range num-whales)))
@@ -508,12 +517,12 @@
 	(list 
 	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 100]
 	 [1 0 (Date. 0 1 1) "blue whale" "indian" 200 100]
-	 [2 0 (Date. 0 1 1) "gray whale" "arctic" 100 100]
-	 [3 0 (Date. 0 1 1) "gray whale" "indian" 200 100]
-	 [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 100]
-	 [5 0 (Date. 1 1 1) "blue whale" "indian" 200 100]
-	 [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 100]
-	 [7 0 (Date. 1 1 1) "gray whale" "indian" 200 100]
+	 ;; [2 0 (Date. 0 1 1) "gray whale" "arctic" 100 100]
+	 ;; [3 0 (Date. 0 1 1) "gray whale" "indian" 200 100]
+	 ;; [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 100]
+	 ;; [5 0 (Date. 1 1 1) "blue whale" "indian" 200 100]
+	 ;; [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 100]
+	 ;; [7 0 (Date. 1 1 1) "gray whale" "indian" 200 100]
 	 ))
        ))
 

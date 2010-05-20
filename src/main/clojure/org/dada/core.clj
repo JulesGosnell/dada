@@ -203,6 +203,7 @@
   "make a Creator for the given Class"
   (proxy [Creator] [] 
 	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
+		  ;;(println "CREATOR" class (map identity args))
 		  (apply make-instance class args))))
 
 (defn #^Metadata metadata [#^Class class keys attribute-specs]
@@ -445,11 +446,13 @@
      (reduce [insertions alterations deletions]
 	     (-
 	      (+
-	       (reduce #(+ %1 (new-value %2)) 0 insertions)
-	       (reduce #(+ %1 (- (new-value %2) (old-value %2))) 0 alterations))
-	      (reduce #(+ %1 (old-value %2)) 0 deletions))
+	       (reduce #(+ %1 (or (new-value %2) 0)) 0 insertions)
+	       (reduce #(+ %1 (- (or (new-value %2) 0) (or (old-value %2) 0))) 0 alterations))
+	      (reduce #(+ %1 (or (old-value %2))) 0 deletions))
 	     )
-     (apply [currentValue delta] (+ currentValue delta))
+     (apply [currentValue delta]
+	    ;;(println "SUM:" currentValue delta)
+	    (+ currentValue delta))
      )))
 
 (defn do-reduce-sum
