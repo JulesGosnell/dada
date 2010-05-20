@@ -493,14 +493,11 @@
 
 ;; (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
-(?2
- [(split :ocean nil
-	 [
-	  ;;(sum :version)
-	  (union)(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])]
-	 )]
- all-whales)
+(def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time (fn [time] (list (or (.lower years time) time))))])
 
+(?2 [(split :ocean nil [(union)(split :type nil subquery)])] all-whales)
+
+(?2 [(union)(split :ocean nil subquery)] all-whales)
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
