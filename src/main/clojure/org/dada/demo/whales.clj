@@ -426,7 +426,7 @@
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata
-			      (list (second (first extra-pairs))) ; TODO:hack
+			      (map second extra-pairs)
 			      (fn [old new] new) ;TODO - sort out version-fn
 			      value-key
 			      pivot-values
