@@ -524,6 +524,17 @@
 
 (?2 [(ccount)] all-whales)
 
+;; these queries seem to just be too big to run with a resonably sized dataset on my home box ...
+
+;; (?2 [(split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])] all-whales)
+
+;; (?2 [(split :reporter nil [(union)(split :ocean nil subquery)])] all-whales)
+
+;; (?2 [(split :reporter nil [
+;;      (pivot :time years (keyword (count-value-key nil)))
+;;      (split :time by-year [(ccount)])])] all-whales)
+
+
 ;;--------------------------------------------------------------------------------
 
 ;; create some whales...
