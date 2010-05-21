@@ -1,7 +1,7 @@
 (ns org.dada.core.PivotModel
     (:import
      [java.util Collection LinkedHashMap Map]
-     [org.dada.core AbstractModel Getter Metadata Update]
+     [org.dada.core AbstractModel Getter Metadata Tuple Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
@@ -48,6 +48,7 @@
 	     #^Comparable src-value-key  ;e.g. :count
 	     #^Collection tgt-keys    ;e.g. [:mon :tue :wed :thu :fri]
   	     #^Metadata tgt-metadata] ;e.g. [type mon tue wed thu fri]
+  ;;(println "PIVOT:" model-name src-metadata const-keys version-fn src-value-key tgt-keys tgt-metadata)
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
@@ -83,9 +84,15 @@
 
 	 process-addition
 	 (fn [[extant extinct pivotted i a d] #^Update addition]
+	     ;;(println "PIVOT - PROCESS-ADDITION" addition)
 	     (let [new (.getNewValue addition)
-		   key (last (key-fn new)) ;TODO - last is a hack - pivot-map keyed differently from data
+		   ;;dummy (println "PIVOT - PROCESS-ADDITION" new)
+		   key (key-fn new)
+		   ;;dummy (println "PIVOT - PROCESS-ADDITION" key)
+		   key (if (instance? Tuple key) (last key) key) ;TODO - last is a hack - pivot-map keyed differently from data
+		   ;;dummy (println "PIVOT - PROCESS-ADDITION" key)
 		   current (extant key)]
+	       ;;(println "PIVOT - PROCESS-ADDITION" current)
 	       (if (nil? current)
 		 ;; insertion...
 		 (let [removed (extinct key)]
