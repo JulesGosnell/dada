@@ -85,6 +85,15 @@
 	     "southern"
 	    ])
 
+(def reporters [
+		"jules"
+		"andy"
+		"ian"
+		"steve"
+		"mitesh"
+		"ameen"
+		])
+
 (def num-years 10)
 
 (def max-weight 172) ;; metric tons
@@ -92,7 +101,7 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-(if false
+(if true
   (def *metamodel*
        (new org.dada.core.MetaModelImpl
 	    "Cetacea"
@@ -107,6 +116,7 @@
       [:id (Integer/TYPE) false]
       [:version (Integer/TYPE) true]
       [:time Date true]
+      [:reporter String true]
       [:type String false]		;a whale cannot change type
       [:ocean String true]
       [:length (Float/TYPE) true]
@@ -135,6 +145,7 @@
        (Date. (rand-int num-years)
 	      (rand-int 12)
 	      (+ (rand-int 28) 1))
+       (rnd reporters)
        (rnd types)
        (rnd oceans)
        (/ (rand-int max-length-x-100) 100)
@@ -461,45 +472,45 @@
 
 (defn by-year [time] (list (or (.lower years time) time)))
 
-;; (?2 [] all-whales)
+(?2 [] all-whales)
 
-;; (?2 [(union)] all-whales)
-;; (?2 [(ccount)] all-whales)
-;; (?2 [(sum :weight)] all-whales)
+(?2 [(union)] all-whales)
+(?2 [(ccount)] all-whales)
+(?2 [(sum :weight)] all-whales)
 
-;; (?2 [(split :type)] all-whales)
+(?2 [(split :type)] all-whales)
 
-;; (?2 [(ccount)(ccount)] all-whales)
-;; (?2 [(union)(union)] all-whales)
-;; (?2 [(ccount)(union)] all-whales)
-;; (?2 [(sum :weight)(union)] all-whales)
-;; (?2 [(union)(ccount)] all-whales)
-;; (?2 [(union)(split :type)] all-whales)
-;; (?2 [(ccount)(split :type)] all-whales)
-;; (?2 [(split :time)(split :type)] all-whales)
+(?2 [(ccount)(ccount)] all-whales)
+(?2 [(union)(union)] all-whales)
+(?2 [(ccount)(union)] all-whales)
+(?2 [(sum :weight)(union)] all-whales)
+(?2 [(union)(ccount)] all-whales)
+(?2 [(union)(split :type)] all-whales)
+(?2 [(ccount)(split :type)] all-whales)
+(?2 [(split :time)(split :type)] all-whales)
 
-;; (?2 [(ccount)(split :time)(split :type)] all-whales)
-;; (?2 [(union)(split :time)(split :type)] all-whales)
-;; (?2 [(split :length)(split :time)(split :type)] all-whales)
+(?2 [(ccount)(split :time)(split :type)] all-whales)
+(?2 [(union)(split :time)(split :type)] all-whales)
+(?2 [(split :length)(split :time)(split :type)] all-whales)
 
-;; (?2 [(split :type nil [(ccount)])] all-whales)
-;; (?2 [(split :type nil [(split :time)])] all-whales)
-;; (?2 [(split :type nil [(split :time nil [(split :length)])])] all-whales)
+(?2 [(split :type nil [(ccount)])] all-whales)
+(?2 [(split :type nil [(split :time)])] all-whales)
+(?2 [(split :type nil [(split :time nil [(split :length)])])] all-whales)
 
-;; (?2 [(split :type nil [(ccount)(split :time)])] all-whales)
-;; (?2 [(split :type nil [(split :time nil)(split :length)])] all-whales)
+(?2 [(split :type nil [(ccount)(split :time)])] all-whales)
+(?2 [(split :type nil [(split :time nil)(split :length)])] all-whales)
 
-;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+(?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
 
-;; (?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+(?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
 
-;; (?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+(?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
 
-;; (?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
+(?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
 
-;; (?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+(?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
 
-;; (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
+(?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
 
 (def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
 
@@ -522,19 +533,19 @@
 (def some-whales
      (pmap (fn [id] (whale id)) (range num-whales)))
 
-(def some-whales2
+(def some-whales
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))
 	(list 
-	 [0 0 (Date. 0 1 1) "blue whale" "arctic" 100 100]
-	 ;;[1 0 (Date. 0 1 1) "blue whale" "indian" 200 100]
-	 ;; [2 0 (Date. 0 1 1) "gray whale" "arctic" 100 100]
-	 ;; [3 0 (Date. 0 1 1) "gray whale" "indian" 200 100]
-	 ;; [4 0 (Date. 1 1 1) "blue whale" "arctic" 100 100]
-	 ;; [5 0 (Date. 1 1 1) "blue whale" "indian" 200 100]
-	 ;; [6 0 (Date. 1 1 1) "gray whale" "arctic" 100 100]
-	 ;; [7 0 (Date. 1 1 1) "gray whale" "indian" 200 100]
+	 [0 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100]
+	 [1 0 (Date. 0 1 1) "jules" "blue whale" "indian" 200 100]
+	 [2 0 (Date. 0 1 1) "jules" "gray whale" "arctic" 100 100]
+	 [3 0 (Date. 0 1 1) "jules" "gray whale" "indian" 200 100]
+	 [4 0 (Date. 1 1 1) "jules" "blue whale" "arctic" 100 100]
+	 [5 0 (Date. 1 1 1) "jules" "blue whale" "indian" 200 100]
+	 [6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100]
+	 [7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100]
 	 ))
        ))
 
