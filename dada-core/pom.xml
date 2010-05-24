@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
+  >
+
+  <parent>
+    <groupId>org.dada</groupId>
+    <artifactId>dada</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>dada-core</artifactId>
+  <packaging>jar</packaging>
+  <name>DADA :: Core</name>
+  <description>DADA Core Functionality</description>
+
+  <properties> 
+    <cobertura.datafile>${project.build.directory}/cobertura/cobertura.ser</cobertura.datafile>
+    <cobertura.classes>${project.build.directory}/generated-classes/cobertura</cobertura.classes>
+    <cobertura.site>${project.build.directory}/site/cobertura</cobertura.site>
+  </properties>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.dada</groupId>
+      <artifactId>dada-slf4j</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+	<groupId>com.theoryinpractise</groupId>
+	<artifactId>clojure-maven-plugin</artifactId>
+	<version>1.3.2</version>
+	<configuration>
+	  <warnOnReflection>true</warnOnReflection>
+	  <namespaces>
+            <namespace>org.dada.core</namespace>
+            <namespace>!org.dada.demo.*</namespace>
+	  </namespaces>
+	</configuration>
+	<executions>
+	  <execution>
+            <id>clojure-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-gendoc</id>
+            <phase>site</phase>
+	    <configuration>
+	      <outputDirectory>${project.build.directory}/site/clojure</outputDirectory> <!-- logic broken in Mojo -->
+	      <clojureOptions>-Xmx256m</clojureOptions>
+	      <generateTestDocumentation>false</generateTestDocumentation>
+	    </configuration>
+	    <goals>
+	      <goal>gendoc</goal>
+	    </goals>
+	  </execution>
+	</executions>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+	<version>1.3</version>
+        <executions>
+          <execution>
+            <id>cobertura-instrument</id>
+            <phase>process-test-classes</phase>
+            <configuration>
+              <tasks name="cobertura-instrument">
+                <java classname="net.sourceforge.cobertura.instrument.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="${cobertura.classes}"/>
+                  <arg value="${project.build.directory}/classes"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>cobertura-check</id>
+            <phase>test</phase>
+            <configuration>
+              <tasks name="cobertura-check">
+                <java classname="net.sourceforge.cobertura.check.Main" fork="yes" failonerror="false">  <!-- TODO -->
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--branch"/>
+                  <arg value="60"/>
+                  <arg value="--line"/>
+                  <arg value="60"/>
+                  <arg value="--totalbranch"/>
+                  <arg value="60"/>
+                  <arg value="--totalline"/>
+                  <arg value="60"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>cobertura-report</id>
+            <phase>site</phase>
+            <configuration>
+              <tasks name="cobertura-report">
+                <java classname="net.sourceforge.cobertura.reporting.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="${cobertura.site}"/>
+                  <arg value="--format"/>
+                  <arg value="html"/>
+                  <arg value="src/main/java"/>
+                </java>
+                <java classname="net.sourceforge.cobertura.reporting.Main" fork="no">
+                  <classpath refid="maven.plugin.classpath"/>
+                  <arg value="--datafile"/>
+                  <arg value="${cobertura.datafile}"/>
+                  <arg value="--destination"/>
+                  <arg value="${cobertura.site}"/>
+                  <arg value="--format"/>
+                  <arg value="xml"/>
+                  <arg value="src/main/java"/>
+                </java>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>javadoc-report</id>
+            <phase>site</phase>
+            <configuration>
+              <tasks name="javadoc-report">
+                <javadoc
+                  destdir="${project.build.directory}/site/apidocs"
+                  author="true"
+                  version="true"
+                  use="true"
+                  windowtitle="Paxos Prototype API"
+                  >
+                  <fileset dir="src/main/java" defaultexcludes="yes"/>
+                  <fileset dir="src/test/java" defaultexcludes="yes"/>
+                  <classpath refid="maven.compile.classpath"/>
+                  <classpath refid="maven.test.classpath"/>
+                  <doctitle><![CDATA[<h1>Paxos Prototype</h1>]]></doctitle>
+                  <bottom><![CDATA[<i>Copyright &#169; 2009 Julian Gosnell. All Rights Reserved.</i>]]></bottom>
+                  <tag name="todo" scope="all" description="To do:"/>
+		  <!--
+                  <link offline="true" href="http://java.sun.com/j2se/1.5.0/docs/api/" packagelistLoc="C:\tmp"/>
+                  <link href="http://developer.java.sun.com/developer/products/xml/docs/api/"/>
+		  -->
+                </javadoc>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>net.sourceforge.cobertura</groupId>
+            <artifactId>cobertura</artifactId>
+            <version>${cobertura.version}</version>
+            <scope>compile</scope>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+	<version>2.4.3</version>
+        <configuration>
+          <classesDirectory>${cobertura.classes}</classesDirectory>
+          <additionalClasspathElements>
+            <additionalClasspathElement>${project.build.directory}/classes</additionalClasspathElement>
+          </additionalClasspathElements>
+          <forkMode>once</forkMode>
+	  <jvm>${surefire.jvm}</jvm>
+	  <argLine>${java.agent}</argLine>
+          <testClassesDirectory>${project.build.directory}/test-classes</testClassesDirectory>
+          <excludes>
+            <exclude>**/*AbstractTestCase.java</exclude>
+	    <!-- if java.agent set, these will not be excluded -->
+            <exclude>${java.agent}**/ltw/*TestCase.java</exclude>
+	    <!-- lose these to run on mono/ikvm/dotnet -->
+            <exclude>${dotnet.hack}**/DateRoutingStrategyTestCase.java</exclude>  <!-- crashes mono -->
+            <exclude>${dotnet.hack}**/ConsensusTestCase.java</exclude>  <!-- crashes ikvm -->
+            <exclude>${dotnet.hack}**/AMQRemotingTestCase.java</exclude>  <!-- crashes ikvm -->
+          </excludes>
+          <systemProperties>
+            <property>
+              <name>net.sourceforge.cobertura.datafile</name>
+              <value>${cobertura.datafile}</value>
+            </property>
+	    <property> <!-- activate all logging statements during testing/coverage -->
+	      <name>org.apache.commons.logging.simplelog.log.org.dada</name>
+	      <value>trace</value>
+	    </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+	      <shadedArtifactAttached>true</shadedArtifactAttached>
+	      <shadedClassifierName>uber</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>org.dada.core.CLI</Main-Class>
+                    <Project-Version>${project.version}</Project-Version>
+                  </manifestEntries>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+		  <resource>META-INF/spring.handlers</resource>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+		  <resource>META-INF/spring.schemas</resource>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-source-plugin</artifactId>
+	<version>2.0.4</version>
+	<executions>
+	  <!--
+	     <execution>
+	    <id>attach-sources</id>
+	    <goals>
+	      <goal>jar</goal>
+	    </goals>
+	  </execution>
+	     -->
+	</executions>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-javadoc-plugin</artifactId>
+	<version>2.6.1</version>
+	<executions>
+	  <!--
+	     <execution>
+	    <id>attach-javadocs</id>
+	    <goals>
+	      <goal>jar</goal>
+	    </goals>
+	  </execution>
+	     -->
+	</executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+
+      <!-- javadoc report causes compile phase to be run twice -->
+<!--
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-javadoc-plugin</artifactId>
+	<version>2.6.1</version>
+      </plugin>
+-->
+
+      <plugin>
+        <groupId>com.googlecode.maven-overview-plugin</groupId>
+        <artifactId>maven-overview-plugin</artifactId>
+	<version>1.6</version>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-checkstyle-plugin</artifactId>
+	<version>2.4</version>
+	<configuration>
+	  <suppressionsLocation>src/site/resources/checkstyle-suppressions.xml</suppressionsLocation>
+	</configuration>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-pmd-plugin</artifactId>
+	<version>2.4</version>
+	<configuration>
+	  <linkXref>true</linkXref>
+	  <targetJdk>${java.version}</targetJdk>
+	  <excludes>
+	    <exclude>**/BigDecimalSum.java</exclude>
+	  </excludes>
+	</configuration>
+      </plugin>
+
+      <!-- findbugs causes compiler plugin to be run again -->
+<!--
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>findbugs-maven-plugin</artifactId>
+	<version>2.3</version>
+        <configuration>
+          <xmlOutput>true</xmlOutput>
+          <excludeFilterFile>src/site/resources/findbugs-exclude.xml</excludeFilterFile>
+        </configuration>
+      </plugin>
+-->
+
+    </plugins>
+  </reporting>
+
+</project>
