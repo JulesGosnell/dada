@@ -1,7 +1,7 @@
 (ns 
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.dtrace
- (:use [clojure.contrib repl-utils trace])
+ ;;(:use [clojure.contrib repl-utils trace])
  (:import (org.slf4j Logger LoggerFactory))
  )
 
