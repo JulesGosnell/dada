@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 
 import javax.swing.table.AbstractTableModel;
@@ -210,7 +209,6 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 		return map.size();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized Object getValueAt(int rowIndex, int columnIndex) {
 		return getMetadata().getAttributeValue(map.get(rowIndex), columnIndex);

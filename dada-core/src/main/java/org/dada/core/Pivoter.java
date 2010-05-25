@@ -1,9 +1,7 @@
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Pivoter<KO, VI, VO> extends AbstractModel<KO, VO> implements View<VI> {

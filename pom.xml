@@ -31,12 +31,14 @@
     <junit.version>3.8.1</junit.version>
     <java.version>1.6</java.version>
     <!-- <clojure.version>1.1.0</clojure.version> -->
-    <clojure.version>1.1.0-new-SNAPSHOT</clojure.version>
+    <!-- <clojure.version>1.1.0-new-SNAPSHOT</clojure.version> -->
+    <clojure.version>1.2.0-master-SNAPSHOT</clojure.version>
     <asm.version>3.2</asm.version>
     <commons-lang.version>2.5</commons-lang.version>
     <derby.version>10.5.3.0_1</derby.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
+    <surefire.lib.path>-Djava.library.path=/usr/local/lib</surefire.lib.path> <!-- migrate to dada-zmq -->
     <java.agent>-javaagent:${settings.localRepository}/org/springframework/spring-instrument/${spring.version}/spring-instrument-${spring.version}.jar</java.agent>   <!-- for Spring Aspect Load Time Weaving -->
     <dotnet.hack>dummy</dotnet.hack>
   </properties>
@@ -83,15 +85,40 @@
     </developer>
   </developers>
 
-  <modules>
-    <module>dada-slf4j</module>
-    <module>dada-core</module>
-    <module>dada-zmq</module>
-    <module>dada-jms</module>
-    <module>dada-consensus</module>
-    <module>dada-demo</module>
-    <module>dada-swt</module>
-  </modules>
+<profiles>
+  <profile>
+    <id>common</id>
+    <activation>
+      <jdk>1.6</jdk>
+    </activation>
+    <modules>
+      <module>dada-slf4j</module>
+      <module>dada-core</module>
+      <module>dada-jms</module>
+      <module>dada-consensus</module>
+      <module>dada-demo</module>
+    </modules>
+  </profile>
+  <profile>
+    <id>zmq</id>
+    <activation>
+      <file><exists>/usr/local/lib/libjzmq.so</exists></file>
+    </activation>
+    <modules>
+      <module>dada-zmq</module>
+    </modules>
+  </profile>
+  <profile>
+    <id>swt</id>
+    <activation>
+      <file><exists>/usr/lib/libgtk-x11-2.0.so.0</exists></file>
+    </activation>
+    <modules>
+      <module>dada-zmq</module>
+      <module>dada-swt</module>
+    </modules>
+  </profile>
+</profiles>
 
  <dependencies>
     <!-- test deps -->
@@ -203,11 +230,13 @@
       <artifactId>clojure</artifactId>
       <version>${clojure.version}</version>
     </dependency>
+<!--
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure-contrib</artifactId>
       <version>${clojure.version}</version>
     </dependency>
+-->
 <!--
     <dependency>
       <groupId>org.coconut.forkjoin</groupId>
