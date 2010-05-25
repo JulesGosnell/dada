@@ -110,6 +110,11 @@ public class Tuple<V> implements Collection<V>, Serializable, Indexed, Comparabl
 		return values[i];
 	}
 
+	//@Override
+	public Object nth(int i, Object notFound) {
+		return (i >= 0 && i < values.length) ? values[i] : notFound;
+	}
+
 	@Override
 	public int count() {
 		return values.length;
