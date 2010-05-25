@@ -97,7 +97,7 @@
 
 (defn #^Collection collection [& args]
   (let [size (count args)
-	array-list (ArrayList. #^Integer size)]
+	array-list (ArrayList. size)]
     (if (> size 0) (.addAll array-list args))
     array-list))
 
@@ -123,7 +123,6 @@
      "/" "_divide_"
      "(" "_openroundbracket_"
      ")" "_closeroundbracket_"
-     ":" "_colon_"
      })
 
 (defmethod attribute-key String [#^String string] 
