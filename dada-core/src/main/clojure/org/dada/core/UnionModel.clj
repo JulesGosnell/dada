@@ -113,7 +113,7 @@
 ;; TODO: lose this when Clojure collections are Serializable
 (defn #^java.util.Collection copy [& args]
   (let [size (count args)
-	array-list (java.util.ArrayList. #^Integer size)]
+	array-list (java.util.ArrayList. size)]
     (if (> size 0) (.addAll array-list args))
     array-list))
 
