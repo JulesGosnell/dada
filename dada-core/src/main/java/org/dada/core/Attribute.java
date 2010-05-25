@@ -52,6 +52,17 @@ public class Attribute<K, V> implements Serializable, Indexed {
 		}
 	}
 
+	//@Override
+	public Object nth(int i, Object notFound) {
+		switch (i) {
+		case 0: return key;
+		case 1: return type;
+		case 2: return mutable;
+		case 3: return getter;
+		default: return notFound;
+		}
+	}
+
 	@Override
 	public String toString() {
 		return "<Attribute: " + key + " " + type + " " + mutable + " " + getter + ">";
