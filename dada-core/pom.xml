@@ -79,11 +79,11 @@
               <goal>test</goal>
             </goals>
 	  </execution>
-	  <execution>
+<!--	  <execution>
             <id>clojure-gendoc</id>
             <phase>site</phase>
 	    <configuration>
-	      <outputDirectory>${project.build.directory}/site/clojure</outputDirectory> <!-- logic broken in Mojo -->
+	      <outputDirectory>${project.build.directory}/site/clojure</outputDirectory> 
 	      <clojureOptions>-Xmx256m</clojureOptions>
 	      <generateTestDocumentation>false</generateTestDocumentation>
 	    </configuration>
@@ -91,6 +91,7 @@
 	      <goal>gendoc</goal>
 	    </goals>
 	  </execution>
+-->
 	</executions>
       </plugin>
 
