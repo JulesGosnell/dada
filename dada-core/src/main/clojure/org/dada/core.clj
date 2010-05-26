@@ -95,12 +95,6 @@
    (map #(Update. % nil) (.deregisterView model view)))
    view)
 
-(defn #^Collection collection [& args]
-  (let [size (count args)
-	array-list (ArrayList. size)]
-    (if (> size 0) (.addAll array-list args))
-    array-list))
-
 (def #^ClassFactory *class-factory* (new ClassFactory))
 
 ;; e.g.
@@ -239,13 +233,11 @@
 
 (defn #^Metadata seq-metadata [length]
   (new MetadataImpl
-       (proxy [Creator] [] (create [args] (apply collection args)))
+       (proxy [Creator] [] (create [args] args))
        [0]
-       (apply 
-	collection
-	(map
-	 (fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
-	 (range length)))))
+       (map
+	(fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
+	(range length))))
 
 (defn model [#^String model-name version-key #^Metadata metadata]
   (let [version-fn (if version-key

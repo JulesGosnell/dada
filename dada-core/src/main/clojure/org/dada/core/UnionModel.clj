@@ -110,18 +110,8 @@
   (let [[_ getData-fn] (.state this)]
     (getData-fn)))
 
-;; TODO: lose this when Clojure collections are Serializable
-(defn #^java.util.Collection copy [& args]
-  (let [size (count args)
-	array-list (java.util.ArrayList. size)]
-    (if (> size 0) (.addAll array-list args))
-    array-list))
-
-(defn #^java.util.Collection copy [& args]
-  args)
-
 (defn -update [#^org.dada.core.UnionModel this & inputs]
   (let [[update-fn] (.state this)
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))
-      (.notifyUpdate this (apply copy i) (apply copy a) (apply copy d)))))
+      (.notifyUpdate this i a d))))
