@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.dada.slf4j.Logger;
@@ -99,7 +100,12 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
 	}
 
+	private final Collection<Update<V>> empty = Collections.emptyList();
+	
 	public void notifyUpdate(Collection<Update<V>> insertions, Collection<Update<V>> alterations, Collection<Update<V>> deletions) {
+		insertions = (insertions == null) ? empty : insertions;
+		alterations = (alterations == null) ? empty : alterations;
+		deletions = (deletions == null) ? empty : deletions;
 		Collection<View<V>> snapshot = views.get();
 		for (View<V> view : snapshot) {
 			if (insertions.size()==0 && alterations.size()==0 && deletions.size()==0)

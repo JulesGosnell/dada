@@ -101,7 +101,7 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
-(if true
+(if false
   (def *metamodel*
        (new org.dada.core.MetaModelImpl
 	    "Cetacea"
@@ -544,7 +544,7 @@
 (def some-whales
      (pmap (fn [id] (whale id)) (range num-whales)))
 
-(def some-whales
+(def some-whales2
      (let [#^Creator creator (.getCreator whale-metadata)]
        (map
 	#(.create creator (into-array Object %))

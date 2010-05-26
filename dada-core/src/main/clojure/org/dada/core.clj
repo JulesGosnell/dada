@@ -40,7 +40,7 @@
 	      VersionedModelView
 	      View
 	      )
-	     ;;(org.dada.demo Client)
+	     (org.dada.demo Client)
 	     ))
 
 (defn debug [& foo]
@@ -64,8 +64,8 @@
   (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
   (.getBean #^BeanFactory *spring-context* "metaModel"))
 
-;; (defn start-client [#^String name]
-;;   (Client/main (into-array String (list name))))
+(defn start-client [#^String name]
+  (Client/main (into-array String (list name))))
 
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '())
@@ -148,12 +148,14 @@
 (defn make-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
   (.
    (classloader)
-   (defineClass class-name 
+   (defineClass
+     class-name 
      (.create
       *class-factory*
       class-name
       superclass
-      (apply attribute-array attribute-key-types)))))
+      (apply attribute-array attribute-key-types))
+     :TODO)))
 
 ;; fields => [model field]
 
