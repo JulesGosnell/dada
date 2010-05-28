@@ -87,6 +87,7 @@
               <goal>test</goal>
             </goals>
 	  </execution>
+<!--
 	  <execution>
             <id>clojure-gendoc</id>
             <phase>site</phase>
@@ -99,6 +100,7 @@
 	      <goal>gendoc</goal>
 	    </goals>
 	  </execution>
+-->
 	</executions>
       </plugin>
 
