@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <project
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
-  >
+   xmlns="http://maven.apache.org/POM/4.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
+   >
 
   <parent>
     <groupId>org.dada</groupId>
@@ -24,7 +24,7 @@
   </properties>
   
   <dependencies>
-      <dependency> <!-- scope should be test -->
+    <dependency> <!-- scope should be test -->
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
       <version>${activemq.version}</version>
@@ -50,5 +50,60 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+	<groupId>com.theoryinpractise</groupId>
+	<artifactId>clojure-maven-plugin</artifactId>
+	<version>1.3.2</version>
+	<configuration>
+	  <warnOnReflection>true</warnOnReflection>
+	  <namespaces>
+            <!-- <namespace>org.dada.demo</namespace> -->
+            <namespace>!org.dada.demo.*</namespace>
+	  </namespaces>
+	</configuration>
+	<executions>
+	  <execution>
+            <id>clojure-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-gendoc</id>
+            <phase>site</phase>
+	    <configuration>
+	      <outputDirectory>${project.build.directory}/site/clojure</outputDirectory> <!-- logic broken in Mojo -->
+	      <clojureOptions>-Xmx256m</clojureOptions>
+	      <generateTestDocumentation>false</generateTestDocumentation>
+	    </configuration>
+	    <goals>
+	      <goal>gendoc</goal>
+	    </goals>
+	  </execution>
+	</executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
 
 </project>
