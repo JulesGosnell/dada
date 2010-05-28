@@ -6,6 +6,11 @@
 	   ISeq
 	   Keyword
 	   )
+	  (java.sql
+	   Connection
+	   ResultSet
+	   ResultSetMetaData
+	   )
 	  (java.util
 	   Collection
 	   Date)
@@ -301,6 +306,36 @@
 
 ;;--------------------------------------------------------------------------------
 
+(defn sql-attributes 
+  "Derive a sequence of MetaData attributes from a SQL ResultSet"
+  [#^ResultSetMetaData sql-metadata]
+  (map
+   (fn [column]
+       [(keyword (.getColumnName sql-metadata column))
+	(Class/forName (.getColumnClassName sql-metadata column))
+	true])			 ;we don't know - so assume mutability
+   (range 1 (+ 1 (.getColumnCount sql-metadata)))))
+
+(defn sql-data
+  "Create a sequence from some MetaData and a SQL ResultSet"
+  [#^Metadata metadata #^ResultSet result-set]
+  (let [creator (.getCreator metadata)]
+    (loop [output nil]
+      (if (.next result-set)
+	(recur
+	 (cons
+	  (.create 
+	   creator 
+	   (into-array
+	    Object
+	    (map 
+	     (fn [#^Integer column] (.getObject result-set column))
+	     (range 1 (+ 1 (count (.getAttributeKeys metadata)))))))
+	  output))
+	output))))
+
+;;--------------------------------------------------------------------------------
+
 
 (defn model [#^String model-name version-key #^Metadata metadata]
   (let [version-fn (if version-key
@@ -319,3 +354,14 @@
      name
      metadata
      (fn [old new] (> (.get version-getter new) (.get version-getter old))))))
+
+(defn sql-model
+  "make a SQL query and return the ResultSet as a Model"
+  [model-name #^Connection connection #^String sql]
+  (let [result-set (.executeQuery (.prepareStatement connection sql))
+	metadata (record-metadata [:id] (sql-attributes (.getMetaData result-set))) ;lets use records...
+	data (sql-data metadata result-set)
+	sql-model (model model-name nil metadata)]
+    (.close result-set)
+    (insert-n sql-model data)
+    sql-model))
