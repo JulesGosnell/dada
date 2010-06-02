@@ -37,6 +37,7 @@ import java.util.Map;
 public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
+	private final List<Attribute<Object, V>> attributes;
 	private final List<Class<?>> attributeTypes;
 	private final List<Object> attributeKeys;
 	private final List<Getter<?, V>> attributeGetters;
@@ -51,7 +52,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	public MetadataImpl(Creator<V> creator, Collection<Object> keys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
 		this.keys = new ArrayList(keys);
-
+		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
 		attributeKeys = new ArrayList<Object>(size);
 		attributeTypes = new ArrayList<Class<?>>(size);
@@ -156,6 +157,11 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	@Override
 	public Attribute<Object, V> getAttribute(Object key) {
 		return keyToAttribute.get(key);
+	}
+
+	@Override
+	public List<Attribute<Object, V>> getAttributes() {
+		return attributes;
 	}
 
 }

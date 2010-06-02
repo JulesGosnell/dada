@@ -140,4 +140,10 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 		throw new UnsupportedOperationException("NYI");
 	}
 
+	@Override
+	public List<Attribute<Object, V>> getAttributes() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }
