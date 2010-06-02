@@ -1,10 +1,25 @@
-(ns org.dada.swt.gui
+(ns org.dada.swt.GridView
+    (:use
+     org.dada.core.UnionModel)
     (:import
+     [java.util Collection]
+     [org.dada.core View Metadata MetaModel Update View]
      (java.io Serializable)
      (org.eclipse.swt SWT)
      (org.eclipse.swt.widgets Display Shell Table TableColumn TableItem Listener)
      (org.eclipse.swt.layout GridData GridLayout)
-     (org.eclipse.swt.events ShellAdapter)))
+     (org.eclipse.swt.events ShellAdapter)
+     )
+    (:gen-class
+     :implements org.dada.core.View
+     :constructors {[String] []}
+     :methods []
+     :init init
+     :state state
+     )
+    )
+
+;;--------------------------------------------------------------------------------
 
 (defn create-shell [display shell]
   (let [layout (GridLayout.)]
@@ -82,57 +97,34 @@
 ;;     * asyncExec(Runnable) should be used when the application needs to perform some UI operations, but is not dependent upon the operations being completed before continuing. For example, a background thread that updates a progress indicator or redraws a window could request the update asynchronously and continue with its processing. In this case, there is no guaranteed relationship between the timing of the background thread and the execution of the runnable.
 
 
-(import org.apache.activemq.ActiveMQConnectionFactory)
-(import javax.jms.ConnectionFactory)
-(import javax.jms.Connection)
-(import javax.jms.Session)
-(import org.dada.jms.RemotingFactory)
-(import org.dada.core.MetaModel)
-(import org.dada.core.View)
-(import java.rmi.server.UID)
-(import java.util.concurrent.ExecutorService)
-(import java.util.concurrent.Executors)
-
-
-(def server-name "Cetacea.MetaModel")
-(def url "tcp://localhost:61616")
-(def connection-factory (ActiveMQConnectionFactory. url))
-(def connection (.createConnection connection-factory))
-(.start connection)
-(def session (.createSession connection false (Session/AUTO_ACKNOWLEDGE)))
-
-;; create proxy to server-side metamodel
-
-(def clientside-metamodel-proxy
-     (.createSynchronousClient 
-      (RemotingFactory. session MetaModel, 10000) 
-      (.createQueue session server-name)
-      true))
-
-;; create proxy for ourselves to send to server
-
-(def client-destination (.createQueue session (str "Client" (UID.))))
-(def client-view (proxy [View] [] (update [insertions alterations deletions]
-					  (println ("VIEW:" insertions alterations deletions)))))
-
-(def view-remoting-factory (RemotingFactory. session View 10000))
-
-(def clientside-view-server
-     (.createServer
-      view-remoting-factory 
-      client-view
-      client-destination
-      (Executors/newFixedThreadPool 20)))
-
-(def serverside-view-proxy
-     (.createSynchronousClient
-      view-remoting-factory
-      client-destination
-      true))
-
 ;; register our interest in the metamodel
-(def registration (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
+;;(def registration (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
 
-(begin (.getMetadata registration) (.getData registration))
+;;(begin (.getMetadata registration) (.getData registration))
 
+(defn update [i a d]
+  ;; hook this into proxy below and implement by adding/updating/removing rows from GUI
+  )
+  
+;;--------------------------------------------------------------------------------
 
+;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
+
+(defn -init [#^String model-name]
+
+  [ ;; super ctor args
+   []
+   ;; instance state
+   (let [
+	 view (proxy [View] [] (update [i a d] (println ("VIEW:" i a d))))
+	 ;; how do we get this ?
+	 #^Registration registration (.registerView this view) ;synchronous connection
+	 metadata (.getMetadata registration)
+	 data (.getData registration)
+	 model (UnionModel. model-name metadata (fn [l r] true))
+	 ]
+     (begin metadata data)
+     [(fn [i a d] (.update model i a d))])])
+
+(defn -update [#^org.dada.core.UnionModel this & inputs]
+  (let [[update-fn] (.state this)] (update-fn inputs)))
