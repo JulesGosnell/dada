@@ -7,7 +7,7 @@
   
   <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
 
-  <amq:broker useJmx="true" persistent="false" brokerName="${server.name}" advisorySupport="false">
+  <amq:broker useJmx="true" persistent="false" brokerName="${dada.broker.name}" advisorySupport="false">
 
     <amq:destinationPolicy>
       <amq:policyMap>
@@ -25,7 +25,7 @@
   </amq:broker>
 
   <bean id="connectionUrl" class="java.lang.String">
-    <constructor-arg><value>vm://${server.name}?marshal=false&amp;broker.persistent=false&amp;create=false</value></constructor-arg>
+    <constructor-arg><value>vm://${dada.broker.name}?marshal=false&amp;broker.persistent=false&amp;create=false</value></constructor-arg>
   </bean>
 
   <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
@@ -157,7 +157,6 @@
     </property>
   </bean>
 
-
   <bean id="rwlock" class="EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock"/>
 
   <bean id="readSync" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -170,75 +169,24 @@
     <constructor-arg ref="readSync"/>
   </bean>
 
+
   <!-- <bean id="internalViewServiceFactory" class="org.dada.core.SynchronousServiceFactory"/> -->
 
   <bean id="internalViewServiceFactory" class="org.dada.core.AsynchronousServiceFactory">
-       <constructor-arg><list><ref bean="viewInterface"/></list></constructor-arg>
-       <constructor-arg ref="executorService"/>
-       <constructor-arg ref="readLock"/>
+    <constructor-arg><list><ref bean="viewInterface"/></list></constructor-arg>
+    <constructor-arg ref="executorService"/>
+    <constructor-arg ref="readLock"/>
   </bean>
 
-  <bean id="stringMetadata" class="org.dada.core.StringMetadata">
-    <constructor-arg><value>Name</value></constructor-arg>
+  <bean id="writeSync" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass"><value>EDU.oswego.cs.dl.util.concurrent.WriterPreferenceReadWriteLock</value></property>
+    <property name="targetMethod"><value>writeLock</value></property>
+    <property name="targetObject"><ref bean="rwlock"/></property>
   </bean>
 
-  <bean id="metaModelName" class="java.lang.String">
-    <constructor-arg><value>${server.name}.MetaModel</value></constructor-arg>
+  <bean id="writeLock" class="org.dada.core.SyncLock">
+    <constructor-arg ref="writeSync"/>
   </bean>
-  
-  <bean id="metaModel" class="org.dada.core.MetaModelImpl">
-    <constructor-arg ref="metaModelName"/>
-    <constructor-arg ref="stringMetadata"/>
-    <constructor-arg ref="externalModelServiceFactory"/>
-  </bean>
-  
-  <!-- add metamodel to itself-->
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetClass"><value>org.dada.core.View</value></property>
-    <property name="targetMethod"><value>update</value></property>
-    <property name="targetObject"><ref bean="metaModel"/></property>
-    <property name="arguments">
-      <list>
-	<bean class="org.springframework.beans.factory.config.ListFactoryBean">
-	  <property name="sourceList">
-	    <list>
-	      <bean class="org.dada.core.Update">
-		<constructor-arg><null/></constructor-arg>
-		<constructor-arg ref="metaModel"/>
-	      </bean>
-	    </list>
-	  </property>
-	</bean>
-	<bean class="org.springframework.beans.factory.config.ListFactoryBean">
-	  <property name="sourceList"><list/></property>
-	</bean>
-	<bean class="org.springframework.beans.factory.config.ListFactoryBean">
-	  <property name="sourceList"><list/></property>
-	</bean>
-      </list>
-    </property>
-  </bean>
-    
-  <!-- start the metamodel -->
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetClass"><value>org.dada.core.Model</value></property>
-    <property name="targetObject"><ref bean="metaModel"/></property>
-    <property name="targetMethod"><value>start</value></property>
-  </bean>
-
-  <!-- create a JMS endpoint for the metamodel -->
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetClass"><value>org.dada.core.ServiceFactory</value></property>
-    <property name="targetObject"><ref bean="externalMetaModelServiceFactory"/></property>
-    <property name="targetMethod"><value>server</value></property>
-    <property name="arguments">
-      <list>
-	<ref bean="metaModel"/> 
-	<ref bean="metaModelName"/> 
-      </list>
-    </property>
-  </bean>
-
   <!-- and off we go ! -->
 
 </beans>

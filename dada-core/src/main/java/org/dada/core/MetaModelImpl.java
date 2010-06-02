@@ -87,7 +87,7 @@ public class MetaModelImpl extends AbstractModel<String, String> implements Meta
 			logger.info("registering View ({}) with Model ({})", view, model);
 			return model.registerView(view);
 		} catch (Exception e) {
-			logger.error("unable to export Model: {}", e, model);
+			logger.error("unable to export Model: {}", e, modelName);
 			return null;
 		}
 	}
