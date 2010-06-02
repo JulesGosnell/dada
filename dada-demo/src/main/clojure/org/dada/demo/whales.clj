@@ -22,13 +22,6 @@
 	   ])
  )
 
-;;--------------------------------------------------------------------------------
-
-(if true
-  (do
-    (start-server)
-    (start-client)))
-
 ;;----------------------------------------------------------------------------------------------------------------------
 ;; TODO - this will have to wait until we have an extended ClassFactory
 
@@ -127,6 +120,8 @@
 
 (def #^Model whales-model (model "Whales" :version whale-metadata))
 
+(start-server)
+
 (insert *metamodel* whales-model)
 
 (let [#^Creator creator (.getCreator whale-metadata)
@@ -151,81 +146,9 @@
 
 ;;--------------------------------------------------------------------------------
 
-(def all-whales (metamodel whales-model))
-
-(def #^Collection some-years (map #(Date. % 0 1) (range num-years)))
-(def #^NavigableSet years (TreeSet. some-years))
-
-(defn by-year [time] (list (or (.lower years time) time)))
-
-;; (?2 [] all-whales)
-
-;; (?2 [(union)] all-whales)
-(?2 [(ccount)] all-whales)
-;; (?2 [(sum :weight)] all-whales)
-
-;; (?2 [(split :type)] all-whales)
-
-;; (?2 [(ccount)(ccount)] all-whales)
-;; (?2 [(union)(union)] all-whales)
-;; (?2 [(ccount)(union)] all-whales)
-;; (?2 [(sum :weight)(union)] all-whales)
-;; (?2 [(union)(ccount)] all-whales)
-;; (?2 [(union)(split :type)] all-whales)
-;; (?2 [(ccount)(split :type)] all-whales)
-;; (?2 [(split :time)(split :type)] all-whales)
-
-;; (?2 [(ccount)(split :time)(split :type)] all-whales)
-;; (?2 [(union)(split :time)(split :type)] all-whales)
-;; (?2 [(split :length)(split :time)(split :type)] all-whales)
-
-;; (?2 [(split :type nil [(ccount)])] all-whales)
-;; (?2 [(split :type nil [(split :time)])] all-whales)
-;; (?2 [(split :type nil [(split :time nil [(split :length)])])] all-whales)
-
-;; (?2 [(split :type nil [(ccount)(split :time)])] all-whales)
-;; (?2 [(split :type nil [(split :time nil)(split :length)])] all-whales)
-
-;; (?2 [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
-
-;; (?2 [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
-
-(?2 [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
-
-;; (?2 [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
-
-;;(?2 [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
-
-;; (?2 [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
-
-;; (def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
-
-;; (?2 [(split :ocean nil [(union)(split :type nil subquery)])] all-whales)
-
-;; (?2 [(union)(split :ocean nil subquery)] all-whales)
-
-;; (?2 [
-;;      (pivot :time years (keyword (count-value-key nil)))
-;;      (split :time by-year [(ccount)])] all-whales)
-
-;; (?2 [(ccount)] all-whales)
-
-;; these queries seem to just be too big to run with a resonably sized dataset on my home box ...
-
-;; (?2 [(split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])] all-whales)
-
-;; (?2 [(split :reporter nil [(union)(split :ocean nil subquery)])] all-whales)
-
-;; (?2 [(split :reporter nil [
-;; 			   (pivot :time years (keyword (count-value-key nil)))
-;; 			   (split :time by-year [(ccount)])])] all-whales)
-
-
-;;--------------------------------------------------------------------------------
-
 ;; create some whales...
 
-(def num-whales 10000)
+(def num-whales 1000)
 
 (def some-whales
      (doall (pmap (fn [id] (whale id)) (range num-whales))))
@@ -246,13 +169,91 @@
 	 ))
        ))
 
-(time
- (let [batcher (Batcher. 999 1000 (list whales-model))]
-   (doall (pmap (fn [whale] (insert whales-model whale)) some-whales))
-   nil))
+(time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales)))
 
 (println "LOADED")
 
 
 ;;--------------------------------------------------------------------------------
+
+(def all-whales (metamodel whales-model))
+
+(def #^Collection some-years (map #(Date. % 0 1) (range num-years)))
+(def #^NavigableSet years (TreeSet. some-years))
+
+(defn by-year [time] (list (or (.lower years time) time)))
+
+;; (? [] all-whales)
+
+;; (? [(union)] all-whales)
+(? [(ccount)] all-whales)
+;; (? [(sum :weight)] all-whales)
+
+;; (? [(split :type)] all-whales)
+
+;; (? [(ccount)(ccount)] all-whales)
+;; (? [(union)(union)] all-whales)
+;; (? [(ccount)(union)] all-whales)
+;; (? [(sum :weight)(union)] all-whales)
+;; (? [(union)(ccount)] all-whales)
+;; (? [(union)(split :type)] all-whales)
+;; (? [(ccount)(split :type)] all-whales)
+;; (? [(split :time)(split :type)] all-whales)
+
+;; (? [(ccount)(split :time)(split :type)] all-whales)
+;; (? [(union)(split :time)(split :type)] all-whales)
+;; (? [(split :length)(split :time)(split :type)] all-whales)
+
+;; (? [(split :type nil [(ccount)])] all-whales)
+;; (? [(split :type nil [(split :time)])] all-whales)
+;; (? [(split :type nil [(split :time nil [(split :length)])])] all-whales)
+
+;; (? [(split :type nil [(ccount)(split :time)])] all-whales)
+;; (? [(split :type nil [(split :time nil)(split :length)])] all-whales)
+
+;; (? [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+
+;; (? [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+
+;;(? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+
+;; (? [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
+
+;;(? [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+
+;; (? [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
+
+;; (def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
+
+;; (? [(split :ocean nil [(union)(split :type nil subquery)])] all-whales)
+
+;; (? [(union)(split :ocean nil subquery)] all-whales)
+
+;; (? [
+;;      (pivot :time years (keyword (count-value-key nil)))
+;;      (split :time by-year [(ccount)])] all-whales)
+
+;; (? [(ccount)] all-whales)
+
+;; these queries seem to just be too big to run with a resonably sized dataset on my home box ...
+
+;; (? [(split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])] all-whales)
+
+;; (? [(split :reporter nil [(union)(split :ocean nil subquery)])] all-whales)
+
+;; (? [(split :reporter nil [
+;; 			   (pivot :time years (keyword (count-value-key nil)))
+;; 			   (split :time by-year [(ccount)])])] all-whales)
+
+
+;;--------------------------------------------------------------------------------
 ;; fix so that a split/pivot can handle undeclared keys
+
+;;--------------------------------------------------------------------------------
+
+(start-client)
+
+(? [(split :type)] all-whales)
+(? [(split :ocean nil [(ccount)])] all-whales)
+(? [(pivot :ocean oceans :count(*))(split :ocean nil [(ccount)])] all-whales)
+;; (? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
