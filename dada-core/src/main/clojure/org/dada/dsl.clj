@@ -426,7 +426,7 @@
 	   (insert *metamodel* metamodel)
 	   [metamodel prefix '()]))]))
 
-(defn ? [[metadata-fn direct-fn]]
+(defn ?2 [[metadata-fn direct-fn]]
   (let [metadata (metadata-fn)
 	direct (direct-fn)]
     [ ;; metadata
@@ -438,8 +438,8 @@
 (defn thread-chain [chain model]
   (reduce (fn [results operator] (operator results)) model (reverse chain)))
 
-(defn ?2 [chain model]
-  (? (thread-chain chain model)))
+(defn ? [chain model]
+  (?2 (thread-chain chain model)))
 
 (defn meta-view [#^String suffix #^Model src-metamodel f]
   ;; create a metamodel into which t place our results...
