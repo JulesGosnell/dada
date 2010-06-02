@@ -113,4 +113,5 @@
 (defn -update [#^org.dada.core.UnionModel this & inputs]
   (let [[update-fn] (.state this)
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
-    (.notifyUpdate this i a d)))
+    (if (not (and (empty? i) (empty? a) (empty? d)))
+      (.notifyUpdate this i a d))))
