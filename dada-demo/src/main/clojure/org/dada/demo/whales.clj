@@ -150,8 +150,7 @@
 
 (def num-whales 1000)
 
-(def some-whales
-     (doall (pmap (fn [id] (whale id)) (range num-whales))))
+(def some-whales (doall (pmap (fn [id] (whale id)) (range num-whales))))
 
 (def some-whales2
      (let [#^Creator creator (.getCreator whale-metadata)]
@@ -169,7 +168,7 @@
 	 ))
        ))
 
-(time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales)))
+(do (time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales))) nil)
 
 (println "LOADED")
 
@@ -255,5 +254,5 @@
 
 (? [(split :type)] all-whales)
 (? [(split :ocean nil [(ccount)])] all-whales)
-(? [(pivot :ocean oceans :count(*))(split :ocean nil [(ccount)])] all-whales)
-;; (? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+(? [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)] all-whales)
+(? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
