@@ -70,7 +70,7 @@
 	</property>
 	<property name="arguments">
 	  <list>
-	    <value>AUTO_ACKNOWLEDGE</value>
+	    <value>DUPS_OK_ACKNOWLEDGE</value>
 	  </list>
 	</property>
       </bean>
