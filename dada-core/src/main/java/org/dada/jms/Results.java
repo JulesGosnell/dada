@@ -35,7 +35,7 @@ public class Results implements Serializable {
 	private final boolean exception;
 	private final Object value;
 
-	Results(boolean exception, Object result) {
+	public Results(boolean exception, Object result) {
 		this.exception = exception;
 		this.value = result;
 	}

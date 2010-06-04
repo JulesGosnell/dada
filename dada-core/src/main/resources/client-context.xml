@@ -1,123 +1,192 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans
+   xmlns="http://www.springframework.org/schema/beans"
+   xmlns:amq="http://activemq.apache.org/schema/core"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"
+   >
+  
+  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
 
-<beans>
+  <amq:broker useJmx="true" persistent="false" brokerName="${dada.broker.name}" advisorySupport="false">
 
-  <bean id="..." class="...">
-  <property name="beanOne"><ref bean="anotherExampleBean"/></property>
-    ...
+    <amq:destinationPolicy>
+      <amq:policyMap>
+	<amq:policyEntries>
+	  <amq:policyEntry queue=">" optimizedDispatch="true"/>
+	</amq:policyEntries>
+      </amq:policyMap>
+    </amq:destinationPolicy>
+
+    <amq:transportConnectors>
+      <!-- <amq:transportConnector name="nio" uri="nio://0.0.0.0:61616"/> -->
+      <amq:transportConnector name="openwire" uri="tcp://localhost:61616" discoveryUri="multicast://default"/>
+    </amq:transportConnectors>
+
+  </amq:broker>
+
+  <bean id="connectionUrl" class="java.lang.String">
+    <constructor-arg><value>vm://${dada.broker.name}?marshal=false&amp;broker.persistent=false&amp;create=false</value></constructor-arg>
   </bean>
-  <bean id="..." class="...">
-    ...
+
+  <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+    <constructor-arg ref="connectionUrl"></constructor-arg>
+    <property name="optimizedMessageDispatch"><value>true</value></property>
+    <property name="objectMessageSerializationDefered"><value>true</value></property>
   </bean>
 
-  ...
-  <!-- this bean must not be lazily initialized if the exporting is to happen -->
-  <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter" lazy-init="false">
-    <property name="beans">
-      <map>
-        <entry key="bean:name=testBean1" value-ref="testBean"/>
-      </map>
+  <bean id="connection" factory-bean="connectionFactory" factory-method="createConnection"/>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass"><value>javax.jms.Connection</value></property>
+    <property name="targetObject"><ref bean="connection"/></property>
+    <property name="targetMethod"><value>start</value></property>
+  </bean>
+
+  <!-- how hard can this be -->
+  <!-- javax.jms.Session.class.getField("AUTO_ACKNOWLEDGE").get(null) -->
+  <bean id="autoAcknowledge" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject">
+      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+	<property name="targetClass">
+	  <value>java.lang.Class</value>
+	</property>
+	<property name="targetMethod">
+	  <value>getField</value>
+	</property>
+	<property name="targetObject">
+	  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+	    <property name="targetClass">
+	      <value>java.lang.Class</value>
+	    </property>
+	    <property name="targetMethod">
+	      <value>forName</value>
+	    </property>
+	    <property name="arguments">
+	      <list>
+		<value>javax.jms.Session</value>
+	      </list>
+	    </property>
+	  </bean>
+	</property>
+	<property name="arguments">
+	  <list>
+	    <value>DUPS_OK_ACKNOWLEDGE</value>
+	  </list>
+	</property>
+      </bean>
+    </property>
+    <property name="targetMethod">
+      <value>get</value>
+    </property>
+    <property name="arguments">
+      <list>
+      </list>
     </property>
   </bean>
 
-  <bean id="testBean" class="org.springframework.jmx.JmxTestBean">
-    <property name="name" value="TEST"/>
-    <property name="age" value="100"/>
+  <bean id="session" class="javax.jms.Session" factory-method="createSession" factory-bean="connection">
+    <constructor-arg><value>false</value></constructor-arg>
+    <constructor-arg><ref bean="autoAcknowledge"/></constructor-arg>
   </bean>
 
-  <bean id="mbeanServer" class="org.springframework.jmx.support.MBeanServerFactoryBean"/>
+  <bean id="executorService" class="java.util.concurrent.Executors" factory-method="newFixedThreadPool">
+    <constructor-arg><value>32</value></constructor-arg> <!-- TODO: should size dynamically according to h/w -->
+  </bean>
 
-  <!--
-    this bean needs to be eagerly pre-instantiated in order for the exporting to occur;
-    this means that it must not be marked as lazily initialized
-  -->
-  <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
-    <property name="beans">
-      <map>
-        <entry key="bean:name=testBean1" value-ref="testBean"/>
-      </map>
+  <bean id="queueFactory" class="org.dada.jms.QueueFactory"/>
+  
+  <bean id="metaModelInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass">
+      <value>java.lang.Class</value>
     </property>
-    <property name="server" ref="mbeanServer"/>
+    <property name="targetMethod">
+      <value>forName</value>
+    </property>
+    <property name="arguments">
+      <list>
+	<value>org.dada.core.MetaModel</value>
+      </list>
+    </property>
   </bean>
 
-  <bean id="testBean" class="org.springframework.jmx.JmxTestBean">
-    <property name="name" value="TEST"/>
-    <property name="age" value="100"/>
+  <bean id="externalMetaModelServiceFactory" class="org.dada.jms.JMSServiceFactory">
+    <constructor-arg ref="session"/>
+    <constructor-arg><ref bean="metaModelInterface"/></constructor-arg>
+    <constructor-arg ref="executorService"/>
+    <constructor-arg><value>true</value></constructor-arg> <!-- trueAsync -->
+    <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
+    <constructor-arg><bean class="org.dada.core.MetaModelNameGetter"/></constructor-arg> <!-- nameGetter -->
+    <constructor-arg ref="queueFactory"/> <!-- destinationFactory -->
+  </bean>
+
+  <bean id="modelInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass">
+      <value>java.lang.Class</value>
+    </property>
+    <property name="targetMethod">
+      <value>forName</value>
+    </property>
+    <property name="arguments">
+      <list>
+	<value>org.dada.core.Model</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="externalModelServiceFactory" class="org.dada.jms.JMSServiceFactory">
+    <constructor-arg ref="session"/>
+    <constructor-arg><ref bean="modelInterface"/></constructor-arg>
+    <constructor-arg ref="executorService"/>
+    <constructor-arg><value>true</value></constructor-arg> <!-- trueAsync -->
+    <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
+    <constructor-arg><bean class="org.dada.core.ModelNameGetter"/></constructor-arg> <!-- nameGetter -->
+    <constructor-arg ref="queueFactory"/> <!-- destinationFactory -->
+  </bean>
+
+  <bean id="viewInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass">
+      <value>java.lang.Class</value>
+    </property>
+    <property name="targetMethod">
+      <value>forName</value>
+    </property>
+    <property name="arguments">
+      <list>
+	<value>org.dada.core.View</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="rwlock" class="EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock"/>
+
+  <bean id="readSync" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass"><value>EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock</value></property>
+    <property name="targetMethod"><value>readLock</value></property>
+    <property name="targetObject"><ref bean="rwlock"/></property>
+  </bean>
+
+  <bean id="readLock" class="org.dada.core.SyncLock">
+    <constructor-arg ref="readSync"/>
   </bean>
 
 
+  <!-- <bean id="internalViewServiceFactory" class="org.dada.core.SynchronousServiceFactory"/> -->
 
-<!--
+  <bean id="internalViewServiceFactory" class="org.dada.core.AsynchronousServiceFactory">
+    <constructor-arg><list><ref bean="viewInterface"/></list></constructor-arg>
+    <constructor-arg ref="executorService"/>
+    <constructor-arg ref="readLock"/>
+  </bean>
 
-public class AnnotationTestBean implements IJmxTestBean {
+  <bean id="writeSync" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass"><value>EDU.oswego.cs.dl.util.concurrent.WriterPreferenceReadWriteLock</value></property>
+    <property name="targetMethod"><value>writeLock</value></property>
+    <property name="targetObject"><ref bean="rwlock"/></property>
+  </bean>
 
-  private String name;
-  private int age;
-
-  @ManagedAttribute(description="The Age Attribute", currencyTimeLimit=15)
-  public int getAge() {
-    return age;
-  }
-
-  public void setAge(int age) {
-    this.age = age;
-  }
-
-  @ManagedAttribute(description="The Name Attribute",
-      currencyTimeLimit=20,
-      defaultValue="bar",
-      persistPolicy="OnUpdate")
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  @ManagedAttribute(defaultValue="foo", persistPeriod=300)
-  public String getName() {
-    return name;
-  }
-
-  @ManagedOperation(description="Add two numbers")
-  @ManagedOperationParameters({
-    @ManagedOperationParameter(name = "x", description = "The first number"),
-    @ManagedOperationParameter(name = "y", description = "The second number")})
-  public int add(int x, int y) {
-    return x + y;
-  }
-
-  public void dontExposeMe() {
-    throw new RuntimeException();
-  }
-}
-
--->
-
-<beans>
-    <bean id="exporter" class="org.springframework.jmx.export.MBeanExporter">
-        <property name="assembler" ref="assembler"/>
-        <property name="namingStrategy" ref="namingStrategy"/>
-        <property name="autodetect" value="true"/>
-    </bean>
-
-    <bean id="jmxAttributeSource"
-          class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource"/>
-
-    <!-- will create management interface using annotation metadata -->
-    <bean id="assembler"
-          class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
-        <property name="attributeSource" ref="jmxAttributeSource"/>
-    </bean>
-
-    <!-- will pick up the ObjectName from the annotation -->
-    <bean id="namingStrategy"
-          class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
-        <property name="attributeSource" ref="jmxAttributeSource"/>
-    </bean>
-
-    <bean id="testBean" class="org.springframework.jmx.AnnotationTestBean">
-        <property name="name" value="TEST"/>
-        <property name="age" value="100"/>
-    </bean>
-</beans>
+  <bean id="writeLock" class="org.dada.core.SyncLock">
+    <constructor-arg ref="writeSync"/>
+  </bean>
+  <!-- and off we go ! -->
 
 </beans>
