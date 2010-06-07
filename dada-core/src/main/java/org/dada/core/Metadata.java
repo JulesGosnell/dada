@@ -48,9 +48,9 @@ public interface Metadata<K, V> extends Serializable {
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();
-	List<Object> getAttributeKeys();
-	List<Class<?>> getAttributeTypes();
-	List<Getter<?, V>> getAttributeGetters();
+	//List<Object> getAttributeKeys();
+	//List<Class<?>> getAttributeTypes();
+	//List<Getter<?, V>> getAttributeGetters();
 
 	Attribute<Object, V> getAttribute(Object key);
 	Class<?> getAttributeType(Object key);

@@ -330,7 +330,7 @@
 	    Object
 	    (map 
 	     (fn [#^Integer column] (.getObject result-set column))
-	     (range 1 (+ 1 (count (.getAttributeKeys metadata)))))))
+	     (range 1 (+ 1 (count (.getAttributes metadata)))))))
 	  output))
 	output))))
 

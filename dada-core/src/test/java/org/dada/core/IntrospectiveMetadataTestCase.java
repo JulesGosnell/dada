@@ -1,8 +1,5 @@
 package org.dada.core;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
@@ -32,11 +29,6 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
 
 		// check attribute names
 		
-		List<Object> attributeNames = metadata.getAttributeKeys();
-		assertTrue(attributeNames.size() == 2);
-		assertTrue(attributeNames.contains("Key"));
-		assertTrue(attributeNames.contains("Exception"));
-		
 		// getKey...
 		
 		final int key = 1;
@@ -47,24 +39,5 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
         }});
         
 		assertTrue(metadata.getKey(test).equals(key));
-
-        // getException - hard exception
-        
-		{
-			final Exception exception = new Exception();
-
-			checking(new Expectations(){{
-				one(test).getException();
-				will(throwException(exception));
-			}});
-
-			try {
-				metadata.getAttributeValue(test, attributeNames.indexOf("Exception"));
-				fail();
-			} catch (Exception e) {
-				assertTrue(((InvocationTargetException)e.getCause()).getTargetException() == exception);
-			}
-
-		}
 	}
 }

@@ -1,7 +1,7 @@
 (ns org.dada.core.PivotModel
     (:import
      [java.util Collection LinkedHashMap Map]
-     [org.dada.core AbstractModel Getter Metadata Tuple Update]
+     [org.dada.core AbstractModel Attribute Getter Metadata Tuple Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
@@ -20,13 +20,22 @@
 
 (defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
   (let [version-getter (.getAttributeGetter tgt-metadata :version) ;HACK
-	#^Map getter-map ;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
-	(apply
-	 array-map
-	 (interleave (.getAttributeKeys tgt-metadata)
-		     (map
-		      #(fn [new-value old-values] (.get #^Getter % old-values))
-		      (.getAttributeGetters tgt-metadata))))]
+	;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
+	#^Map getter-map (reduce
+			   (fn [old #^Attribute new]
+			       (assoc old (.getKey new) (let [#^Getter getter (.getGetter new)]
+							  (fn [new-value old-values] (.get getter old-values)))))
+			   (array-map)
+			   (reverse (.getAttributes tgt-metadata))) ;; items are pushed on head of map, so we reverse before starting
+
+	;; attribute-keys (map #(.getKey %) attributes)
+	;; attribute-getters (map #(.getGetter %) attributes)
+	;; #^Map getter-map (apply
+	;; 		  array-map
+	;; 		  (interleave attribute-keys
+	;; 			      (map #(fn [new-value old-values] (.get #^Getter % old-values)) attribute-getters)))
+	]
+
     (apply
      hash-map
      (apply
@@ -65,7 +74,7 @@
 			       Object
 			       (concat
 				const-keys
-				(take (- (.size (.getAttributeGetters tgt-metadata)) (count const-keys)) (repeat nil)))))
+				(take (- (.size (.getAttributes tgt-metadata)) (count const-keys)) (repeat nil)))))
 	 src-value-getter (.getAttributeGetter src-metadata src-value-key)
 	 pivot-map (make-pivot-map tgt-keys tgt-metadata)
 

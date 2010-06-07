@@ -38,10 +38,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 
 	private final Creator<V> creator;
 	private final List<Attribute<Object, V>> attributes;
-	private final List<Class<?>> attributeTypes;
-	private final List<Object> attributeKeys;
-	private final List<Getter<?, V>> attributeGetters;
-	private final List<Object> keys;
 	private final Getter<K, V> keyGetter;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
 	private final Map<Object, Class<?>> keyToType;
@@ -51,12 +47,9 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	
 	public MetadataImpl(Creator<V> creator, Collection<Object> keys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
-		this.keys = new ArrayList(keys);
 		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
-		attributeKeys = new ArrayList<Object>(size);
-		attributeTypes = new ArrayList<Class<?>>(size);
-		attributeGetters = new ArrayList<Getter<?, V>>(size);
+		final List<Getter<?, V>> attributeGetters = new ArrayList<Getter<?, V>>(size);
 		keyToType= new HashMap<Object, Class<?>>(size);
 		keyToGetter = new HashMap<Object, Getter<?, V>>(size);
 		keyToAttribute = new HashMap<Object, Attribute<Object, V>>(size);
@@ -68,8 +61,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 			keyToAttribute.put(key, attribute);
 			keyToType.put(key, type);
 			keyToGetter.put(key, getter);
-			attributeKeys.add(key);
-			attributeTypes.add(type);
 			attributeGetters.add(getter);
 		}
 		this.getters = attributeGetters.toArray(new Getter[size]);
@@ -94,15 +85,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 		}
 }
 
-	@Override
-	public List<Class<?>> getAttributeTypes() {
-		return attributeTypes;
-	}
-
-	@Override
-	public List<Object> getAttributeKeys() {
-		return attributeKeys;
-	}
 
 	@Override
 	public Object getAttributeValue(V value, int index) {
@@ -117,11 +99,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	@Override
 	public Getter<K, V> getKeyGetter() {
 		return keyGetter;
-	}
-
-	@Override
-	public List<Getter<?, V>> getAttributeGetters() {
-		return attributeGetters;
 	}
 
 	@Override

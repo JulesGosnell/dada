@@ -137,9 +137,9 @@
 (defn make-splitter
   [#^IFn src-name-fn #^Model src-model key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (let [src-metadata (.getMetadata src-model)
-	src-keys (.getAttributeKeys src-metadata)
-	src-key  (nth src-keys 0)	;TODO
-	src-version (nth src-keys 1)	;TODO
+	src-attributes (.getAttributes src-metadata)
+	src-key  (.getKey (first src-attributes))	;TODO
+	src-version (.getKey (second src-attributes))	;TODO
 	mutable (.getMutable (.getAttribute src-metadata key))
 	map (new ConcurrentHashMap)
 	view-factory (proxy

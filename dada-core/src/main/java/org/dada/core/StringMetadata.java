@@ -28,7 +28,6 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,29 +36,15 @@ import java.util.List;
 public class StringMetadata implements Metadata<String, String> {
 
 	private final Collection<Object> keyAttributeKeys;
-	private final List<Class<?>> attributeTypes;
-	private final List<Object> attributeKeys;
-	private final List<Getter<?, String>> attributeGetters;
+	private final Getter<Object, String> getter;
 	private final Creator<String> creator;
-
+	private final List<Attribute<Object, String>> attributes;
+	
 	public StringMetadata(Object key) {
 		keyAttributeKeys = Collections.singleton(key); 
-		attributeTypes = new ArrayList<Class<?>>();
-		attributeTypes.add(String.class);
-		attributeKeys = Collections.singletonList(key);
-		attributeGetters = new ArrayList<Getter<?,String>>();
-		attributeGetters.add(new Getter<Object, String>() {@Override public Object get(String value) {return value;}});
+		getter = new Getter<Object, String>() {@Override public Object get(String value) {return value;}};
 		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
-	}
-
-	@Override
-	public List<Class<?>> getAttributeTypes() {
-		return attributeTypes;
-	}
-
-	@Override
-	public List<Object> getAttributeKeys() {
-		return attributeKeys;
+		attributes = Collections.singletonList(new Attribute<Object, String>(key, String.class, false, getter));
 	}
 
 	@Override
@@ -70,11 +55,6 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public String getKey(String value) {
 		return value;
-	}
-
-	@Override
-	public List<Getter<?, String>> getAttributeGetters() {
-		return attributeGetters;
 	}
 
 	@Override
@@ -99,12 +79,12 @@ public class StringMetadata implements Metadata<String, String> {
 
 	@Override
 	public Class<?> getAttributeType(Object key) {
-		return attributeTypes.get(0);
+		return String.class;
 	}
 
 	@Override
 	public Getter<?, String> getAttributeGetter(Object key) {
-		return attributeGetters.get(0);
+		return getter;
 	}
 
 	@Override
@@ -121,7 +101,6 @@ public class StringMetadata implements Metadata<String, String> {
 
 	@Override
 	public List<Attribute<Object, String>> getAttributes() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return attributes;
 	}
 }

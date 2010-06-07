@@ -48,9 +48,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final Class<?> clazz;
 	private final Creator<V> creator;
 	private final Collection<Object> keyAttributeKeys;
-	private final List<Class<?>> attributeTypes;
 	private final List<Object> attributeKeys;
-	private final List<Getter<?, V>> attributeGetters;
 	private final int keyIndex;
 	private final Map<String, Class<?>> nameToType;
 	private final Map<String, Getter<?, V>> nameToGetter;
@@ -59,9 +57,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		this.clazz = clazz;
 		this.creator = creator;
 		this.keyAttributeKeys = Collections.singleton(key);
-		attributeTypes= new ArrayList<Class<?>>();
 		attributeKeys = new ArrayList<Object>();
-		attributeGetters = new ArrayList<Getter<?,V>>();
 		nameToType = new HashMap<String, Class<?>>();
 		nameToGetter = new HashMap<String, Getter<?,V>>();
 		int i = 0;
@@ -73,7 +69,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith(GET) && parameterTypes.length == 0) {
 				String attributeName = methodName.substring(GET_LENGTH);
 				Class<?> type = method.getReturnType();
-				attributeTypes.add(type);
 				attributeKeys.add(attributeName);
 				Getter<Object, V> getter = new Getter<Object, V>() {
 					@Override
@@ -81,7 +76,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 						return getAttributeValue(value, index);
 					}
 				};
-				attributeGetters.add(getter);
 				nameToType.put(attributeName, type);
 				nameToGetter.put(attributeName, getter);
 			}
@@ -102,23 +96,8 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public List<Class<?>> getAttributeTypes() {
-		return attributeTypes;
-	}
-
-	@Override
-	public List<Object> getAttributeKeys() {
-		return attributeKeys;
-	}
-
-	@Override
 	public K getKey(V value) {
 		return (K) getAttributeValue(value, keyIndex);
-	}
-
-	@Override
-	public List<Getter<?, V>> getAttributeGetters() {
-		return attributeGetters;
 	}
 
 	@Override

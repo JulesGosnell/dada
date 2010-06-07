@@ -196,12 +196,12 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		return getMetadata().getAttributeKeys().get(columnIndex).toString();
+		return getMetadata().getAttributes().get(columnIndex).getKey().toString();
 	}
 
 	@Override
 	public int getColumnCount() {
-		return getMetadata().getAttributeKeys().size();
+		return getMetadata().getAttributes().size();
 	}
 
 	@Override

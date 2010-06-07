@@ -56,7 +56,6 @@ public class GetterMetadataTestCase extends TestCase {
 		BigDecimal one = new BigDecimal("1.0");
 		Amount amount = new Amount(1, 0, one);
 
-		assertTrue(metadata.getAttributeKeys().size() == 3);
 		assertTrue(metadata.getKey(amount) == 1);
 		assertTrue(metadata.getAttributeValue(amount, 0).equals(1));
 		assertTrue(metadata.getAttributeValue(amount, 1).equals(0));
