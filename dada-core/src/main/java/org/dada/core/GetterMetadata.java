@@ -28,45 +28,21 @@
  */
 package org.dada.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class GetterMetadata<K, V> implements Metadata<K, V> {
 
 	private final Creator<V> creator;
 	private final Collection<Object> keyAttributeKeys;
-	private final List<Getter<?, V>> attributeGetters;
 	private final Getter<K, V> keyGetter;
 	private final Getter<Object, V>[] getters; // TODO: revisit relationship between attributeGetters and getters
-	private final Map<Object, Class<?>> keyToType;;
-	private final Map<Object, Getter<?, V>> keyToGetter;
 
 	public GetterMetadata(Creator<V> creator, Collection<Object> keyAttributeKeys, Collection<Class<?>> attributeTypes, Collection<Object> attributeKeys, Collection<Getter<?, V>> getters) {
 		this.creator = creator;
 		this.keyAttributeKeys = keyAttributeKeys;
-		this.attributeGetters = new ArrayList<Getter<?, V>>(getters);
 		this.getters = getters.toArray(new Getter[getters.size()]);
 		this.keyGetter = (Getter<K, V>)this.getters[0];
-
-		{
-			keyToType = new HashMap<Object, Class<?>>(attributeKeys.size());
-			Iterator<Object> n = attributeKeys.iterator();
-			Iterator<Class<?>> t = attributeTypes.iterator();
-			while (n.hasNext() && t.hasNext())
-				keyToType.put(n.next(), t.next());
-		}
-
-		{
-			keyToGetter= new HashMap<Object, Getter<?, V>>(attributeKeys.size());
-			Iterator<Object> n = attributeKeys.iterator();
-			Iterator<Getter<?, V>> t = attributeGetters.iterator();
-			while (n.hasNext() && t.hasNext())
-				keyToGetter.put(n.next(), t.next());
-		}
 	}
 
 	@Override
@@ -97,16 +73,6 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public V create(Collection<Object> args) {
 		return creator.create(args.toArray());
-	}
-
-	@Override
-	public Class<?> getAttributeType(Object key) {
-		return keyToType.get(key);
-	}
-
-	@Override
-	public Getter<?, V> getAttributeGetter(Object key) {
-		return keyToGetter.get(key);
 	}
 
 	@Override

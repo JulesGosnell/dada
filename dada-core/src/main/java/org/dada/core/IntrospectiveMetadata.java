@@ -32,9 +32,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // TODO: Methods are not Serializable !
 // TODO: tidy up
@@ -50,34 +48,19 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private final Collection<Object> keyAttributeKeys;
 	private final List<Object> attributeKeys;
 	private final int keyIndex;
-	private final Map<String, Class<?>> nameToType;
-	private final Map<String, Getter<?, V>> nameToGetter;
 
 	public IntrospectiveMetadata(Class<?> clazz,Creator<V> creator, Object key) throws NoSuchMethodException {
 		this.clazz = clazz;
 		this.creator = creator;
 		this.keyAttributeKeys = Collections.singleton(key);
 		attributeKeys = new ArrayList<Object>();
-		nameToType = new HashMap<String, Class<?>>();
-		nameToGetter = new HashMap<String, Getter<?,V>>();
-		int i = 0;
 		for (Method method : clazz.getMethods()) {
-			final int index = i++;
 			// is it a getter ?
 			String methodName = method.getName();
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			if (!method.getDeclaringClass().equals(Object.class) && methodName.startsWith(GET) && parameterTypes.length == 0) {
 				String attributeName = methodName.substring(GET_LENGTH);
-				Class<?> type = method.getReturnType();
 				attributeKeys.add(attributeName);
-				Getter<Object, V> getter = new Getter<Object, V>() {
-					@Override
-					public Object get(V value) {
-						return getAttributeValue(value, index);
-					}
-				};
-				nameToType.put(attributeName, type);
-				nameToGetter.put(attributeName, getter);
 			}
 		}
 		keyIndex = attributeKeys.indexOf(key);
@@ -118,16 +101,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	@Override
 	public V create(Collection<Object> args) {
 		return creator.create(args.toArray());
-	}
-
-	@Override
-	public Class<?> getAttributeType(Object key) {
-		return nameToType.get(key);
-	}
-
-	@Override
-	public Getter<?, V> getAttributeGetter(Object key) {
-		return nameToGetter.get(key);
 	}
 
 	@Override

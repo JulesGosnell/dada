@@ -13,6 +13,7 @@
 	  [java.util.concurrent
 	   ConcurrentHashMap]
 	  [org.dada.core
+	   Attribute
 	   Factory
 	   FilteredView
 	   FilteredView$Filter
@@ -60,7 +61,7 @@
 (defn do-filter [view #^Model model #^ISeq keys #^IFn function]
   "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
   (let [metadata (.getMetadata model)
-	getters (map #(.getAttributeGetter metadata %) keys)
+	getters (map #(.getGetter (.getAttribute metadata %)) keys)
 	view (if (instance? String view)
 	       (clone-model model (str (.getName model) "." view))
 	       view)]
@@ -95,8 +96,9 @@
 ;; key -> [key type fn]
 (defmethod do-transform-attribute 
   clojure.lang.Keyword [#^Keyword key #^Metadata md]
-  (let [type(.getAttributeType md key)
-	getter (.getAttributeGetter md key)
+  (let [#^Attribute attribute (.getAttribute md key)
+	type (.getType attribute)
+	getter (.getGetter attribute)
 	value-fn (fn [value] (.get getter value))]
     [key type value-fn]))
 
@@ -105,7 +107,7 @@
 (defmethod do-transform-attribute
   clojure.lang.PersistentList [attribute #^Metadata md]
   (let [[key type keys transform-fn] attribute
-	getters (map #(.getAttributeGetter md %) keys)
+	getters (map #(.getGetter (.getAttribute md %)) keys)
 	product-fn (fn [value] (map (fn [#^Getter getter] (.get getter value)) getters))
 	init-fn (fn [value] (apply transform-fn (product-fn value)))]
     (list key type init-fn)))
@@ -155,7 +157,7 @@
 			      ))
 	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
-	getter (.getAttributeGetter src-metadata key)]
+	getter (.getGetter (.getAttribute src-metadata key))]
     (new
      Splitter
      (proxy
@@ -204,7 +206,7 @@
   )
 
 (defn make-sum-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata sum-key]
-  (let [getter (.getAttributeGetter src-metadata sum-key)
+  (let [getter (.getGetter (.getAttribute src-metadata sum-key))
 	accessor (fn [value] (.get getter value))
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
@@ -642,7 +644,7 @@
 ;; pivot fn must supply such a closed list of values to be used as
 ;; attribute metadata for output model....
 (defn pivot-metadata [#^Metadata src-metadata #^Collection keys #^Collection pivot-values value-key]
-  (let [value-type (.getAttributeType src-metadata value-key)]
+  (let [value-type (.getType (.getAttribute src-metadata value-key))]
     (custom-metadata 
      (name (gensym "org.dada.core.Pivot"))
      Object

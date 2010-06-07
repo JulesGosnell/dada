@@ -19,7 +19,7 @@
 ;; will copy the value into a new version of the correctly keyed pivotted row...
 
 (defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
-  (let [version-getter (.getAttributeGetter tgt-metadata :version) ;HACK
+  (let [version-getter (.getGetter (.getAttribute tgt-metadata :version)) ;HACK
 	;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
 	#^Map getter-map (reduce
 			   (fn [old #^Attribute new]
@@ -75,7 +75,7 @@
 			       (concat
 				const-keys
 				(take (- (.size (.getAttributes tgt-metadata)) (count const-keys)) (repeat nil)))))
-	 src-value-getter (.getAttributeGetter src-metadata src-value-key)
+	 src-value-getter (.getGetter (.getAttribute src-metadata src-value-key))
 	 pivot-map (make-pivot-map tgt-keys tgt-metadata)
 
 	 pivot-fn (fn [old-pivotted key src-value] ;e.g. [["Sei Whale" Mon ... 20 ...] Mon [Mon 21]]

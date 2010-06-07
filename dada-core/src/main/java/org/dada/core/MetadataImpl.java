@@ -40,7 +40,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	private final List<Attribute<Object, V>> attributes;
 	private final Getter<K, V> keyGetter;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
-	private final Map<Object, Class<?>> keyToType;
 	private final Map<Object, Getter<?, V>> keyToGetter;
 
 	private final Getter<?, V>[] getters; // for fast lookup
@@ -50,16 +49,13 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
 		final List<Getter<?, V>> attributeGetters = new ArrayList<Getter<?, V>>(size);
-		keyToType= new HashMap<Object, Class<?>>(size);
 		keyToGetter = new HashMap<Object, Getter<?, V>>(size);
 		keyToAttribute = new HashMap<Object, Attribute<Object, V>>(size);
 
 		for (Attribute<Object, V> attribute : attributes) {
 			Object key = attribute.getKey();
-			Class<V> type = attribute.getType();
 			Getter<Object, V> getter = attribute.getGetter();
 			keyToAttribute.put(key, attribute);
-			keyToType.put(key, type);
 			keyToGetter.put(key, getter);
 			attributeGetters.add(getter);
 		}
@@ -119,16 +115,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	@Override
 	public V create(Collection<Object> args) {
 		return creator.create(args.toArray());
-	}
-
-	@Override
-	public Class<?> getAttributeType(Object key) {
-		return keyToType.get(key);
-	}
-
-	@Override
-	public Getter<?, V> getAttributeGetter(Object key) {
-		return keyToGetter.get(key);
 	}
 
 	@Override

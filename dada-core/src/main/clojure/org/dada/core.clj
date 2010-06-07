@@ -339,7 +339,7 @@
 
 (defn model [#^String model-name version-key #^Metadata metadata]
   (let [version-fn (if version-key
-		     (let [version-getter (.getAttributeGetter metadata version-key)]
+		     (let [version-getter (.getGetter (.getAttribute metadata version-key))]
 		       (fn [old new] (> (.get version-getter new) (.get version-getter old))))
 		     (fn [_ new] new))]
     (UnionModel. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
@@ -348,8 +348,8 @@
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
 	keys (.getKeyAttributeKeys metadata)
-	key-getter (.getAttributeGetter metadata (first keys))
-	version-getter (.getAttributeGetter metadata (second keys))]
+	key-getter (.getGetter (.getAttribute metadata (first keys)))
+	version-getter (.getGetter (.getAttribute metadata (second keys)))]
     (UnionModel.
      name
      metadata

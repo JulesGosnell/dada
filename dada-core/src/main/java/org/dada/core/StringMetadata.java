@@ -78,16 +78,6 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Class<?> getAttributeType(Object key) {
-		return String.class;
-	}
-
-	@Override
-	public Getter<?, String> getAttributeGetter(Object key) {
-		return getter;
-	}
-
-	@Override
 	public Attribute<Object, String> getAttribute(Object key) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
