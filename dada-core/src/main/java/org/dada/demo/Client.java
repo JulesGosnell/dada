@@ -214,7 +214,7 @@ public class Client {
 		final ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
 		final Connection connection = connectionFactory.createConnection();
 		connection.start();
-		final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+		final Session session = connection.createSession(false, Session.DUPS_OK_ACKNOWLEDGE);
 		SwingUtilities.invokeAndWait(new Runnable() {
 
 			@Override
