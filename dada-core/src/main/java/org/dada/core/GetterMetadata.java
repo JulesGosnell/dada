@@ -61,18 +61,8 @@ public class GetterMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public V create(Object... args) {
-		return creator.create(args);
-	}
-
-	@Override
 	public Creator<V> getCreator() {
 		return creator;
-	}
-
-	@Override
-	public V create(Collection<Object> args) {
-		return creator.create(args.toArray());
 	}
 
 	@Override

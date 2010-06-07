@@ -34,9 +34,10 @@ import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
 
-	V create(Object... args);
 	Creator<V> getCreator();
-	V create(Collection<Object>args);
+
+	//V create(Object... args);
+	//V create(Collection<Object>args);
 	
 	// keys
 	@Deprecated
@@ -48,12 +49,9 @@ public interface Metadata<K, V> extends Serializable {
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();
-
 	Attribute<Object, V> getAttribute(Object key);
-	//Class<?> getAttributeType(Object key);
-	//Getter<?, V> getAttributeGetter(Object key);
 	
-	// indexed access
+	// indexed access - should be in Client
 	Object getAttributeValue(V value, int index);
 
 }

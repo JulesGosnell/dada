@@ -14,6 +14,7 @@
 	   ConcurrentHashMap]
 	  [org.dada.core
 	   Attribute
+	   Creator
 	   Factory
 	   FilteredView
 	   FilteredView$Filter
@@ -75,19 +76,20 @@
 ;;----------------------------------------
 
 (defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
-  (new
-   Transformer
-   #^Collection
-   (list view)
-   #^Transformer$StatelessStrategy
-   (proxy
-    [Transformer$StatelessStrategy]
-    []
-    (transform 
-     [input]
-     ;; TODO: this code needs to be FAST - executed online
-     (.create metadata #^Collection (map (fn [#^IFn init-fn] (init-fn input)) init-fns)))
-    )))
+  (let [#^Creator creator (.getCreator metadata)]
+    (new
+     Transformer
+     #^Collection
+     (list view)
+     #^Transformer$StatelessStrategy
+     (proxy
+      [Transformer$StatelessStrategy]
+      []
+      (transform 
+       [input]
+       ;; TODO: this code needs to be FAST - executed online
+       (.create creator (into-array Object (map (fn [#^IFn init-fn] (init-fn input)) init-fns))))
+      ))))
 
 ;; returns [key type init-fn]
 (defmulti do-transform-attribute (fn [descrip md] (class descrip)))

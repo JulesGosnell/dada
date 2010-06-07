@@ -63,18 +63,8 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public String create(Object... args) {
-		return (String)args[0];
-	}
-
-	@Override
 	public Creator<String> getCreator() {
 		return creator;
-	}
-
-	@Override
-	public String create(Collection<Object> args) {
-		return creator.create(args.toArray());
 	}
 
 	@Override
