@@ -16,8 +16,6 @@
 	   Attribute
 	   Creator
 	   Factory
-	   FilteredView
-	   FilteredView$Filter
 	   Getter
 	   LazyView
 	   Metadata
@@ -43,31 +41,8 @@
   (map (fn [#^Getter getter] (.get getter value)) getters))
 
 ;;----------------------------------------
-;; filtration - could do with another pass through
+;; Filtration - should be implemented as a thin wrapper around Splitter
 ;;----------------------------------------
-
-(defn make-filter [#^IFn filter-fn #^View view]
-  (FilteredView. 
-   (proxy
-    [FilteredView$Filter]
-    []
-    (filter 
-     [value]
-     ;; TODO: this code needs to be FAST - executed online
-     (filter-fn value)))
-   (list view)
-   ))
-
-;; ATTN: VIEW may be a name to use when making a View, or the View itself
-(defn do-filter [view #^Model model #^ISeq keys #^IFn function]
-  "Get the values for KEYS from each value in the MODEL and pass them to the FUNCTION..."
-  (let [metadata (.getMetadata model)
-	getters (map #(.getGetter (.getAttribute metadata %)) keys)
-	view (if (instance? String view)
-	       (clone-model model (str (.getName model) "." view))
-	       view)]
-    (connect model (make-filter #(apply function (apply-getters getters %)) view))
-    view))
 
 ;;----------------------------------------
 ;; transformation
@@ -400,10 +375,6 @@
 
 ;;----------------------------------------
 ;; still to refactor - also sum()
-
-(defn dfilter [#^Model src-model #^String tgt-view #^Collection attr-keys #^IFn filter-fn]
-  ;; TODO: accept ready-made View
-  (insert *metamodel* (do-filter tgt-view src-model attr-keys filter-fn)))
 
 (defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
   ;; TODO: accept ready-made View ?
