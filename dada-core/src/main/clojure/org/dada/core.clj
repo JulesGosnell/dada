@@ -26,10 +26,12 @@
 	   Creator
 	   Getter
 	   MetaModel
+	   MetaModelImpl
 	   Metadata
 	   MetadataImpl
 	   Model
 	   ServiceFactory
+	   StringMetadata
 	   UnionModel
 	   Update
 	   View
@@ -57,7 +59,9 @@
 
 (def #^Logger *logger* (LoggerFactory/getLogger "org.dada.core"))
 
+;; TODO: Spring should look after this - see application-context.xml...
 (if (not (System/getProperty "dada.broker.name")) (System/setProperty "dada.broker.name" "DADA"))
+(if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://localhost:61616"))
 
 (do
   (def #^ServiceFactory *external-metamodel-service-factory* nil)
@@ -79,29 +83,6 @@
 
 (defn delete [#^View view value]
   (.update view '() '() (list (Update. value nil))))
-
-;;--------------------------------------------------------------------------------
-
-(defn start-server []
-
-  (do
-    (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
-    (def #^ServiceFactory *external-metamodel-service-factory* (.getBean #^BeanFactory *spring-context* "externalMetaModelServiceFactory"))
-    (def #^ServiceFactory *external-model-service-factory* (.getBean #^BeanFactory *spring-context* "externalModelServiceFactory"))
-    (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
-    (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
-
-    (def #^MetaModel *metamodel* (new org.dada.core.MetaModelImpl (str (System/getProperty "dada.broker.name") ".MetaModel") (new org.dada.core.StringMetadata "Name") *external-metamodel-service-factory*))
-    (insert *metamodel* *metamodel*)
-    )
-
-  (let [metamodel-name (.getName *metamodel*)]
-    (.start *metamodel*)
-    (println "Server - modelling:" metamodel-name)
-    (.server *external-metamodel-service-factory* *metamodel* metamodel-name)))
-
-(defn start-client []
-  (Client/main (into-array String (list (System/getProperty "dada.broker.name")))))
 
 ;;--------------------------------------------------------------------------------
 
@@ -365,3 +346,33 @@
     (.close result-set)
     (insert-n sql-model data)
     sql-model))
+
+;;--------------------------------------------------------------------------------
+
+(defn start-server []
+
+  (do
+    (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
+    (def #^ServiceFactory *external-metamodel-service-factory* (.getBean #^BeanFactory *spring-context* "externalMetaModelServiceFactory"))
+    (def #^ServiceFactory *external-model-service-factory* (.getBean #^BeanFactory *spring-context* "externalModelServiceFactory"))
+    (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
+    (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
+
+    (def #^MetaModel *metamodel*
+	 (MetaModelImpl.
+	  (str (System/getProperty "dada.broker.name") ".MetaModel") 
+	  (StringMetadata. "Name")
+	  ;;(custom-metadata3 String ["Name"] [["Name" String false]])
+	  *external-metamodel-service-factory*))
+    (insert *metamodel* *metamodel*)
+    )
+
+  (let [metamodel-name (.getName *metamodel*)]
+    (.start *metamodel*)
+    (println "Server - modelling:" metamodel-name)
+    (.server *external-metamodel-service-factory* *metamodel* metamodel-name)))
+
+(defn start-client []
+  (Client/main (into-array String (list (System/getProperty "dada.broker.name")))))
+
+;;--------------------------------------------------------------------------------

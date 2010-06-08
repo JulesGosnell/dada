@@ -5,7 +5,14 @@
    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"
    >
   
-  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
+  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="properties">
+      <props>
+	<prop key="dada.broker.name">DADA</prop>
+	<prop key="dada.broker.uri">tcp://localhost:61616</prop>
+      </props>
+    </property>
+  </bean>
 
   <amq:broker useJmx="true" persistent="false" brokerName="${dada.broker.name}" advisorySupport="false">
 
@@ -19,7 +26,8 @@
 
     <amq:transportConnectors>
       <!-- <amq:transportConnector name="nio" uri="nio://0.0.0.0:61616"/> -->
-      <amq:transportConnector name="openwire" uri="tcp://localhost:61616" discoveryUri="multicast://default"/>
+      <!-- <amq:transportConnector name="openwire" uri="tcp://localhost:61616" discoveryUri="multicast://default"/> -->
+      <amq:transportConnector name="openwire" uri="${dada.broker.uri}"/>
     </amq:transportConnectors>
 
   </amq:broker>

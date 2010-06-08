@@ -207,11 +207,13 @@ public class Client {
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
-		final String serverName = (args.length == 0 ? "Server" : args[0]);
+		String name = System.getProperty("dada.broker.name");
+		String uri = System.getProperty("dada.broker.uri");
+		final String serverName = (args.length == 0 ? name : args[0]);
 		//String url = "peer://" + serverName + "/broker0?broker.persistent=false&useJmx=false";
-		String url = "tcp://localhost:61616";
-		LOG.info("Broker URL: " + url);
-		final ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
+		//String url = "tcp://localhost:61616";
+		LOG.info("Broker URI: " + uri);
+		final ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(uri);
 		final Connection connection = connectionFactory.createConnection();
 		connection.start();
 		final Session session = connection.createSession(false, Session.DUPS_OK_ACKNOWLEDGE);
