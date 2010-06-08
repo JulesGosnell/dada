@@ -1,8 +1,8 @@
 (ns 
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
+ (:use [org.dada core web])
  (:use [org.dada core dsl])
- (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ])
  (:import [java.math
@@ -18,7 +18,6 @@
 	   Creator
 	   Metadata
 	   Model
-	   PivotModel
 	   ])
  )
 
@@ -251,8 +250,11 @@
 ;;--------------------------------------------------------------------------------
 
 (start-client)
+(start-jetty 8080)
 
 (? [(split :type)] all-whales)
 (? [(split :ocean nil [(ccount)])] all-whales)
 (? [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)] all-whales)
 (? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+
+;;--------------------------------------------------------------------------------

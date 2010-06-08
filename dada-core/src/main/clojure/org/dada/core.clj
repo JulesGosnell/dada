@@ -158,18 +158,20 @@
 		     (into-array (list (.getCanonicalName type) (attribute-key key))))
 		 (apply array-map attribute-key-types)))))
 
-(defn custom-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
-  (.
-   (custom-classloader)
-   (defineClass
-     class-name 
-     (.create
-      *custom-class-factory*
-      class-name
-      superclass
-      (apply custom-attribute-array attribute-key-types))
-     :TODO)))
+(def *exported-classes* (atom {}))
 
+(defn custom-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
+  (let [bytes (.create
+	       *custom-class-factory*
+	       class-name
+	       superclass
+	       (apply custom-attribute-array attribute-key-types))]
+    (swap! *exported-classes*  (fn [classes] (assoc classes class-name bytes)))
+    (.
+     (custom-classloader)
+     (defineClass class-name bytes :TODO)
+     )))
+  
 ;; fields => [model field]
 
 
