@@ -6,6 +6,11 @@
    >
   
   <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="systemPropertiesMode">
+      <bean id="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.SYSTEM_PROPERTIES_MODE_OVERRIDE"
+	    class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+      </bean>
+    </property>
     <property name="properties">
       <props>
 	<prop key="dada.broker.name">DADA</prop>
@@ -50,51 +55,13 @@
     <property name="targetMethod"><value>start</value></property>
   </bean>
 
-  <!-- how hard can this be -->
-  <!-- javax.jms.Session.class.getField("AUTO_ACKNOWLEDGE").get(null) -->
-  <bean id="autoAcknowledge" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject">
-      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-	<property name="targetClass">
-	  <value>java.lang.Class</value>
-	</property>
-	<property name="targetMethod">
-	  <value>getField</value>
-	</property>
-	<property name="targetObject">
-	  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-	    <property name="targetClass">
-	      <value>java.lang.Class</value>
-	    </property>
-	    <property name="targetMethod">
-	      <value>forName</value>
-	    </property>
-	    <property name="arguments">
-	      <list>
-		<value>javax.jms.Session</value>
-	      </list>
-	    </property>
-	  </bean>
-	</property>
-	<property name="arguments">
-	  <list>
-	    <value>DUPS_OK_ACKNOWLEDGE</value>
-	  </list>
-	</property>
-      </bean>
-    </property>
-    <property name="targetMethod">
-      <value>get</value>
-    </property>
-    <property name="arguments">
-      <list>
-      </list>
-    </property>
-  </bean>
-
   <bean id="session" class="javax.jms.Session" factory-method="createSession" factory-bean="connection">
     <constructor-arg><value>false</value></constructor-arg>
-    <constructor-arg><ref bean="autoAcknowledge"/></constructor-arg>
+    <constructor-arg>
+      <bean id="javax.jms.Session.DUPS_OK_ACKNOWLEDGE"
+	    class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+      </bean>
+    </constructor-arg>
   </bean>
 
   <bean id="executorService" class="java.util.concurrent.Executors" factory-method="newFixedThreadPool">
