@@ -29,23 +29,16 @@
 package org.dada.core;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
 
 	Creator<V> getCreator();
 
-	//V create(Object... args);
-	//V create(Collection<Object>args);
-	
 	// keys
 	@Deprecated
 	K getKey(V value);
 	Getter<K, V> getKeyGetter();
-	
-	@Deprecated
-	Collection<Object> getKeyAttributeKeys();
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();

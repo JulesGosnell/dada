@@ -98,11 +98,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	}
 
 	@Override
-	public Collection<Object> getKeyAttributeKeys() {
-		throw new UnsupportedOperationException("deprecated method");
-	}
-
-	@Override
 	public Creator<V> getCreator() {
 		return creator;
 	}

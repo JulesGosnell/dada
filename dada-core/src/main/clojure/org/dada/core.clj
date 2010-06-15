@@ -330,8 +330,6 @@
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
   (let [metadata (.getMetadata model)
-	keys (.getKeyAttributeKeys metadata)
-	key-getter (.getGetter (.getAttribute metadata (first keys)))
 	version-getter (.getGetter (.getAttribute metadata (second keys)))]
     (UnionModel.
      name

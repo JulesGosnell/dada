@@ -58,11 +58,6 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Collection<Object> getKeyAttributeKeys() {
-		return keyAttributeKeys;
-	}
-
-	@Override
 	public Creator<String> getCreator() {
 		return creator;
 	}
