@@ -88,11 +88,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	}
 
 	@Override
-	public K getKey(V value) {
-		return keyGetter.get(value);
-	}
-
-	@Override
 	public Getter<K, V> getKeyGetter() {
 		return keyGetter;
 	}

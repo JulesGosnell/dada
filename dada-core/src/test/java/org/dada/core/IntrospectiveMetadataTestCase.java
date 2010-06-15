@@ -27,17 +27,5 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
 		IntrospectiveMetadata<Integer, Test> metadata = new IntrospectiveMetadata<Integer, Test>(Test.class, creator, "Key");
 		final Test test = mock(Test.class);
 
-		// check attribute names
-		
-		// getKey...
-		
-		final int key = 1;
-		
-        checking(new Expectations(){{
-            one(test).getKey();
-            will(returnValue(key));
-        }});
-        
-		assertTrue(metadata.getKey(test).equals(key));
 	}
 }

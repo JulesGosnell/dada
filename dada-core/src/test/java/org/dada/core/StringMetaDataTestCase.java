@@ -10,6 +10,5 @@ public class StringMetaDataTestCase extends TestCase {
 		
 		String value = "value";
 		assertTrue(metadata.getAttributeValue(value, 0) == value);
-		assertTrue(metadata.getKey(value) == value);
 	}
 }

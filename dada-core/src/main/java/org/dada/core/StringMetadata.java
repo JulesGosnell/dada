@@ -32,28 +32,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-@Deprecated
 public class StringMetadata implements Metadata<String, String> {
 
 	private final Collection<Object> keyAttributeKeys;
 	private final Getter<Object, String> getter;
+	private final Getter<String, String> keyGetter;
 	private final Creator<String> creator;
 	private final List<Attribute<Object, String>> attributes;
 	
 	public StringMetadata(Object key) {
 		keyAttributeKeys = Collections.singleton(key); 
 		getter = new Getter<Object, String>() {@Override public Object get(String value) {return value;}};
+		keyGetter = new Getter<String, String>() {@Override public String get(String value) {return value;}};
 		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
 		attributes = Collections.singletonList(new Attribute<Object, String>(key, String.class, false, getter));
 	}
 
 	@Override
 	public Object getAttributeValue(String value, int index) {
-		return value;
-	}
-
-	@Override
-	public String getKey(String value) {
 		return value;
 	}
 
@@ -70,8 +66,7 @@ public class StringMetadata implements Metadata<String, String> {
 
 	@Override
 	public Getter<String, String> getKeyGetter() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return keyGetter;
 	}
 
 	@Override

@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.swing.table.AbstractTableModel;
 
+import org.dada.core.Getter;
 import org.dada.core.Metadata;
 import org.dada.core.Update;
 import org.dada.core.View;
@@ -151,10 +152,10 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 
 		// TODO - what about extinct values ?
 		
-		Metadata<K, V> metadata = getMetadata();
+		Getter<K, V> keyGetter = getMetadata().getKeyGetter();
 		for (Update<V> insertion : insertions) {
 			V newValue = insertion.getNewValue();
-			K key = metadata.getKey(newValue);
+			K key = keyGetter.get(newValue);
 			int index = map.put(key, newValue);
 			fireTableRowsInserted(index, index);
 		}
@@ -162,10 +163,10 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 		for (Update<V> update : alterations) {
 
 			V newValue = update.getNewValue();
-			K newKey = metadata.getKey(newValue);
+			K newKey = keyGetter.get(newValue);
 
 			V oldValue = update.getOldValue();
-			K oldKey = metadata.getKey(oldValue);
+			K oldKey = keyGetter.get(oldValue);
 
 			int oldIndex;
 			int newIndex;
@@ -186,7 +187,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 		}
 		for (Update<V> deletion : deletions) {
 			V value = deletion.getOldValue();
-			K key = metadata.getKey(value);
+			K key = keyGetter.get(value);
 			int index= map.remove(key);
 			if (index > -1) fireTableRowsDeleted(index, index);
 		}

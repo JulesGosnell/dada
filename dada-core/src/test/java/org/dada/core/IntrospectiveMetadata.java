@@ -79,11 +79,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public K getKey(V value) {
-		return (K) getAttributeValue(value, keyIndex);
-	}
-
-	@Override
 	public Creator<V> getCreator() {
 		return creator;
 	}

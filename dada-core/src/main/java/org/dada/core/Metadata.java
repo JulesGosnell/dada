@@ -36,9 +36,10 @@ public interface Metadata<K, V> extends Serializable {
 	Creator<V> getCreator();
 
 	// keys
-	@Deprecated
-	K getKey(V value);
 	Getter<K, V> getKeyGetter();
+	//Getter<K, V> getVersionGetter();
+	//Collection<V> getKeyKeys();
+	//Collection<V> getVersionKeys();
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();
