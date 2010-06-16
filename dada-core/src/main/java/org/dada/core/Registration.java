@@ -28,13 +28,15 @@
  */
 package org.dada.core;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class Registration<K, V> implements Serializable {
 
-	private final Metadata<K, V> metadata;
-	private final Collection<V> data;
+	private /*final*/ Metadata<K, V> metadata;
+	private /*final*/ Collection<V> data;
 
 	public Registration(Metadata<K, V> metadata, Collection<V> data) {
 		this.metadata = metadata;
@@ -49,4 +51,24 @@ public class Registration<K, V> implements Serializable {
 		return data;
 	}
 
+	// by managing our own serialisation here, we can take the opportunity to rewrite the container
+	// being used to hold our data...
+	// this is useful because some clojure-1.1 and jdk-6 containers are NOT serialisable AND it reduces the
+	// size of our serialisation because the containers type info is now implicit so need not be sent BUT it
+	// IS a little unnecessary complexity...
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+		out.writeObject(metadata);
+		out.writeInt(data.size());
+		for (V datum : data)
+			out.writeObject(datum);
+	}
+	 
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		metadata = (Metadata<K, V>)in.readObject();
+		int length = in.readInt();
+		data = new ArrayList<V>(length);
+		for (int i = 0; i < length ; i++)
+			data.add((V)in.readObject());
+	}
 }

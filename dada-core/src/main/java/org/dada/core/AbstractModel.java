@@ -28,6 +28,7 @@
  */
 package org.dada.core;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -82,8 +83,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 		} while (!views.compareAndSet(oldViews, newViews));
 		logger.debug("{}: registered view: {} -> {}", name, view, newViews);
 
-		Collection<V> values = getData();
-		return new Registration<K, V>(metadata, new ArrayList<V>(values)); // TODO: hack - clojure containers not serialisable
+		return new Registration<K, V>(metadata, getData());
 	}
 
 	@Override
