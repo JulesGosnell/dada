@@ -236,7 +236,7 @@
        (proxy [Creator] [] (create [args] args))
        [0]
        (map
-	(fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
+	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
 
 
