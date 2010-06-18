@@ -84,7 +84,7 @@
     </property>
   </bean>
 
-  <bean id="externalMetaModelServiceFactory" class="org.dada.jms.JMSServiceFactory">
+  <bean id="externalMetaModelServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
     <constructor-arg ref="session"/>
     <constructor-arg><ref bean="metaModelInterface"/></constructor-arg>
     <constructor-arg ref="executorService"/>
@@ -108,7 +108,7 @@
     </property>
   </bean>
 
-  <bean id="externalModelServiceFactory" class="org.dada.jms.JMSServiceFactory">
+  <bean id="externalModelServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
     <constructor-arg ref="session"/>
     <constructor-arg><ref bean="modelInterface"/></constructor-arg>
     <constructor-arg ref="executorService"/>
