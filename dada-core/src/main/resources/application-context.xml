@@ -46,6 +46,7 @@
     <constructor-arg ref="connectionUrl"></constructor-arg>
     <property name="optimizedMessageDispatch"><value>true</value></property>
     <property name="objectMessageSerializationDefered"><value>true</value></property>
+    <property name="watchTopicAdvisories"><value>false</value></property> <!-- avoid "Cannot publish to a deleted Detination" on temporary Queues-->
   </bean>
 
   <bean id="connection" factory-bean="connectionFactory" factory-method="createConnection"/>
