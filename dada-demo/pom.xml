@@ -44,11 +44,6 @@
       <artifactId>dada-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.dada</groupId>
-      <artifactId>dada-jms</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
@@ -57,7 +52,7 @@
       <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
-	<version>1.3.3</version>
+	<version>1.3.2</version>
 	<configuration>
 	  <warnOnReflection>true</warnOnReflection>
 	  <namespaces>

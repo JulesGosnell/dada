@@ -21,11 +21,17 @@
 
   <properties> 
     <cobertura.datafile>${project.build.directory}/cobertura/cobertura.ser</cobertura.datafile>
-    <cobertura.classes>${project.build.directory}/generated-classes/cobertura</cobertura.classes>
+    <cobertura.classes>${project.build.directory}/test-classes/cobertura</cobertura.classes>
     <cobertura.site>${project.build.directory}/site/cobertura</cobertura.site>
   </properties>
   
   <dependencies>
+    <dependency>
+      <groupId>net.sourceforge.cobertura</groupId>
+      <artifactId>cobertura</artifactId>
+      <version>${cobertura.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency> <!-- scope should be test -->
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
@@ -60,9 +66,10 @@
       <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
-	<version>1.3.3</version>
+	<version>1.3.2</version>
 	<configuration>
 	  <warnOnReflection>true</warnOnReflection>
+	  <clojureOptions>-Dnet.sourceforge.cobertura.datafile=${cobertura.datafile}</clojureOptions>
 	  <namespaces>
             <namespace>org.dada.*</namespace>
             <namespace>!org.dada.xxx.*</namespace>
@@ -235,14 +242,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
 	<version>2.4.3</version>
         <configuration>
-          <classesDirectory>${cobertura.classes}</classesDirectory>
-          <additionalClasspathElements>
-            <additionalClasspathElement>${project.build.directory}/classes</additionalClasspathElement>
-          </additionalClasspathElements>
           <forkMode>once</forkMode>
 	  <jvm>${surefire.jvm}</jvm>
 	  <argLine>${java.agent}</argLine>
-          <testClassesDirectory>${project.build.directory}/test-classes</testClassesDirectory>
           <excludes>
             <exclude>**/*AbstractTestCase.java</exclude>
 	    <!-- if java.agent set, these will not be excluded -->
