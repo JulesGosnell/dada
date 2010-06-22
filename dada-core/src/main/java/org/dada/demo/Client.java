@@ -208,7 +208,7 @@ public class Client {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 		String name = System.getProperty("dada.broker.name");
-		String uri = System.getProperty("dada.broker.uri");
+		String uri = System.getProperty("dada.client.uri");
 		final String serverName = (args.length == 0 ? name : args[0]);
 		//String url = "peer://" + serverName + "/broker0?broker.persistent=false&useJmx=false";
 		//String url = "tcp://localhost:61616";
