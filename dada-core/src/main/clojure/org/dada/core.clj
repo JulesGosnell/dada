@@ -1,43 +1,46 @@
 (ns
  org.dada.core
  (:use org.dada.core.UnionModel)
- (:import (clojure.lang
-	   DynamicClassLoader
-	   ISeq
-	   Keyword
-	   )
-	  (java.sql
-	   Connection
-	   ResultSet
-	   ResultSetMetaData
-	   )
-	  (java.util
-	   Collection
-	   Date)
-	  (java.util.concurrent.locks
-	   Lock)
-	  (org.springframework.context.support ClassPathXmlApplicationContext)
-	  (org.springframework.beans.factory BeanFactory)
-	  (org.slf4j Logger LoggerFactory)
-	  (org.dada.asm ClassFactory)
-	  (org.dada.core
-	   AbstractModel
-	   Attribute
-	   Creator
-	   Getter
-	   MetaModel
-	   MetaModelImpl
-	   Metadata
-	   MetadataImpl
-	   Model
-	   ServiceFactory
-	   StringMetadata
-	   UnionModel
-	   Update
-	   View
-	   )
-	  (org.dada.demo Client)
-	  ))
+ (:import
+  (clojure.lang
+   DynamicClassLoader
+   ISeq
+   Keyword
+   )
+  (java.sql
+   Connection
+   ResultSet
+   ResultSetMetaData
+   )
+  (java.util
+   Collection
+   Date)
+  (java.util.concurrent.locks
+   Lock)
+  (org.springframework.context.support ClassPathXmlApplicationContext)
+  (org.springframework.beans.factory BeanFactory)
+  (org.slf4j Logger LoggerFactory)
+  (org.dada.asm ClassFactory)
+  (org.dada.core
+   AbstractModel
+   Attribute
+   Creator
+   DummyLock
+   Getter
+   MetaModel
+   MetaModelImpl
+   Metadata
+   MetadataImpl
+   Model
+   ServiceFactory
+   StringMetadata
+   SynchronousServiceFactory
+   UnionModel
+   Update
+   View
+   )
+  (org.dada.demo Client)
+  ))
 
 ;;--------------------------------------------------------------------------------
 
@@ -61,15 +64,8 @@
 
 ;; TODO: Spring should look after this - see application-context.xml...
 (if (not (System/getProperty "dada.broker.name")) (System/setProperty "dada.broker.name" "DADA"))
-(if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://localhost:61616"))
-
-(do
-  (def #^ServiceFactory *external-metamodel-service-factory* nil)
-  (def #^ServiceFactory *external-model-service-factory* nil)
-  (def #^ServiceFactory *internal-view-service-factory* nil)
-  (def #^Lock *exclusive-lock* nil)
-  (def #^MetaModel *metamodel* nil))
-
+(if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://0.0.0.0:61616"))
+(if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.client.uri" "tcp://localhost:61616"))
 
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '())
@@ -83,6 +79,14 @@
 
 (defn delete [#^View view value]
   (.update view '() '() (list (Update. value nil))))
+
+(do
+  (def #^ServiceFactory *external-metamodel-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *external-model-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
+  (def #^Lock *exclusive-lock* (DummyLock.))
+  (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name") *external-metamodel-service-factory*))
+  (insert *metamodel* *metamodel*))
 
 ;;--------------------------------------------------------------------------------
 
