@@ -15,6 +15,7 @@
       <props>
 	<prop key="dada.broker.name">DADA</prop>
 	<prop key="dada.broker.uri">tcp://0.0.0.0:61616</prop>
+	<prop key="dada.client.uri">tcp://localhost:61616</prop>
       </props>
     </property>
   </bean>
