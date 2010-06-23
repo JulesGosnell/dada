@@ -65,7 +65,7 @@
 ;; TODO: Spring should look after this - see application-context.xml...
 (if (not (System/getProperty "dada.broker.name")) (System/setProperty "dada.broker.name" "DADA"))
 (if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://0.0.0.0:61616"))
-(if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.client.uri" "tcp://localhost:61616"))
+(if (not (System/getProperty "dada.client.uri")) (System/setProperty "dada.client.uri" "tcp://localhost:61616"))
 
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '())
