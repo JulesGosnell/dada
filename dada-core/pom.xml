@@ -20,9 +20,9 @@
   <description>DADA Core Functionality</description>
 
   <properties> 
-    <cobertura.datafile>${project.build.directory}/cobertura/cobertura.ser</cobertura.datafile>
     <cobertura.classes>${project.build.directory}/test-classes</cobertura.classes>
     <cobertura.site>${project.build.directory}/site/cobertura</cobertura.site>
+    <cobertura.datafile>${cobertura.site}/cobertura.ser</cobertura.datafile>
   </properties>
   
   <dependencies>
