@@ -61,7 +61,7 @@
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
-   (let [key-getter (.getKeyGetter src-metadata)
+   (let [key-getter (.getPrimaryGetter src-metadata)
 	 key-fn (fn [value] (.get key-getter value))
 
 	 ;;----------------------------------------

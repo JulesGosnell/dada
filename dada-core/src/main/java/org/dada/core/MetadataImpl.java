@@ -38,13 +38,14 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 
 	private final Creator<V> creator;
 	private final List<Attribute<Object, V>> attributes;
-	private final Getter<K, V> keyGetter;
+	private final Collection<Object> primaryKeys;
+	private final Getter<K, V> primaryGetter;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
 	private final Map<Object, Getter<?, V>> keyToGetter;
 
 	private final Getter<?, V>[] getters; // for fast lookup
 	
-	public MetadataImpl(Creator<V> creator, Collection<Object> keys, Collection<Attribute<Object, V>> attributes) {
+	public MetadataImpl(Creator<V> creator, Collection<Object> primaryKeys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
 		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
@@ -61,14 +62,15 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 		}
 		this.getters = attributeGetters.toArray(new Getter[size]);
 
-		if (keys.size() == 1) {
-			keyGetter = (Getter<K, V>)keyToGetter.get(keys.iterator().next());
+		this.primaryKeys = primaryKeys;
+		if (primaryKeys.size() == 1) {
+			primaryGetter = (Getter<K, V>)keyToGetter.get(primaryKeys.iterator().next());
 		} else {
-			final Getter<Comparable<K>, V>[] getters = new Getter[keys.size()];
+			final Getter<Comparable<K>, V>[] getters = new Getter[primaryKeys.size()];
 			int i = 0;
-			for (Object key : keys)
+			for (Object key : primaryKeys)
 				getters[i++] = (Getter<Comparable<K>, V>)keyToGetter.get(key);
-			keyGetter = new Getter<K, V>() {
+			primaryGetter = new Getter<K, V>() {
 				@Override
 				public K get(V value) {
 					Comparable<K>[] args = new Comparable[getters.length];
@@ -88,8 +90,13 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	}
 
 	@Override
-	public Getter<K, V> getKeyGetter() {
-		return keyGetter;
+	public Collection<Object> getPrimaryKeys() {
+		return primaryKeys;
+	}
+
+	@Override
+	public Getter<K, V> getPrimaryGetter() {
+		return primaryGetter;
 	}
 
 	@Override

@@ -152,7 +152,7 @@ public class TableModelView<K, V> extends AbstractTableModel implements View<V> 
 
 		// TODO - what about extinct values ?
 		
-		Getter<K, V> keyGetter = getMetadata().getKeyGetter();
+		Getter<K, V> keyGetter = getMetadata().getPrimaryGetter();
 		for (Update<V> insertion : insertions) {
 			V newValue = insertion.getNewValue();
 			K key = keyGetter.get(newValue);

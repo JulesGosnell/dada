@@ -90,13 +90,19 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public Getter<K, V> getKeyGetter() {
+	public Getter<K, V> getPrimaryGetter() {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
 	public List<Attribute<Object, V>> getAttributes() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
+	@Override
+	public Collection<Object> getPrimaryKeys() {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}

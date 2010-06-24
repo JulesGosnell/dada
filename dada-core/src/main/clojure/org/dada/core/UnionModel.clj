@@ -19,7 +19,7 @@
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
-   (let [key-getter (.getKeyGetter tgt-metadata)
+   (let [key-getter (.getPrimaryGetter tgt-metadata)
 	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition

@@ -34,18 +34,18 @@ import java.util.List;
 
 public class StringMetadata implements Metadata<String, String> {
 
-	private final Collection<Object> keyAttributeKeys;
-	private final Getter<Object, String> getter;
-	private final Getter<String, String> keyGetter;
 	private final Creator<String> creator;
+	private final Collection<Object> primaryKeys;
+	private final Getter<String, String> primaryGetter;
 	private final List<Attribute<Object, String>> attributes;
+	private final Getter<Object, String> getter;
 	
-	public StringMetadata(Object key) {
-		keyAttributeKeys = Collections.singleton(key); 
+	public StringMetadata(Object primaryKey) {
 		getter = new Getter<Object, String>() {@Override public Object get(String value) {return value;}};
-		keyGetter = new Getter<String, String>() {@Override public String get(String value) {return value;}};
+		primaryKeys = Collections.singleton(primaryKey);
+		primaryGetter = new Getter<String, String>() {@Override public String get(String value) {return value;}};
 		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
-		attributes = Collections.singletonList(new Attribute<Object, String>(key, String.class, false, getter));
+		attributes = Collections.singletonList(new Attribute<Object, String>(primaryKey, String.class, false, getter));
 	}
 
 	@Override
@@ -65,12 +65,18 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Getter<String, String> getKeyGetter() {
-		return keyGetter;
+	public Collection<Object> getPrimaryKeys() {
+		return primaryKeys;
+	}
+
+	@Override
+	public Getter<String, String> getPrimaryGetter() {
+		return primaryGetter;
 	}
 
 	@Override
 	public List<Attribute<Object, String>> getAttributes() {
 		return attributes;
 	}
+
 }
