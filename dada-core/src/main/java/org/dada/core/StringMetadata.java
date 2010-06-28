@@ -86,4 +86,10 @@ public class StringMetadata implements Metadata<String, String> {
 		return attributes;
 	}
 
+	@Override
+	public org.dada.core.Metadata.Comparator<String> getVersionComparator() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }

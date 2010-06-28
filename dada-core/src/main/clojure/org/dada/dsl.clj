@@ -19,6 +19,7 @@
 	   Getter
 	   LazyView
 	   Metadata
+	   Metadata$Comparator
 	   Model
 	   PivotModel
 	   Reducer
@@ -39,6 +40,10 @@
 (defn apply-getters [#^ISeq getters value]
   "apply a list of getters to a value returning a list of their results"
   (map (fn [#^Getter getter] (.get getter value)) getters))
+
+(def #^Metadata$Comparator int-version-comparator
+     (proxy [Metadata$Comparator][]
+	    (highest [datum1 datum2] (if (>= (.getVersion datum1) (.getVersion datum2)) datum1 datum2))))
 
 ;;----------------------------------------
 ;; Filtration - should be implemented as a thin wrapper around Splitter
@@ -177,6 +182,7 @@
    Object
    primary-keys
    [:version]
+   int-version-comparator
    (concat
     extra-attribute-specs
     [[:version Integer true]
@@ -223,6 +229,7 @@
    Object
    primary-keys
    [:version]
+   int-version-comparator
    (concat
     extra-attribute-specs
     [[:version Integer true]
@@ -625,6 +632,7 @@
      Object
      primary-keys
      [:version]
+     int-version-comparator
      (concat
       (map #(.getAttribute src-metadata %) primary-keys)
       [[:version Integer true]]

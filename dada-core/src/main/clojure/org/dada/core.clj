@@ -30,6 +30,7 @@
    MetaModel
    MetaModelImpl
    Metadata
+   Metadata$Comparator
    MetadataImpl
    Model
    ServiceFactory
@@ -202,34 +203,35 @@
 		  ;;(println "CREATOR" class (map identity args))
 		  (apply make-instance class args))))
 
-(defn #^Metadata custom-metadata3 [#^Class class primary-keys version-keys attribute-specs]
+(defn #^Metadata custom-metadata3 [#^Class class primary-keys version-keys version-comparator attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
        (custom-creator class)
        primary-keys
        version-keys
+       version-comparator
        (map
 	(fn [[key type mutable]] (Attribute. key type mutable (custom-getter class type key)))
 	attribute-specs)))
 
 (defn #^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Collection attributes]
+  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
-    (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys attributes)))
+    (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys version-comparator attributes)))
 
 (let [custom-metadata-cache (atom {})]
 
   (defn #^Metadata custom-metadata
     "create metadata for a Model containing instances of a Class"
-    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Collection attributes]
+    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
     (let [cache-key [superclass primary-keys version-keys attributes]]
       ((swap!
 	custom-metadata-cache 
 	(fn [cache key]
 	    (if (contains? cache key)
 	      cache
-	      (assoc cache key (custom-metadata2 class-name superclass primary-keys version-keys attributes))))
+	      (assoc cache key (custom-metadata2 class-name superclass primary-keys version-keys version-comparator attributes))))
 	cache-key)
        cache-key)))
 
@@ -243,6 +245,7 @@
        (proxy [Creator] [] (create [args] args))
        [0]
        [1]
+       (proxy [Metadata$Comparator][] (highest [v1 v2] (if (>= (nth 1 v1) (nth 1 v2)) v1 v2)))
        (map
 	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
@@ -271,13 +274,14 @@
 		  (#^{:tag ~output-type} get [~arg-symbol] (~key ~arg-symbol))))))
 
 
-(defn #^Metadata record-metadata2 [primary-keys version-keys attributes]
+(defn #^Metadata record-metadata2 [primary-keys version-keys version-comparator attributes]
   "make a record-based Metadata instance"
   (let [class (record-class attributes)]
     (new MetadataImpl
 	 (record-creator class)
 	 primary-keys
 	 version-keys
+	 version-comparator
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
 
 
@@ -285,12 +289,12 @@
 
   (defn #^Metadata record-metadata
     "return memoized record-metadata"
-    [primary-keys version-keys attributes]
+    [primary-keys version-keys version-comparator attributes]
     (let [cache-key [primary-keys version-keys attributes]]
       ((swap!
 	record-metadata-cache 
 	(fn [cache key]
-	    (if (contains? cache key) cache (assoc cache key (record-metadata2 primary-keys version-keys attributes))))
+	    (if (contains? cache key) cache (assoc cache key (record-metadata2 primary-keys version-keys version-comparator attributes))))
 	cache-key)
        cache-key)))
 

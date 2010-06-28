@@ -33,14 +33,19 @@ import java.util.Collection;
 import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
+	
+	public static interface Comparator<V> extends Serializable {
+		V highest(V v1, V v2);
+	}
 
 	Creator<V> getCreator();
 
 	// keys
-	Getter<K, V> getPrimaryGetter();
 	Collection<Object> getPrimaryKeys();
+	Getter<K, V> getPrimaryGetter();
 	
 	Collection<Object> getVersionKeys();
+	Comparator<V> getVersionComparator();
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();
