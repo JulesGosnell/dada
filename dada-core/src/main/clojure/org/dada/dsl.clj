@@ -171,11 +171,12 @@
   (str "sum(" key ")"))
 
 (defn #^Metadata sum-reducer-metadata
-  [#^Collection keys sum-key #^Collection extra-attribute-specs]
+  [#^Collection primary-keys sum-key #^Collection extra-attribute-specs]
   (custom-metadata 
    (name (gensym "org.dada.core.reducer.Sum"))
    Object
-   keys
+   primary-keys
+   [:version]
    (concat
     extra-attribute-specs
     [[:version Integer true]
@@ -216,11 +217,12 @@
   (str "count(" (or count-key "*")  ")"))
 
 (defn #^Metadata count-reducer-metadata
-  [#^Collection keys count-key #^Collection extra-attribute-specs]
+  [#^Collection primary-keys count-key #^Collection extra-attribute-specs]
   (custom-metadata
    (name (gensym "org.dada.core.reducer.Count"))
    Object
-   keys
+   primary-keys
+   [:version]
    (concat
     extra-attribute-specs
     [[:version Integer true]
@@ -616,14 +618,15 @@
 
 ;; pivot fn must supply such a closed list of values to be used as
 ;; attribute metadata for output model....
-(defn pivot-metadata [#^Metadata src-metadata #^Collection keys #^Collection pivot-values value-key]
+(defn pivot-metadata [#^Metadata src-metadata #^Collection primary-keys #^Collection pivot-values value-key]
   (let [value-type (.getType (.getAttribute src-metadata value-key))]
     (custom-metadata 
      (name (gensym "org.dada.core.Pivot"))
      Object
-     keys
+     primary-keys
+     [:version]
      (concat
-      (map #(.getAttribute src-metadata %) keys)
+      (map #(.getAttribute src-metadata %) primary-keys)
       [[:version Integer true]]
       (map #(vector % value-type true) pivot-values)))))
 

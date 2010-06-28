@@ -30,6 +30,7 @@ package org.dada.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 
 	private final Creator<V> creator;
 	private final List<Attribute<Object, V>> attributes;
+	private final Collection<Object> versionKeys;
 	private final Collection<Object> primaryKeys;
 	private final Getter<K, V> primaryGetter;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
@@ -45,7 +47,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 
 	private final Getter<?, V>[] getters; // for fast lookup
 	
-	public MetadataImpl(Creator<V> creator, Collection<Object> primaryKeys, Collection<Attribute<Object, V>> attributes) {
+	public MetadataImpl(Creator<V> creator, Collection<Object> primaryKeys, Collection<Object> versionKeys, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
 		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
@@ -81,6 +83,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 				}
 			};
 		}
+		this.versionKeys = versionKeys;
 }
 
 
@@ -100,6 +103,11 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	}
 
 	@Override
+	public Collection<Object> getVersionKeys() {
+		return versionKeys;
+	}
+
+	@Override
 	public Creator<V> getCreator() {
 		return creator;
 	}
@@ -113,5 +121,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	public List<Attribute<Object, V>> getAttributes() {
 		return attributes;
 	}
+
 
 }

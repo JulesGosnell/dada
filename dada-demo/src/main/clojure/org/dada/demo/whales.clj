@@ -112,7 +112,7 @@
       [:weight   (Float/TYPE)   true]
       ))
 
-(def #^Metadata whale-metadata (custom-metadata "org.dada.demo.whales.Whale" Object [:id] md-attributes))
+(def #^Metadata whale-metadata (custom-metadata "org.dada.demo.whales.Whale" Object [:id] [:version] md-attributes))
 ;;(def #^Metadata whale-metadata (record-metadata [:id] md-attributes))
 
 ;;--------------------------------------------------------------------------------

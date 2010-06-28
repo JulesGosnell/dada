@@ -202,31 +202,34 @@
 		  ;;(println "CREATOR" class (map identity args))
 		  (apply make-instance class args))))
 
-(defn #^Metadata custom-metadata3 [#^Class class keys attribute-specs]
+(defn #^Metadata custom-metadata3 [#^Class class primary-keys version-keys attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
        (custom-creator class)
-       keys
+       primary-keys
+       version-keys
        (map
 	(fn [[key type mutable]] (Attribute. key type mutable (custom-getter class type key)))
 	attribute-specs)))
 
 (defn #^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
+  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Collection attributes]
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
-    (custom-metadata3 (apply custom-class class-name superclass class-attributes) keys attributes)))
+    (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys attributes)))
 
 (let [custom-metadata-cache (atom {})]
 
   (defn #^Metadata custom-metadata
     "create metadata for a Model containing instances of a Class"
-    [#^String class-name #^Class superclass #^Collection keys #^Collection attributes]
-    (let [cache-key [superclass keys attributes]]
+    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Collection attributes]
+    (let [cache-key [superclass primary-keys version-keys attributes]]
       ((swap!
 	custom-metadata-cache 
 	(fn [cache key]
-	    (if (contains? cache key) cache (assoc cache key (custom-metadata2 class-name superclass keys attributes))))
+	    (if (contains? cache key)
+	      cache
+	      (assoc cache key (custom-metadata2 class-name superclass primary-keys version-keys attributes))))
 	cache-key)
        cache-key)))
 
@@ -239,6 +242,7 @@
   (new MetadataImpl
        (proxy [Creator] [] (create [args] args))
        [0]
+       [1]
        (map
 	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
@@ -267,12 +271,13 @@
 		  (#^{:tag ~output-type} get [~arg-symbol] (~key ~arg-symbol))))))
 
 
-(defn #^Metadata record-metadata2 [keys attributes]
+(defn #^Metadata record-metadata2 [primary-keys version-keys attributes]
   "make a record-based Metadata instance"
   (let [class (record-class attributes)]
     (new MetadataImpl
 	 (record-creator class)
-	 keys
+	 primary-keys
+	 version-keys
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
 
 
@@ -280,12 +285,12 @@
 
   (defn #^Metadata record-metadata
     "return memoized record-metadata"
-    [keys attributes]
-    (let [cache-key [keys attributes]]
+    [primary-keys version-keys attributes]
+    (let [cache-key [primary-keys version-keys attributes]]
       ((swap!
 	record-metadata-cache 
 	(fn [cache key]
-	    (if (contains? cache key) cache (assoc cache key (record-metadata2 keys attributes))))
+	    (if (contains? cache key) cache (assoc cache key (record-metadata2 primary-keys version-keys attributes))))
 	cache-key)
        cache-key)))
 

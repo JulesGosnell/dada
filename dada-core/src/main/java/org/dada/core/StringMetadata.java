@@ -37,6 +37,7 @@ public class StringMetadata implements Metadata<String, String> {
 	private final Creator<String> creator;
 	private final Collection<Object> primaryKeys;
 	private final Getter<String, String> primaryGetter;
+	private final Collection<Object> versionKeys;
 	private final List<Attribute<Object, String>> attributes;
 	private final Getter<Object, String> getter;
 	
@@ -44,6 +45,7 @@ public class StringMetadata implements Metadata<String, String> {
 		getter = new Getter<Object, String>() {@Override public Object get(String value) {return value;}};
 		primaryKeys = Collections.singleton(primaryKey);
 		primaryGetter = new Getter<String, String>() {@Override public String get(String value) {return value;}};
+		versionKeys = Collections.singleton((Object)0);
 		creator = new Creator<String>() {@Override public String create(Object... args) {return (String)args[0];}};
 		attributes = Collections.singletonList(new Attribute<Object, String>(primaryKey, String.class, false, getter));
 	}
@@ -72,6 +74,11 @@ public class StringMetadata implements Metadata<String, String> {
 	@Override
 	public Getter<String, String> getPrimaryGetter() {
 		return primaryGetter;
+	}
+
+	@Override
+	public Collection<Object> getVersionKeys() {
+		return versionKeys;
 	}
 
 	@Override
