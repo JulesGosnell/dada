@@ -245,7 +245,7 @@
        (proxy [Creator] [] (create [args] args))
        [0]
        [1]
-       (proxy [Metadata$Comparator][] (highest [v1 v2] (if (>= (nth 1 v1) (nth 1 v2)) v1 v2)))
+       (proxy [Metadata$Comparator][] (higher [[_ v1] [_ v2]] (> v1 v2)))
        (map
 	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
@@ -343,7 +343,7 @@
   "make a SQL query and return the ResultSet as a Model"
   [model-name #^Connection connection #^String sql]
   (let [result-set (.executeQuery (.prepareStatement connection sql))
-	metadata (record-metadata [:id] (sql-attributes (.getMetaData result-set))) ;lets use records...
+	metadata (record-metadata [:id] [] nil (sql-attributes (.getMetaData result-set))) ;lets use records...
 	data (sql-data metadata result-set)
 	sql-model (model model-name nil metadata)]
     (.close result-set)
