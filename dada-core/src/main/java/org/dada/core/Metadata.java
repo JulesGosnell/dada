@@ -35,7 +35,7 @@ import java.util.List;
 public interface Metadata<K, V> extends Serializable {
 	
 	public static interface Comparator<V> extends Serializable {
-		V highest(V v1, V v2);
+		boolean higher(V oldValue, V newValue);
 	}
 
 	Creator<V> getCreator();

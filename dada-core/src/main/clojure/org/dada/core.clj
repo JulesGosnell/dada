@@ -245,7 +245,7 @@
        (proxy [Creator] [] (create [args] args))
        [0]
        [1]
-       (proxy [Metadata$Comparator][] (higher [[_ v1] [_ v2]] (> v1 v2)))
+       (proxy [Metadata$Comparator][] (higher [[_ v1] [_ v2]] (> v2 v1)))
        (map
 	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
