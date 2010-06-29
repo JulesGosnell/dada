@@ -43,7 +43,7 @@
 
 (def #^Metadata$Comparator int-version-comparator
      (proxy [Metadata$Comparator][]
-	    (highest [datum1 datum2] (if (>= (.getVersion datum1) (.getVersion datum2)) datum1 datum2))))
+	    (higher [old new] (> (.getVersion new) (.getVersion old)))))
 
 ;;----------------------------------------
 ;; Filtration - should be implemented as a thin wrapper around Splitter

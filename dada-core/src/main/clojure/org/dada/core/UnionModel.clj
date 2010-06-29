@@ -35,7 +35,7 @@
 		     ;; first time seen
 		     [(assoc extant key new) extinct (cons (Update. nil new) i) a d] ;insertion
 		     ;; already deleted
-		     (if (= new (.highest version-comparator removed new))
+		     (if (.higher version-comparator removed new)
 		       ;; later version - reinstated
 		       [(assoc extant key new) (dissoc extinct key) (cons (Update. nil new) i) a d]
 		       (do
@@ -45,7 +45,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (= (.highest version-comparator current new) new)
+		 (if (.higher version-comparator current new)
 		   ;; later version - accepted
 		   [(assoc extant key new) extinct i (cons (Update. current new) a) d] ;alteration
 		   (do
@@ -64,14 +64,14 @@
 		   (if (nil? removed)
 		     ;; neither extant or extinct - mark extinct
 		     [extant (dissoc extinct key) i a d]
-		     (if (= (.highest version-comparator removed new) new)
+		     (if (.higher version-comparator removed new)
 		       ;; later version - accepted
 		       [extant (assoc extinct key new) i a (cons (Update. removed new) d)]
 		       (do
 			 ;; earlier version - ignored
 			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct i a d]))))
-		 (if (= (.highest version-comparator current new) new)
+		 (if (.higher version-comparator current new)
 		   ;; later version - accepted
 		   [(dissoc extant key) (assoc extinct key new) i a (cons (Update. current new) d)]
 		   (do
