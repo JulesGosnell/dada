@@ -290,7 +290,7 @@
   (defn #^Metadata record-metadata
     "return memoized record-metadata"
     [primary-keys version-keys version-comparator attributes]
-    (let [cache-key [primary-keys version-keys attributes]]
+    (let [cache-key [primary-keys version-keys version-comparator attributes]]
       ((swap!
 	record-metadata-cache 
 	(fn [cache key]
@@ -332,22 +332,12 @@
 
 ;;--------------------------------------------------------------------------------
 
-
-(defn model [#^String model-name version-key #^Metadata metadata]
-  (let [version-fn (if version-key
-		     (let [version-getter (.getGetter (.getAttribute metadata version-key))]
-		       (fn [old new] (> (.get version-getter new) (.get version-getter old))))
-		     (fn [_ new] new))]
-    (UnionModel. model-name metadata version-fn))) ;; version-fn should be retrieved from metadata
+(defn model [#^String model-name #^Metadata metadata]
+  (UnionModel. model-name metadata))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
-  (let [metadata (.getMetadata model)
-	version-getter (.getGetter (.getAttribute metadata (second keys)))]
-    (UnionModel.
-     name
-     metadata
-     (fn [old new] (> (.get version-getter new) (.get version-getter old))))))
+  (UnionModel. name (.getMetadata model)))
 
 (defn sql-model
   "make a SQL query and return the ResultSet as a Model"

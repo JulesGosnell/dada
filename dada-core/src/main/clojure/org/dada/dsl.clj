@@ -131,7 +131,7 @@
 		      []
 		      (create [key]
 			      (let [value (key-to-value key)
-				    view (model (src-name-fn value) src-version src-metadata)]
+				    view (model (src-name-fn value) src-metadata)]
 				(.decouple
 				 *internal-view-service-factory*
 				 (view-hook view value))
@@ -405,7 +405,7 @@
      (fn [] [(.getMetadata src-model) metaprefix '()])
      ;; data
      (fn []
-	 (let [metamodel (model (str "Meta-" prefix) nil (seq-metadata 1))]
+	 (let [metamodel (model (str "Meta-" prefix) (seq-metadata 1))]
 	   (insert metamodel [src-model '()])
 	   (insert *metamodel* metamodel)
 	   [metamodel prefix '()]))]))
@@ -427,7 +427,7 @@
 
 (defn meta-view [#^String suffix #^Model src-metamodel f]
   ;; create a metamodel into which t place our results...
-  (let [tgt-metamodel (model (str (.getName src-metamodel) suffix) nil (.getMetadata src-metamodel))]
+  (let [tgt-metamodel (model (str (.getName src-metamodel) suffix) (.getMetadata src-metamodel))]
     ;; register it with the global metamodel
     (insert *metamodel* tgt-metamodel)
     ;; view upstream metamodel for arrival of results
@@ -449,7 +449,7 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   tgt-model (model (or model-name (str prefix ".union()")) nil src-metadata)
+		   tgt-model (model (or model-name (str prefix ".union()")) src-metadata)
 		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model extra-pairs] (connect src-model tgt-model)))]
 	       (insert *metamodel* tgt-model)
 	       (insert tgt-metamodel [tgt-model extra-pairs])
@@ -473,7 +473,7 @@
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
 		     dummy (trace "COUNT extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (count-value-key count-key))
-		     tgt-model (model new-prefix nil src-metadata)
+		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (count-value-key count-key))
 				    src-metamodel
@@ -505,7 +505,7 @@
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
 		     dummy (trace "SUM extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (sum-value-key sum-key))
-		     tgt-model (model new-prefix nil src-metadata)
+		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (sum-value-key sum-key))
 				    src-metamodel
@@ -554,7 +554,7 @@
 	     (let [src-data-tuple (direct-fn)
 		   [#^Model src-metamodel src-prefix #^Collection src-extra-pairs] src-data-tuple
 		   dummy (trace "SPLIT src-extra-pairs" src-extra-pairs)
-		   tgt-metamodel (model (str (.getName src-metamodel) suffix) nil (.getMetadata src-metamodel))
+		   tgt-metamodel (model (str (.getName src-metamodel) suffix) (.getMetadata src-metamodel))
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
 		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
@@ -575,7 +575,7 @@
 					   chain-fn (if subchain
 					; plug split -> sub -> tgt
 						      (fn [#^Model split-model split-extra-value]
-							  (let [split-metamodel (model (str (.getName src-metamodel) (str suffix "=" split-extra-value)) nil (.getMetadata src-metamodel))
+							  (let [split-metamodel (model (str (.getName src-metamodel) (str suffix "=" split-extra-value)) (.getMetadata src-metamodel))
 								split-prefix (str tgt-prefix "=" split-extra-value)
 								split-extra-pairs (concat src-extra-pairs [[split-key split-extra-value]])
 								dummy (trace "SPLIT split-extra-pairs" split-extra-pairs)
@@ -662,7 +662,6 @@
 			      (str prefix tgt-name)
 			      src-metadata
 			      (map second extra-pairs)
-			      (fn [old new] new) ;TODO - sort out version-fn
 			      value-key
 			      pivot-values
 			      tgt-metadata)

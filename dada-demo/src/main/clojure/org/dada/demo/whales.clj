@@ -117,7 +117,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(def #^Model whales-model (model "Whales" :version whale-metadata))
+(def #^Model whales-model (model "Whales" whale-metadata))
 
 (start-server)
 

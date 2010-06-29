@@ -1,11 +1,11 @@
 (ns org.dada.core.UnionModel
     (:import
      [java.util Collection]
-     [org.dada.core AbstractModel Metadata Update]
+     [org.dada.core AbstractModel Metadata Metadata$Comparator Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
-     :constructors {[String org.dada.core.Metadata clojure.lang.IFn] [String org.dada.core.Metadata]}
+     :constructors {[String org.dada.core.Metadata] [String org.dada.core.Metadata]}
      :methods []
      :init init
      :state state
@@ -14,12 +14,13 @@
 
 ;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
 
-(defn -init [#^String model-name #^Metadata tgt-metadata #^IFn version-fn]
+(defn -init [#^String model-name #^Metadata tgt-metadata]
 
   [ ;; super ctor args
    [model-name tgt-metadata]
    ;; instance state
    (let [key-getter (.getPrimaryGetter tgt-metadata)
+	 version-comparator (.getVersionComparator tgt-metadata)
 	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition
@@ -34,7 +35,7 @@
 		     ;; first time seen
 		     [(assoc extant key new) extinct (cons (Update. nil new) i) a d] ;insertion
 		     ;; already deleted
-		     (if (version-fn removed new)
+		     (if (= new (.highest version-comparator removed new))
 		       ;; later version - reinstated
 		       [(assoc extant key new) (dissoc extinct key) (cons (Update. nil new) i) a d]
 		       (do
@@ -44,7 +45,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (version-fn current new)
+		 (if (= (.highest version-comparator current new) new)
 		   ;; later version - accepted
 		   [(assoc extant key new) extinct i (cons (Update. current new) a) d] ;alteration
 		   (do
@@ -63,14 +64,14 @@
 		   (if (nil? removed)
 		     ;; neither extant or extinct - mark extinct
 		     [extant (dissoc extinct key) i a d]
-		     (if (version-fn removed new)
+		     (if (= (.highest version-comparator removed new) new)
 		       ;; later version - accepted
 		       [extant (assoc extinct key new) i a (cons (Update. removed new) d)]
 		       (do
 			 ;; earlier version - ignored
 			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct i a d]))))
-		 (if (version-fn current new)
+		 (if (= (.highest version-comparator current new) new)
 		   ;; later version - accepted
 		   [(dissoc extant key) (assoc extinct key new) i a (cons (Update. current new) d)]
 		   (do

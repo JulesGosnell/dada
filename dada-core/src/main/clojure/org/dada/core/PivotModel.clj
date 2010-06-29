@@ -5,7 +5,7 @@
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
-     :constructors {[String org.dada.core.Metadata java.util.Collection clojure.lang.IFn Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
+     :constructors {[String org.dada.core.Metadata java.util.Collection Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
      :methods []
      :init init
      :state state
@@ -53,16 +53,16 @@
 (defn -init [#^String model-name
 	     #^Metadata src-metadata  ;e.g. [day count]
 	     #^Collection const-keys  ; e.g. ["orca" "atlantic"]
-	     #^IFn version-fn	      ; src version fn
 	     #^Comparable src-value-key  ;e.g. :count
 	     #^Collection tgt-keys    ;e.g. [:mon :tue :wed :thu :fri]
   	     #^Metadata tgt-metadata] ;e.g. [type mon tue wed thu fri]
-  ;;(println "PIVOT:" model-name src-metadata const-keys version-fn src-value-key tgt-keys tgt-metadata)
+  ;;(println "PIVOT:" model-name src-metadata const-keys src-value-key tgt-keys tgt-metadata)
   [ ;; super ctor args
    [model-name tgt-metadata]
-   ;; instance state
+   ;; instance staten
    (let [key-getter (.getPrimaryGetter src-metadata)
 	 key-fn (fn [value] (.get key-getter value))
+	 version-comparator (.getVersionComparator src-metadata)
 
 	 ;;----------------------------------------
 	 ;; pivot stuff
@@ -110,7 +110,7 @@
 		     (let [new-pivotted (pivot-fn pivotted key new)]
 		       [(assoc extant key new) extinct new-pivotted (cons (Update. nil new-pivotted) i) a d]) ;insertion
 		     ;; already deleted
-		     (if (version-fn removed new)
+		     (if (= (.highest version-comparator removed new) new)
 		       ;; later version - reinstated
 		       (let [new-pivotted (pivot-fn pivotted key new)]
 			 [(assoc extant key new) (dissoc extinct key) new-pivotted (cons (Update. nil new-pivotted) i) a d])
@@ -121,7 +121,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (version-fn current new)
+		 (if (= (.highest version-comparator current new) new)
 		   ;; later version - accepted
 		   (let [new-pivotted (pivot-fn pivotted key new)]
 		     [(assoc extant key new) extinct new-pivotted i (cons (Update. pivotted new-pivotted) a) d]) ;alteration
@@ -141,7 +141,7 @@
 		   (if (nil? removed)
 		     ;; neither extant or extinct - mark extinct
 		     [extant (dissoc extinct key) pivotted i a d]
-		     (if (version-fn removed new)
+		     (if (= (.highest version-comparator removed new) new)
 		       ;; later version - accepted
 		       (let [new-pivotted  (pivot-fn pivotted key new)]
 			 [extant (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)]) ;TODO - is this right ?
@@ -149,7 +149,7 @@
 			 ;; earlier version - ignored
 			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct pivotted i a d]))))
-		 (if (version-fn current new)
+		 (if (= (.highest version-comparator current new) new)
 		   ;; later version - accepted
 		   (let [new-pivotted (unpivot-fn pivotted key)]
 		     [(dissoc extant key) (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)])
