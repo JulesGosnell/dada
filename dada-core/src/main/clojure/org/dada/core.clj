@@ -343,9 +343,16 @@
 
 (defn sql-model
   "make a SQL query and return the ResultSet as a Model"
-  [model-name #^Connection connection #^String sql]
+  [model-name #^Connection connection #^String sql primary-keys version-keys version-comparator]
   (let [result-set (.executeQuery (.prepareStatement connection sql))
-	metadata (record-metadata [:id] [] nil (sql-attributes (.getMetaData result-set))) ;lets use records...
+	;;metadata (record-metadata [:id] [] nil (sql-attributes (.getMetaData result-set))) ;lets use records...
+	metadata (custom-metadata 
+		  (name (gensym "org.dada.core.SQLModel"))
+		  Object
+		  primary-keys
+		  version-keys
+		  version-comparator
+		  (sql-attributes (.getMetaData result-set)))
 	data (sql-data metadata result-set)
 	sql-model (model model-name metadata)]
     (.close result-set)
