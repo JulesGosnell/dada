@@ -25,14 +25,26 @@
 ;; row to some other more complex form ?
 
 (defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
+  ;;(println "PIVOT KEYS" pivot-keys)
   (let [version-getter (.getVersionGetter tgt-metadata)
-	;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
-	#^Map getter-map (reduce
-			   (fn [old #^Attribute new]
-			       (assoc old (.getKey new) (let [#^Getter getter (.getGetter new)]
-							  (fn [new-value old-values] (.get getter old-values)))))
-			   (array-map)
-			   (reverse (.getAttributes tgt-metadata))) ;; items are pushed on head of map, so we reverse before starting
+	;; a map of keys and fns taking new and old values and
+	;; returning the application of the getter on the old value
+	#^Map getter-map (apply
+			  array-map
+			  (mapcat
+			   (fn [#^Attribute new]
+			       [(.getKey new)
+				(let [#^Getter getter (.getGetter new)]
+				  (fn [new-value old-values] (.get getter old-values)))])
+			   (.getAttributes tgt-metadata)))
+
+	;; #^Map getter-map (reduce
+	;; 		   (fn [old #^Attribute new]
+	;; 		       (assoc old (.getKey new) (let [#^Getter getter (.getGetter new)]
+	;; 						  (fn [new-value old-values] (.get getter old-values)))))
+	;; 		   (array-map)
+	;; 		   (reverse (.getAttributes tgt-metadata)))
+	;; items are pushed on head of map, so we reverse before starting
 
 	;; attribute-keys (map #(.getKey %) attributes)
 	;; attribute-getters (map #(.getGetter %) attributes)
@@ -88,7 +100,9 @@
 	 pivot-fn (fn [old-pivotted key src-value] ;e.g. [["Sei Whale" Mon ... 20 ...] Mon [Mon 21]]
 		      (let [src-value-value (.get src-value-getter src-value) ;; e.g. 20
 			    pivot-fns (pivot-map key)
+			    ;;dummy (println "PIVOT FNS" pivot-fns)
 			    pivot-values (map #(% src-value-value old-pivotted) pivot-fns)
+			    ;;dummy (println "PIVOT VALUES" pivot-values)
 			    new-pivotted (.create pivot-creator (into-array Object pivot-values))]
 			new-pivotted))
 
