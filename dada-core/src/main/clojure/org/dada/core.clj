@@ -345,7 +345,7 @@
   (let [result-set (.executeQuery (.prepareStatement connection sql))
 	metadata (record-metadata [:id] [] nil (sql-attributes (.getMetaData result-set))) ;lets use records...
 	data (sql-data metadata result-set)
-	sql-model (model model-name nil metadata)]
+	sql-model (model model-name metadata)]
     (.close result-set)
     (insert-n sql-model data)
     sql-model))
