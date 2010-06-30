@@ -110,17 +110,19 @@
 (defmethod attribute-key Date [#^Date date] (attribute-key (str "attribute" date)))
 (defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
 
-(def string-replacements {
+(def string-replacements
+     (array-map
      "_" "_underscore_"
      " " "_space_"
      ":" "_colon_"
+     "." "_fullstop_"
      "*" "_asterisk_"
      "+" "_plus_"
      "-" "_minus_"
      "/" "_divide_"
      "(" "_openroundbracket_"
      ")" "_closeroundbracket_"
-     })
+     ))
 
 (defmethod attribute-key String [#^String string] 
   (reduce (fn [#^String string [#^String key #^String value]] (.replace string key value))
