@@ -45,6 +45,7 @@ public interface Metadata<K, V> extends Serializable {
 	Getter<K, V> getPrimaryGetter();
 	
 	Collection<Object> getVersionKeys();
+	Getter<?, V> getVersionGetter();
 	Comparator<V> getVersionComparator();
 	
 	// keyed access

@@ -42,6 +42,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	private final Collection<Object> primaryKeys;
 	private final Getter<K, V> primaryGetter;
 	private final Collection<Object> versionKeys;
+	private final Getter<?, V> versionGetter;
 	private final Comparator<V> versionComparator;
 	private final Map<Object, Attribute<Object, V>> keyToAttribute;
 	private final Map<Object, Getter<?, V>> keyToGetter;
@@ -85,6 +86,24 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 			};
 		}
 		this.versionKeys = versionKeys;	
+		if (versionKeys.size() == 1) {
+			versionGetter = keyToGetter.get(versionKeys.iterator().next());
+		} else {
+			final Getter<Comparable<?>, V>[] getters = new Getter[versionKeys.size()];
+			int i = 0;
+			for (Object key : versionKeys)
+				getters[i++] = (Getter<Comparable<?>, V>)keyToGetter.get(key);
+			versionGetter = new Getter<Object, V>() {
+				@Override
+				public Object get(V value) {
+					Comparable<?>[] args = new Comparable[getters.length];
+					int i = 0;
+					for (Getter<Comparable<?>, V> getter : getters)
+						args[i++] = getter.get(value);
+					return (K)new Tuple(args);
+				}
+			};
+		}
 		this.versionComparator = versionComparator;
 }
 
@@ -127,6 +146,12 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	@Override
 	public List<Attribute<Object, V>> getAttributes() {
 		return attributes;
+	}
+
+
+	@Override
+	public Getter<?, V> getVersionGetter() {
+		return versionGetter;
 	}
 
 }

@@ -18,8 +18,14 @@
 ;; (apply tgt-creator (map #(% new-value old-values) (pivot-map key)))
 ;; will copy the value into a new version of the correctly keyed pivotted row...
 
+;; TODO: at the moment a new pivotted row is produced for every
+;; underlying data change. Perhaps it would be more efficient to sort
+;; data changes into rows and then only create each row once ? Or
+;; would we just be moving the weight of object creation from pivotted
+;; row to some other more complex form ?
+
 (defn make-pivot-map [pivot-keys #^Metadata tgt-metadata]
-  (let [version-getter (.getGetter (.getAttribute tgt-metadata :version)) ;HACK
+  (let [version-getter (.getVersionGetter tgt-metadata)
 	;; a map of keys and fns taking new and old values and returning the appliction of the getter on the old value
 	#^Map getter-map (reduce
 			   (fn [old #^Attribute new]
@@ -45,6 +51,7 @@
 	   (let [#^Map pivot-map (LinkedHashMap. getter-map)]
 	     (.put pivot-map pivot-key (fn [new-value old-values] new-value))
 	     ;; TODO: increment version...properly...
+	     ;; TODO: why are we using a mutable Map here ?
 	     (.put pivot-map :version (fn [new-value old-values] (let [version (.get version-getter old-values)] (if version (+ version 1) 0))))
 	     [pivot-key (vals pivot-map)]))
        pivot-keys)))

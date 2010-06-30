@@ -119,4 +119,10 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		throw new UnsupportedOperationException("NYI");
 	}
 
+	@Override
+	public Getter<K, V> getVersionGetter() {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }
