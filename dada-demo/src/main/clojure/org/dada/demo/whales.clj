@@ -256,5 +256,6 @@
 (? [(split :ocean nil [(ccount)])] all-whales)
 (? [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)] all-whales)
 (? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+(? [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
 
 ;;--------------------------------------------------------------------------------
