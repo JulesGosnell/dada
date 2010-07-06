@@ -305,19 +305,27 @@
 ;;--------------------------------------------------------------------------------
 
 (defn sql-attributes 
-  "Derive a sequence of MetaData attributes from a SQL ResultSet"
-  [#^ResultSetMetaData sql-metadata]
+  "Derive a sequence of MetaData attributes from an SQL ResultSet"
+  [#^ResultSetMetaData sql-metadata type-translations]
   (map
    (fn [column]
-       [(keyword (.getColumnName sql-metadata column))
-	(Class/forName (.getColumnClassName sql-metadata column))
-	true])			 ;we don't know - so assume mutability
+       (let [key (keyword (.getColumnName sql-metadata column))]
+	 [key
+	  (or (let [[type] (type-translations key)] type)
+	      (Class/forName (.getColumnClassName sql-metadata column)))
+	  true]))		 ;we don't know - so assume mutability
    (range 1 (+ 1 (.getColumnCount sql-metadata)))))
 
 (defn sql-data
   "Create a sequence from some MetaData and a SQL ResultSet"
-  [#^Metadata metadata #^ResultSet result-set]
-  (let [creator (.getCreator metadata)]
+  [#^Metadata metadata #^ResultSet result-set type-translations]
+  (let [creator (.getCreator metadata)
+	readers (map
+		 (fn [#^Attribute attribute]
+		     (let [[_ translator] (type-translations (.getKey attribute))]
+		       (or translator
+			   (fn [#^ResultSet result-set #^Integer column-index] (.getObject result-set column-index)))))
+		 (.getAttributes metadata))]
     (loop [output nil]
       (if (.next result-set)
 	(recur
@@ -327,8 +335,9 @@
 	   (into-array
 	    Object
 	    (map 
-	     (fn [#^Integer column] (.getObject result-set column))
-	     (range 1 (+ 1 (count (.getAttributes metadata)))))))
+	     (fn [reader #^Integer column-index] (reader result-set column-index))
+	     readers
+	     (iterate inc 1))))
 	  output))
 	output))))
 
@@ -343,17 +352,16 @@
 
 (defn sql-model
   "make a SQL query and return the ResultSet as a Model"
-  [model-name #^Connection connection #^String sql primary-keys version-keys version-comparator]
+  [model-name #^Connection connection #^String sql primary-keys version-keys version-comparator & [type-translations]]
   (let [result-set (.executeQuery (.prepareStatement connection sql))
-	;;metadata (record-metadata [:id] [] nil (sql-attributes (.getMetaData result-set))) ;lets use records...
 	metadata (custom-metadata 
 		  (name (gensym "org.dada.core.SQLModel"))
 		  Object
 		  primary-keys
 		  version-keys
 		  version-comparator
-		  (sql-attributes (.getMetaData result-set)))
-	data (sql-data metadata result-set)
+		  (sql-attributes (.getMetaData result-set) type-translations))
+	data (sql-data metadata result-set type-translations)
 	sql-model (model model-name metadata)]
     (.close result-set)
     (insert-n sql-model data)
