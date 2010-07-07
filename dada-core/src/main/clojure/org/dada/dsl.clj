@@ -623,6 +623,9 @@
 	       tgt-data-tuple))]))
   )
 
+(defn ffilter [key required-value]
+  (split key (fn [candidate-value] (if (= candidate-value required-value) (list candidate-value) '()))))
+
 ;; pivot fn must supply such a closed list of values to be used as
 ;; attribute metadata for output model....
 (defn pivot-metadata [#^Metadata src-metadata #^Collection primary-keys #^Collection pivot-values value-key]
