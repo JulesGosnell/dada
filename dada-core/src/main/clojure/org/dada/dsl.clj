@@ -31,7 +31,9 @@
 	   Transformer$StatelessStrategy
 	   Update
 	   View
-	   ])
+	   ]
+	  [org.joda.time
+	   LocalDate])
  )
 
 ;;--------------------------------------------------------------------------------
@@ -627,7 +629,7 @@
 
 (defn ffilter
   ([key predicate required]
-   (let [yes (list value) no '()]
+   (let [yes (list required) no '()]
      (split key (fn [candidate] (if (predicate candidate required) yes no)))))
   ([key required]
    (ffilter key = required)))
@@ -680,3 +682,6 @@
 	       [tgt-metamodel (str prefix ".union()") extra-pairs]))])
       ))
 
+;; types
+
+(defn date [#^Integer y #^Integer m #^Integer d] (LocalDate. y m d))
