@@ -40,6 +40,7 @@
 ;;     (println "GET DATA ->" @mutable-state)
 ;;     extant))
 
+(import org.dada.core.Deregistration)
 (import org.dada.core.Registration)
 (import org.dada.core.View)
 
@@ -62,7 +63,7 @@
     ;;(println "UNVIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
     ;;(println "UNVIEW <-" @mutable)
-    (vals extant)
+    (Deregistration. (vals extant))
     ))
 
 (defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]

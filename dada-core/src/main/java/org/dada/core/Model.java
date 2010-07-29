@@ -35,7 +35,7 @@ public interface Model<K, V> extends Lifecycle {
 	String getName();
 
 	Registration<K, V> registerView(View<V> view);
-	Collection<V> deregisterView(View<V> view);
+	Deregistration<K, V> deregisterView(View<V> view);
 	
 	Metadata<K, V> getMetadata();
 	Collection<V> getData();

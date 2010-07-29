@@ -82,12 +82,11 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			newViews.add(view);
 		} while (!views.compareAndSet(oldViews, newViews));
 		logger.debug("{}: registered view: {} -> {}", name, view, newViews);
-
 		return new Registration<K, V>(metadata, getData());
 	}
 
 	@Override
-	public Collection<V> deregisterView(View<V> view) {
+	public Deregistration<K, V> deregisterView(View<V> view) {
 		Collection<View<V>> oldViews;
 		Collection<View<V>> newViews;
 		do {
@@ -96,8 +95,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			newViews.remove(view);
 		} while (!views.compareAndSet(oldViews, newViews));
 		logger.debug("{}: deregistered view: {} -> {}", name, view, newViews);
-		Collection<V> values = getData();
-		return new ArrayList<V>(values); // TODO: hack - clojure containers not serialisable
+		return new Deregistration<K, V>(getData());
 	}
 
 	private final Collection<Update<V>> empty = Collections.emptyList();

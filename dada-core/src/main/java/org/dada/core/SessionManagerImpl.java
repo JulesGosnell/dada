@@ -1,6 +1,5 @@
 package org.dada.core;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,8 +25,8 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
-	public Collection<Object> deregisterView(String modelName, View<Object> view) {
-		Model<Object, Object> model = metamodel.getModel(modelName);
+	public Deregistration<Object, Object> deregisterView(String name, View<Object> view) {
+		Model<Object, Object> model = metamodel.getModel(name);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
 		// TODO - what about tidying up ServiceFactory resources ? Their allocation should be done
@@ -66,7 +65,7 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
-	public Collection<Object> deregisterQueryView(String query,
+	public Deregistration<Object, Object> deregisterQueryView(String query,
 			View<Object> view) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
