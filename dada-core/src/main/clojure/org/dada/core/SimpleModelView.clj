@@ -47,12 +47,12 @@
 ;; Registration
 (defn -registerView [#^org.dada.core.SimpleModelView this #^View view]
   (let [[[_ metadata] mutable] (.state this)
-	[extant] @mutable]
+	[extant extinct] @mutable]
     ;; N.B. does not check to see if View is already Registered
     ;;(println "VIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
     ;;(println "VIEW <-" @mutable)
-    (Registration. metadata (vals extant))
+    (Registration. metadata (vals extant) (vals extinct))
     )
   )
 
@@ -63,7 +63,7 @@
     ;;(println "UNVIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
     ;;(println "UNVIEW <-" @mutable)
-    (Deregistration. (vals extant))
+    (Deregistration. (vals extant) (vals extinct))
     ))
 
 (defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]

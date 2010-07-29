@@ -32,15 +32,18 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 public class Registration<K, V> implements Serializable {
 
 	private /*final*/ Metadata<K, V> metadata;
-	private /*final*/ Collection<V> data;
+	private /*final*/ Collection<V> extant;
+	private /*final*/ Collection<V> extinct;
 
-	public Registration(Metadata<K, V> metadata, Collection<V> data) {
+	public Registration(Metadata<K, V> metadata, Collection<V> extant, Collection<V> extinct) {
 		this.metadata = metadata;
-		this.data = data;
+		this.extant = (Collection<V>) (extant == null  ? Collections.emptyList() : extant);
+		this.extinct = (Collection<V>) (extinct == null  ? Collections.emptyList() : extinct);
 	}
 
 	public Metadata<K, V> getMetadata() {
@@ -48,27 +51,42 @@ public class Registration<K, V> implements Serializable {
 	}
 
 	public Collection<V> getData() {
-		return data;
+		return extant;
+	}
+
+	public Collection<V> getExtinct() {
+		return extinct;
 	}
 
 	// by managing our own serialisation here, we can take the opportunity to rewrite the container
-	// being used to hold our data...
+	// being used to hold our extant...
 	// this is useful because some clojure-1.1 and jdk-6 containers are NOT serialisable AND it reduces the
 	// size of our serialisation because the containers type info is now implicit so need not be sent BUT it
 	// IS a little unnecessary complexity...
 	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
 		out.writeObject(metadata);
-		out.writeInt(data.size());
-		for (V datum : data)
+		out.writeInt(extant.size());
+		for (V datum : extant)
+			out.writeObject(datum);
+		out.writeInt(extinct.size());
+		for (V datum : extinct)
 			out.writeObject(datum);
 	}
 	 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
 		metadata = (Metadata<K, V>)in.readObject();
-		int length = in.readInt();
-		data = new ArrayList<V>(length);
-		for (int i = 0; i < length ; i++)
-			data.add((V)in.readObject());
+		{
+			int length = in.readInt();
+			extant = new ArrayList<V>(length);
+			for (int i = 0; i < length ; i++)
+				extant.add((V)in.readObject());
+		}
+		{
+			int length = in.readInt();
+			extinct = new ArrayList<V>(length);
+			for (int i = 0; i < length ; i++)
+				extinct.add((V)in.readObject());
+		}
 	}
 }

@@ -67,7 +67,7 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
 	        assertTrue(data.iterator().next() == modelName);
 		}
         
-        final Registration<Object, Object> registration = new Registration<Object, Object>(null, null);
+        final Registration<Object, Object> registration = new Registration<Object, Object>(null, null, null);
         final View<Object> view = mock(View.class);
 
         // register a view - unsuccessfully 
