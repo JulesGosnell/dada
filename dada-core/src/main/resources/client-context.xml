@@ -115,7 +115,7 @@
     <constructor-arg ref="executorService"/>
     <constructor-arg><value>true</value></constructor-arg> <!-- trueAsync -->
     <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
-    <constructor-arg><bean class="org.dada.core.MetaModelNameGetter"/></constructor-arg> <!-- nameGetter -->
+    <constructor-arg><bean class="org.dada.core.SessionManagerNameGetter"/></constructor-arg> <!-- nameGetter -->
     <constructor-arg ref="queueFactory"/> <!-- destinationFactory -->
   </bean>
 
