@@ -72,7 +72,7 @@
 
   <bean id="queueFactory" class="org.dada.jms.QueueFactory"/>
   
-  <bean id="metaModelInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="sessionManagerInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetClass">
       <value>java.lang.Class</value>
     </property>
@@ -81,18 +81,18 @@
     </property>
     <property name="arguments">
       <list>
-	<value>org.dada.core.MetaModel</value>
+	<value>org.dada.core.SessionManager</value>
       </list>
     </property>
   </bean>
 
-  <bean id="externalMetaModelServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
+  <bean id="externalSessionManagerServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
     <constructor-arg ref="session"/>
-    <constructor-arg><ref bean="metaModelInterface"/></constructor-arg>
+    <constructor-arg><ref bean="sessionManagerInterface"/></constructor-arg>
     <constructor-arg ref="executorService"/>
     <constructor-arg><value>true</value></constructor-arg> <!-- trueAsync -->
     <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
-    <constructor-arg><bean class="org.dada.core.MetaModelNameGetter"/></constructor-arg> <!-- nameGetter -->
+    <constructor-arg><bean class="org.dada.core.SessionManagerNameGetter"/></constructor-arg> <!-- nameGetter -->
     <constructor-arg ref="queueFactory"/> <!-- destinationFactory -->
   </bean>
 

@@ -34,7 +34,7 @@ import java.util.Collections;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
-public class MetaModelImplTestCase extends MockObjectTestCase {
+public class SessionManagerImplTestCase extends MockObjectTestCase {
 
 	@SuppressWarnings("unchecked")
 	public void test() throws Exception {
@@ -43,7 +43,8 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
 		Metadata<String, String> metadata = null;
 		final ServiceFactory<Model<Object, Object>> serviceFactory = mock(ServiceFactory.class);
 		
-		MetaModelImpl metaModel = new MetaModelImpl(name, metadata, serviceFactory);
+		MetaModelImpl metaModel = new MetaModelImpl(name, metadata);
+		SessionManager sessionManager = new SessionManagerImpl(metaModel, serviceFactory);
 		
 		final Model<Object, Object> model = mock(Model.class);
 		final String modelName = "MyModel";
@@ -76,7 +77,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
         	will(throwException(new UnsupportedOperationException()));
         }});
         
-        assertTrue(metaModel.registerView(modelName, view) == null);
+        assertTrue(sessionManager.registerView(modelName, view) == null);
         
         // register a view - successfully
 
@@ -87,7 +88,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
             will(returnValue(registration));
         }});
         
-        assertTrue(metaModel.registerView(modelName, view) == registration);
+        assertTrue(sessionManager.registerView(modelName, view) == registration);
         
         // deregister view
         
@@ -96,7 +97,7 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
             will(returnValue(null));
         }});
 
-        assertTrue(metaModel.deregisterView(modelName, view) == null);
+        assertTrue(sessionManager.deregisterView(modelName, view) == null);
 
         // register/deregister 2nd view on MODEL - exercises slightly different code path...
 
@@ -105,14 +106,14 @@ public class MetaModelImplTestCase extends MockObjectTestCase {
             will(returnValue(registration));
         }});
         
-        assertTrue(metaModel.registerView(modelName, view) == registration);
+        assertTrue(sessionManager.registerView(modelName, view) == registration);
 
         checking(new Expectations(){{
             one(model).deregisterView(view);
             will(returnValue(null));
         }});
 
-        assertTrue(metaModel.deregisterView(modelName, view) == null);
+        assertTrue(sessionManager.deregisterView(modelName, view) == null);
 
         // update metamodel - update
 

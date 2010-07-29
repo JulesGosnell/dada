@@ -28,10 +28,10 @@
  */
 package org.dada.core;
 
-public class MetaModelNameGetter implements Getter<String, MetaModel> {
+public class SessionManagerNameGetter implements Getter<String, SessionManager> {
 
 	@Override
-	public String get(MetaModel value) {
+	public String get(SessionManager value) {
 		return value.getName();
 	}
 

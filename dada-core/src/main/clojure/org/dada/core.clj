@@ -1,6 +1,6 @@
 (ns
  org.dada.core
- (:use org.dada.core.UnionModel)
+ (:use org.dada.core.SimpleModelView)
  (:import
   (clojure.lang
    DynamicClassLoader
@@ -34,9 +34,11 @@
    MetadataImpl
    Model
    ServiceFactory
+   SessionManager
+   SessionManagerImpl
    StringMetadata
    SynchronousServiceFactory
-   UnionModel
+   SimpleModelView
    Update
    View
    )
@@ -82,12 +84,13 @@
   (.update view '() '() (list (Update. value nil))))
 
 (do
-  (def #^ServiceFactory *external-metamodel-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *external-session-manager-service-factory* (SynchronousServiceFactory.))
   (def #^ServiceFactory *external-model-service-factory* (SynchronousServiceFactory.))
   (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
   (def #^Lock *exclusive-lock* (DummyLock.))
-  (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name") *external-metamodel-service-factory*))
+  (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name")))
   (insert *metamodel* *metamodel*))
+  (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-session-manager-service-factory*))
 
 ;;--------------------------------------------------------------------------------
 
@@ -344,11 +347,11 @@
 ;;--------------------------------------------------------------------------------
 
 (defn model [#^String model-name #^Metadata metadata]
-  (UnionModel. model-name metadata))
+  (SimpleModelView. model-name metadata))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
 (defn clone-model [#^Model model #^String name]
-  (UnionModel. name (.getMetadata model)))
+  (SimpleModelView. name (.getMetadata model)))
 
 (defn sql-model
   "make a SQL query and return the ResultSet as a Model"
@@ -373,7 +376,7 @@
 
   (do
     (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
-    (def #^ServiceFactory *external-metamodel-service-factory* (.getBean #^BeanFactory *spring-context* "externalMetaModelServiceFactory"))
+    (def #^ServiceFactory *external-session-manager-service-factory* (.getBean #^BeanFactory *spring-context* "externalSessionManagerServiceFactory"))
     (def #^ServiceFactory *external-model-service-factory* (.getBean #^BeanFactory *spring-context* "externalModelServiceFactory"))
     (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
     (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
@@ -383,14 +386,15 @@
 	  (str (System/getProperty "dada.broker.name") ".MetaModel") 
 	  (StringMetadata. "Name")
 	  ;;(custom-metadata3 String ["Name"] [["Name" String false]])
-	  *external-metamodel-service-factory*))
+	  ))
     (insert *metamodel* *metamodel*)
+    (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-session-manager-service-factory*))
     )
 
   (let [metamodel-name (.getName *metamodel*)]
     (.start *metamodel*)
     (println "Server - modelling:" metamodel-name)
-    (.server *external-metamodel-service-factory* *metamodel* metamodel-name)))
+    (.server *external-session-manager-service-factory* *session-manager* metamodel-name)))
 
 (defn start-client []
   (Client/main (into-array String (list (System/getProperty "dada.broker.name")))))

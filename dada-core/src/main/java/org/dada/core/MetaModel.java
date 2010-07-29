@@ -32,11 +32,5 @@ import java.util.Collection;
 
 public interface MetaModel extends Model<String, String> {
 
-	Registration<Object, Object> registerView(String modelName, View<Object> view);
-	Collection<Object> deregisterView(String modelName, View<Object> view);
-
-	Registration<Object, Object> registerQueryView(String query, View<Object> view);
-	Collection<Object> deregisterQueryView(String query, View<Object> view);
-	
 	Model<Object, Object> getModel(String modelName);
 }
