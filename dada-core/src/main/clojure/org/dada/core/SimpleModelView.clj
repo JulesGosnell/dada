@@ -10,11 +10,11 @@
      [org.dada.core Metadata Update]
      )
     (:gen-class
-     ;;:extends org.dada.core.BaseModelView
-     :implements [org.dada.core.ModelView]
+     :extends org.dada.core.BaseModelView
+     ;;:implements [org.dada.core.ModelView]
      :constructors {[String org.dada.core.Metadata]
-     ;;[String org.dada.core.Metadata]
-     []
+     [String org.dada.core.Metadata]
+     ;;[]
      }
      :methods []
      :init init
@@ -27,8 +27,8 @@
 (defn -init [#^String name #^Metadata metadata]
 
   [ ;; super ctor args
-   ;;[name metadata]
-   []
+   [name metadata]
+   ;;[]
    ;; instance state
    (let [key-getter (.getPrimaryGetter metadata)
 	 version-comparator (.getVersionComparator metadata)
