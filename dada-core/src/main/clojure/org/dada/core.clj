@@ -1,6 +1,6 @@
 (ns
  org.dada.core
- (:use org.dada.core.SimpleModelView)
+ (:require [org.dada.core SessionManagerImpl SimpleModelView])
  (:import
   (clojure.lang
    DynamicClassLoader
@@ -90,7 +90,7 @@
   (def #^Lock *exclusive-lock* (DummyLock.))
   (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name")))
   (insert *metamodel* *metamodel*))
-  (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-session-manager-service-factory*))
+  (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-view-service-factory*))
 
 ;;--------------------------------------------------------------------------------
 
@@ -388,7 +388,7 @@
 	  ;;(custom-metadata3 String ["Name"] [["Name" String false]])
 	  ))
     (insert *metamodel* *metamodel*)
-    (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-session-manager-service-factory*))
+    (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-view-service-factory*))
     )
 
   (let [metamodel-name (.getName *metamodel*)]

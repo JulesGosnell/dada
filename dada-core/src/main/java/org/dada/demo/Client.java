@@ -114,7 +114,10 @@ public class Client {
 		serverFactory = new RemotingFactory<View<Object>>(session, View.class, timeout);
 		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
-
+		
+		// start listening on shared Topic
+		serverFactory.createServer(guiModel, session.createTopic(this.modelName), EXECUTOR_SERVICE);
+		
 		// pass the client over to the server to attach as a listener..
 		Registration<Object, Object> registration = this.sessionManager.registerView(modelName, clientServer);
 		Collection<Object> models = registration.getExtant();
