@@ -53,7 +53,7 @@
 	     #^Boolean true-async
 	     #^Long timeout
 	     #^Getter name-getter
-	     #^DestinationFactory destination-factory]
+	     #^JMSServiceFactory$DestinationFactory destination-factory]
 
   [ ;; super ctor args
    []
@@ -64,7 +64,7 @@
 	 server-fn (fn [target end-point]
 		       (println "SERVER INSTANCE" target)
 		       (.setMessageListener
-			(.createConsumer session (.createQueue session end-point))
+			(.createConsumer session (.createDestination destination-factory session end-point))
 			(proxy [MessageListener] [] (onMessage [message] (.execute executor-service (proxy [Runnable] [] (run [] (invoke target message session mapper producer))))))))
 
 	 client-fn (fn [#^String end-point]
@@ -72,7 +72,7 @@
 		       (Proxy/newProxyInstance
 			(.getContextClassLoader (Thread/currentThread))
 			(into-array Class [interface])
-			(SynchronousClient. session (.createQueue session end-point) interface timeout true-async)) ;; TODO: implement SynchronousClient here...
+			(SynchronousClient. session (.createDestination destination-factory session end-point) interface timeout true-async)) ;; TODO: implement SynchronousClient here...
 		       )
 
 	 decouple-fn (fn [#^Object target]
@@ -90,7 +90,7 @@
 
 (defn -client [#^org.dada.core.jms.JMSServiceFactory this #^String end-point]
   (let [[_ client-fn] (.state this)]
-    (client-fn)))
+    (client-fn end-point)))
 
 (defn -server [#^org.dada.core.jms.JMSServiceFactory this #^Object target #^String end-point]
   (let [[_ _ server-fn] (.state this)]
