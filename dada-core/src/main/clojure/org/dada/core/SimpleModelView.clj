@@ -1,82 +1,26 @@
 (ns org.dada.core.SimpleModelView
     (:use
-     [org.dada.core
-      counted-set]
+     [org.dada.core counted-set]
      )
-    (:require
-     [org.dada.core
-      ;; BaseModelView
-      ]
-     )
+    ;; (:require
+    ;;  [org.dada.core BaseModelView]
+    ;;  )
     (:import
      [java.util Collection]
      [org.dada.core Metadata Update]
      )
     (:gen-class
-  ;;   :extends org.dada.core.BaseModelView
+     ;;:extends org.dada.core.BaseModelView
      :implements [org.dada.core.ModelView]
-     :constructors {[String org.dada.core.Metadata] ;;[String org.dada.core.Metadata]
-     []}
+     :constructors {[String org.dada.core.Metadata]
+     ;;[String org.dada.core.Metadata]
+     []
+     }
      :methods []
      :init init
      :state state
      )
     )
-
-;;--------------------------------------------------------------------------------
-;; copied forward from BaseModelView to see if it fixes problem...
-
-(defn -getName [#^org.dada.core.SimpleModelView this]
-  (let [[[_name]] (.state this)]
-    _name))
-
-(defn -getMetadata [#^org.dada.core.SimpleModelView this]
-  (let [[[_ metadata]] (.state this)]
-    metadata))
-
-;; (defn -getData [#^org.dada.core.SimpleModelView this]
-;;   (let [[_ mutable] (.state this)
-;; 	[extant] @mutable]
-;;     (println "GET DATA ->" @mutable-state)
-;;     extant))
-
-(import org.dada.core.Deregistration)
-(import org.dada.core.Registration)
-(import org.dada.core.View)
-
-;; Registration
-(defn -registerView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[[_ metadata] mutable] (.state this)
-	[extant extinct] @mutable]
-    ;; N.B. does not check to see if View is already Registered
-    ;;(println "VIEW ->" @mutable)
-    (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
-    ;;(println "VIEW <-" @mutable)
-    (Registration. metadata (vals extant) (vals extinct))
-    )
-  )
-
-;; should return a Deregistration - currently Collection
-(defn -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[[_ _metadata] mutable] (.state this)
-	[extant extinct] @mutable]
-    ;;(println "UNVIEW ->" @mutable)
-    (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
-    ;;(println "UNVIEW <-" @mutable)
-    (Deregistration. (vals extant) (vals extinct))
-    ))
-
-(defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]
-  (let [[_ mutable] (.state this)
-	[_ _ views] @mutable]
-    ;;(println "NOTIFY ->" @mutable)
-    (if (and (empty? insertions) (empty? alterations) (empty? deletions))
-      (println "WARN: empty event raised" (.getStackTrace (Exception.)))
-      (doall (map (fn [#^View view]
-		      (try (.update view insertions alterations deletions) (catch Throwable t (println "ERROR: " t))))
-		  (counted-set-vals views))))))
-
-;;--------------------------------------------------------------------------------
 
 ;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
 
@@ -182,6 +126,51 @@
        ]
       mutable-state])
    ])
+;;--------------------------------------------------------------------------------
+
+(import org.dada.core.Deregistration)
+(import org.dada.core.Registration)
+(import org.dada.core.View)
+
+(defn -getName [#^org.dada.core.SimpleModelView this]
+  (let [[[_name]] (.state this)]
+    _name))
+
+(defn -getMetadata [#^org.dada.core.SimpleModelView this]
+  (let [[[_ metadata]] (.state this)]
+    metadata))
+
+(defn #^Registration -registerView [#^org.dada.core.SimpleModelView this #^View view]
+  (let [[[_ metadata] mutable] (.state this)
+	[extant extinct] @mutable]
+    ;; N.B. does not check to see if View is already Registered
+    ;;(println "VIEW ->" @mutable)
+    (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
+    ;;(println "VIEW <-" @mutable)
+    (Registration. metadata (vals extant) (vals extinct))
+    )
+  )
+
+(defn #^Deregistration -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
+  (let [[[_ _metadata] mutable] (.state this)
+	[extant extinct] @mutable]
+    ;;(println "UNVIEW ->" @mutable)
+    (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
+    ;;(println "UNVIEW <-" @mutable)
+    (Deregistration. (vals extant) (vals extinct))
+    ))
+
+(defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]
+  (let [[_ mutable] (.state this)
+	[_ _ views] @mutable]
+    ;;(println "NOTIFY ->" @mutable)
+    (if (and (empty? insertions) (empty? alterations) (empty? deletions))
+      (println "WARN: empty event raised" (.getStackTrace (Exception.)))
+      (doall (map (fn [#^View view]	;dirty - side-effects
+		      (try (.update view insertions alterations deletions) (catch Throwable t (println "ERROR: " t))))
+		  (counted-set-vals views))))))
+
+;;--------------------------------------------------------------------------------
 
 (defn -getData [#^org.dada.core.SimpleModelView this]
   (let [[[_ _ _ getData-fn]] (.state this)]
