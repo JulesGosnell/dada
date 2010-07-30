@@ -28,6 +28,15 @@
   (let [[[#^MetaModel metamodel]] (.state this)]
     (.getModel metamodel name)))
 
+;; TODO: modification of our data model should be encapsulated in a fn
+;; and handed of to Model so that it is all done within the scope of
+;; the Model's single spin lock. This will resolve possible race and
+;; ordering issues. Fn will probably need to implement a Strategy i/f
+;; so that it plays ball with Java API
+
+;; TODO: I think we will need multiple SessionManagers so that one can
+;; speak Serialised POJOs, one XML etc...
+
 (defn #^Registration -registerView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
   (let [[[#^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	[exports] @mutable
