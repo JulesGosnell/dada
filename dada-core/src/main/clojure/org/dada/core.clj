@@ -85,7 +85,7 @@
 
 (do
   (def #^ServiceFactory *external-session-manager-service-factory* (SynchronousServiceFactory.))
-  (def #^ServiceFactory *external-model-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *external-view-service-factory* (SynchronousServiceFactory.))
   (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
   (def #^Lock *exclusive-lock* (DummyLock.))
   (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name")))
@@ -377,7 +377,7 @@
   (do
     (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
     (def #^ServiceFactory *external-session-manager-service-factory* (.getBean #^BeanFactory *spring-context* "externalSessionManagerServiceFactory"))
-    (def #^ServiceFactory *external-model-service-factory* (.getBean #^BeanFactory *spring-context* "externalModelServiceFactory"))
+    (def #^ServiceFactory *external-view-service-factory* (.getBean #^BeanFactory *spring-context* "externalViewServiceFactory"))
     (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
     (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
 
