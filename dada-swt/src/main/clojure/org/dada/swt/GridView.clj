@@ -100,7 +100,7 @@
 ;; register our interest in the metamodel
 ;;(def registration (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
 
-;;(begin (.getMetadata registration) (.getData registration))
+;;(begin (.getMetadata registration) (.getExtant registration))
 
 (defn update [i a d]
   ;; hook this into proxy below and implement by adding/updating/removing rows from GUI
@@ -120,7 +120,7 @@
 	 ;; how do we get this ?
 	 #^Registration registration (.registerView this view) ;synchronous connection
 	 metadata (.getMetadata registration)
-	 data (.getData registration)
+	 data (.getExtant registration)
 	 model (UnionModel. model-name metadata (fn [l r] true))
 	 ]
      (begin metadata data)
