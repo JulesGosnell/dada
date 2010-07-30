@@ -34,12 +34,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.dada.slf4j.Logger;
-import org.dada.slf4j.LoggerFactory;
-
 public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<Model<Object, Object>> {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object, Object>>();
 
 	public MetaModelImpl(String name, Metadata<String, String> metadata) {

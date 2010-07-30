@@ -28,7 +28,6 @@
  */
 package org.dada.core;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

@@ -28,9 +28,8 @@
  */
 package org.dada.core;
 
-import java.util.Collection;
-
 public interface MetaModel extends Model<String, String> {
 
 	Model<Object, Object> getModel(String modelName);
+
 }
