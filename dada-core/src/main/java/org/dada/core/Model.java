@@ -39,7 +39,5 @@ public interface Model<K, V> extends Lifecycle {
 	
 	Metadata<K, V> getMetadata();
 	Collection<V> getData();
-	
-	//Object getKeyKey();
 
 }
