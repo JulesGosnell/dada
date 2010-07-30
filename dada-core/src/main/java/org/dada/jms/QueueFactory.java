@@ -32,7 +32,6 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
-import org.dada.jms.JMSServiceFactory.DestinationFactory;
 
 public class QueueFactory implements DestinationFactory {
 	@Override

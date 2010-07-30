@@ -30,7 +30,6 @@ package org.dada.jms;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
@@ -49,10 +48,6 @@ import org.dada.core.ServiceFactory;
  */
 public class JMSServiceFactory<T> implements ServiceFactory<T> {
 
-	public static interface DestinationFactory {
-		Destination createDestination(Session session, String endPoint);
-	}
-	
 	private final Session session;
 	private final RemotingFactory<T> factory;
 	private final boolean trueAsync;

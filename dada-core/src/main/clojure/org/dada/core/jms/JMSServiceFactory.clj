@@ -4,12 +4,12 @@
      [java.util.concurrent ExecutorService]
      [javax.jms Message MessageListener MessageProducer ObjectMessage Session]
      [org.dada.core Getter]
-     [org.dada.jms AbstractClient Invocation JMSServiceFactory$DestinationFactory MethodMapper Results SimpleMethodMapper SynchronousClient]
+     [org.dada.jms AbstractClient Invocation DestinationFactory MethodMapper Results SimpleMethodMapper SynchronousClient]
      )
     (:gen-class
      :implements [org.dada.core.ServiceFactory]
      :init init
-     :constructors {[javax.jms.Session Class java.util.concurrent.ExecutorService Boolean Long org.dada.core.Getter org.dada.jms.JMSServiceFactory$DestinationFactory] []
+     :constructors {[javax.jms.Session Class java.util.concurrent.ExecutorService Boolean Long org.dada.core.Getter org.dada.jms.DestinationFactory] []
      }
      :methods []
      :state state
@@ -53,7 +53,7 @@
 	     #^Boolean true-async
 	     #^Long timeout
 	     #^Getter name-getter
-	     #^JMSServiceFactory$DestinationFactory destination-factory]
+	     #^DestinationFactory destination-factory]
 
   [ ;; super ctor args
    []

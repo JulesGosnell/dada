@@ -39,7 +39,6 @@ import javax.jms.Session;
 
 import org.dada.core.Getter;
 import org.dada.core.ServiceFactory;
-import org.dada.jms.JMSServiceFactory.DestinationFactory;
 import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
