@@ -3,7 +3,7 @@ package org.dada.core;
 import java.io.Serializable;
 import java.util.Collection;
 
-public class Deregistration<K, V> implements Serializable {
+public class Deregistration<V> implements Serializable {
 
 	private final Collection<V> extant;
 	private final Collection<V> extinct;
@@ -13,7 +13,7 @@ public class Deregistration<K, V> implements Serializable {
 			this.extinct = extinct;
 		}
 		
-		public Collection<V> getData() {
+		public Collection<V> getExtant() {
 			return extant;
 		}
 

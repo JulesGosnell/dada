@@ -117,7 +117,7 @@ public class Client {
 
 		// pass the client over to the server to attach as a listener..
 		Registration<Object, Object> registration = this.sessionManager.registerView(modelName, clientServer);
-		Collection<Object> models = registration.getData();
+		Collection<Object> models = registration.getExtant();
 		if (models != null) {
 			guiModel.setMetadata(registration.getMetadata());
 			Collection<Update<Object>> insertions = new ArrayList<Update<Object>>();

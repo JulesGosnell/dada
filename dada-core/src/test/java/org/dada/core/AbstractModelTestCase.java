@@ -80,8 +80,8 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 
 		Registration<Integer, Datum<Integer>> registration = model.registerView(goodView);
 		assertTrue(registration.getMetadata() == metadata);
-		assertTrue(registration.getData().size() == 1);
-		assertTrue(registration.getData().contains(datum));
+		assertTrue(registration.getExtant().size() == 1);
+		assertTrue(registration.getExtant().contains(datum));
 
 		model.notifyUpdate(empty, empty, empty);
 

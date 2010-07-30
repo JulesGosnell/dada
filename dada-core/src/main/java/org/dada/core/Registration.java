@@ -50,7 +50,7 @@ public class Registration<K, V> implements Serializable {
 		return metadata;
 	}
 
-	public Collection<V> getData() {
+	public Collection<V> getExtant() {
 		return extant;
 	}
 
