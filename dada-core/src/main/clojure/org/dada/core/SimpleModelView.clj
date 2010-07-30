@@ -2,9 +2,9 @@
     (:use
      [org.dada.core counted-set]
      )
-    ;; (:require
-    ;;  [org.dada.core BaseModelView]
-    ;;  )
+    (:require
+     [org.dada.core BaseModelView]
+     )
     (:import
      [java.util Collection]
      [org.dada.core Metadata Update]
