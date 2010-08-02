@@ -8,6 +8,8 @@ public interface SessionManager {
 	@Deprecated
 	Model<Object, Object> getModel(String name);
 	
+	Metadata<Object, Object> getMetadata(String modelName);
+	
 	Registration<Object, Object> registerView(String modelName, View<Object> view);
 	Deregistration<Object> deregisterView(String name, View<Object> view);
 

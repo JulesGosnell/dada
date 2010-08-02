@@ -58,6 +58,11 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
+	public Metadata<Object, Object> getMetadata(String modelName) {
+		return metamodel.getModel(modelName).getMetadata();
+	}
+
+	@Override
 	public Registration<Object, Object> registerQueryView(String query, View<Object> view) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
@@ -68,4 +73,5 @@ public class SessionManagerImpl implements SessionManager {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
+
 }

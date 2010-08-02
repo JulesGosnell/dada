@@ -1,9 +1,7 @@
 (ns org.dada.swt.GridView
-    (:use
-     org.dada.core.UnionModel)
     (:import
      [java.util Collection]
-     [org.dada.core View Metadata MetaModel Update View]
+     [org.dada.core View Metadata MetaModel UnionModel Update View]
      (java.io Serializable)
      (org.eclipse.swt SWT)
      (org.eclipse.swt.widgets Display Shell Table TableColumn TableItem Listener)
@@ -108,8 +106,6 @@
   
 ;;--------------------------------------------------------------------------------
 
-;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
-
 (defn -init [#^String model-name]
 
   [ ;; super ctor args
@@ -118,7 +114,8 @@
    (let [
 	 view (proxy [View] [] (update [i a d] (println ("VIEW:" i a d))))
 	 ;; how do we get this ?
-	 #^Registration registration (.registerView this view) ;synchronous connection
+	 ;; TODO
+	 ;; #^Registration registration (.registerView this view) ;synchronous connection
 	 metadata (.getMetadata registration)
 	 data (.getExtant registration)
 	 model (UnionModel. model-name metadata (fn [l r] true))
