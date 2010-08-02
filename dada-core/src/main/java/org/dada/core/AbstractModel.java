@@ -72,7 +72,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	// nice and fast...
 	
 	@Override
-	public Registration<K, V> registerView(View<V> view) {
+	public Data<V> registerView(View<V> view) {
 		Collection<View<V>> oldViews;
 		Collection<View<V>> newViews;
 		do {
@@ -81,11 +81,11 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			newViews.add(view);
 		} while (!views.compareAndSet(oldViews, newViews));
 		logger.debug("{}: registered view: {} -> {}", name, view, newViews);
-		return new Registration<K, V>(metadata, getData(), (Collection<V>) Collections.emptyList()); // TODO - extinct ?
+		return getData();
 	}
 
 	@Override
-	public Deregistration<V> deregisterView(View<V> view) {
+	public Data<V> deregisterView(View<V> view) {
 		Collection<View<V>> oldViews;
 		Collection<View<V>> newViews;
 		do {
@@ -94,7 +94,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 			newViews.remove(view);
 		} while (!views.compareAndSet(oldViews, newViews));
 		logger.debug("{}: deregistered view: {} -> {}", name, view, newViews);
-		return new Deregistration<V>(getData(), (Collection<V>) Collections.emptyList()); //TODO - extinct ?
+		return getData();
 	}
 
 	private final Collection<Update<V>> empty = Collections.emptyList();

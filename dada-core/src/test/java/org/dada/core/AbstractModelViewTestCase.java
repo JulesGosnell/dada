@@ -22,7 +22,7 @@ public class AbstractModelViewTestCase extends TestCase {
 			}
 			
 			@Override
-			public Collection<Datum<Integer>> getData() {
+			public Data<Datum<Integer>> getData() {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("NYI");
 			}

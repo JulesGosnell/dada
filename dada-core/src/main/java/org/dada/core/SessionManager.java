@@ -10,10 +10,10 @@ public interface SessionManager {
 	
 	Metadata<Object, Object> getMetadata(String modelName);
 	
-	Registration<Object, Object> registerView(String modelName, View<Object> view);
-	Deregistration<Object> deregisterView(String name, View<Object> view);
+	Data<Object> registerView(String modelName, View<Object> view);
+	Data<Object> deregisterView(String name, View<Object> view);
 
-	Registration<Object, Object> registerQueryView(String query, View<Object> view);
-	Deregistration<Object> deregisterQueryView(String query, View<Object> view);
+	Data<Object> registerQueryView(String query, View<Object> view);
+	Data<Object> deregisterQueryView(String query, View<Object> view);
 	
 }

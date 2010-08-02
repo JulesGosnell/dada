@@ -96,17 +96,19 @@
 
 ;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?
 (defn connect [#^Model model #^View view]
-  (.registerView model view)
-  (let [batch (map #(Update. nil %) (.getData #^AbstractModel model))] ;; TODO: getData should be on Model ?
-    (if (not (empty? batch)) (.update view batch '() '())))
+  (let [[extant extinct] (.registerView model view)
+	additions (map #(Update. nil %) extant)
+	subtractions (map #(Update. nil %) extinct)]
+    (if (or (not (empty? additions)) (not (empty? subtractions)))
+      (.update view additions '() subtractions)))
   view)
 
 (defn disconnect [#^Model model #^View view]
-  (.update
-   view
-   '()
-   '()
-   (map #(Update. % nil) (.deregisterView model view)))
+  (let [[extant extinct] (.registerView model view)
+	additions (map #(Update. nil %) extant)
+	subtractions (map #(Update. nil %) extinct)]
+    (if (or (not (empty? additions)) (not (empty? subtractions)))
+      (.update view '() '() (concat additions subtractions))))
   view)
 
 (defmulti attribute-key (fn [arg] (class arg)))

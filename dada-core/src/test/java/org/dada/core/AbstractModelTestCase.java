@@ -53,8 +53,8 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 		AbstractModel<Integer, Datum<Integer>> model = new AbstractModel<Integer, Datum<Integer>>(name, metadata) {
 
 			@Override
-			public Collection<Datum<Integer>> getData() {
-				return data;
+			public Data<Datum<Integer>> getData() {
+				return new Data<Datum<Integer>>(data, null);
 			}
 		};
 
@@ -78,10 +78,9 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 
 		};
 
-		Registration<Integer, Datum<Integer>> registration = model.registerView(goodView);
-		assertTrue(registration.getMetadata() == metadata);
-		assertTrue(registration.getExtant().size() == 1);
-		assertTrue(registration.getExtant().contains(datum));
+		Data<Datum<Integer>> data2 = model.registerView(goodView);
+		assertTrue(data2.getExtant().size() == 1);
+		assertTrue(data2.getExtant().contains(datum));
 
 		model.notifyUpdate(empty, empty, empty);
 

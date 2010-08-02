@@ -7,7 +7,7 @@
     ;;  )
     (:import
      [java.util Collection]
-     [org.dada.core Metadata Update]
+     [org.dada.core Data Metadata Update]
      )
     (:gen-class
      ;;:extends org.dada.core.BaseModelView
@@ -114,8 +114,8 @@
 	 getData-fn
 	 (fn []
 	     ;;(println "GET DATA ->" @mutable-state)
-	     (let [[extant] @mutable-state]
-	       (or (vals extant) '())))
+	     (let [[extant extinct] @mutable-state]
+	       (Data. extant extinct)))
 	 ]
      
      [[
@@ -128,8 +128,7 @@
    ])
 ;;--------------------------------------------------------------------------------
 
-(import org.dada.core.Deregistration)
-(import org.dada.core.Registration)
+(import org.dada.core.Data)
 (import org.dada.core.View)
 
 (defn -getName [#^org.dada.core.SimpleModelView this]
@@ -140,24 +139,24 @@
   (let [[[_ metadata]] (.state this)]
     metadata))
 
-(defn #^Registration -registerView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[[_ metadata] mutable] (.state this)
+(defn #^Data -registerView [#^org.dada.core.SimpleModelView this #^View view]
+  (let [[_ mutable] (.state this)
 	[extant extinct] @mutable]
     ;; N.B. does not check to see if View is already Registered
     ;;(println "VIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
     ;;(println "VIEW <-" @mutable)
-    (Registration. metadata (vals extant) (vals extinct))
+    (Data. (vals extant) (vals extinct))
     )
   )
 
-(defn #^Deregistration -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[[_ _metadata] mutable] (.state this)
+(defn #^Data -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
+  (let [[_ mutable] (.state this)
 	[extant extinct] @mutable]
     ;;(println "UNVIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
     ;;(println "UNVIEW <-" @mutable)
-    (Deregistration. (vals extant) (vals extinct))
+    (Data. (vals extant) (vals extinct))
     ))
 
 (defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]

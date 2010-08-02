@@ -4,7 +4,7 @@
      )
     (:import
      [java.util Collection]
-     [org.dada.core Metadata Registration Update View]
+     [org.dada.core Data Metadata Update View]
      )
     (:gen-class
      :implements [org.dada.core.ModelView]

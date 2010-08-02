@@ -25,7 +25,7 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
-	public Deregistration<Object> deregisterView(String name, View<Object> view) {
+	public Data<Object> deregisterView(String name, View<Object> view) {
 		Model<Object, Object> model = metamodel.getModel(name);
 		logger.info("deregistering View ({}) from Model ({})", view, model);
 		return model.deregisterView(view);
@@ -34,7 +34,7 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
-	public Registration<Object, Object> registerView(String modelName, View<Object> view) {
+	public Data<Object> registerView(String modelName, View<Object> view) {
 		Model<Object, Object> model = metamodel.getModel(modelName);
 		try {
 			synchronized (exportedModelNames) { // TODO keep a ref-count
@@ -63,13 +63,13 @@ public class SessionManagerImpl implements SessionManager {
 	}
 
 	@Override
-	public Registration<Object, Object> registerQueryView(String query, View<Object> view) {
+	public Data<Object> registerQueryView(String query, View<Object> view) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
 
 	@Override
-	public Deregistration<Object> deregisterQueryView(String query, View<Object> view) {
+	public Data<Object> deregisterQueryView(String query, View<Object> view) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}

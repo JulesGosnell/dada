@@ -1,7 +1,7 @@
 (ns org.dada.core.UnionModel
     (:import
      [java.util Collection]
-     [org.dada.core AbstractModel Metadata Metadata$Comparator Update]
+     [org.dada.core AbstractModel Data Metadata Metadata$Comparator Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
@@ -100,8 +100,8 @@
 	 
 	 getData-fn
 	 (fn []
-	     (let [[extant] @mutable-state]
-	       (or (vals extant) '())))
+	     (let [[extant extinct] @mutable-state]
+	       (Data. extant extinct)))
 	 ]
      
      [update-fn getData-fn])

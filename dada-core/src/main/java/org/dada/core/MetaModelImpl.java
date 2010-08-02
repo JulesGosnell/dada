@@ -31,29 +31,29 @@ package org.dada.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MetaModelImpl extends AbstractModel<String, String> implements MetaModel, View<Model<Object, Object>> {
 
-	private final Map<String, Model<Object, Object>> nameToModel = new ConcurrentHashMap<String, Model<Object, Object>>();
+	private final Map<String, Model<Object, Object>> nameToModel = new HashMap<String, Model<Object, Object>>();
 
 	public MetaModelImpl(String name, Metadata<String, String> metadata) {
 		super(name, metadata);
 	}
 
 	@Override
-	public Collection<String> getData() {
-		return nameToModel.keySet();
+	public synchronized Data<String> getData() {
+		return new Data<String>(new ArrayList<String>(nameToModel.keySet()), null);
 	}
 	
 	@Override
-	public Model<Object, Object> getModel(String modelName) {
+	public synchronized Model<Object, Object> getModel(String modelName) {
 		return nameToModel.get(modelName);
 	}
 
 	@Override
-	public void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> alterations, Collection<Update<Model<Object, Object>>> deletions) {
+	public synchronized void update(Collection<Update<Model<Object, Object>>> insertions, Collection<Update<Model<Object, Object>>> alterations, Collection<Update<Model<Object, Object>>> deletions) {
 		Collection<Update<String>> i;
 		if (!insertions.isEmpty()) {
 			i = new ArrayList<Update<String>>(insertions.size());

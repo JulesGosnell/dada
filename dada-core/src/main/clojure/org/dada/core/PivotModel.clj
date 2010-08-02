@@ -1,7 +1,7 @@
 (ns org.dada.core.PivotModel
     (:import
      [java.util Collection LinkedHashMap Map]
-     [org.dada.core AbstractModel Attribute Getter Metadata Tuple Update]
+     [org.dada.core AbstractModel Attribute Data Getter Metadata Tuple Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
@@ -201,7 +201,7 @@
 	 getData-fn
 	 (fn []
 	     (let [[_ _ pivotted] @mutable-state]
-	       [pivotted]))
+	       (Data. [pivotted] nil)))
 	 ]
      
      [update-fn getData-fn])

@@ -1,7 +1,7 @@
 (ns
  org.dada.core.SessionManagerImpl
  (:import
-  [org.dada.core Deregistration MetaModel Model Registration ServiceFactory View]
+  [org.dada.core Data Metadata MetaModel Model ServiceFactory View]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
@@ -28,6 +28,10 @@
   (let [[[#^MetaModel metamodel]] (.state this)]
     (.getModel metamodel name)))
 
+(defn #^Metadata -getMetadata [#^org.dada.core.SessionManagerImpl this #^String name]
+  (let [[[#^MetaModel metamodel]] (.state this)]
+    (.getMetadata (.getModel metamodel name))))
+
 ;; TODO: modification of our data model should be encapsulated in a fn
 ;; and handed of to Model so that it is all done within the scope of
 ;; the Model's single spin lock. This will resolve possible race and
@@ -37,7 +41,7 @@
 ;; TODO: I think we will need multiple SessionManagers so that one can
 ;; speak Serialised POJOs, one XML etc...
 
-(defn #^Registration -registerView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
+(defn #^Data -registerView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
   (let [[[#^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	[exports] @mutable
 	model (.getModel metamodel model-name)]
@@ -51,10 +55,10 @@
 		   [(assoc exports model-name [(inc count) view]) (if (zero? count) view)])))]
 	(if view
 	  (.registerView model view)
-	  (Registration. (.getMetadata model) (.getData model) nil) ;TODO: HACK!
+	  (.getData model)
 	  )))))
 
-(defn #^Deregistration -deregisterView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
+(defn #^Data -deregisterView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
   (let [[[#^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	[exports] @mutable
 	model (.getModel metamodel model-name)]
@@ -73,5 +77,5 @@
 		     [exports]))))]
 	(if view
 	  (.deregisterView model view)
-	  (Deregistration. (.getData model) nil) ;TODO: HACK!
+	  (.getData model)
 	  )))))

@@ -28,16 +28,15 @@
  */
 package org.dada.core;
 
-import java.util.Collection;
 
 public interface Model<K, V> extends Lifecycle {
 
 	String getName();
 
-	Registration<K, V> registerView(View<V> view);
-	Deregistration<V> deregisterView(View<V> view);
+	Data<V> registerView(View<V> view);
+	Data<V> deregisterView(View<V> view);
 	
 	Metadata<K, V> getMetadata();
-	Collection<V> getData();
+	Data<V> getData();
 
 }

@@ -53,8 +53,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.dada.core.Data;
+import org.dada.core.Metadata;
 import org.dada.core.Model;
-import org.dada.core.Registration;
 import org.dada.core.SessionManager;
 import org.dada.core.Update;
 import org.dada.core.View;
@@ -119,10 +120,11 @@ public class Client {
 		serverFactory.createServer(guiModel, session.createTopic(this.modelName), EXECUTOR_SERVICE);
 		
 		// pass the client over to the server to attach as a listener..
-		Registration<Object, Object> registration = this.sessionManager.registerView(modelName, clientServer);
-		Collection<Object> models = registration.getExtant();
+		Metadata<Object, Object> metadata = this.sessionManager.getMetadata(modelName);
+		Data<Object> data = this.sessionManager.registerView(modelName, clientServer);
+		Collection<Object> models = data.getExtant();
 		if (models != null) {
-			guiModel.setMetadata(registration.getMetadata());
+			guiModel.setMetadata(metadata);
 			Collection<Update<Object>> insertions = new ArrayList<Update<Object>>();
 			for (Object model : models)
 				insertions.add(new Update<Object>(null, model));

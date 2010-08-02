@@ -52,8 +52,8 @@ public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> imp
 	}
 
 	@Override
-	public Collection<OV> getData() {
-		return keyToData.values();
+	public Data<OV> getData() {
+		return new Data<OV>(keyToData.values(), null);
 	}
 
 	@Override

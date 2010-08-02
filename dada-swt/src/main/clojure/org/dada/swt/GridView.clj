@@ -96,9 +96,9 @@
 
 
 ;; register our interest in the metamodel
-;;(def registration (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
+;;(def data (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
 
-;;(begin (.getMetadata registration) (.getExtant registration))
+;;(begin (.getMetadata data) (.getExtant data))
 
 (defn update [i a d]
   ;; hook this into proxy below and implement by adding/updating/removing rows from GUI
@@ -115,9 +115,9 @@
 	 view (proxy [View] [] (update [i a d] (println ("VIEW:" i a d))))
 	 ;; how do we get this ?
 	 ;; TODO
-	 ;; #^Registration registration (.registerView this view) ;synchronous connection
-	 metadata (.getMetadata registration)
-	 data (.getExtant registration)
+	 ;; #^Data data (.registerView this view) ;synchronous connection
+	 metadata (.getMetadata data)
+	 data (.getExtant data)
 	 model (UnionModel. model-name metadata (fn [l r] true))
 	 ]
      (begin metadata data)

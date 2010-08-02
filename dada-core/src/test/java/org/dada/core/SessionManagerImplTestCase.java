@@ -54,7 +54,7 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
             will(returnValue(modelName));
         }});
         
-        assertTrue(metaModel.getData().size() == 0);
+        assertTrue(metaModel.getData().getExtant().size() == 0);
         
         // update metamodel - insertion
         
@@ -62,12 +62,12 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
 		metaModel.update(Collections.singleton(new Update<Model<Object, Object>>(null, model)), nil, nil);
 
 		{
-			Collection<String> data = metaModel.getData();
+			Collection<String> data = metaModel.getData().getExtant();
 	        assertTrue(data.size() == 1);
 	        assertTrue(data.iterator().next() == modelName);
 		}
         
-        final Registration<Object, Object> registration = new Registration<Object, Object>(null, null, null);
+        final Data<Object> data = new Data<Object>(null, null);
         final View<Object> view = mock(View.class);
 
         // // register a view - unsuccessfully 
@@ -85,10 +85,10 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
         // 	one(serviceFactory).server(model, modelName);
         // 	will(returnValue(null));
         //     one(model).registerView(view);
-        //     will(returnValue(registration));
+        //     will(returnValue(data));
         // }});
         
-        // assertTrue(sessionManager.registerView(modelName, view) == registration);
+        // assertTrue(sessionManager.registerView(modelName, view) == data);
         
         // // deregister view
         
@@ -103,10 +103,10 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
 
         // checking(new Expectations(){{
         //     one(model).registerView(view);
-        //     will(returnValue(registration));
+        //     will(returnValue(data));
         // }});
         
-        // assertTrue(sessionManager.registerView(modelName, view) == registration);
+        // assertTrue(sessionManager.registerView(modelName, view) == data);
 
         // checking(new Expectations(){{
         //     one(model).deregisterView(view);
