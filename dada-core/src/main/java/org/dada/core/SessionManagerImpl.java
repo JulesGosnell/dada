@@ -9,11 +9,13 @@ import org.dada.slf4j.LoggerFactory;
 public class SessionManagerImpl implements SessionManager {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final String name;
 	private final MetaModel metamodel;
 	private final ServiceFactory<Model<Object, Object>> serviceFactory;
 	private final Set<String> exportedModelNames = new HashSet<String>();
 
-	public SessionManagerImpl(MetaModel metamodel, ServiceFactory<Model<Object, Object>> serviceFactory) {
+	public SessionManagerImpl(String name, MetaModel metamodel, ServiceFactory<Model<Object, Object>> serviceFactory) {
+		this.name = name;
 		this.metamodel = metamodel;
 		this.serviceFactory = serviceFactory;
 		exportedModelNames.add(this.metamodel.getName());
@@ -54,7 +56,7 @@ public class SessionManagerImpl implements SessionManager {
 
 	@Override
 	public String getName() {
-		return metamodel.getName();
+		return name;
 	}
 
 	@Override

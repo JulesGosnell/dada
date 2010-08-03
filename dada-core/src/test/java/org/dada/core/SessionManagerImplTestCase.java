@@ -44,7 +44,7 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
 		final ServiceFactory<Model<Object, Object>> serviceFactory = mock(ServiceFactory.class);
 		
 		MetaModelImpl metaModel = new MetaModelImpl(name, metadata);
-		SessionManager sessionManager = new SessionManagerImpl(metaModel, serviceFactory);
+		SessionManager sessionManager = new SessionManagerImpl("DADA.SessionManager", metaModel, serviceFactory);
 		
 		final Model<Object, Object> model = mock(Model.class);
 		final String modelName = "MyModel";

@@ -70,6 +70,9 @@
 (if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://0.0.0.0:61616"))
 (if (not (System/getProperty "dada.client.uri")) (System/setProperty "dada.client.uri" "tcp://localhost:61616"))
 
+(def *dada-broker-name* (System/getProperty "dada.broker.name"))
+(def *session-manager-name* (str *dada-broker-name* ".SessionManager"))
+
 (defn insert [#^View view item]
   (.update view (list (Update. nil item)) '() '())
   item)
@@ -88,9 +91,9 @@
   (def #^ServiceFactory *external-view-service-factory* (SynchronousServiceFactory.))
   (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
   (def #^Lock *exclusive-lock* (DummyLock.))
-  (def #^MetaModel *metamodel* (MetaModelImpl. (str (System/getProperty "dada.broker.name") ".MetaModel") (StringMetadata. "Name")))
+  (def #^MetaModel *metamodel* (MetaModelImpl. (str *dada-broker-name* ".MetaModel") (StringMetadata. "Name")))
   (insert *metamodel* *metamodel*))
-  (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-view-service-factory*))
+  (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*))
 
 ;;--------------------------------------------------------------------------------
 
@@ -385,12 +388,12 @@
 
     (def #^MetaModel *metamodel*
 	 (MetaModelImpl.
-	  (str (System/getProperty "dada.broker.name") ".MetaModel") 
+	  (str *dada-broker-name* ".MetaModel") 
 	  (StringMetadata. "Name")
 	  ;;(custom-metadata3 String ["Name"] [["Name" String false]])
 	  ))
     (insert *metamodel* *metamodel*)
-    (def #^SessionManager *session-manager* (SessionManagerImpl. *metamodel* *external-view-service-factory*))
+    (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*))
     )
 
   (let [metamodel-name (.getName *metamodel*)]
@@ -399,6 +402,6 @@
     (.server *external-session-manager-service-factory* *session-manager* metamodel-name)))
 
 (defn start-client []
-  (Client/main (into-array String (list (System/getProperty "dada.broker.name")))))
+  (Client/main (into-array String (list *dada-broker-name*))))
 
 ;;--------------------------------------------------------------------------------

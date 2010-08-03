@@ -5,31 +5,31 @@
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[org.dada.core.MetaModel org.dada.core.ServiceFactory] []}
+  :constructors {[String org.dada.core.MetaModel org.dada.core.ServiceFactory] []}
   :methods []
   :init init
   :state state
   )
  )
 
-(defn -init [#^MetaModel metamodel #^ServiceFactory service-factory]
+(defn -init [#^String name #^MetaModel metamodel #^ServiceFactory service-factory]
   [ ;; super ctor args
    []
    ;; instance state
    (let [exports {}]
-     [[metamodel service-factory]
+     [[name metamodel service-factory]
       (atom [exports])])])
 
 (defn #^String -getName [#^org.dada.core.SessionManagerImpl this]
-  (let [[[#^MetaModel metamodel]] (.state this)]
-    (.getName metamodel)))
+  (let [[[name #^MetaModel metamodel]] (.state this)]
+    name))
 
 (defn #^Model -getModel [#^org.dada.core.SessionManagerImpl this #^String name]
-  (let [[[#^MetaModel metamodel]] (.state this)]
+  (let [[[_ #^MetaModel metamodel]] (.state this)]
     (.getModel metamodel name)))
 
 (defn #^Metadata -getMetadata [#^org.dada.core.SessionManagerImpl this #^String name]
-  (let [[[#^MetaModel metamodel]] (.state this)]
+  (let [[[_ #^MetaModel metamodel]] (.state this)]
     (.getMetadata (.getModel metamodel name))))
 
 ;; TODO: modification of our data model should be encapsulated in a fn
@@ -42,7 +42,7 @@
 ;; speak Serialised POJOs, one XML etc...
 
 (defn #^Data -registerView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
-  (let [[[#^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
+  (let [[[_ #^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	[exports] @mutable
 	model (.getModel metamodel model-name)]
     (if (nil? model)
@@ -59,7 +59,7 @@
 	  )))))
 
 (defn #^Data -deregisterView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
-  (let [[[#^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
+  (let [[[_ #^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	[exports] @mutable
 	model (.getModel metamodel model-name)]
     (if (nil? model)
