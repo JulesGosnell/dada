@@ -101,7 +101,7 @@
 	 getData-fn
 	 (fn []
 	     (let [[extant extinct] @mutable-state]
-	       (Data. extant extinct)))
+	       (Data. (vals extant) (vals extinct))))
 	 ]
      
      [update-fn getData-fn])

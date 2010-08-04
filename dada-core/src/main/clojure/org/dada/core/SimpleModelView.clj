@@ -115,7 +115,7 @@
 	 (fn []
 	     ;;(println "GET DATA ->" @mutable-state)
 	     (let [[extant extinct] @mutable-state]
-	       (Data. extant extinct)))
+	       (Data. (vals extant) (vals extinct))))
 	 ]
      
      [[
