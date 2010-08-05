@@ -36,11 +36,35 @@
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
       <version>${activemq.version}</version>
+      <exclusions>
+	<exclusion>
+	  <groupId>org.apache.geronimo.specs</groupId>
+	  <artifactId>geronimo-j2ee-management_1.0_spec</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>org.apache.activemq</groupId>
+	  <artifactId>kahadb</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>org.apache.activemq.protobuf</groupId>
+	  <artifactId>activemq-protobuf</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging</artifactId>
+	</exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.xbean</groupId>
       <artifactId>xbean-spring</artifactId>
       <version>3.6</version>
+      <exclusions>
+	<exclusion>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging</artifactId>
+	</exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
