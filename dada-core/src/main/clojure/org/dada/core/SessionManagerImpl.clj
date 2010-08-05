@@ -51,7 +51,7 @@
 	    (swap!
 	     mutable
 	     (fn [[exports]]
-		 (let [[count view] (or (exports model-name) [0 (.client service-factory model-name)])]
+		 (let [[count view] (or (exports model-name) [0 view])]
 		   [(assoc exports model-name [(inc count) view]) (if (zero? count) view)])))]
 	(if view
 	  (.registerView model view)
