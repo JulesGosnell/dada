@@ -72,7 +72,7 @@
 
   <bean id="queueFactory" class="org.dada.jms.QueueFactory"/>
   <bean id="topicFactory" class="org.dada.jms.TopicFactory"/>
-  
+
   <bean id="sessionManagerInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetClass">
       <value>java.lang.Class</value>
@@ -87,6 +87,14 @@
     </property>
   </bean>
 
+  <bean id="sessionManagerMethodMapper" class="org.dada.jms.SimpleMethodMapper">
+    <constructor-arg ref="sessionManagerInterface"></constructor-arg>
+  </bean>
+
+  <bean id="sessionManagerInvoker" class="org.dada.core.jms.POJOInvoker">
+    <constructor-arg ref="sessionManagerMethodMapper"></constructor-arg>
+  </bean>
+  
   <bean id="externalSessionManagerServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
     <constructor-arg ref="session"/>
     <constructor-arg><ref bean="sessionManagerInterface"/></constructor-arg>
@@ -95,6 +103,8 @@
     <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
     <constructor-arg><bean class="org.dada.core.SessionManagerNameGetter"/></constructor-arg> <!-- nameGetter -->
     <constructor-arg ref="queueFactory"/> <!-- destinationFactory -->
+    <constructor-arg ref="sessionManagerInvoker"/>
+    <constructor-arg><value>POJO</value></constructor-arg>
   </bean>
 
   <bean id="viewInterface" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -111,6 +121,14 @@
     </property>
   </bean>
 
+  <bean id="viewMethodMapper" class="org.dada.jms.SimpleMethodMapper">
+    <constructor-arg ref="viewInterface"></constructor-arg>
+  </bean>
+
+  <bean id="viewInvoker" class="org.dada.core.jms.POJOInvoker">
+    <constructor-arg ref="viewMethodMapper"></constructor-arg>
+  </bean>
+  
   <bean id="externalViewServiceFactory" class="org.dada.core.jms.JMSServiceFactory">
     <constructor-arg ref="session"/>
     <constructor-arg><ref bean="viewInterface"/></constructor-arg>
@@ -119,6 +137,8 @@
     <constructor-arg><value>10000</value></constructor-arg> <!-- timeout -->
     <constructor-arg><bean class="org.dada.core.ViewNameGetter"/></constructor-arg> <!-- nameGetter -->
     <constructor-arg ref="topicFactory"/> <!-- destinationFactory -->
+    <constructor-arg ref="viewInvoker"/>
+    <constructor-arg><value>POJO</value></constructor-arg>
   </bean>
 
   <bean id="rwlock" class="EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock"/>

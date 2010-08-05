@@ -55,7 +55,6 @@ import javax.swing.event.ListSelectionListener;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.dada.core.Data;
 import org.dada.core.Metadata;
-import org.dada.core.Model;
 import org.dada.core.SessionManager;
 import org.dada.core.Update;
 import org.dada.core.View;
@@ -75,9 +74,7 @@ public class Client {
 	private final int timeout;
 	private final boolean topLevel;
 	private final TableModelView<Object, Object> guiModel;
-	private final Destination serverDestination;
 	private final SessionManager sessionManager;
-	private final Model<Object, Object> serverProxy;
 	private final Destination clientDestination;
 	private final RemotingFactory<View<Object>> serverFactory;
 	private final View<Object> clientServer;
@@ -90,6 +87,7 @@ public class Client {
 
 	public Client(String serverName, SessionManager sessionManager, String modelName, Session session, int timeout, boolean topLevel) throws JMSException {
 		this.serverName = serverName;
+		this.sessionManager = sessionManager;
 		this.modelName = modelName;
 		this.session = session;
 		this.timeout = timeout;
@@ -98,26 +96,11 @@ public class Client {
 		guiModel = new TableModelView<Object, Object>(modelName);
 		LOG.info("viewing: " + this.modelName);
 
-		serverDestination = session.createQueue(this.modelName);
-		
-		if (sessionManager == null) {
-			RemotingFactory<SessionManager> remotingFactory = new RemotingFactory<SessionManager>(session, SessionManager.class, timeout);
-			this.sessionManager = remotingFactory.createSynchronousClient(serverDestination, true);
-		} else {
-			this.sessionManager = sessionManager;
-		}
-		RemotingFactory<Model<Object, Object>> clientFactory = new RemotingFactory<Model<Object, Object>>(session, Model.class, timeout);
-		serverProxy = clientFactory.createSynchronousClient(serverDestination, true);
-
-		// create a Client
+		serverFactory = new RemotingFactory<View<Object>>(session, View.class, timeout);
 
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
-		serverFactory = new RemotingFactory<View<Object>>(session, View.class, timeout);
 		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
-		
-		// start listening on shared Topic
-		serverFactory.createServer(guiModel, session.createTopic(this.modelName), EXECUTOR_SERVICE);
 		
 		// pass the client over to the server to attach as a listener..
 		Metadata<Object, Object> metadata = this.sessionManager.getMetadata(modelName);
@@ -222,12 +205,16 @@ public class Client {
 		final Connection connection = connectionFactory.createConnection();
 		connection.start();
 		final Session session = connection.createSession(false, Session.DUPS_OK_ACKNOWLEDGE);
+
+		final SessionManager sessionManager = new RemotingFactory<SessionManager>(session, SessionManager.class, ONE_MINUTE).
+			createSynchronousClient(session.createQueue("SessionManager.POJO"), true);
+
 		SwingUtilities.invokeAndWait(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					new Client(serverName, null, serverName + ".MetaModel", session, ONE_MINUTE, true);
+					new Client(serverName, sessionManager, "MetaModel", session, ONE_MINUTE, true);
 				} catch (JMSException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
