@@ -101,6 +101,9 @@ public class Client {
 		clientDestination = session.createQueue("Client." + new UID().toString()); // tie up this UID with the one in RemotingFactory
 		serverFactory.createServer(guiModel, clientDestination, EXECUTOR_SERVICE);
 		clientServer = serverFactory.createSynchronousClient(clientDestination, true);
+
+		// start listening on shared Topic
+		serverFactory.createServer(guiModel, session.createTopic(this.modelName + ".POJO"), EXECUTOR_SERVICE);
 		
 		// pass the client over to the server to attach as a listener..
 		Metadata<Object, Object> metadata = this.sessionManager.getMetadata(modelName);
