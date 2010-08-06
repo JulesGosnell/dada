@@ -43,7 +43,6 @@
 
 (defn #^Data -registerView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
   (let [[[_ #^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
-	[exports] @mutable
 	model (.getModel metamodel model-name)]
     (if (nil? model)
       (do (println "WARN: no Model for name:" model-name) nil) ;should throw Exception
@@ -60,7 +59,6 @@
 
 (defn #^Data -deregisterView [#^org.dada.core.SessionManagerImpl this #^String model-name #^View view]
   (let [[[_ #^MetaModel metamodel #^ServiceFactory service-factory] mutable] (.state this)
-	[exports] @mutable
 	model (.getModel metamodel model-name)]
     (if (nil? model)
       (do (println "WARN: no Model for name:" model-name) nil) ;should throw Exception
@@ -79,3 +77,16 @@
 	  (.deregisterView model view)
 	  (.getData model)
 	  )))))
+
+;; consider memoisation of queries, unamiguous DSL, model names, etc...
+(defn #^Model -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
+  (let [[[_ my-metamodel #^ServiceFactory service-factory] mutable] (.state this)
+	;; TODO: investigate this
+	;; - does *ns* binding only work on one thread ?
+	;; - why can't we override *metamodel*
+	[_ data-fn] (binding [*ns* (find-ns (symbol namespace-name))
+			      ;;*metamodel* my-metamodel
+			      ]
+		      (eval (read-string query-string))) ;should only receive list of operations then combine them here - otherwise security risk...
+	[results-model] (data-fn)]
+    results-model))

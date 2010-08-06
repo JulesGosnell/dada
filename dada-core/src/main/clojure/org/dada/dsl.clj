@@ -412,7 +412,12 @@
 	   (insert *metamodel* metamodel)
 	   [metamodel prefix '()]))]))
 
-(defn ?2 [[metadata-fn direct-fn]]
+(defn from [model-name]
+  (metamodel (.getModel *metamodel* model-name)))
+
+(defn dochain 
+  "forces the aggressive evaluation of a chain"
+  [[metadata-fn direct-fn]]
   (let [metadata (metadata-fn)
 	direct (direct-fn)]
     [ ;; metadata
@@ -421,11 +426,17 @@
      (fn [] direct)
      ]))
 
-(defn thread-chain [chain model]
-  (reduce (fn [results operator] (operator results)) model (reverse chain)))
+(defn thread-chain
+  ([chain model]
+   (reduce (fn [results operator] (operator results)) model (reverse chain)))
+  ([chain]
+   (reduce (fn [results operator] (operator results)) (reverse chain))))
 
-(defn ? [chain model]
-  (?2 (thread-chain chain model)))
+(defn ?
+  ([chain model]
+   (dochain (thread-chain chain model)))
+  ([chain]
+   (thread-chain chain)))
 
 (defn meta-view [#^String suffix #^Model src-metamodel f]
   ;; create a metamodel into which t place our results...
