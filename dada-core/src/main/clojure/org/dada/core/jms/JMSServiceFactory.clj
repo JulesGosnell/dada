@@ -34,21 +34,21 @@
    ])
 
 (defn -decouple [#^org.dada.core.jms.JMSServiceFactory this #^Object target]
-  (let [[_ _ _ _ _ _ _ name-getter] (.state this)
+  (let [[_ _ _ _ _ _ _ #^Getter name-getter] (.state this)
 	server-name (.get name-getter target)]
     (.server this target server-name)
     (.client this server-name)
     ))
 
 (defn -client [#^org.dada.core.jms.JMSServiceFactory this #^String end-point]
-  (let [[session destination-factory _ _ interface timeout true-async _ _ protocol] (.state this)]
+  (let [[session #^DestinationFactory destination-factory _ _ interface timeout true-async _ _ protocol] (.state this)]
     (Proxy/newProxyInstance
      (.getContextClassLoader (Thread/currentThread))
      (into-array Class [interface])
      (SynchronousClient. session (.createDestination destination-factory session (str end-point "." protocol)) interface timeout true-async))))
 
 (defn -server [#^org.dada.core.jms.JMSServiceFactory this #^Object target #^String end-point]
-  (let [[session destination-factory executor-service producer _ _ _ _ invoker protocol] (.state this)]
+  (let [[#^Session session #^DestinationFactory destination-factory #^ExecutorService executor-service producer _ _ _ _ #^Invoker invoker protocol] (.state this)]
     (.setMessageListener
      (.createConsumer session (.createDestination destination-factory session (str end-point "." protocol)))
      (proxy [MessageListener] [] (onMessage [message] (.execute executor-service (fn [] (.invoke invoker target session message producer))))))
