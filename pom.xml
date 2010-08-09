@@ -230,13 +230,11 @@
       <artifactId>clojure</artifactId>
       <version>${clojure.version}</version>
     </dependency>
-<!--
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure-contrib</artifactId>
       <version>${clojure.version}</version>
     </dependency>
--->
 <!--
     <dependency>
       <groupId>org.coconut.forkjoin</groupId>
