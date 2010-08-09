@@ -80,13 +80,8 @@
 
 ;; consider memoisation of queries, unamiguous DSL, model names, etc...
 (defn #^Model -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
+  (use (symbol namespace-name))		;TODO - query should be evaluated in temporary namespace
   (let [[[_ my-metamodel #^ServiceFactory service-factory] mutable] (.state this)
-	;; TODO: investigate this
-	;; - does *ns* binding only work on one thread ?
-	;; - why can't we override *metamodel*
-	[_ data-fn] (binding [*ns* (find-ns (symbol namespace-name))
-			      ;;*metamodel* my-metamodel
-			      ]
-		      (eval (read-string query-string))) ;should only receive list of operations then combine them here - otherwise security risk...
+	[_ data-fn] (let [query (read-string)] (prn "EVALUATING:" query) (eval query))
 	[results-model] (data-fn)]
-    results-model))
+    results-model))			;TODO: security - arbitrary code can be evaluated here...
