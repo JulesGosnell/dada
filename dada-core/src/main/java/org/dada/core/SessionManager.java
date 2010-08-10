@@ -1,5 +1,6 @@
 package org.dada.core;
 
+import java.util.Collection;
 
 public interface SessionManager {
 
@@ -13,6 +14,6 @@ public interface SessionManager {
 	Data<Object> registerView(String modelName, View<Object> view);
 	Data<Object> deregisterView(String name, View<Object> view);
 	
-	Model<Object, Object> query(String namespace, String query);
+	Collection<Object> query(String namespace, String query);
 	
 }

@@ -1,6 +1,9 @@
 (ns
  org.dada.core.SessionManagerImpl
+ (:use
+  [clojure.contrib with-ns])
  (:import
+  [java.util Collection]
   [org.dada.core Data Metadata MetaModel Model ServiceFactory View]
   )
  (:gen-class
@@ -78,10 +81,17 @@
 	  (.getData model)
 	  )))))
 
-;; consider memoisation of queries, unamiguous DSL, model names, etc...
-(defn #^Model -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
-  (use (symbol namespace-name))		;TODO - query should be evaluated in temporary namespace
-  (let [[[_ my-metamodel #^ServiceFactory service-factory] mutable] (.state this)
-	[_ data-fn] (let [query (read-string)] (prn "EVALUATING:" query) (eval query))
+;; need contrib with-ns - only contrib dependency so far...
+(defmacro with-temp-ns-inherited [ns & body]
+  `(with-temp-ns (use (quote ~ns)) ~@body))
+
+;; TODO: consider memoisation of queries, unamiguous DSL, model names, etc...
+;; TODO: security - arbitrary code can be evaluated here...
+(defn #^Collection -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
+  (println "QUERY:" query-string)
+  (let [target-namespace (symbol namespace-name) ;TODO - should be part of SessionManager's state
+	[[_ target-metamodel #^ServiceFactory service-factory] mutable] (.state this)
+	;; TODO: involve target-metamodel - how can we thread this through the chain ?
+	[_ data-fn] (with-temp-ns-inherited target-namespace (eval (read-string query-string)))
 	[results-model] (data-fn)]
-    results-model))			;TODO: security - arbitrary code can be evaluated here...
+    (map (fn [[#^Model m]] (.getName m)) (.getExtant (.getData results-model)))))
