@@ -79,11 +79,11 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
 		} catch (JMSException e) {
-		        LOGGER.warn("problem unpacking message: ", message);
+                        LOGGER.warn("problem unpacking message {}: ", e, message);
 		} catch (InterruptedException e) {
 			// TODO: how should we deal with this...
 		} catch (TimeoutException e) {
-		        LOGGER.warn("timed out waiting for exchange: {}", message);
+                        LOGGER.warn("timed out waiting for exchange: {}", e, message);
 		}
 	}
 
