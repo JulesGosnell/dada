@@ -173,7 +173,7 @@
 		     (into-array (list (.getCanonicalName type) (attribute-key key))))
 		 (apply array-map attribute-key-types)))))
 
-(def *exported-classes* (atom {}))
+;;(def *exported-classes* (atom {}))
 
 (defn custom-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
   (let [bytes (.create
@@ -181,7 +181,7 @@
 	       class-name
 	       superclass
 	       (apply custom-attribute-array attribute-key-types))]
-    (swap! *exported-classes*  (fn [classes] (assoc classes class-name bytes)))
+    ;;(swap! *exported-classes*  (fn [classes] (assoc classes class-name bytes)))
     (.
      (custom-classloader)
      (defineClass class-name bytes :TODO)

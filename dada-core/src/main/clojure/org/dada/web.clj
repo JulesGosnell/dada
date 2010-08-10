@@ -7,13 +7,19 @@
 	  [org.eclipse.jetty.server.handler
 	   AbstractHandler]
 	  [java.io
-	   OutputStream]	  
+	   ByteArrayOutputStream ObjectOutputStream OutputStream]
 	  [javax.servlet.http
 	   HttpServletRequest HttpServletResponse])
  )
 
 
 (def #^Server *jetty* nil)
+
+(defn serialise [class]
+  (let [baos (ByteArrayOutputStream.)
+	oos (ObjectOutputStream. baos)]
+    (.writeObject class oos)
+    (.toByteArray baos)))
 
 (defn start-jetty [port]
   (let [jetty (Server. port)
@@ -24,7 +30,8 @@
 				#^HttpServletResponse response] 
 			       (let [path (.getPathInfo base-request)
 				     name (.substring path (+ (.lastIndexOf path "/") 1))
-				     #^"[B" bytes (@*exported-classes* name)
+				     ;;#^"[B" bytes (@*exported-classes* name)
+				     #^"[B" bytes (serialise (eval symbol name)) ;; TODO - write bytes directly to stream ?
 				     #^OutputStream stream (.getOutputStream response)]
 				 (.setContentType response "application/binary")
 				 (.setContentLength response (count bytes))
