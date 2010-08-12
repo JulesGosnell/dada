@@ -49,6 +49,9 @@
 ;; create a projection of the remote session manager into our address space
 (def session-manager (.client session-manager-service-factory "SessionManager"))
 
+;; TODO: dirty hack - sets static :-(
+(org.dada.core.SessionManagerHelper/setCurrentSessionManager session-manager)
+
 ;; create a local View
 (.start (Thread. (fn [] (.start (make-grid-view "MetaModel" session-manager view-service-factory)))))
 

@@ -407,7 +407,7 @@
      (fn [] [(.getMetadata src-model) metaprefix '()])
      ;; data
      (fn []
-	 (let [metamodel (model (str "Meta-" prefix) (seq-metadata 1))]
+	 (let [metamodel (model metaprefix (seq-metadata 2))]
 	   (insert metamodel [src-model '()])
 	   (insert *metamodel* metamodel)
 	   [metamodel prefix '()]))]))

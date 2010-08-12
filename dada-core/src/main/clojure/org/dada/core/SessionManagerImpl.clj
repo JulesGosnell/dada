@@ -27,6 +27,10 @@
   (let [[[name #^MetaModel metamodel]] (.state this)]
     name))
 
+(defn #^Data -getData [#^org.dada.core.SessionManagerImpl this #^String name]
+  (let [[[_ #^MetaModel metamodel]] (.state this)]
+    (.getData (.getModel metamodel name))))
+
 (defn #^Model -getModel [#^org.dada.core.SessionManagerImpl this #^String name]
   (let [[[_ #^MetaModel metamodel]] (.state this)]
     (.getModel metamodel name)))
