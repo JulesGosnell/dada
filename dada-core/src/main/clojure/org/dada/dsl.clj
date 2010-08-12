@@ -432,11 +432,8 @@
   ([chain]
    (reduce (fn [results operator] (operator results)) (reverse chain))))
 
-(defn ?
-  ([chain model]
-   (dochain (thread-chain chain model)))
-  ([chain]
-   (thread-chain chain)))
+(defn ? [& chain]
+  (dochain (thread-chain chain)))
 
 (defn meta-view [#^String suffix #^Model src-metamodel f]
   ;; create a metamodel into which t place our results...

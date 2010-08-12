@@ -53,4 +53,4 @@
 (.start (Thread. (fn [] (.start (make-grid-view "MetaModel" session-manager view-service-factory)))))
 
 ;; try a query
-(.query session-manager "org.dada.dsl" "(? [(ccount)(from \"Whales\")])")
+(.query session-manager "org.dada.dsl" "(? (ccount)(from \"Whales\"))")

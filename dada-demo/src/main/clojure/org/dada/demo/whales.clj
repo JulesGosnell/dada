@@ -174,74 +174,72 @@
 
 ;;--------------------------------------------------------------------------------
 
-(def all-whales (metamodel whales-model))
-
 (def #^Collection some-years (map #(Date. % 0 1) (range num-years)))
 (def #^NavigableSet years (TreeSet. some-years))
 
 (defn by-year [time] (list (or (.lower years time) time)))
 
-;; (? [] all-whales)
+;; (? (from "Whales"))
 
-;; (? [(union)] all-whales)
-;; (? [(ccount)] all-whales)
-;; (? [(sum :weight)] all-whales)
+;; (? (union)(from "Whales"))
+;; (? (ccount)(from "Whales"))
+;; (? (sum :weight)(from "Whales"))
 
-;; (? [(split :type)] all-whales)
+;; (? (split :type)(from "Whales"))
 
-;; (? [(ccount)(ccount)] all-whales)
-;; (? [(union)(union)] all-whales)
-;; (? [(ccount)(union)] all-whales)
-;; (? [(sum :weight)(union)] all-whales)
-;; (? [(union)(ccount)] all-whales)
-;; (? [(union)(split :type)] all-whales)
-;; (? [(ccount)(split :type)] all-whales)
-;; (? [(split :time)(split :type)] all-whales)
+;; (? (ccount)(ccount)(from "Whales"))
+;; (? (union)(union)(from "Whales"))
+;; (? (ccount)(union)(from "Whales"))
+;; (? (sum :weight)(union)(from "Whales"))
+;; (? (union)(ccount)(from "Whales"))
+;; (? (union)(split :type)(from "Whales"))
+;; (? (ccount)(split :type)(from "Whales"))
+;; (? (split :time)(split :type)(from "Whales"))
 
-;; (? [(ccount)(split :time)(split :type)] all-whales)
-;; (? [(union)(split :time)(split :type)] all-whales)
-;; (? [(split :length)(split :time)(split :type)] all-whales)
+;; (? (ccount)(split :time)(split :type)(from "Whales"))
+;; (? (union)(split :time)(split :type)(from "Whales"))
+;; (? (split :length)(split :time)(split :type)(from "Whales"))
 
-;; (? [(split :type nil [(ccount)])] all-whales)
-;; (? [(split :type nil [(split :time)])] all-whales)
-;; (? [(split :type nil [(split :time nil [(split :length)])])] all-whales)
+;; (? (split :type nil [(ccount)]) (from "Whales"))
+;; (? (split :type nil [(split :time)]) (from "Whales"))
+;; (? (split :type nil [(split :time nil [(split :length)])]) (from "Whales"))
 
-;; (? [(split :type nil [(ccount)(split :time)])] all-whales)
-;; (? [(split :type nil [(split :time nil)(split :length)])] all-whales)
+;; (? (split :type nil [(ccount)(split :time)]) (from "Whales"))
+;; (? (split :type nil [(split :time nil)(split :length)]) (from "Whales"))
 
-;; (? [(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+;; (? (split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)]) (from "Whales"))
 
-;; (? [(union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])] all-whales)
+;; (? (union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])(from "Whales"))
 
-;;(? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
+;;(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])(from "Whales"))
 
-;; (? [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
+;; (? (union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])(from "Whales"))
 
-;;(? [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])(from "Whales"))
 
-;; (? [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
+;; (? (union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
 
 ;; (def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
 
-;; (? [(split :ocean nil [(union)(split :type nil subquery)])] all-whales)
+;; (? (split :ocean nil [(union)(split :type nil subquery)])(from "Whales"))
 
-;; (? [(union)(split :ocean nil subquery)] all-whales)
+;; (? (union)(split :ocean nil subquery)(from "Whales"))
 
-;; (? [
+;; (? 
 ;;      (pivot :time years (keyword (count-value-key nil)))
-;;      (split :time by-year [(ccount)])] all-whales)
+;;      (split :time by-year [(ccount)])] (from "Whales"))
 
-;; (? [(ccount)] all-whales)
+;; (? (ccount)(from "Whales"))
 
 ;; these queries seem to just be too big to run with a resonably sized dataset on my home box ...
 
-;; (? [(split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])] all-whales)
+;; (? (split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])(from "Whales"))
 
-;; (? [(split :reporter nil [(union)(split :ocean nil subquery)])] all-whales)
+;; (? (split :reporter nil [(union)(split :ocean nil subquery)])(from "Whales"))
 
-;; (? [(split :reporter nil [
+;; (? (split :reporter nil [
 ;; 			   (pivot :time years (keyword (count-value-key nil)))
-;; 			   (split :time by-year [(ccount)])])] all-whales)
+;; 			   (split :time by-year [(ccount)])])] (from "Whales"))
 
 
 ;;--------------------------------------------------------------------------------
@@ -252,15 +250,15 @@
 (start-client)
 (start-jetty 8080)
 
-;;(? [(split :type)] all-whales)
-;;(? [(split :ocean nil [(ccount)])] all-whales)
-;;(? [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)] all-whales)
+;;(? (split :type)(from "Whales"))
+;;(? (split :ocean nil [(ccount)])(from "Whales"))
+;;(? (pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)(from "Whales"))
 
-(? [(union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])] all-whales)
-(? [(union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])] all-whales)
+(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )]) (from "Whales"))
+(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )]) (from "Whales"))
 
-(? [(union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])] all-whales)
-(? [(union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])] all-whales)
+(? (union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
+(? (union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
 
 ;;--------------------------------------------------------------------------------
 
