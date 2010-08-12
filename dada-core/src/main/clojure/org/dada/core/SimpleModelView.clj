@@ -7,16 +7,16 @@
     ;;  )
     (:import
      [java.util Collection]
-     [org.dada.core Data Metadata Update]
+     [org.dada.core Data Metadata RemoteModel Update]
      )
     (:gen-class
      ;;:extends org.dada.core.BaseModelView
-     :implements [org.dada.core.ModelView]
+     :implements [org.dada.core.ModelView java.io.Serializable]
      :constructors {[String org.dada.core.Metadata]
      ;;[String org.dada.core.Metadata]
      []
      }
-     :methods []
+     :methods [[writeReplace [] Object]]
      :init init
      :state state
      )
@@ -183,3 +183,8 @@
       (-notifyUpdate this i a d))
     ))
 
+;;--------------------------------------------------------------------------------
+
+(defn #^{:private true} -writeReplace [#^org.dada.core.SimpleModelView this]
+  (let [[[name metadata]] (.state this)]
+      (RemoteModel. name metadata)))
