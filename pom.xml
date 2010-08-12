@@ -112,7 +112,7 @@
   <profile>
     <id>swt</id>
     <activation>
-      <file><exists>/usr/lib/libgtk-x11-2.0.so.0</exists></file>
+      <file><exists>DO_NOT_ACTIVATE/usr/lib/libgtk-x11-2.0.so.0</exists></file>
     </activation>
     <modules>
       <module>dada-swt</module>
