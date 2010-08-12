@@ -4,8 +4,7 @@ public class ViewNameGetter implements  Getter<String,View<?>> {
 
 	@Override
 	public String get(View<?> value) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("NYI");
+		return "View-" + System.identityHashCode(value);
 	}
 
 }
