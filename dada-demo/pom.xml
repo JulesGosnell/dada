@@ -50,6 +50,28 @@
     <plugins>
 
       <plugin>
+	<artifactId>maven-resources-plugin</artifactId>
+	<executions>
+	  <execution>
+	    <id>copy-clojure-src</id>
+	    <phase>process-resources</phase>
+	    <goals>
+              <goal>copy-resources</goal>
+	    </goals>
+	    <configuration>
+              <overwrite>true</overwrite>
+              <outputDirectory>${basedir}/target/classes</outputDirectory>
+              <resources>
+		<resource>
+		  <directory>src/main/clojure</directory>
+		</resource>
+              </resources>
+	    </configuration>
+	  </execution>
+	</executions>
+      </plugin>
+      
+      <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
 	<version>1.3.2</version>
