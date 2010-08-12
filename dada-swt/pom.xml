@@ -26,14 +26,65 @@
     <dependency>
       <groupId>org.eclipse</groupId>
       <artifactId>swt</artifactId>
-      <version>3.3.0-v3346</version>
+      <!-- <version>3.3.0-v3346</version> -->
       <!-- <version>3.5.2</version> -->
+      <!-- <version>gtk.linux.x86_64_3.5.2.v3557f</version> -->
+      <!-- <version>gtk.linux.x86.source_3.5.2.v3557f</version> -->
+      <version>gtk.linux.x86_3.6.0.v3650b</version>
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
       <artifactId>dada-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.dada</groupId>
+      <artifactId>dada-demo</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>build-helper-maven-plugin</artifactId>
+	<executions>
+	  <execution>
+	    <phase>generate-sources</phase>
+	    <goals>
+	      <goal>add-source</goal>
+	    </goals>
+	    <configuration>
+	      <sources>
+		<source>src/main/clojure</source>
+	      </sources>
+	    </configuration>
+	  </execution>
+	</executions>
+      </plugin>
+      <plugin>
+	<groupId>com.theoryinpractise</groupId>
+	<artifactId>clojure-maven-plugin</artifactId>
+	<version>1.3.2</version>
+	<configuration>
+	  <warnOnReflection>true</warnOnReflection>
+	  <namespaces>
+            <namespace>org.dada.swt.*</namespace>
+            <namespace>!org.dada.swt.main</namespace>
+	  </namespaces>
+	</configuration>
+	<executions>
+	  <execution>
+            <id>clojure-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+	  </execution>
+	</executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

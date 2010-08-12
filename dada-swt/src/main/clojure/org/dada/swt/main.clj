@@ -1,65 +1,56 @@
 (ns org.dada.swt.main
-    (:use
-     org.dada.swt.GridView)
+    (:use org.dada.demo.whales) ;hack - we shouldn't need to run server in-vm with us.
+    (:use org.dada.swt.GridView)
     (:import
-     (java.io
-      Serializable)
+     (java.io Serializable)
+     (java.util.concurrent Executors)
+     (org.apache.activemq ActiveMQConnectionFactory)
+     (javax.jms Session)
+     (org.dada.core SessionManager SessionManagerNameGetter Update View ViewNameGetter)
+     (org.dada.jms SimpleMethodMapper QueueFactory)
+     (org.dada.core.jms JMSServiceFactory POJOInvoker)
+     (org.dada.swt GridView)
      ))
 
-;;; should load from a spring-config
+(let [uri "tcp://localhost:61616"
+      uri "vm://DADA?marshal=false&broker.persistent=false&create=false"
+      connection (.createConnection (ActiveMQConnectionFactory. uri))
+      session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
+      thread-pool (Executors/newFixedThreadPool 32)]
+  (.start connection)
+  
+  (def session-manager-service-factory 
+       (JMSServiceFactory.
+	session
+	SessionManager
+	thread-pool
+	true	     ;; true async
+	(long 10000) ;; 10 sec timeout
+	(SessionManagerNameGetter.)
+	(QueueFactory.)
+	(POJOInvoker.
+	 (SimpleMethodMapper. SessionManager))
+	"POJO"))
 
-(import org.apache.activemq.ActiveMQConnectionFactory)
-(import javax.jms.ConnectionFactory)
-(import javax.jms.Connection)
-(import javax.jms.Session)
-(import org.dada.jms.RemotingFactory)
-(import org.dada.core.MetaModel)
-(import org.dada.core.View)
-(import java.rmi.server.UID)
-(import java.util.concurrent.ExecutorService)
-(import java.util.concurrent.Executors)
+  (def view-service-factory 
+       (JMSServiceFactory.
+	session
+	View
+	thread-pool
+	true	     ;; true async
+	(long 10000) ;; 10 sec timeout
+	(ViewNameGetter.)
+	(QueueFactory.)
+	(POJOInvoker.
+	 (SimpleMethodMapper. View))
+	"POJO"))
+  )
 
+;; create a projection of the remote session manager into our address space
+(def session-manager (.client session-manager-service-factory "SessionManager"))
 
-(def server-name "Cetacea.MetaModel")
-(def url "tcp://localhost:61616")
-(def connection-factory (ActiveMQConnectionFactory. url))
-(def connection (.createConnection connection-factory))
-(.start connection)
-(def session (.createSession connection false (Session/AUTO_ACKNOWLEDGE)))
+;; create a local View
+(.start (Thread. (fn [] (.start (make-grid-view "MetaModel" session-manager view-service-factory)))))
 
-;; create proxy to server-side metamodel
-
-(def clientside-metamodel-proxy
-     (.createSynchronousClient 
-      (RemotingFactory. session MetaModel 10000) 
-      (.createQueue session server-name)
-      true))
-
-;; create proxy for ourselves to send to server
-
-(def client-destination (.createQueue session (str "Client" (UID.))))
-(def client-view (GridView. "SWTGUI"))
-
-(def view-remoting-factory (RemotingFactory. session View 10000))
-
-(def clientside-view-server
-     (.createServer
-      view-remoting-factory 
-      client-view
-      client-destination
-      (Executors/newFixedThreadPool 20)))
-
-(def serverside-view-proxy
-     (.createSynchronousClient
-      view-remoting-factory
-      client-destination
-      true))
-
-;; we need to View to create endpoint
-;; we need endpoint to register interest in Model
-;; we don't get Metadata until we have registered that interest
-;; we need Metadata to build View
-;; argh !
-
-;; we will have to call some sort of late-initialise method on the View with the Metadata...
-
+;; try a query
+(.query session-manager "org.dada.dsl" "(? [(ccount)(from \"Whales\")])")

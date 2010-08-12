@@ -1,30 +1,22 @@
-(ns org.dada.swt.GridView
-    (:import
-     [java.util Collection]
-     [org.dada.core View Metadata MetaModel UnionModel Update View]
-     (java.io Serializable)
-     (org.eclipse.swt SWT)
-     (org.eclipse.swt.widgets Display Shell Table TableColumn TableItem Listener)
-     (org.eclipse.swt.layout GridData GridLayout)
-     (org.eclipse.swt.events ShellAdapter)
-     )
-    (:gen-class
-     :implements org.dada.core.View
-     :constructors {[String] []}
-     :methods []
-     :init init
-     :state state
-     )
-    )
+(ns 
+ org.dada.swt.GridView
+ (:import
+  [org.dada.core Metadata MetaModel SessionManager ServiceFactory UnionModel Update View]
+  [org.eclipse.swt SWT]
+  [org.eclipse.swt.widgets Button Display Shell Table TableColumn TableItem Text Listener]
+  [org.eclipse.swt.layout GridData GridLayout]
+  [org.eclipse.swt.events ShellAdapter SelectionEvent SelectionListener]
+  )
+ (:gen-class
+  :implements [org.dada.core.View]
+  :constructors {[String org.dada.core.Metadata org.dada.core.SessionManager org.dada.core.ServiceFactory org.eclipse.swt.widgets.Display] []}
+  :methods [[start [] void]]
+  :init init
+  :state state
+  )
+ )
 
 ;;--------------------------------------------------------------------------------
-
-(defn create-shell [display shell]
-  (let [layout (GridLayout.)]
-    (doto shell
-      (.setText "DADA GUI")
-      (.setLayout layout)
-      (.addShellListener (proxy [ShellAdapter] [] (shellClosed [evt] (System/exit 0)))))))
 
 (defn swt-loop [display shell]
   (loop []
@@ -40,32 +32,67 @@
     (.setText column text)
     column))
 
-(defn begin [metadata data]
-  (let [#^Display display (Display.)
-	#^Shell shell (Shell. display)
-	flags (reduce bit-or [(SWT/MULTI) (SWT/BORDER) (SWT/FULL_SELECTION)])
-	#^Table table (Table. shell flags)
-	
+;;--------------------------------------------------------------------------------
+
+(defn make-grid-view [model-name session-manager service-factory & [display]]
+  (let [display (or display (Display.))
+	;; get metadata
+	metadata (.getMetadata session-manager model-name)
+	;; make a View
+	view (org.dada.swt.GridView. model-name metadata session-manager service-factory display)
+	;; register a proxy for the View with the remote Model
+	data (.registerView session-manager model-name (.decouple service-factory  view))]
+    ;; pump initial data in...
+    (.update view (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
+    view))
+
+(defn execute-query [session-manager query service-factory display]
+  (println "QUERY" query)
+  (doall
+   (map
+    (fn [model-name] (make-grid-view model-name session-manager service-factory display))
+    (.query session-manager "org.dada.dsl" query))))
+
+;;--------------------------------------------------------------------------------
+
+
+(defn create [model-name metadata session-manager service-factory display]
+  (let [#^Shell shell (Shell. display)
+	#^Table table (Table. shell (SWT/SINGLE))
 	;; add metadata
-	titles (map str (.getAttributeKeys metadata))
+	titles (map (fn [attribute] (str (.getKey attribute))) (.getAttributes metadata))
 	columns (doall (map #(make-column table %) titles))]
     
+    (.setText shell model-name)
+    
+    (.addShellListener 
+     shell
+     (proxy
+      [ShellAdapter] []
+      (shellClosed [evt] (try (doto shell (.setVisible false)(.dispose)) (catch Throwable t (.printStackTrace t))))))
+    
     (.setLayout shell (GridLayout.))
+
     (.setLinesVisible table true)
     (.setHeaderVisible table true)
     (.setLayoutData table (GridData. (SWT/FILL) (SWT/FILL) true true))
+
+    (let [#^Text text (Text. shell (reduce bit-and [(SWT/LEFT)(SWT/SINGLE)]))]
+      (doto
+	  text
+	(.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
+	)
+      (doto
+	  #^Button (Button. shell (reduce bit-and [(SWT/PUSH)(SWT/CENTER)]))
+	  (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
+	  (.setText "Send Query")
+	  (.addSelectionListener
+	   (proxy [SelectionListener] []
+		  (widgetSelected [#^SelectionEvent evt]
+				  (try (execute-query session-manager (.getText text) service-factory display)(catch Throwable t (.printStackTrace t))))))))
     
-    ;; add data
-    (doall		   ;TODO - use a fn that implies a side-effect
-     (map
-      (fn [datum]
-	  (let [#^TableItem item (TableItem. table (SWT/NONE))]
-	    (.setText item 0 (str datum))
-	    ))
-      data))
-    
-    (doall (map	#(.pack %) columns))
-     
+    ;;(println (map #(.getName %) (.getMethods (type table))))
+
     ;; (.addListener 
     ;;  table
     ;;  (SWT/Selection)
@@ -74,7 +101,15 @@
     (.addListener
      table
      (SWT/DefaultSelection)
-     (proxy [Listener] [] (handleEvent [evt] (println "DefaultSelection" (map #(.getText %) (.getSelection table))))))
+     (proxy [Listener] []
+	    (handleEvent [evt]
+			 (try
+			  (let [selection (map #(.getText %) (.getSelection table))]
+			    (println "DefaultSelection" selection)
+			    (make-grid-view (first selection) session-manager service-factory display)
+			    )
+			  (catch Throwable t (.printStackTrace t))))))
+     
 
     ;; insert item at index
     ;;	TableItem item = new TableItem (table, SWT.NONE, 1);
@@ -85,7 +120,7 @@
 
     (.pack shell)
     (.open shell)
-    (swt-loop display shell)))
+    [shell table columns]))
 
 ;; Executing code from a non-UI thread
 
@@ -95,33 +130,47 @@
 ;;     * asyncExec(Runnable) should be used when the application needs to perform some UI operations, but is not dependent upon the operations being completed before continuing. For example, a background thread that updates a progress indicator or redraws a window could request the update asynchronously and continue with its processing. In this case, there is no guaranteed relationship between the timing of the background thread and the execution of the runnable.
 
 
-;; register our interest in the metamodel
-;;(def data (.registerView clientside-metamodel-proxy server-name serverside-view-proxy))
-
-;;(begin (.getMetadata data) (.getExtant data))
-
-(defn update [i a d]
-  ;; hook this into proxy below and implement by adding/updating/removing rows from GUI
-  )
-  
 ;;--------------------------------------------------------------------------------
 
-(defn -init [#^String model-name]
-
+(defn -init [#^String model-name #^Metadata metadata #^SessionManager session-manager #^ServiceFactory service-factory #^Display display]
   [ ;; super ctor args
    []
    ;; instance state
-   (let [
-	 view (proxy [View] [] (update [i a d] (println ("VIEW:" i a d))))
-	 ;; how do we get this ?
-	 ;; TODO
-	 ;; #^Data data (.registerView this view) ;synchronous connection
-	 metadata (.getMetadata data)
-	 data (.getExtant data)
-	 model (UnionModel. model-name metadata (fn [l r] true))
-	 ]
-     (begin metadata data)
-     [(fn [i a d] (.update model i a d))])])
+   (let [[shell table columns] (create model-name metadata session-manager service-factory display)
+	 getters (map (fn [attribute] (.getGetter attribute)) (.getAttributes metadata))]
+     [metadata display shell table columns getters session-manager service-factory display])
+   ])
 
-(defn -update [#^org.dada.core.UnionModel this & inputs]
-  (let [[update-fn] (.state this)] (update-fn inputs)))
+(defn -update [this insertions alterations deletions]
+  (let [[metadata display shell table columns getters session-manager service-factory] (.state this)]
+    (.asyncExec
+     display
+     (fn []
+	 (if (not (.isDisposed table))
+	   (do
+	     (doall ;; dirty
+	      (map
+	       (fn [update]
+		   (let [datum (.getNewValue update)
+			 #^TableItem item (TableItem. table (SWT/NONE))]
+		     (doall
+		      (map
+		       (fn [index getter]
+			   ;;(println (type getter))
+			   (.setText
+			    item
+			    index
+			    (str
+			     (try
+			      (.get getter datum)
+			      (catch Exception e (println (.getMessage e)) datum))
+			     )))
+		       (iterate inc 0)
+		       getters))
+		     ))
+	       insertions))
+	     (doall (map	#(.pack %) columns))))))))
+
+(defn -start [this]
+  (let [[metadata display shell table columns getters session-manager service-factory] (.state this)]
+    (swt-loop display shell)))

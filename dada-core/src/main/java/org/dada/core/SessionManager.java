@@ -14,6 +14,7 @@ public interface SessionManager {
 	Data<Object> registerView(String modelName, View<Object> view);
 	Data<Object> deregisterView(String name, View<Object> view);
 	
-	Collection<Object> query(String namespace, String query);
+        //String query(String namespace, String query);
+	Collection<String> query(String namespace, String query);
 	
 }
