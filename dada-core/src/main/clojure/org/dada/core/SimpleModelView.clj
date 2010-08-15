@@ -7,7 +7,7 @@
     ;;  )
     (:import
      [java.util Collection]
-     [org.dada.core Data Metadata RemoteModel Update]
+     [org.dada.core Data Metadata RemoteModel Update View]
      )
     (:gen-class
      ;;:extends org.dada.core.BaseModelView
@@ -128,9 +128,6 @@
    ])
 ;;--------------------------------------------------------------------------------
 
-(import org.dada.core.Data)
-(import org.dada.core.View)
-
 (defn -getName [#^org.dada.core.SimpleModelView this]
   (let [[[_name]] (.state this)]
     _name))
@@ -138,6 +135,11 @@
 (defn -getMetadata [#^org.dada.core.SimpleModelView this]
   (let [[[_ metadata]] (.state this)]
     metadata))
+
+(defn -find [#^org.dada.core.SimpleModelView this key]
+  (let [[_ mutable] (.state this)
+	[extant] @mutable]
+    (extant key)))
 
 (defn #^Data -registerView [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)

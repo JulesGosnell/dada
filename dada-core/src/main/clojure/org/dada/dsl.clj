@@ -413,7 +413,7 @@
 	   [metamodel prefix '()]))]))
 
 (defn from [model-name]
-  (metamodel (.getModel *metamodel* model-name)))
+  (metamodel (.find *metamodel* model-name)))
 
 (defn dochain 
   "forces the aggressive evaluation of a chain"
@@ -603,7 +603,7 @@
 							    (trace "SPLIT DATA SUB" split-data-tuple)
 							    (insert *metamodel* split-metamodel) ;add to global metamodel
 							    (insert *metamodel* split-model) ;add to global metamodel
-							    (insert split-metamodel split-model-tuple)
+							    (insert split-metamodel (doall split-model-tuple))
 							    ;; collect results of calling this subchain and put them into our output metamodel
 							    (connect
 							     sub-metamodel
@@ -614,7 +614,7 @@
 									      (fn [#^Update insertion]
 										  (let [sub-model-tuple (.getNewValue insertion)] ;; [sub-model sub-extra-pairs]
 										    ;; UNCOMMENT HERE AND WORK IT OUT
-										    (insert tgt-metamodel sub-model-tuple)
+										    (insert tgt-metamodel (doall sub-model-tuple))
 										    ))
 									      insertions)))))))
 						      ;; plug split -> tgt
@@ -622,7 +622,7 @@
 							  (trace "SPLIT - producing new model" split-model split-extra-value)
 							  (let [split-model-tuple (list split-model (concat src-extra-values [[split-key split-extra-value]]))]
 							    (insert *metamodel* split-model) ;add to global metamodel
-							    (insert tgt-metamodel split-model-tuple) ;add to metamodel that has been passed downstream
+							    (insert tgt-metamodel (doall split-model-tuple)) ;add to metamodel that has been passed downstream
 							    ))
 						      )]
 				       ;; we have received a model from an upstream operation...

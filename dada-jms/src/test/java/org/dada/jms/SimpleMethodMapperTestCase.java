@@ -32,12 +32,12 @@ import java.lang.reflect.Method;
 
 import junit.framework.TestCase;
 
-import org.dada.core.MetaModel;
+import org.dada.core.Model;
 
 public class SimpleMethodMapperTestCase extends TestCase {
 
 	public void testMapping() {
-		Class<MetaModel> interfaze = MetaModel.class; // MetaModel has inheritance, name overloading etc...
+		Class<Model> interfaze = Model.class;
 		MethodMapper<Integer> mapper = new SimpleMethodMapper(interfaze);
 
 		for (Method method : interfaze.getMethods()) {

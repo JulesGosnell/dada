@@ -56,6 +56,13 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 			public Data<Datum<Integer>> getData() {
 				return new Data<Datum<Integer>>(data, null);
 			}
+
+			@Override
+			public Datum<Integer> find(Integer key) {
+				// TODO Auto-generated method stub
+				// return null;
+				throw new UnsupportedOperationException("NYI");
+			}
 		};
 
 		assertTrue(model.getName() == name);

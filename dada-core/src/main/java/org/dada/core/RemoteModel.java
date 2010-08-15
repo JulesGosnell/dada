@@ -67,4 +67,9 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 	public String toString() {
 		return "<0x" + Integer.toHexString(System.identityHashCode(this)) + ":" + getClass().getSimpleName() + " " + name + ">";
 	}
+
+	@Override
+	public V find(K key) {
+		return (V)sessionManager.find(name, key);
+	}
 }

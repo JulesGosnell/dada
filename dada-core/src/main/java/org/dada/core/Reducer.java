@@ -28,13 +28,15 @@
  */
 package org.dada.core;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 // TODO: should be some sort of TransformedModelView - since output is a different shape from input
 
-public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<VI> {
+public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements View<VI>, Serializable {
 
 	public interface Strategy<VI, V, KO, VO> {
 		V initialValue();
@@ -50,50 +52,67 @@ public class Reducer<KI, VI, V, KO, VO> extends AbstractModel<KO, VO> implements
 	
 	private final Collection<KO> keys;
 	
-	private static class Data2<V> {
+	private static class Value<V> {
 		private final int version;
 		private final V value;
 		
-		private Data2(V value, int version) {
+		private Value(V value, int version) {
 			this.value = value;
 			this.version = version;
 		}
 	}
 
-	private final AtomicReference<Data2<V>> Data2;
+	private final AtomicReference<Value<V>> value;
 	
 	public Reducer(String name, Metadata<KO, VO> metadata, Collection<KO> keys, Strategy<VI, V, KO, VO> strategy) {
 		super(name, metadata);
 		this.keys = keys;
 		this.strategy = strategy;
-		Data2= new AtomicReference<Data2<V>>(new Data2<V>(this.strategy.initialValue(), 0));
+		value= new AtomicReference<Value<V>>(new Value<V>(this.strategy.initialValue(), 0));
 	}
 
 	@Override
 	public Data<VO> getData() {
-		Data2<V> snapshot = Data2.get();
+		Value<V> snapshot = value.get();
 		return new Data<VO>(Collections.singleton(strategy.currentValue(keys, snapshot.version, snapshot.value)), null);
 	}
 
 	@Override
 	public void update(Collection<Update<VI>> insertions, Collection<Update<VI>> alterations, Collection<Update<VI>> deletions) {
 		V delta = strategy.reduce(insertions, alterations, deletions);
-		Data2<V> oldData2;
-		Data2<V> newData2;
+		Value<V> oldData2;
+		Value<V> newData2;
 		V oldValue;
 		int oldVersion;
 		V newValue;
 		int newVersion;
 		do {
-			oldData2= Data2.get();
+			oldData2= value.get();
 			oldValue = oldData2.value;
 			oldVersion = oldData2.version;
 			newValue = strategy.apply(oldValue, delta);
 			newVersion = oldVersion + 1;
-			newData2= new Data2<V>(newValue, newVersion);
-		} while (!Data2.compareAndSet(oldData2, newData2));
+			newData2= new Value<V>(newValue, newVersion);
+		} while (!value.compareAndSet(oldData2, newData2));
 		
 		notifyUpdate(nil, Collections.singleton(new Update<VO>(strategy.currentValue(keys, oldVersion, oldValue), strategy.currentValue(keys, newVersion, newValue))), nil);
+	}
+
+	@Override
+	public VO find(KO key) {
+		throw new UnsupportedOperationException("NYI");
+	}
+	
+	// remoting
+	
+	private Object writeReplace() throws ObjectStreamException {
+		try {
+			return new RemoteModel(name, metadata);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 }

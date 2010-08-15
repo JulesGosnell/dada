@@ -27,8 +27,6 @@
    Creator
    DummyLock
    Getter
-   MetaModel
-   MetaModelImpl
    Metadata
    Metadata$Comparator
    MetadataImpl
@@ -85,15 +83,6 @@
 
 (defn delete [#^View view value]
   (.update view '() '() (list (Update. value nil))))
-
-(do
-  (def #^ServiceFactory *external-session-manager-service-factory* (SynchronousServiceFactory.))
-  (def #^ServiceFactory *external-view-service-factory* (SynchronousServiceFactory.))
-  (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
-  (def #^Lock *exclusive-lock* (DummyLock.))
-  (def #^MetaModel *metamodel* (MetaModelImpl. "MetaModel" (StringMetadata. "Name")))
-  (insert *metamodel* *metamodel*))
-  (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*))
 
 ;;--------------------------------------------------------------------------------
 
@@ -377,6 +366,22 @@
 
 ;;--------------------------------------------------------------------------------
 
+(def metamodel-metadata (MetadataImpl.
+			 nil		;creator
+			 [:name]	;primary-keys
+			 []		;version-keys
+			 (proxy [Metadata$Comparator][](higher [old new] true)) ;version-comparator
+			 [(Attribute. :name String false (proxy [Getter][] (get [#^Model model] (.getName model))))])) ;attributes
+
+(do
+  (def #^ServiceFactory *external-session-manager-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *external-view-service-factory* (SynchronousServiceFactory.))
+  (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
+  (def #^Lock *exclusive-lock* (DummyLock.))
+  (def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
+  (insert *metamodel* *metamodel*)
+  (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*)))
+
 (defn start-server []
 
   (do
@@ -386,12 +391,12 @@
     (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
     (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
 
-    (def #^MetaModel *metamodel* (MetaModelImpl. "MetaModel" (StringMetadata. "Name")))
+    (def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
     (insert *metamodel* *metamodel*)
     (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*))
     )
 
-    (.start *metamodel*)
+  ;;(.start *metamodel*)
     (println "Server:" *session-manager-name*)
     (.server *external-session-manager-service-factory* *session-manager* *session-manager-name*))
 

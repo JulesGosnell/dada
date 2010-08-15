@@ -1,17 +1,19 @@
 (ns 
  org.dada.swt.GridView
  (:import
-  [org.dada.core Metadata MetaModel SessionManager ServiceFactory UnionModel Update View]
+  [java.util Collection]
+  [org.dada.core Metadata Model SessionManager ServiceFactory Update View]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.widgets Button Display Shell Table TableColumn TableItem Text Listener]
   [org.eclipse.swt.layout GridData GridLayout]
   [org.eclipse.swt.events ShellAdapter SelectionEvent SelectionListener]
   )
  (:gen-class
-  :implements [org.dada.core.View]
-  :constructors {[String org.dada.core.Metadata org.dada.core.SessionManager org.dada.core.ServiceFactory org.eclipse.swt.widgets.Display] []}
-  :methods [[start [] void]]
+  :implements [org.dada.core.View java.io.Serializable]
+  :constructors {[org.dada.core.Model org.dada.core.SessionManager org.dada.core.ServiceFactory org.eclipse.swt.widgets.Display] []}
+  :methods [[start [] void][writeReplace [] Object]]
   :init init
+  :post-init post-init
   :state state
   )
  )
@@ -34,30 +36,62 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn make-grid-view [model-name session-manager service-factory & [display]]
-  (let [display (or display (Display.))
-	;; get metadata
-	metadata (.getMetadata session-manager model-name)
-	;; make a View
-	view (org.dada.swt.GridView. model-name metadata session-manager service-factory display)
-	;; register a proxy for the View with the remote Model
-	data (.registerView session-manager model-name (.decouple service-factory  view))]
-    ;; pump initial data in...
-    (.update view (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
-    view))
+(defn make-grid-view [model session-manager service-factory & [display]]
+  (org.dada.swt.GridView. model session-manager service-factory (or display (Display.))))
 
 (defn execute-query [session-manager query service-factory display]
   (println "QUERY" query)
-  (doall
-   (map
-    (fn [model-name] (make-grid-view model-name session-manager service-factory display))
-    (.query session-manager "org.dada.dsl" query))))
+  (make-grid-view 
+   (.query session-manager "org.dada.dsl" query)
+   session-manager
+   service-factory
+   display)
+  )
 
 ;;--------------------------------------------------------------------------------
 
+(defn close [#^Model model #^View view]
+  (if (instance? View view)
+    (.deregisterView model view)
+    (println "view is not a View!:" view "cannot be deregistered...")))
 
-(defn create [model-name metadata session-manager service-factory display]
-  (let [#^Shell shell (Shell. display)
+;;--------------------------------------------------------------------------------
+
+(defmulti open (fn [_ _ _ _ _ _ data] (class data)))
+
+(defmethod open Model [#^Model model session-manager service-factory display table evt #^Model data]
+  (make-grid-view data session-manager service-factory display))
+
+(defmethod open Collection [#^Model model session-manager service-factory display table evt #^Collection data]
+  (doall
+   (map
+    (fn [datum]
+	(open model session-manager service-factory display table evt datum))
+    data)))
+
+(defmethod open :default [_ _ _ _ _ _ _])
+
+(defn drill-down [#^Model model session-manager service-factory display table evt]
+  (let [table-items (.getSelection table)]
+    (doall
+     (map
+      (fn [table-item]
+	  (println table-item)
+	  (doall
+	   (map
+	    (fn [index]
+		(println table-item index)
+		(open model session-manager service-factory display table evt (.getData table-item (str index))))
+	    (range (count (.getAttributes (.getMetadata model))))
+	    )))
+      (.getSelection table)))))
+
+;;--------------------------------------------------------------------------------
+
+(defn create [model session-manager service-factory display]
+  (let [#^String model-name (.getName model)
+	#^Metadata metadata (.getMetadata model)
+	#^Shell shell (Shell. display)
 	#^Table table (Table. shell (SWT/SINGLE))
 	;; add metadata
 	titles (map (fn [attribute] (str (.getKey attribute))) (.getAttributes metadata))
@@ -101,15 +135,7 @@
     (.addListener
      table
      (SWT/DefaultSelection)
-     (proxy [Listener] []
-	    (handleEvent [evt]
-			 (try
-			  (let [selection (map #(.getText %) (.getSelection table))]
-			    (println "DefaultSelection" selection)
-			    (make-grid-view (first selection) session-manager service-factory display)
-			    )
-			  (catch Throwable t (.printStackTrace t))))))
-     
+     (proxy [Listener] [] (handleEvent [evt] (try (drill-down model session-manager service-factory display table evt) (catch Throwable t (.printStackTrace t))))))
 
     ;; insert item at index
     ;;	TableItem item = new TableItem (table, SWT.NONE, 1);
@@ -132,14 +158,27 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn -init [#^String model-name #^Metadata metadata #^SessionManager session-manager #^ServiceFactory service-factory #^Display display]
+(defn -init [#^Model model #^SessionManager session-manager #^ServiceFactory service-factory #^Display display]
   [ ;; super ctor args
    []
    ;; instance state
-   (let [[shell table columns] (create model-name metadata session-manager service-factory display)
+   (let [#^Metadata metadata (.getMetadata model)
+	 [shell table columns] (create model session-manager service-factory display)
 	 getters (map (fn [attribute] (.getGetter attribute)) (.getAttributes metadata))]
      [metadata display shell table columns getters session-manager service-factory display])
    ])
+
+(defn -post-init [#^org.dada.swt.GridView this #^Model model #^SessionManager session-manager #^ServiceFactory service-factory #^Display display]
+  (println "POST-INIT" this)
+  ;; register us with model
+  (let [data (.registerView model this)]
+  (println "POST-INIT" this)
+    ;; pump initial data in...
+    (.update this (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data))))
+  (let [[metadata display shell table columns getters session-manager service-factory] (.state this)]
+  (println "POST-INIT" this)
+  (let [grid-view this]			;"this" is implicitly bound inside proxy and was overiding grid-view.this - nasty !
+    (.addShellListener shell (proxy [ShellAdapter] [] (shellClosed [evt] (try (close model grid-view) (catch Throwable t (.printStackTrace t)))))))))
 
 (defn -update [this insertions alterations deletions]
   (let [[metadata display shell table columns getters session-manager service-factory] (.state this)]
@@ -164,7 +203,11 @@
 			     (try
 			      (.get getter datum)
 			      (catch Exception e (println (.getMessage e)) datum))
-			     )))
+			     ))
+			   (.setData
+			    item
+			    (str index)
+			    datum))
 		       (iterate inc 0)
 		       getters))
 		     ))
@@ -174,3 +217,9 @@
 (defn -start [this]
   (let [[metadata display shell table columns getters session-manager service-factory] (.state this)]
     (swt-loop display shell)))
+
+;;--------------------------------------------------------------------------------
+
+(defn #^{:private true} -writeReplace [#^org.dada.swt.GridView this]
+  (let [[_ _ _ _ _ _ _ service-factory] (.state this)]
+    (.decouple service-factory  this)))

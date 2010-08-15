@@ -104,4 +104,11 @@ public class TransformingModel<IK, IV, OK, OV> extends AbstractModel<OK, OV> imp
 		notifyUpdate(i, u, d);
 	}
 
+	@Override
+	public OV find(OK key) {
+		// TODO Auto-generated method stub
+		// return null;
+		throw new UnsupportedOperationException("NYI");
+	}
+
 }

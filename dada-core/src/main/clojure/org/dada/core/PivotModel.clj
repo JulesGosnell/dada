@@ -1,12 +1,13 @@
 (ns org.dada.core.PivotModel
     (:import
      [java.util Collection LinkedHashMap Map]
-     [org.dada.core AbstractModel Attribute Data Getter Metadata Tuple Update]
+     [org.dada.core AbstractModel Attribute Data Getter Metadata RemoteModel Tuple Update]
      )
     (:gen-class
      :extends org.dada.core.AbstractModelView
+     :implements [ java.io.Serializable]
      :constructors {[String org.dada.core.Metadata java.util.Collection Object java.util.Collection org.dada.core.Metadata] [String org.dada.core.Metadata]}
-     :methods []
+     :methods [[writeReplace [] Object]]
      :init init
      :state state
      )
@@ -204,7 +205,7 @@
 	       (Data. [pivotted] nil)))
 	 ]
      
-     [update-fn getData-fn])
+     [update-fn getData-fn model-name tgt-metadata])
    ])
 
 (defn -getData [#^org.dada.core.PivotModel this]
@@ -216,3 +217,9 @@
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))
       (.notifyUpdate this i a d))))
+
+;;--------------------------------------------------------------------------------
+
+(defn #^{:private true} -writeReplace [#^org.dada.core.PivotModel this]
+  (let [[_ _ name metadata] (.state this)]
+      (RemoteModel. name metadata)))

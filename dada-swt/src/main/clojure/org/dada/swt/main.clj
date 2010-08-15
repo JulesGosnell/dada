@@ -52,8 +52,13 @@
 ;; TODO: dirty hack - sets static :-(
 (org.dada.core.SessionManagerHelper/setCurrentSessionManager session-manager)
 
+;; get first model
+(def model (.find session-manager "MetaModel" "MetaModel"))
+
 ;; create a local View
-(.start (Thread. (fn [] (.start (make-grid-view "MetaModel" session-manager view-service-factory)))))
+(.start
+ (Thread.
+  (fn [] (.start (make-grid-view model session-manager view-service-factory)))))
 
 ;; try a query
 (.query session-manager "org.dada.dsl" "(? (ccount)(from \"Whales\"))")
