@@ -541,7 +541,7 @@
 	    [src-metadata src-metaprefix src-extra-keys] src-metadata-tuple
 	    label (split-key-value split-key)
 	    suffix (str "." label)
-	    split-metadata-tuple [src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key])]
+	    split-metadata-tuple [src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key]) '(:split)]
 	    [split-metadata split-metaprefix split-extra-keys] split-metadata-tuple
 	    split-metadata-fn (fn [] split-metadata-tuple)
 	    tgt-metadata-tuple (if subchain

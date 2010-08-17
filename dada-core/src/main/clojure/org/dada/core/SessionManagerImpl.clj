@@ -94,14 +94,12 @@
 
 ;; TODO: consider memoisation of queries, unamiguous DSL, model names, etc...
 ;; TODO: security - arbitrary code can be evaluated here...
-(defn #^Model -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
+(defn #^Collection -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
   (println "QUERY:" query-string)
   (use (symbol namespace-name))		;TODO - query should be evaluated in temporary namespace
   (let [;;target-namespace (symbol namespace-name) ;TODO - should be part of SessionManager's state
 	[[_ target-metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	;; TODO: involve target-metamodel - how can we thread this through the chain ?
 	;;[_ data-fn] (with-temp-ns-inherited target-namespace (eval (read-string query-string)))
-	[_ data-fn] (let [query (read-string query-string)] (prn "EVALUATING:" query) (eval query))
-	[#^Model results-model] (data-fn)]
-    ;;(.getName results-model)
-    results-model)) ;TODO: security - arbitrary code can be evaluated here...
+	[metadata-fn data-fn] (let [query (read-string query-string)] (prn "EVALUATING:" query) (eval query))]
+    [(metadata-fn)(data-fn)])) ;TODO: security - arbitrary code can be evaluated here...
