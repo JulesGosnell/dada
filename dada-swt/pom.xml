@@ -46,23 +46,29 @@
 
   <build>
     <plugins>
+
       <plugin>
-	<groupId>org.codehaus.mojo</groupId>
-	<artifactId>build-helper-maven-plugin</artifactId>
+	<artifactId>maven-resources-plugin</artifactId>
 	<executions>
 	  <execution>
-	    <phase>generate-sources</phase>
+	    <id>copy-clojure-src</id>
+	    <phase>process-resources</phase>
 	    <goals>
-	      <goal>add-source</goal>
+              <goal>copy-resources</goal>
 	    </goals>
 	    <configuration>
-	      <sources>
-		<source>src/main/clojure</source>
-	      </sources>
+              <overwrite>true</overwrite>
+              <outputDirectory>${basedir}/target/classes</outputDirectory>
+              <resources>
+		<resource>
+		  <directory>src/main/clojure</directory>
+		</resource>
+              </resources>
 	    </configuration>
 	  </execution>
 	</executions>
       </plugin>
+      
       <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
