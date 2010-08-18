@@ -1,7 +1,7 @@
 (ns 
  org.dada.swt.SWTView
  (:import
-  [java.util Collection]
+  [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model SessionManager ServiceFactory Update View]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.custom CTabFolder CTabItem]
@@ -59,7 +59,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn execute-query [#^SessionManager session-manager query service-factory parent]
+(defn execute-query [#^SessionManager session-manager query service-factory #^Composite parent]
   (let [[[metadata name keys [operation & details]] [model & rest]] (.query session-manager "org.dada.dsl" query)
 	shell (create-shell (if parent (.getDisplay parent) (Display.)))]
     (println "QUERY" query "->" model operation)
@@ -70,6 +70,8 @@
 
 ;; returns ...
 (defmulti create (fn [operation model #^Composite parent service-factory] operation))
+
+(defmethod create :default [operation & rest] (apply create :data rest))
 
 ;;--------------------------------------------------------------------------------
 ;; table
@@ -88,8 +90,8 @@
 (defn sort-table [#^Table table index #^Getter getter getters #^TableColumn column]
   (println "SORT TABLE" (.getText column) index)
   (let [items (.getItems table)
-	comparator (proxy [java.util.Comparator][] (compare [lhs rhs] (.compareTo (.get getter lhs)(.get getter rhs))))
-	sorted (sort comparator (map #(.getData %) items))]
+	comparator (proxy [Comparator][] (compare [lhs rhs] (.compareTo #^Comparable (.get getter lhs) #^Comparable (.get getter rhs))))
+	sorted (sort comparator (map (fn [#^TableItem item](.getData item)) items))]
     (println "SORTED" sorted)
     ;; rebuild all the items !! - there must be a better way...
     ;; THIS TRASHES THE MAP I AM HOLDING ON TABLE
@@ -109,28 +111,76 @@
       (handleEvent [evt] (try (sort-table table index getter getters column) (catch Throwable t (.printStackTrace t))))))
     column))
 
-(defn blink-table-item [item index]
-  (let [fg (.getForeground item index)
-	bg (.getBackground item index)]
-    (.setForeground item index bg)
-    (.setBackground item index fg)))
+(def #^Timer timer (Timer. true))
 
-(defn update-table-item [item old new getters]
+(defn blink-table-item [#^TableItem item indeces]
   (doall
    (map
-    (fn [index #^Getter getter]
-	(let [new-value (.get getter new)]
-	  (if (not (= (.get getter old) new-value))
-	    (do
-	      (println "UPDATE TABLE ITEM" old new index new-value)
-	      (.setText item index (str new-value))
-	      (.setData item (str index) new-value)
-	      (blink-table-item item index)
-	      ))))
-    (iterate inc 0)
-    getters)))
+    (fn [index]
+	(if index
+	  (let [fg (.getForeground item index)
+		bg (.getBackground item index)]
+	    (.setForeground item index bg)
+	    (.setBackground item index fg))))
+    indeces))
+  )
 
-(defmethod create :data [operation model parent service-factory] 
+;; (defn update-table-item [item old new getters]
+;;   (doall
+;;    (map
+;;     (fn [index #^Getter getter]
+;; 	(let [new-value (.get getter new)]
+;; 	  (if (not (= (.get getter old) new-value))
+;; 	    (do
+;; 	      (println "UPDATE TABLE ITEM" old new index new-value)
+;; 	      (.setText item index (str new-value))
+;; 	      (.setData item (str index) new-value)
+;; 	      (blink-table-item item index)
+;; 	      ))))
+;;     (iterate inc 0)
+;;     getters)))
+
+(defn update-table-item [#^TableItem item old new getters]
+  (let [indeces
+	(map
+	 (fn [index #^Getter getter]
+	     (let [new-value (.get getter new)
+		   new-string (str new-value)
+		   old-string (.getText item index)]
+	       (if (not (= old-string new-string))
+		 (do
+		   ;;(println "UPDATE TABLE ITEM" old-string "->" new-string)
+		   (.setText item index new-string)
+		   (.setData item (str index) new-value)
+		   index))))
+	 (iterate inc 0)
+	 getters)]
+    (blink-table-item item indeces)
+    (.schedule
+     timer
+     (proxy
+      [TimerTask]
+      []
+      (run [] (.asyncExec (.getDisplay item) (fn [] (if (not (.isDisposed item)) (blink-table-item item indeces))))))
+     (long 1000))
+    ))
+
+(defn table-select [table model service-factory]
+  ;;(println "TABLE SELECT" (.getData (first (.getSelection table))))
+  )
+
+(defn table-default-select [#^Table table model service-factory]
+  (let [datum (.getData #^TableItem (first (.getSelection table)))]
+    (println "TABLE DEFAULT SELECT" datum)
+    (if (instance? Model datum)
+      (org.dada.swt.SWTView. datum :default service-factory (create-shell (.getDisplay table)))
+      (if (and (instance? Collection datum) (instance? Model (first datum)))
+	(let [[model & rest] datum]
+	  (println "MODEL" model rest)
+	  (org.dada.swt.SWTView. model :default service-factory (create-shell (.getDisplay table))))
+	))))
+
+(defmethod create :data [operation #^Model model #^Composite parent service-factory] 
   (let [#^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
 	#^Table table (Table. parent (SWT/SINGLE))
@@ -140,6 +190,20 @@
 	primary-getter (.getPrimaryGetter metadata)
 	version-comparator (.getVersionComparator metadata)
 	]
+    (.addSelectionListener
+     table
+     (proxy
+      [SelectionListener]
+      []
+      (widgetSelected [#^SelectionEvent evt]
+		      (try
+		       (table-select table model service-factory)
+		       (catch Throwable t (.printStackTrace t))))
+      (widgetDefaultSelected [#^SelectionEvent evt]
+			     (try
+			      (table-default-select table model service-factory)
+			      (catch Throwable t (.printStackTrace t))))
+      ))
     (.setLinesVisible table true)
     (.setHeaderVisible table true)
     (.setLayoutData table (GridData. (SWT/FILL) (SWT/FILL) true true))
@@ -158,7 +222,7 @@
 	   (println "DEREGISTER - NYI:" data)))
      ;; update
      (fn [insertions alterations deletions]
-	 (println "UPDATES" insertions alterations deletions)
+	 ;;(println "UPDATES" insertions alterations deletions)
 	 (.asyncExec
 	  (.getDisplay parent)
 	  (fn []
@@ -170,7 +234,7 @@
 		     (fn [#^Update update]
 			 (let [datum (.getNewValue update)
 			       #^TableItem item (make-table-item datum getters table)]
-			   (println "INSERT ITEM" table item)
+			   ;;(println "INSERT ITEM" table item)
 			   ;; TODO - NEED TO SORT THIS OUT - IT FALLS OUT OF DATE WHEN ITEMS ARE REMOVED ETC
 			   ;; ADD A DISPOSE LISTENER OR RETHINK
 			   ;; SHOULD BE DONE IN MAKE ITEM
@@ -193,7 +257,7 @@
 			       pk (str (.get primary-getter new)) ;TODO: WARNING PK is an Object NOT a String
 			       #^TableItem item (.getData table pk)
 			       old (.getData item)]
-			   (println "UPDATE ITEM" table item)
+			   ;;(println "UPDATE ITEM" table item)
 			   (if (.higher version-comparator old new)
 			     (update-table-item item old new getters))
 			   item			  
@@ -240,7 +304,7 @@
   (println "DESELECT" item)
   )
 
-(defmethod create :split [operation model parent service-factory]
+(defmethod create :split [operation model #^Composite parent service-factory]
   (let [#^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
     (.addSelectionListener
@@ -281,9 +345,9 @@
 	      		(let [[#^Model model details] (.getNewValue update) ;TODO - only works for metamodels
 			      key (second (last details));TODO - only works for metamodels
 	      		      #^CTabItem item (CTabItem. folder (reduce bit-and [(SWT/CLOSE)]))]
-	      		  (.setText item key) 
+	      		  (.setText item (str key)) ;TODO - use of 'str' again
 			  (.setData folder nil) ; selection
-	      		  (.setData folder key model);; key:model - key should be unique within this split
+	      		  (.setData folder (str key) model);; key:model - key should be unique within this split - TODO - use of str
 			  (let [view (org.dada.swt.SWTView.  model :data service-factory folder)
 				control (.getControl view)]
 			    ;;(.setData item 

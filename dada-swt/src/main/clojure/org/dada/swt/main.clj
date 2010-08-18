@@ -1,5 +1,5 @@
 (ns org.dada.swt.main
-    (:use org.dada.demo.whales) ;hack - we shouldn't need to run server in-vm with us.
+    ;;(:use org.dada.demo.whales) ;hack - we shouldn't need to run server in-vm with us.
     (:use org.dada.swt.SWTView)
     (:import
      [org.eclipse.swt.widgets Button Composite Control Display Shell Table TableColumn TableItem Text Listener Widget]
@@ -56,35 +56,35 @@
 ;; TODO: dirty hack - sets static :-(
 (org.dada.core.SessionManagerHelper/setCurrentSessionManager session-manager)
 
-;; get first model
-;;(def model (.find session-manager "MetaModel" "MetaModel"))
+(defn start-swt []
+  (.start
+   (Thread.
+    (fn [] (let [shell (create-shell (Display.))]
 
-;; create a local View
-(.start
- (Thread.
-  (fn [] (let [shell (execute-query session-manager
-				    ;;"(? (ccount)(from \"Whales\"))"
-				    ;;"(? (split :ocean)(from \"Whales\"))"
-				    "(? (split :type)(from \"Whales\"))"
-				    view-service-factory nil)]
-	   ;; should be moved somewhere else...
-
-	   ;; (let [#^Text text (Text. shell (reduce bit-and [(SWT/LEFT)(SWT/SINGLE)]))]
-	   ;;   (doto
-	   ;; 	 text
-	   ;;     (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
-	   ;;     )
-	   ;;   (doto
-	   ;; 	 #^Button (Button. shell (reduce bit-and [(SWT/PUSH)(SWT/CENTER)]))
-	   ;; 	 (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
-	   ;; 	 (.setText "Send Query")
-	   ;; 	 (.addSelectionListener
-	   ;; 	  (proxy [SelectionListener] []
-	   ;; 		 (widgetSelected [#^SelectionEvent evt]
-	   ;; 				 (try (execute-query session-manager (.getText text) view-service-factory shell)(catch Throwable t (.printStackTrace t))))))))
+	     (let [#^Text text (Text. shell (reduce bit-and [(SWT/LEFT)(SWT/SINGLE)]))]
+	       (doto
+		   text
+		 (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
+		 )
+	       (doto
+		   #^Button (Button. shell (reduce bit-and [(SWT/PUSH)(SWT/CENTER)]))
+		   (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true false))
+		   (.setText "Send Query")
+		   (.addSelectionListener
+		    (proxy [SelectionListener] []
+			   (widgetSelected [#^SelectionEvent evt]
+					   (try (execute-query session-manager (.getText text) view-service-factory shell)(catch Throwable t (.printStackTrace t))))))))
 
 
-	   (swt-loop (.getDisplay shell) shell)))))
+	     (swt-loop (.getDisplay shell) shell))))))
 
-;; try a query
-;;
+
+;; example queries
+
+;; (? (ccount)(from "Whales"))
+;; (? (split :ocean)(from "Whales"))
+;; (? (split :type)(from "Whales"))
+;; (? (union)(split :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
+;; (? (union)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
+;; (? (from "MetaModel"))
+
