@@ -28,7 +28,7 @@
 	;; TODO - handle Exceptions later
 	#^Method method (.getMethod mapper (.getMethodIndex invocation))
 	args (.getArgs invocation)
-	dummy (println "POJO INCOMING:" (str "sessionManager." (.getName method) "(" (apply str (interpose ", " args)) ")"))
+	;;dummy (println "POJO INCOMING:" (str "sessionManager." (.getName method) "(" (apply str (interpose ", " args)) ")"))
 	results (.invoke method target args) ;TODO: introspection - slow
 	reply-to (.getJMSReplyTo request)
 	correlation-id (.getJMSCorrelationID request)]
@@ -36,7 +36,7 @@
       (let [#^ObjectMessage response (.createObjectMessage session)]
 	(.setJMSCorrelationID response correlation-id)
 	(.setObject response (Results. false results))
-	(println "POJO OUTGOING:" results)
+	;;(println "POJO OUTGOING:" results)
 	(.send producer reply-to response)
 	))
     ))
