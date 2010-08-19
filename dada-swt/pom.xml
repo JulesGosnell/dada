@@ -29,8 +29,8 @@
       <!-- <version>3.3.0-v3346</version> -->
       <!-- <version>3.5.2</version> -->
       <!-- <version>gtk.linux.x86_64_3.5.2.v3557f</version> -->
-      <!-- <version>gtk.linux.x86.source_3.5.2.v3557f</version> -->
-      <version>gtk.linux.x86_3.6.0.v3650b</version>
+      <version>gtk.linux.x86_3.6.0.v3644b</version>
+      <!-- <version>gtk.linux.x86_3.6.0.v3650b</version> -->
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
@@ -42,6 +42,13 @@
       <artifactId>dada-demo</artifactId>
       <version>${project.version}</version>
     </dependency>
+<!--
+    <dependency>
+      <groupId>org.swtchart</groupId>
+      <artifactId>swtchart</artifactId>
+      <version>0.6.0</version>
+    </dependency>
+-->
   </dependencies>
 
   <build>

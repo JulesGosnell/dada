@@ -8,6 +8,10 @@
   [org.eclipse.swt.widgets Button Composite Control Display Shell Table TableColumn TableItem Text Listener Widget]
   [org.eclipse.swt.layout GridData GridLayout]
   [org.eclipse.swt.events ShellAdapter SelectionEvent SelectionListener]
+
+;;  [org.swtchart Chart ISeries ISeriesSet ISeries$SeriesType]
+
+  [org.dada.swt TableItemState TableState]
   )
  (:gen-class
   :implements [org.dada.core.View java.io.Serializable]
@@ -74,10 +78,107 @@
 (defmethod create :default [operation & rest] (apply create :data rest))
 
 ;;--------------------------------------------------------------------------------
+;; chart
+
+;; (defn make-chart-series [datum getters #^Chart chart]
+;;   (into-array
+;;    (Double/TYPE)
+;;    (map
+;;     (fn [#^Getter getter] (double (let [n (.get getter datum)](if (number? n) n 0))))
+;;     getters)))
+
+;; (defn update-chart-series [series old new getters]
+;;   )
+
+;; (defmethod create :chart [operation #^Model model #^Composite parent service-factory] 
+;;   (let [#^Metadata metadata (.getMetadata model)
+;; 	attributes (.getAttributes metadata)
+;; 	#^Chart chart (Chart. parent (SWT/NONE))
+;; 	#^ISeriesSet series-set (.getSeriesSet chart)
+;; 	titles (map (fn [#^Attribute attribute] (str (.getKey attribute))) attributes)
+;; 	getters (map (fn [#^Attribute attribute] (.getGetter attribute)) attributes)
+;; 	primary-getter (.getPrimaryGetter metadata)
+;; 	version-comparator (.getVersionComparator metadata)
+;; 	]
+;;     (.setLayoutData chart (GridData. (SWT/FILL) (SWT/FILL) true true))
+;;     [ ;; widgets
+;;      chart
+;;      ;; attach
+;;      (fn [#^Model model #^View view]
+;; 	 (let [data (.registerView model view)]
+;; 	   (.update view (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data)))))
+;;      ;; detach
+;;      (fn [#^Model model #^View view]
+;; 	 (let [data (.registerView model view)]
+;; 	   (println "DEREGISTER - NYI:" data)))
+;;      ;; update
+;;      (fn [insertions alterations deletions]
+;; 	 (println "UPDATES" insertions alterations deletions)
+;; 	 (if (not (.isDisposed chart))
+;; 	   (.asyncExec
+;; 	    (.getDisplay parent)
+;; 	    (fn []
+;; 		(try
+;; 		 (do
+;; 		   (doall ;; dirty
+;; 		    (map
+;; 		     (fn [#^Update update]
+;; 			 (let [datum (.getNewValue update)
+;; 			       points (make-chart-series datum getters chart)
+;; 			       #^ISeries series (.createSeries series-set (ISeries$SeriesType/LINE) (str (.get primary-getter datum)))]
+;; 			   (.setYSeries series points)))
+;; 		     insertions))
+;; 		   ;; (doall ;; dirty
+;; 		   ;;  (map
+;; 		   ;;   (fn [#^Update update]
+;; 		   ;; 	 (let [new (.getNewValue update)
+;; 		   ;; 	       pk (str (.get primary-getter new)) ;TODO: WARNING PK is an Object NOT a String
+;; 		   ;; 	       #^ChartItem item (.getData chart pk)
+;; 		   ;; 	       old (.getData item)]
+;; 		   ;; 	   (println "UPDATE ITEM" chart item)
+;; 		   ;; 	   (if (.higher version-comparator old new)
+;; 		   ;; 	     (update-chart-item item old new getters))
+;; 		   ;; 	   item			  
+;; 		   ;; 	   ))
+;; 		   ;;   alterations))
+;; 		   ;; (doall ;; dirty
+;; 		   ;;  (map
+;; 		   ;;   (fn [#^Update update]
+;; 		   ;; 	 (let [new (.getOldValue update)
+;; 		   ;; 	       pk (str (.get primary-getter new)) ;TODO: WARNING PK is an Object NOT a String
+;; 		   ;; 	       #^ChartItem item (.getData chart pk)]
+;; 		   ;; 	   (if item
+;; 		   ;; 	     (let [old (.getData item)]
+;; 		   ;; 	       (println "DELETE ITEM" chart item)
+;; 		   ;; 	       (if (.higher version-comparator old new)
+;; 		   ;; 		 (.remove chart (.indexOf chart item))))
+;; 		   ;; 	     (println "WARN: DELETING UNKNOWN ITEM: " pk))
+;; 		   ;; 	   item			  
+;; 		   ;; 	   ))
+;; 		   ;;   deletions))
+;; 		   (.adjustRange (.getAxisSet chart)))
+;; 		(catch Throwable t (.printStackTrace t)))))
+;; 	   ))]
+;;     ))
+
+;;--------------------------------------------------------------------------------
 ;; table
+
+(defn stash-item [#^Table table key item]
+  (.put (.primaryKeyToTableItem #^TableState (.getData table)) key item))
+
+(defn fetch-item [#^Table table key]
+  (.get (.primaryKeyToTableItem #^TableState (.getData table)) key))
+
+(defn stash-datum [#^TableItem item datum]
+  (set! (.datum #^TableItemState (.getData item)) datum))  
+
+(defn fetch-datum [#^TableItem item]
+  (.datum #^TableItemState (.getData item)))
 
 (defn make-table-item [datum getters #^Table table]
   (let [#^TableItem item (TableItem. table (SWT/NONE))]
+    (.setData item (TableItemState.))
     (doall
      (map
       (fn [index #^Getter getter]
@@ -91,7 +192,7 @@
   (println "SORT TABLE" (.getText column) index)
   (let [items (.getItems table)
 	comparator (proxy [Comparator][] (compare [lhs rhs] (.compareTo #^Comparable (.get getter lhs) #^Comparable (.get getter rhs))))
-	sorted (sort comparator (map (fn [#^TableItem item](.getData item)) items))]
+	sorted (sort comparator (map fetch-datum items))]
     (println "SORTED" sorted)
     ;; rebuild all the items !! - there must be a better way...
     ;; THIS TRASHES THE MAP I AM HOLDING ON TABLE
@@ -166,11 +267,11 @@
     ))
 
 (defn table-select [table model service-factory]
-  ;;(println "TABLE SELECT" (.getData (first (.getSelection table))))
+  ;;(println "TABLE SELECT" (fetch-datum (first (.getSelection table))))
   )
 
 (defn table-default-select [#^Table table model service-factory]
-  (let [datum (.getData #^TableItem (first (.getSelection table)))]
+  (let [datum (fetch-datum #^TableItem (first (.getSelection table)))]
     (println "TABLE DEFAULT SELECT" datum)
     (if (instance? Model datum)
       (org.dada.swt.SWTView. datum :default service-factory (create-shell (.getDisplay table)))
@@ -190,6 +291,7 @@
 	primary-getter (.getPrimaryGetter metadata)
 	version-comparator (.getVersionComparator metadata)
 	]
+    (.setData table (TableState.))
     (.addSelectionListener
      table
      (proxy
@@ -241,12 +343,8 @@
 
 			   ;; DO WE REALLY WANT TO HODKL STATE ON THE WIDGETS ?
 			   ;; CAN THIS BE DONE GENERICALLY FOR ALL UI REALISATIONS ?
-
-			   (.setData
-			    table
-			    (str (.get primary-getter datum)) ;TODO: WARNING PK is an Object NOT a String
-			    item)
-			   (.setData item datum)
+			   (stash-item table (.get primary-getter datum) item)
+			   (stash-datum item datum)
 			   item			  
 			   ))
 		     insertions))
@@ -255,8 +353,8 @@
 		     (fn [#^Update update]
 			 (let [new (.getNewValue update)
 			       pk (str (.get primary-getter new)) ;TODO: WARNING PK is an Object NOT a String
-			       #^TableItem item (.getData table pk)
-			       old (.getData item)]
+			       #^TableItem item (fetch-item table pk)
+			       old (fetch-datum item)]
 			   ;;(println "UPDATE ITEM" table item)
 			   (if (.higher version-comparator old new)
 			     (update-table-item item old new getters))
@@ -268,9 +366,9 @@
 		     (fn [#^Update update]
 			 (let [new (.getOldValue update)
 			       pk (str (.get primary-getter new)) ;TODO: WARNING PK is an Object NOT a String
-			       #^TableItem item (.getData table pk)]
+			       #^TableItem item (fetch-item table pk)]
 			   (if item
-			     (let [old (.getData item)]
+			     (let [old (fetch-datum item)]
 			       (println "DELETE ITEM" table item)
 			       (if (.higher version-comparator old new)
 				 (.remove table (.indexOf table item))))
