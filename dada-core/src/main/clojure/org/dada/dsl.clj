@@ -123,9 +123,6 @@
 (defn make-splitter
   [#^IFn src-name-fn #^Model src-model key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
   (let [src-metadata (.getMetadata src-model)
-	src-attributes (.getAttributes src-metadata)
-	src-key  (.getKey #^Attribute (first src-attributes))	;TODO
-	src-version (.getKey #^Attribute (second src-attributes))	;TODO
 	mutable (.getMutable (.getAttribute src-metadata key))
 	map (new ConcurrentHashMap)
 	view-factory (proxy
@@ -670,7 +667,7 @@
 	    tgt-name (str ".pivot(" value-key "/" pivot-key")")]
 	[ ;; metadata
 	 (fn []
-	     [tgt-metadata (str metaprefix tgt-name) extra-keys])
+	     [tgt-metadata (str metaprefix tgt-name) extra-keys '(:pivot)])
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
