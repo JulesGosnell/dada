@@ -11,7 +11,7 @@
 
 ;;  [org.swtchart Chart ISeries ISeriesSet ISeries$SeriesType]
 
-  [org.dada.swt TableItemState TableState]
+  [org.dada.swt TableCellState TableItemState TableState]
   )
  (:gen-class
   :implements [org.dada.core.View java.io.Serializable]
@@ -177,13 +177,16 @@
   (.datum #^TableItemState (.getData item)))
 
 (defn make-table-item [datum getters #^Table table]
-  (let [#^TableItem item (TableItem. table (SWT/NONE))]
-    (.setData item (TableItemState.))
+  (let [#^TableItem item (TableItem. table (SWT/NONE))
+	item-state (TableItemState. (count getters))]
+    (.setData item item-state)
     (doall
      (map
       (fn [index #^Getter getter]
-	  (.setText item index (str (.get getter datum)))
-	  (.setData item (str index) datum))
+	  (let [cell-state (TableCellState.)]
+	    (set! (.datum cell-state) datum)
+	    (aset (.cells item-state) index cell-state)
+	    (.setText item index (str (.get getter datum)))))
       (iterate inc 0)
       getters))
     item))
@@ -212,59 +215,52 @@
       (handleEvent [evt] (try (sort-table table index getter getters column) (catch Throwable t (.printStackTrace t))))))
     column))
 
-(def #^Timer timer (Timer. true))
+(defn blink-table-cell [#^TableItem item #^TableCellState state index]
+  (let [task (.task state)
+	fg (.getForeground item index)
+	bg (.getBackground item index)]
+    (if task
+      ;; either
+      ;; cancel existing timer
+      (.cancel task)
+      ;; or toggle colours
+      (do
+	(.setForeground item index bg)
+	(.setBackground item index fg)))
+    ;; kick off time to toggle them back
+    (set! 
+     (.task state)
+     (.schedule
+      (.timer #^TableState (.getData #^Table (.getParent item)))
+      (proxy
+       [TimerTask]
+       []
+       (run []
+	    (.asyncExec
+	     (.getDisplay item)
+	     (fn []
+		 (if (not (.isDisposed item))
+		   (do
+		     (.setForeground item index fg)
+		     (.setBackground item index bg)))
+		 (set! (.task state) nil)))))
+      (long 1000)))))
 
-(defn blink-table-item [#^TableItem item indeces]
-  (doall
-   (map
-    (fn [index]
-	(if index
-	  (let [fg (.getForeground item index)
-		bg (.getBackground item index)]
-	    (.setForeground item index bg)
-	    (.setBackground item index fg))))
-    indeces))
-  )
-
-;; (defn update-table-item [item old new getters]
-;;   (doall
-;;    (map
-;;     (fn [index #^Getter getter]
-;; 	(let [new-value (.get getter new)]
-;; 	  (if (not (= (.get getter old) new-value))
-;; 	    (do
-;; 	      (println "UPDATE TABLE ITEM" old new index new-value)
-;; 	      (.setText item index (str new-value))
-;; 	      (.setData item (str index) new-value)
-;; 	      (blink-table-item item index)
-;; 	      ))))
-;;     (iterate inc 0)
-;;     getters)))
+(defn update-table-cell [#^TableItem item #^TableItemState item-state index old new #^Getter getter]
+  (let [new-value (.get getter new)
+	new-string (str new-value)
+	old-string (.getText item index)
+	cell-states (.cells item-state)]
+    (if (not (= old-string new-string))
+      (do
+	(.setText item index new-string)
+	(set! (.value #^TableCellState (aget cell-states index)) new-value)
+	(blink-table-cell item (aget cell-states index) index)))))
 
 (defn update-table-item [#^TableItem item old new getters]
-  (let [indeces
-	(map
-	 (fn [index #^Getter getter]
-	     (let [new-value (.get getter new)
-		   new-string (str new-value)
-		   old-string (.getText item index)]
-	       (if (not (= old-string new-string))
-		 (do
-		   ;;(println "UPDATE TABLE ITEM" old-string "->" new-string)
-		   (.setText item index new-string)
-		   (.setData item (str index) new-value)
-		   index))))
-	 (iterate inc 0)
-	 getters)]
-    (blink-table-item item indeces)
-    (.schedule
-     timer
-     (proxy
-      [TimerTask]
-      []
-      (run [] (.asyncExec (.getDisplay item) (fn [] (if (not (.isDisposed item)) (blink-table-item item indeces))))))
-     (long 1000))
-    ))
+  ;;(println "UPDATE TABLE ITEM")
+  (let [#^TableItemState item-state (.getData item)]
+    (doall (map (fn [index #^Getter getter] (update-table-cell item item-state index old new getter)) (iterate inc 0) getters))))
 
 (defn table-select [table model service-factory]
   ;;(println "TABLE SELECT" (fetch-datum (first (.getSelection table))))

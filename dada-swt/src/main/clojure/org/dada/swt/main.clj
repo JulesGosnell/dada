@@ -1,5 +1,5 @@
 (ns org.dada.swt.main
-    ;;(:use org.dada.demo.whales) ;hack - we shouldn't need to run server in-vm with us.
+    (:use org.dada.demo.whales) ;hack - we shouldn't need to run server in-vm with us.
     (:use org.dada.swt.SWTView)
     (:import
      [org.eclipse.swt.widgets Button Composite Control Display Shell Table TableColumn TableItem Text Listener Widget]
@@ -78,6 +78,8 @@
 
 	     (swt-loop (.getDisplay shell) shell))))))
 
+
+(start-swt)
 
 ;; example queries
 
