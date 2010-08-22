@@ -460,7 +460,7 @@
 		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model extra-pairs] (connect src-model tgt-model)))]
 	       (insert *metamodel* tgt-model)
 	       (insert tgt-metamodel [tgt-model extra-pairs])
-	       [tgt-metamodel (str prefix ".union()") extra-pairs]))])))
+	       [tgt-metamodel (str prefix ".union()") extra-pairs :union]))])))
 
 ;; extra keys are inserted into attribute list
 ;; extra values are carried in model's row in metamodel
@@ -495,7 +495,7 @@
 					  (insert *metamodel* count-model)
 					  (insert tgt-metamodel [count-model extra-pairs])
 					  (connect src-model count-model))))]
-		 [tgt-metamodel new-prefix extra-pairs])))])))
+		 [tgt-metamodel new-prefix extra-pairs :count])))])))
 
 (defn sum [sum-key]
   (fn [[metadata-fn data-fn]]
@@ -527,7 +527,7 @@
 					  (insert *metamodel* sum-model)
 					  (insert tgt-metamodel [sum-model extra-pairs])
 					  (connect src-model sum-model))))]
-		 [tgt-metamodel new-prefix extra-pairs])))])))
+		 [tgt-metamodel new-prefix extra-pairs :sum])))])))
 
 (defn split-key-value [key]
   (str "split(" (or key "") ")"))
@@ -565,7 +565,7 @@
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
 		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
-		   tgt-data-tuple [tgt-metamodel tgt-prefix tgt-extra-pairs]]
+		   tgt-data-tuple [tgt-metamodel tgt-prefix tgt-extra-pairs :split]]
 	       ;; register it with the global metamodel
 	       (trace "SPLIT DATA SRC  " src-data-tuple)
 	       (insert *metamodel* tgt-metamodel)
