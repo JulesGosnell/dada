@@ -24,13 +24,50 @@
   
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.ui</groupId>
+      <artifactId>workbench</artifactId>
+      <version>3.6.0.I20100428-1300</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.equinox</groupId>
+      <artifactId>common</artifactId>
+      <version>3.6.0.v20100315</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.core</groupId>
+      <artifactId>commands</artifactId>
+      <version>3.6.0.I20100122-0800</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.equinox</groupId>
+      <artifactId>registry</artifactId>
+      <version>3.5.0.v20100301</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse</groupId>
       <artifactId>swt</artifactId>
-      <!-- <version>3.3.0-v3346</version> -->
-      <!-- <version>3.5.2</version> -->
       <!-- <version>gtk.linux.x86_64_3.5.2.v3557f</version> -->
       <version>gtk.linux.x86_3.6.0.v3644b</version>
-      <!-- <version>gtk.linux.x86_3.6.0.v3650b</version> -->
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>jface</artifactId>
+      <version>3.6.0.I20100425-1800</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.nattable</groupId>
+      <artifactId>core</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>ca.odell</groupId>
+      <artifactId>glazedlists</artifactId>
+      <version>1.8.0</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.nattable.extension</groupId>
+      <artifactId>glazedlists</artifactId>
+      <version>2.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
@@ -56,6 +93,7 @@
 
       <plugin>
 	<artifactId>maven-resources-plugin</artifactId>
+	<version>2.4.2</version>
 	<executions>
 	  <execution>
 	    <id>copy-clojure-src</id>
