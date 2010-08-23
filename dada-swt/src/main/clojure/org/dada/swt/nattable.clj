@@ -7,8 +7,9 @@
   [org.eclipse.swt.widgets Display Shell]
   [ca.odell.glazedlists GlazedLists SortedList]
   [net.sourceforge.nattable NatTable]
+  [net.sourceforge.nattable.blink BlinkLayer]
   [net.sourceforge.nattable.config ConfigRegistry DefaultNatTableStyleConfiguration]
-  [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor]
+  [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor IRowIdAccessor]
   [net.sourceforge.nattable.extension.glazedlists GlazedListsEventLayer GlazedListsSortModel]
   [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
   [net.sourceforge.nattable.grid.layer ColumnHeaderLayer CornerLayer DefaultColumnHeaderDataLayer DefaultRowHeaderDataLayer GridLayer RowHeaderLayer]
@@ -29,8 +30,12 @@
 
 ;;--------------------------------------------------------------------------------
 
+;; Basic Table
 ;; see http://nattable.org/drupal/docs/basicgrid
+;; Sorted Table
 ;; see http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
+;; Blinking Table
+;; http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/BlinkingGridExample.java?revision=3912&view=markup
 
 ;;--------------------------------------------------------------------------------
 ;; Plugging data
@@ -66,13 +71,21 @@
 ;;--------------------------------------------------------------------------------
 ;; Setting up the body region
 
+(def config-registry (ConfigRegistry.))
+
 (def body-data-layer (DataLayer. body-data-provider))
 
 (def glazed-lists-event-layer (GlazedListsEventLayer. body-data-layer event-list))
 
-(def body-layer-stack (DefaultBodyLayerStack. glazed-lists-event-layer))
+(def blink-layer
+     (BlinkLayer.
+      glazed-lists-event-layer
+      body-data-provider
+      (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Collection row] (first row)))
+      column-property-accessor
+      config-registry))
 
-(def config-registry (ConfigRegistry.))
+(def body-layer-stack (DefaultBodyLayerStack. blink-layer))
 
 ;;--------------------------------------------------------------------------------
 ;; Setting up the column header region
