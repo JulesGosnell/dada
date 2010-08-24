@@ -86,47 +86,53 @@
       (.setUnderlyingLayer row-header-layer-stack row-header-layer)
 
       ;; define parent...
-      (doto
-	  (NatTable.
-	   parent
-	   (GridLayer. 
-	    body-layer-stack
-	    column-header-layer-stack
-	    row-header-layer
-	    (CornerLayer.
-	     (DataLayer.
-	      (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
-	     row-header-layer-stack
-	     column-header-layer-stack))
-	   false)
-	(.setConfigRegistry config-registry)
-	(.addConfiguration (DefaultNatTableStyleConfiguration.))
-	(.addConfiguration (SingleClickSortConfiguration.))
+      (let [nattable (NatTable.
+		      parent
+		      (GridLayer. 
+		       body-layer-stack
+		       column-header-layer-stack
+		       row-header-layer
+		       (CornerLayer.
+			(DataLayer.
+			 (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
+			row-header-layer-stack
+			column-header-layer-stack))
+		      false)]
+	(doto
+	    nattable
+	  (.setConfigRegistry config-registry)
+	  (.addConfiguration (DefaultNatTableStyleConfiguration.))
+	  (.addConfiguration (SingleClickSortConfiguration.))
     
-	;;TODO - still to translate
-	;;http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
-	;; nattable.addConfiguration(getCustomComparatorConfiguration(glazedListsGridLayer.getColumnHeaderLayerStack().getDataLayer()));
-	(.addConfiguration (DefaultSelectionStyleConfiguration.))
-	(.configure)
+	  ;;TODO - still to translate
+	  ;;http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
+	  ;; nattable.addConfiguration(getCustomComparatorConfiguration(glazedListsGridLayer.getColumnHeaderLayerStack().getDataLayer()));
+	  (.addConfiguration (DefaultSelectionStyleConfiguration.))
+	  (.configure)
 
-	(.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
-	(.pack))
-      )))
+	  (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
+	  (.pack))
+	nattable))))
 
 ;;--------------------------------------------------------------------------------
 
-(def table-model (model "Family" (seq-metadata 4)))
-(insert-n table-model (ArrayList. [[3 0 "alexandra" 2005][1 0 "jane" 1969][2 0 "anthony" 2001][0 0 "jules" 1967]]))
+(defn make-nattable-meta-view [#^Model async-model #^Composite parent]
+  (make-nattable async-model parent))
 
-(if (not *compile-files*)
-  (do
-    (def parent (Shell. (Display.)))
-    (.setLayout parent (GridLayout.))
+;;--------------------------------------------------------------------------------
 
-    (make-nattable table-model parent)
+;; (if (not *compile-files*)
+;;   (do
+;;     (def table-model (model "Family" (seq-metadata 4)))
+;;     (insert-n table-model (ArrayList. [[3 0 "alexandra" 2005][1 0 "jane" 1969][2 0 "anthony" 2001][0 0 "jules" 1967]]))
 
-    (.pack parent)
-    (.open parent)
-    (swt-loop (.getDisplay parent)  parent)
-    ))
+;;     (def parent (Shell. (Display.)))
+;;     (.setLayout parent (GridLayout.))
+
+;;     (make-nattable table-model parent)
+
+;;     (.pack parent)
+;;     (.open parent)
+;;     (swt-loop (.getDisplay parent)  parent)
+;;     ))
   
