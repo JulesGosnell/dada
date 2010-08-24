@@ -1,10 +1,12 @@
 (ns
  org.dada.swt.nattable
+ (use org.dada.core)
+ (use org.dada.swt.utils)
  (:import
   [java.util ArrayList]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.layout GridData GridLayout]
-  [org.eclipse.swt.widgets Display Shell]
+  [org.eclipse.swt.widgets Composite Display Shell]
   [ca.odell.glazedlists GlazedLists SortedList]
   [net.sourceforge.nattable NatTable]
   [net.sourceforge.nattable.blink BlinkLayer]
@@ -22,125 +24,109 @@
   [net.sourceforge.nattable.sort SortHeaderLayer]
   [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
   [net.sourceforge.nattable.viewport ViewportLayer]
+
+  [org.dada.core Metadata Model]
   ))
 
-
-(def parent (Shell. (Display.)))
-(.setLayout parent (GridLayout.))
-
 ;;--------------------------------------------------------------------------------
-
-;; Basic Table
 ;; see http://nattable.org/drupal/docs/basicgrid
 ;; Sorted Table
 ;; see http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
 ;; Blinking Table
 ;; http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/BlinkingGridExample.java?revision=3912&view=markup
 
-;;--------------------------------------------------------------------------------
-;; Plugging data
-
-(def data (ArrayList. [[3 "alexandra" 2005][1 "jane" 1969][2 "anthony" 2001][0 "jules" 1967]]))
-
-(def event-list (GlazedLists/eventList data))
-(def sorted-list (SortedList. event-list nil))
-(def property-names (into-array String ["id" "name" "birthDate"]))
-
-;;--------------------------------------------------------------------------------
-
-(def property-name-to-index (apply array-map (interleave property-names (iterate inc 0))))
-(def property-name-to-label (apply array-map (interleave property-names property-names)))
-
-(def column-property-accessor
-     (proxy 
-      [IColumnPropertyAccessor]
-      []
-      ;; IColumnAccessor<T>
-      (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (nth rowObject columnIndex))
-      (#^int getColumnCount [] (count property-names))
-      ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
+(defn make-nattable [#^Model model #^Composite parent]
+  (let [#^Metadata metadata (.getMetadata model)
+	attributes (.getAttributes metadata)
+	property-names (into-array String (map (fn [attribute] (.toString (.getKey attribute))) attributes))
+	property-name-to-index (apply array-map (interleave property-names (iterate inc 0)))
+	property-name-to-label (apply array-map (interleave property-names property-names)) 
+	data (.getExtant (.getData model))
+	event-list (GlazedLists/eventList data)
+	sorted-list (SortedList. event-list nil)
       
-      ;;IColumnPropertyResolver 
-	
-      (#^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
-      (#^int getColumnIndex [#^String propertyName] (property-name-to-index "b"))
-      ))
+	column-property-accessor
+	(proxy 
+	 [IColumnPropertyAccessor]
+	 []
+	 ;; IColumnAccessor<T>
+	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (nth rowObject columnIndex))
+	 (#^int getColumnCount [] (count property-names))
+	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
+      
+	 ;;IColumnPropertyResolver 
+	 (#^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
+	 (#^int getColumnIndex [#^String propertyName] (property-name-to-index propertyName))
+	 )
 
-(def body-data-provider (ListDataProvider. sorted-list column-property-accessor))
+	config-registry (ConfigRegistry.)
+	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
+
+	body-layer-stack (DefaultBodyLayerStack.
+			   (BlinkLayer.
+			    (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
+			    body-data-provider
+			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Collection row] (first row)))
+			    column-property-accessor
+			    config-registry))
+
+	column-header-data-provider (DefaultColumnHeaderDataProvider. property-names property-name-to-label)
+	column-header-data-layer (DefaultColumnHeaderDataLayer. column-header-data-provider)
+	column-header-layer (ColumnHeaderLayer. column-header-data-layer body-layer-stack (.getSelectionLayer body-layer-stack))
+	column-header-layer-stack (proxy [AbstractLayerTransform] [])]
+  
+    (.setUnderlyingLayer column-header-layer-stack (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
+
+    ;;--------------------------------------------------------------------------------
+    ;; Setting up the row header layer
+  
+    (let [row-header-data-provider (DefaultRowHeaderDataProvider. body-data-provider)
+	  row-header-layer (RowHeaderLayer. (DefaultRowHeaderDataLayer. row-header-data-provider) body-layer-stack (.getSelectionLayer body-layer-stack))
+	  row-header-layer-stack (proxy [AbstractLayerTransform] [])]
+      (.setUnderlyingLayer row-header-layer-stack row-header-layer)
+
+      ;; define parent...
+      (doto
+	  (NatTable.
+	   parent
+	   (GridLayer. 
+	    body-layer-stack
+	    column-header-layer-stack
+	    row-header-layer
+	    (CornerLayer.
+	     (DataLayer.
+	      (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
+	     row-header-layer-stack
+	     column-header-layer-stack))
+	   false)
+	(.setConfigRegistry config-registry)
+	(.addConfiguration (DefaultNatTableStyleConfiguration.))
+	(.addConfiguration (SingleClickSortConfiguration.))
+    
+	;;TODO - still to translate
+	;;http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
+	;; nattable.addConfiguration(getCustomComparatorConfiguration(glazedListsGridLayer.getColumnHeaderLayerStack().getDataLayer()));
+	(.addConfiguration (DefaultSelectionStyleConfiguration.))
+	(.configure)
+
+	(.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
+	(.pack))
+      )))
 
 ;;--------------------------------------------------------------------------------
-;; Setting up the body region
 
-(def config-registry (ConfigRegistry.))
+(def table-model (model "Family" (seq-metadata 4)))
+(insert-n table-model (ArrayList. [[3 0 "alexandra" 2005][1 0 "jane" 1969][2 0 "anthony" 2001][0 0 "jules" 1967]]))
 
-(def body-data-layer (DataLayer. body-data-provider))
+(if (not *compile-files*)
+  (do
+    (def parent (Shell. (Display.)))
+    (.setLayout parent (GridLayout.))
 
-(def glazed-lists-event-layer (GlazedListsEventLayer. body-data-layer event-list))
+    (make-nattable table-model parent)
 
-(def blink-layer
-     (BlinkLayer.
-      glazed-lists-event-layer
-      body-data-provider
-      (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Collection row] (first row)))
-      column-property-accessor
-      config-registry))
-
-(def body-layer-stack (DefaultBodyLayerStack. blink-layer))
-
-;;--------------------------------------------------------------------------------
-;; Setting up the column header region
-
-(def column-header-data-provider (DefaultColumnHeaderDataProvider. property-names property-name-to-label))
-(def column-header-data-layer (DefaultColumnHeaderDataLayer. column-header-data-provider))
-(def column-header-layer (ColumnHeaderLayer. column-header-data-layer body-layer-stack (.getSelectionLayer body-layer-stack)))
-(def sort-header-layer (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
-(def column-header-layer-stack (proxy [AbstractLayerTransform] []))
-(.setUnderlyingLayer column-header-layer-stack sort-header-layer)
-
-;;--------------------------------------------------------------------------------
-;; Setting up the row header layer
-
-(def row-header-data-provider (DefaultRowHeaderDataProvider. body-data-provider))
-(def row-header-data-layer (DefaultRowHeaderDataLayer. row-header-data-provider))
-(def row-header-layer (RowHeaderLayer. row-header-data-layer body-layer-stack (.getSelectionLayer body-layer-stack)))
-(def row-header-layer-stack (proxy [AbstractLayerTransform] []))
-(.setUnderlyingLayer row-header-layer-stack row-header-layer)
-
-;;--------------------------------------------------------------------------------
-;; Setting up the corner layer
-
-(def corner-data-provider (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
-(def corner-data-layer (DataLayer. corner-data-provider))
-(def corner-layer (CornerLayer. corner-data-layer row-header-layer column-header-layer-stack))
-
-;;--------------------------------------------------------------------------------
-;; Drum roll ...
-
-(def grid-layer (GridLayer. body-layer-stack column-header-layer-stack row-header-layer corner-layer))
-;; define parent...
-(def nattable (NatTable. parent grid-layer, false))
-(.setConfigRegistry nattable config-registry)
-(.addConfiguration nattable (DefaultNatTableStyleConfiguration.))
-(.addConfiguration nattable (SingleClickSortConfiguration.))
-
-;;TODO - still to translate
-;;http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
-;; nattable.addConfiguration(getCustomComparatorConfiguration(glazedListsGridLayer.getColumnHeaderLayerStack().getDataLayer()));
-(.addConfiguration nattable (DefaultSelectionStyleConfiguration.))
-(.configure nattable)
-
-(.setLayoutData nattable (GridData. (SWT/FILL) (SWT/FILL) true true))
-(.pack nattable)
-(.pack parent)
-(.open parent)
-
-(defn swt-loop [#^Display display #^Shell shell]
-  (loop []
-    (if (.isDisposed shell)
-      (.dispose display)
-      (do
-	(if (not (.readAndDispatch display))
-	  (.sleep display))
-	(recur)))))
-
-(swt-loop (.getDisplay parent)  parent)
+    (.pack parent)
+    (.open parent)
+    (swt-loop (.getDisplay parent)  parent)
+    ))
+  
