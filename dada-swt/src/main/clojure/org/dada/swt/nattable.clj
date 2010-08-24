@@ -29,6 +29,57 @@
   ))
 
 ;;--------------------------------------------------------------------------------
+;; hopefully this code will bridge between a DADA View and a GL EventList - untested...
+;;--------------------------------------------------------------------------------
+;; (defn #^EventList make-dada-gl-event-list [#^Model model]
+;;   (let [extant (ArrayList.)
+;; 	extinct (ArrayList.)
+;; 	publisher (ListEventAssembler/createListEventPublisher)
+;; 	read-write-lock (.createReadWriteLock (J2SE50LockFactory.))
+;; 	list-event-assenbler (atom nil)
+;; 	pk-fn (.getPrimaryGetter (.getMetadata model))
+;; 	pk-comparator (proxy [Comparable][]
+;; 			     (#^int compareTo [#^Comparable lhs #^Comparable rhs] (.compareTo (pk-fn lhs)(pk-fn rhs)))
+;; 			     (#^boolean equals [lhs rhs] (.equals  (pk-fn lhs)(pk-fn rhs))))
+;; 	insert (fn [#^Update update]
+;; 		   (let [datum (.getNewValue update)
+;; 			 index (- (Math/abs (Collections/binarySearch extant datum pk-comparator)) 1)]
+;; 		     (.insert extant index datum)
+;; 		     (.elementInserted list-event-assenbler index datum)))
+;; 	alter (fn [#^Update update]
+;; 		  (let [datum (.getNewValue update)
+;; 			index (Collections/binarySearch extant datum pk-comparator)
+;; 			old-value (.get extant index)]
+;; 		    (.set extant index datum)
+;; 		    (.elementUpdated list-event-assenbler index datum)))
+;; 	delete (fn [#^Update update]
+;; 		   (let [datum (.getOldValue update)
+;; 			 index (Collections/binarySearch extant datum pk-comparator)
+;; 			 old-value (.remove extant index)]
+;; 		     (.elementDeleted list-event-assenbler index old-value datum)))
+;; 	event-list (proxy [EventList][]
+;; 			  ;; 1
+;; 			  (#^ListEventPublisher getPublisher [] publisher)
+;; 			  ;; 2
+;; 			  (#^ReadWriteLock getReadWriteLock [] read-write-lock)
+;; 			  ;; 3
+;; 			  (#^int size [] (.size extant))
+;; 			  ;; 4
+;; 			  (#^void addListEventListener [#^ListEventListener listener] (.addListEventListener @list-event-assenbler listener))
+;; 			  ;; 5
+;; 			  (#^Objectget [#^int index] (.get extant index)))
+;; 	view (proxy [View][]
+;; 		    (#^void update [#^Collection indertions  #^Collection alterations #^Collection deletions]
+;; 			    (doall (map insert insertions))
+;; 			    (doall (map alter alterations))
+;; 			    (doall (map delete deletions))))]
+;;     (swap! list-event-assenbler (fn [old new] new) (ListEventAssembler. event-list publisher))
+;;     (doall (map insert (.getExtant (.registerView model view))))
+;;     event-list))
+
+;; (def event-list (make-dada-gl-event-list my-model))
+
+;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
 ;; Sorted Table
 ;; see http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/SortableGridExample.java?revision=3912&view=markup
