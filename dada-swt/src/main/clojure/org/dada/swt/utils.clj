@@ -10,6 +10,14 @@
 ;;--------------------------------------------------------------------------------
 ;; utils
 
+(defn shell-loop [#^Shell shell]
+   (loop []
+     (if (not (.isDisposed shell))
+       (let [display (.getDisplay shell)]
+	 (if (not (.readAndDispatch display))
+	   (.sleep display))
+	 (recur)))))
+
 (defn swt-loop
   ([#^Display display #^Shell shell]
    (loop []

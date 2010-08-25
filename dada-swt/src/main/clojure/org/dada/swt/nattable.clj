@@ -3,7 +3,7 @@
  (use org.dada.core)
  (use org.dada.swt.utils)
  (:import
-  [java.util ArrayList]
+  [java.util ArrayList Collection]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.layout GridData GridLayout]
   [org.eclipse.swt.widgets Composite Display Shell]
@@ -25,7 +25,7 @@
   [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
   [net.sourceforge.nattable.viewport ViewportLayer]
 
-  [org.dada.core Metadata Model]
+  [org.dada.core Attribute Metadata Model Update View]
   ))
 
 ;;--------------------------------------------------------------------------------
@@ -89,6 +89,8 @@
 (defn make-nattable [#^Model model #^Composite parent]
   (let [#^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
+	getters (map (fn [#^Attribute attribute] (.getGetter attribute)) attributes)
+	pk-getter (.getPrimaryGetter metadata)
 	property-names (into-array String (map (fn [attribute] (.toString (.getKey attribute))) attributes))
 	property-name-to-index (apply array-map (interleave property-names (iterate inc 0)))
 	property-name-to-label (apply array-map (interleave property-names property-names)) 
@@ -101,7 +103,7 @@
 	 [IColumnPropertyAccessor]
 	 []
 	 ;; IColumnAccessor<T>
-	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (nth rowObject columnIndex))
+	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (.get (nth getters columnIndex) rowObject))
 	 (#^int getColumnCount [] (count property-names))
 	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
@@ -117,7 +119,7 @@
 			   (BlinkLayer.
 			    (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
 			    body-data-provider
-			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Collection row] (first row)))
+			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
 			    column-property-accessor
 			    config-registry))
 
@@ -167,8 +169,26 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn make-nattable-meta-view [#^Model async-model #^Composite parent]
-  (make-nattable async-model parent))
+(defn make-nattable-meta-view [#^Model model #^Composite parent & [#^IFn hook]]
+  (register 
+   model
+   (proxy [View][]
+	  (#^void update [#^Collection insertions #^Collection alterations #^Collection deletions]
+		  (doall (map
+			  (fn [#^Update insertion]
+			      (let [value (.getNewValue insertion)
+				    dummy (println "VALUE:" value)]
+				(if (and (instance? Collection value)
+					 (instance? Model (first value)))
+				  (let [model (first value)
+					nattable (make-nattable model parent)]
+				    (println "NEW NATTABLE:" model nattable)
+				    (.pack nattable)
+				    (if hook (hook nattable))
+				    ))))
+			  insertions)))))
+  parent
+  )
 
 ;;--------------------------------------------------------------------------------
 

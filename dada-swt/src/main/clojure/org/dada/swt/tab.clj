@@ -1,6 +1,7 @@
 (ns 
  org.dada.swt.tab
  (:use org.dada.swt.utils)
+ (:use org.dada.swt.nattable)
  (:import
   [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model ModelView SessionManager SimpleModelView ServiceFactory Update View]
@@ -93,13 +94,13 @@
    (let [key (second (last details)) ;TODO - only works for metamodels
 	 #^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))]
      (.setText item (str key))		;TODO - use of 'str' again
-     ;;(.setData folder nil)		; selection
-     ;;(.setData folder (str key) model) ;; key:model - key should be unique within this split - TODO - use of str
+     (make-nattable-meta-view model parent (fn [nattable](.setControl item nattable)))
      )
 )
 
 (defn update-tab-meta-view [#^Composite parent insertions _ deletions]
   (doall (map (fn [insertion] (insert-tab-meta-view parent (.getNewValue insertion))) insertions))
+  (.setSelection parent 0)
   (.pack parent))
 									 
 (defn make-tab-meta-view [#^Model async-model #^Composite parent]
@@ -116,7 +117,7 @@
     (register async-model async-view)
     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
     (register sync-model (proxy [View] [] (update [i a d] (update-tab-meta-view folder i a d))))
-    
+    folder
     ))
   
   ;; make a View
