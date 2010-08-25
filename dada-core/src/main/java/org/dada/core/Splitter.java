@@ -116,9 +116,12 @@ public class Splitter<K, V> implements View<V> {
 		Map<K, Batch<V>> keyToBatch = new HashMap<K, Batch<V>>();
 
 		// strategy insertions
-		for (Update<V> insertion : insertions)
-			for (K key : strategy.createKeys(insertion.getOldValue(), insertion.getNewValue()))
-				ensureBatch(keyToBatch, key).addInsertion(insertion);
+		for (Update<V> insertion : insertions) {
+			Collection<K> keys = strategy.createKeys(insertion.getOldValue(), insertion.getNewValue());
+			if (keys != null)
+				for (K key : keys)
+					ensureBatch(keyToBatch, key).addInsertion(insertion);
+		}
 
 		// strategy alterations
 		for (Update<V> alteration : alterations) {
