@@ -35,19 +35,26 @@
 
 ;;--------------------------------------------------------------------------------
 
-(def *display* (Display.))
+(.start
+ (Thread.
+  (fn []
+      (def *display* (Display.))
+      (swt-loop *display*))))
 
 (defn inspect [query]
-  (let [[metadata-fn data-fn] query
-	results (data-fn)
-	[metamodel metamodel-name details operation] results
-	shell (create-shell *display* (.getName metamodel))
-	component (create operation metamodel shell)]
-    (println results)
-    (.pack component)
-    (.pack shell)
-    (println "LOOP" shell)
-    (shell-loop shell)))
+  (.asyncExec
+   *display*
+   (fn []
+       (let [[metadata-fn data-fn] query
+	     results (data-fn)
+	     [metamodel metamodel-name details operation] results
+	     shell (create-shell *display* (.getName metamodel))
+	     component (create operation metamodel shell)]
+	 (println results)
+	 (.pack component)
+	 (.pack shell)))))
+
+
 
 ;;--------------------------------------------------------------------------------
 ;; example queries
