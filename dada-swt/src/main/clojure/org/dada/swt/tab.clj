@@ -90,11 +90,11 @@
 ;;     ))
 
 (defn insert-tab-meta-view [#^Composite parent [#^Model model details]]
-  (println "INSERT" model)
+  (println "META INSERT" model)
    (let [key (second (last details)) ;TODO - only works for metamodels
 	 #^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))]
      (.setText item (str key))		;TODO - use of 'str' again
-     (make-nattable-meta-view model parent (fn [nattable](.setControl item nattable)))
+     (.setControl item (make-nattable model parent))
      )
 )
 
@@ -103,20 +103,13 @@
   (.setSelection parent 0)
   (.pack parent))
 									 
-(defn make-tab-meta-view [#^Model async-model #^Composite parent]
+(defn make-tab-meta-view [#^Model model #^Composite parent]
   ;; this model will accept unordered async events and put out ordered
   ;; sync events, suitable for the gui...
   (let [display (.getDisplay parent)
-	#^ModelView sync-model (SimpleModelView. "tab-meta-view" (.getMetadata async-model))
-	#^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))
-	async-view (proxy [View] [] (update [i a d] (try
-						     ;;(.asyncExec display (fn []
-						     (.update sync-model i a d)
-									     ;;))
-						     (catch Throwable t (.printStackTrace t)))))] ;TODO: Should be Serialisable
-    (register async-model async-view)
+	#^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
-    (register sync-model (proxy [View] [] (update [i a d] (update-tab-meta-view folder i a d))))
+    (register model (proxy [View] [] (update [i a d] (update-tab-meta-view folder i a d))))
     folder
     ))
   

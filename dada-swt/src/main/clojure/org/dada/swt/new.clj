@@ -28,7 +28,7 @@
 (defmulti create (fn [operation model #^Composite parent] operation))
 
 (defmethod create :count [operation model #^Composite parent]
-  (make-nattable model parent))
+  (make-nattable-meta-view model parent))
 
 (defmethod create :split [operation model #^Composite parent]
   (make-tab-meta-view model parent))
@@ -46,13 +46,14 @@
     (println results)
     (.pack component)
     (.pack shell)
+    (println "LOOP" shell)
     (shell-loop shell)))
 
 ;;--------------------------------------------------------------------------------
 ;; example queries
 
 ;;(inspect (? (ccount)(from "Family")))
-(inspect (? (split 2)(from "Family")))
+;;(inspect (? (split 2)(from "Family")))
 
 ;;(? (ccount)(from "Whales"))
 ;; (? (split :ocean)(from "Whales"))
