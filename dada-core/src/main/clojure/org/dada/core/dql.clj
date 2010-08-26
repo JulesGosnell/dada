@@ -448,7 +448,7 @@
 				    (apply f tgt-metamodel (.getNewValue insertion))) insertions)))))
     tgt-metamodel))
 
-(defn union [& [model-name]]
+(defn dunion [& [model-name]]
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)]
 	[ ;; metadata
