@@ -12,13 +12,6 @@
   ))
 
 ;;--------------------------------------------------------------------------------
-;; set up a test model
-
-(def my-model (model "Family" (seq-metadata 4)))
-(insert-n my-model [[3 0 "alexandra" 2005][1 0 "jane" 1969][2 0 "anthony" 2001][0 0 "jules" 1967]])
-(insert *metamodel* my-model)
-
-;;--------------------------------------------------------------------------------
 
 (defmethod create :count [operation model #^Composite parent]
   (make-nattable-meta-view model parent))
@@ -49,11 +42,24 @@
 	 (.pack component)
 	 (.pack shell)))))
 
-;;--------------------------------------------------------------------------------
-;; example queries
+;; set up a test model
 
-;;(inspect (? (dcount)(dfrom "Family")))
-;;(inspect (? (dsplit 2)(dfrom "Family")))
+(def whale-data
+     ;;[id, version, type, ocean, length]
+     [[0 0 :blue :atlantic 100]
+      [1 0 :blue :pacific  100]
+      [2 0 :grey :atlantic 50]
+      [3 0 :grey :pacific  50]])
+
+(def whales (model "Whales" (seq-metadata (count (first whale-data)))))
+(insert *metamodel* whales)
+(insert-n whales whale-data)
+
+;;(inspect (? (dcount)(dfrom "Whales")))
+;;(inspect (? (dsplit 2)(dfrom "Whales")))
+;;(inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+;;(inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+
 
 ;;(? (ccount)(from "Whales"))
 ;; (? (split :ocean)(from "Whales"))

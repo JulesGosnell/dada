@@ -24,6 +24,7 @@
 	   PivotModel
 	   Reducer
 	   Reducer$Strategy
+	   Result
 	   SparseOpenLazyViewTable
 	   Splitter
 	   Splitter$StatelessStrategy
@@ -495,7 +496,7 @@
 					  (insert *metamodel* count-model)
 					  (insert tgt-metamodel [count-model extra-pairs])
 					  (connect src-model count-model))))]
-		 [tgt-metamodel new-prefix extra-pairs :count])))])))
+		 (Result. tgt-metamodel new-prefix extra-pairs :count))))])))
 
 (defn dsum [sum-key]
   (fn [[metadata-fn data-fn]]
@@ -565,7 +566,7 @@
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
 		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
-		   tgt-data-tuple [tgt-metamodel tgt-prefix tgt-extra-pairs :split]]
+		   tgt-data-tuple (Result. tgt-metamodel tgt-prefix tgt-extra-pairs :split)]
 	       ;; register it with the global metamodel
 	       (trace "SPLIT DATA SRC  " src-data-tuple)
 	       (insert *metamodel* tgt-metamodel)
@@ -587,7 +588,7 @@
 								split-extra-pairs (concat src-extra-pairs [[split-key split-extra-value]])
 								dummy (trace "SPLIT split-extra-pairs" split-extra-pairs)
 
-								split-data-tuple [split-metamodel split-prefix split-extra-pairs]
+								split-data-tuple (Result. split-metamodel split-prefix split-extra-pairs :split)
 								split-data-fn (fn [] split-data-tuple)
 								[_ sub-data-fn] (thread-chain subchain [split-metadata-fn split-data-fn])
 								sub-data-tuple (sub-data-fn)
