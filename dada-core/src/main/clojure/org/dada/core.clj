@@ -105,6 +105,7 @@
 
 (defmulti attribute-key (fn [arg] (class arg)))
 (defmethod attribute-key Date [#^Date date] (attribute-key (str "attribute" date)))
+(defmethod attribute-key Integer [#^Integer i] (attribute-key (str "attribute" i)))
 (defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
 
 (def string-replacements
@@ -246,7 +247,7 @@
        [1]
        (proxy [Metadata$Comparator][] (higher [[_ v1] [_ v2]] (> v2 v1)))
        (map
-	(fn [i] (Attribute. i Integer (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
+	(fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
 
 
