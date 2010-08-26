@@ -1,7 +1,7 @@
 (ns 
  org.dada.swt.tab
- (:use org.dada.swt.utils)
- (:use org.dada.swt.nattable)
+ (:use [org.dada core]
+       [org.dada.swt swt utils nattable])
  (:import
   [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model ModelView SessionManager SimpleModelView ServiceFactory Update View]

@@ -1,7 +1,7 @@
 (ns
  org.dada.swt.nattable
- (use org.dada.core)
- (use org.dada.swt.utils)
+ (:use [org.dada core]
+       [org.dada.swt swt utils])
  (:import
   [java.util ArrayList Collection]
   [org.eclipse.swt SWT]

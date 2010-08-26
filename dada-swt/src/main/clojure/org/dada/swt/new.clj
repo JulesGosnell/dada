@@ -2,7 +2,7 @@
  org.dada.swt.new
  (:use 
   [org.dada core dsl]
-  [org.dada.swt nattable tab table utils])
+  [org.dada.swt swt nattable tab table utils])
  (:import
   [java.util.concurrent Executors]
   [org.eclipse.swt.widgets Button Composite Control Display Shell Text Listener Widget]
@@ -19,14 +19,6 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn sm-updates [i a d]
-  (println "SM-UPDATES" i a d))
-
-;; a shell with a grid containing a single vertical row...
-;; but for now we'll us a horizontal one
-
-(defmulti create (fn [operation model #^Composite parent] operation))
-
 (defmethod create :count [operation model #^Composite parent]
   (make-nattable-meta-view model parent))
 
@@ -35,11 +27,13 @@
 
 ;;--------------------------------------------------------------------------------
 
-(.start
- (Thread.
-  (fn []
-      (def *display* (Display.))
-      (swt-loop *display*))))
+(if *compile-files*
+  (def *display* (Display.))
+  (.start
+   (Thread.
+    (fn []
+	(def *display* (Display.))
+	(swt-loop *display*)))))
 
 (defn inspect [query]
   (.asyncExec
@@ -53,8 +47,6 @@
 	 (println results)
 	 (.pack component)
 	 (.pack shell)))))
-
-
 
 ;;--------------------------------------------------------------------------------
 ;; example queries
