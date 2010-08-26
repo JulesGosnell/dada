@@ -532,7 +532,7 @@
 (defn split-key-value [key]
   (str "split(" (or key "") ")"))
 
-(defn split [split-key & [split-key-fn subchain]]
+(defn dsplit [split-key & [split-key-fn subchain]]
   (fn [[src-metadata-fn direct-fn]]
       (let [src-metadata-tuple (src-metadata-fn)
 	    [src-metadata src-metaprefix src-extra-keys] src-metadata-tuple
@@ -632,12 +632,12 @@
 
 (defn != [lhs rhs] (not (= lhs rhs)))
 
-(defn ffilter
+(defn dfilter
   ([key predicate required]
    (let [yes (list required) no '()]
-     (split key (fn [candidate] (if (predicate candidate required) yes no)))))
+     (dsplit key (fn [candidate] (if (predicate candidate required) yes no)))))
   ([key required]
-   (ffilter key = required)))
+   (dfilter key = required)))
 
 ;; pivot fn must supply such a closed list of values to be used as
 ;; attribute metadata for output model....

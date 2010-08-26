@@ -1,7 +1,8 @@
 (ns
  org.dada.swt.new
  (:use 
-  [org.dada core dsl]
+  [org.dada core]  
+  [org.dada.core dql]
   [org.dada.swt swt nattable tab table utils])
  (:import
   [java.util.concurrent Executors]
@@ -51,8 +52,8 @@
 ;;--------------------------------------------------------------------------------
 ;; example queries
 
-;;(inspect (? (ccount)(from "Family")))
-;;(inspect (? (split 2)(from "Family")))
+;;(inspect (? (dcount)(dfrom "Family")))
+;;(inspect (? (dsplit 2)(dfrom "Family")))
 
 ;;(? (ccount)(from "Whales"))
 ;; (? (split :ocean)(from "Whales"))
