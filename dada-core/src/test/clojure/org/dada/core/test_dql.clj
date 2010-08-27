@@ -28,7 +28,12 @@
 	value (first (.getExtant (.getData model)))]
     (.get (.getGetter (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
-(defn split-values [[metadata-fn data-fn]]
+(defn flat-split-values [[metadata-fn data-fn]]
+  (let [[metamodel] (data-fn)
+	models (.getExtant (.getData metamodel))]
+    (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
+
+(defn nested-split-values [[metadata-fn data-fn]]
   (let [[metamodel] (data-fn)
 	models (.getExtant (.getData metamodel))]
     (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
@@ -43,18 +48,21 @@
   (is (= (reduction-value (? (dsum 4)(dfrom "Whales")))
 	 (reduce (fn [total whale] (+ total (nth whale 4))) 0 whale-data))))
 
-;; one dimension - a map of [key]:[matching elements...]
+;; one dimension -  {[[key][whale...]]...}
 (deftest test-split-1d
-  (is (= (split-values (? (dsplit 2)(dfrom "Whales")))
+  (is (= (flat-split-values (? (dsplit 2)(dfrom "Whales")))
 	 (group-by (juxt (fn [[id version type]] type)) whale-data))))
 
-;; 2 dimensions - flat - a map of [key1,key2]:[matching elements...]
-(deftest test-split-1d
-  (is (= (split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+;; 2 dimensions - flat - {[[key1 key2][whale...]]...}
+(deftest test-flat-split-2d
+  (is (= (flat-split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
 	 (group-by (juxt (fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)) whale-data))))
 
-;; 2 dimensions - nested - a map of [key1]:{[key2]:[matching elements...]} - NYI
-;; (deftest test-split-1d
-;;   (is (= (split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
-;; 	 (group-by (juxt (fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)) whale-data))))
+;; 2 dimensions - nested - a map of {[[key1]{[[key2][whale...]]}]...}
+;; (deftest test-nested-split-2d
+;;   (is (= (nested-split-values (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+;;  	 (reduce
+;; 	  (fn [result [key vals]] (conj result [key (group-by (juxt (fn [[_ _ _ ocean]] ocean)) vals)]))
+;; 	  {}
+;; 	  (group-by (juxt (fn [[_ _ type]] type)) whale-data)))))
 
