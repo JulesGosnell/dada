@@ -13,13 +13,19 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defmethod create :count [operation model #^Composite parent]
-  (make-nattable-meta-view model parent))
+;; (defmethod create :count [operation model #^Composite parent]
+;;   (make-nattable-meta-view model parent))
 
-(defmethod create :union [operation model #^Composite parent]
-  (make-nattable-meta-view model parent))
+;; (defmethod create :sum [operation model #^Composite parent]
+;;   (make-nattable-meta-view model parent))
 
-(defmethod create :split [operation model #^Composite parent]
+;; (defmethod create :union [operation model #^Composite parent]
+;;   (make-nattable-meta-view model parent))
+
+;; (defmethod create :split [operation model #^Composite parent]
+;;   (make-tab-meta-view model parent))
+
+(defmethod create :default [operation model #^Composite parent]
   (make-tab-meta-view model parent))
 
 ;;--------------------------------------------------------------------------------
@@ -58,17 +64,20 @@
 (insert *metamodel* whales)
 (insert-n whales whale-data)
 
-;;(inspect (? (dcount)(dfrom "Whales")))
-;;(inspect (? (dsplit 2)(dfrom "Whales")))
-;;(inspect (? (dcount)(dsplit 2)(dfrom "Whales")))
-;;(inspect (? (dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-;;(inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
-;;(inspect (? (dunion)(dcount)(dsplit 2)(dfrom "Whales")))
-;;(inspect (? (dunion)(dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-
-;;(inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-;;(inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
-
+(if false
+  (do
+    (inspect (? (dcount)(dfrom "Whales")))
+    (inspect (? (dsplit 2)(dfrom "Whales")))
+    (inspect (? (dcount)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dsum 4)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
+    (inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dunion)(dcount)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dunion)(dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
+    
+    (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+    (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+))
 
 ;; (? (ccount)(from "Whales"))
 ;; (? (split :ocean)(from "Whales"))

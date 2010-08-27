@@ -90,10 +90,10 @@
 ;;     ))
 
 (defn insert-tab-meta-view [#^Composite parent [#^Model model details]]
-  (println "META INSERT" model)
-   (let [key (second (last details)) ;TODO - only works for metamodels
+  (println "META INSERT" model details)
+   (let [key (doall (map second details)) ;TODO - only works for metamodels
 	 #^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))]
-     (.setText item (str key))		;TODO - use of 'str' again
+     (.setText item (pr-str key))		;TODO - use of 'str' again
      (.setControl item (make-nattable model parent))
      )
 )

@@ -461,7 +461,7 @@
 		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model extra-pairs] (connect src-model tgt-model)))]
 	       (insert *metamodel* tgt-model)
 	       (insert tgt-metamodel [tgt-model extra-pairs])
-	       [tgt-metamodel (str prefix ".union()") extra-pairs :union]))])))
+	       (Result. tgt-metamodel (str prefix ".union()") extra-pairs :union)))])))
 
 ;; extra keys are inserted into attribute list
 ;; extra values are carried in model's row in metamodel
@@ -528,7 +528,7 @@
 					  (insert *metamodel* sum-model)
 					  (insert tgt-metamodel [sum-model extra-pairs])
 					  (connect src-model sum-model))))]
-		 [tgt-metamodel new-prefix extra-pairs :sum])))])))
+		 (Result. tgt-metamodel new-prefix extra-pairs :sum))))])))
 
 (defn split-key-value [key]
   (str "split(" (or key "") ")"))
