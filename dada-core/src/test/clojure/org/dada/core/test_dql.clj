@@ -28,6 +28,11 @@
 	value (first (.getExtant (.getData model)))]
     (.get (.getGetter (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
+(defn split-values [[metadata-fn data-fn]]
+  (let [[metamodel] (data-fn)
+	models (.getExtant (.getData metamodel))]
+    (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
+
 ;;--------------------------------------------------------------------------------
 
 (deftest test-dcount
@@ -38,5 +43,18 @@
   (is (= (reduction-value (? (dsum 4)(dfrom "Whales")))
 	 (reduce (fn [total whale] (+ total (nth whale 4))) 0 whale-data))))
 
+;; one dimension - a map of [key]:[matching elements...]
+(deftest test-split-1d
+  (is (= (split-values (? (dsplit 2)(dfrom "Whales")))
+	 (group-by (juxt (fn [[id version type]] type)) whale-data))))
 
+;; 2 dimensions - flat - a map of [key1,key2]:[matching elements...]
+(deftest test-split-1d
+  (is (= (split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+	 (group-by (juxt (fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)) whale-data))))
+
+;; 2 dimensions - nested - a map of [key1]:{[key2]:[matching elements...]} - NYI
+;; (deftest test-split-1d
+;;   (is (= (split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+;; 	 (group-by (juxt (fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)) whale-data))))
 
