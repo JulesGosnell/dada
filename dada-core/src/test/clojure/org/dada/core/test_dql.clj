@@ -3,6 +3,9 @@
      [clojure test]
      [org.dada core]
      [org.dada.core dql])
+    (:import
+     [org.dada.core
+      Result])
     )
 
 (def whale-data
@@ -33,10 +36,33 @@
 	models (.getExtant (.getData metamodel))]
     (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
 
+
+(defn nested-split-values2 [result]
+  (if (instance? Result result)
+    (let [[model prefix pairs operation] result]
+      [prefix
+       ;;(reduce (fn [result new] (conj result (nested-split-values2 new))) {}
+       (map nested-split-values2
+	       (.getExtant (.getData model)))])
+    (let [[model pairs] result]
+      [(map second pairs)
+       (.getExtant (.getData model))])))
+
 (defn nested-split-values [[metadata-fn data-fn]]
-  (let [[metamodel] (data-fn)
-	models (.getExtant (.getData metamodel))]
-    (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
+  (let [metameta-results (data-fn)]
+    (nested-split-values2 metameta-results)
+    ))
+
+
+;; TODO
+;; (nested-split-values (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+;; yields :
+;; ["Whales.2" (["Whales.2.3" ([(:grey :pacific) ([3 0 :grey :pacific 50])] [(:grey :atlantic) ([2 0 :grey :atlantic 50])])] ["Whales.2.3" ([(:blue :pacific) ([1 0 :blue :pacific 100])] [(:blue :atlantic) ([0 0 :blue :atlantic 100])])])]
+
+;; need to:
+;; getmap keys working properly
+;; get test working
+;; fix gui to handle recursive models
 
 ;;--------------------------------------------------------------------------------
 
