@@ -624,13 +624,15 @@
 				  ;; surround the single split model
 				  ;; and make it look like it is a
 				  ;; singleton..
+				  single-data-metamodel (model (.getName split-data-model) split-metadata)
 				  single-data-fn (fn []
 						     (Result.
-						      (model (.getName split-data-model) split-metadata)
+						      single-data-metamodel
 						      split-prefix
 						      split-extra-pairs
 						      split-operation))
 				  ;; plug this into subchain
+				  dummy (insert single-data-metamodel (.getNewValue insertion))
 				  [sub-metadata-fn sub-data-fn] (thread-chain subchain [split-metadata-fn single-data-fn])
 				  ]
 			      ;; and insert resulting metamodel into metametamodel

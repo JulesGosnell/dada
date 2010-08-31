@@ -90,7 +90,7 @@
 ;;     ))
 
 (defn insert-tab-meta-view [#^Composite parent [#^Model model details]]
-  (println "META INSERT" model details)
+  (println "META INSERT" model details (.getMetadata model))
    (let [key (doall (map second details)) ;TODO - only works for metamodels
 	 #^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))]
      (.setText item (pr-str key))		;TODO - use of 'str' again

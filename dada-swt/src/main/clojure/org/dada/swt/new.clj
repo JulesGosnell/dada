@@ -75,14 +75,10 @@
     (inspect (? (dunion)(dcount)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dunion)(dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
     
-    (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
     (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
 ))
 
-;; (? (ccount)(from "Whales"))
-;; (? (split :ocean)(from "Whales"))
-;; (? (split :type)(from "Whales"))
 ;; (? (union)(split :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
 ;; (? (union)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
-;; (? (from "MetaModel"))
 

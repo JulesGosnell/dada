@@ -190,3 +190,7 @@
 (defn #^{:private true} -writeReplace [#^org.dada.core.SimpleModelView this]
   (let [[[name metadata]] (.state this)]
       (RemoteModel. name metadata)))
+
+(defn #^String -toString [#^org.dada.core.SimpleModelView this]
+  (let [[[name metadata]] (.state this)]
+    name))
