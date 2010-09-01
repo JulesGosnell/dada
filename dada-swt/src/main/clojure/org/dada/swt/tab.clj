@@ -1,7 +1,7 @@
 (ns 
  org.dada.swt.tab
  (:use [org.dada core]
-       [org.dada.swt swt utils nattable])
+       [org.dada.swt swt utils])
  (:import
   [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model ModelView SessionManager SimpleModelView ServiceFactory Update View]
@@ -89,27 +89,26 @@
 ;; 	  ))]
 ;;     ))
 
-(defn insert-tab-meta-view [#^Composite parent [#^Model model details]]
-  (println "META INSERT" model details (.getMetadata model))
-   (let [key (doall (map second details)) ;TODO - only works for metamodels
-	 #^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))]
-     (.setText item (pr-str key))		;TODO - use of 'str' again
-     (.setControl item (make-nattable model parent))
-     )
-)
+(defn tab-insert [element #^Composite parent]
+  (let [dummy element]
+    (println "TAB INSERT" element)
+    (let [#^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))
+	  control (create element parent)]
+      (.setText item (pr-str (extract-key element)))
+      (.setControl item control))))
 
-(defn update-tab-meta-view [#^Composite parent insertions _ deletions]
-  (doall (map (fn [insertion] (insert-tab-meta-view parent (.getNewValue insertion))) insertions))
+(defn tab-update [#^Composite parent insertions _ deletions]
+  (doall (map (fn [insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
   (.setSelection parent 0)
   (.pack parent))
 									 
-(defn make-tab-meta-view [#^Model model #^Composite parent]
+(defn tab-make [[model prefix pairs operation] #^Composite parent] ; TODO - should be element
   ;; this model will accept unordered async events and put out ordered
   ;; sync events, suitable for the gui...
   (let [display (.getDisplay parent)
 	#^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
-    (register model (proxy [View] [] (update [i a d] (update-tab-meta-view folder i a d))))
+    (register model (proxy [View] [] (update [i a d] (tab-update folder i a d))))
     folder
     ))
   
@@ -117,5 +116,3 @@
   ;; connect it to a Model to handle events arriving in wrong order
   ;; connect that to a View (Meta) which maintains a new Tab for each item
   ;; each Tab should do the same for each element of each Model
-
-

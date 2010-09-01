@@ -402,13 +402,13 @@
   (let [prefix (.getName src-model)
 	metaprefix (str "Meta-" prefix)]
     [ ;; metadata
-     (fn [] [(.getMetadata src-model) metaprefix '()])
+     (fn [] [(.getMetadata src-model) metaprefix '() :from])
      ;; data
      (fn []
 	 (let [metamodel (model metaprefix (seq-metadata 2))]
 	   (insert metamodel [src-model '()])
 	   (insert *metamodel* metamodel)
-	   [metamodel prefix '()]))]))
+	   [metamodel prefix]))]))
 
 (defn dfrom [model-name]
   (metamodel (.find *metamodel* model-name)))
@@ -555,10 +555,10 @@
 	 (fn []
 	     (let [src-data-tuple (direct-fn)
 		   [#^Model src-metamodel src-prefix #^Collection src-extra-pairs] src-data-tuple
-		   dummy (trace "SPLIT src-extra-pairs" src-extra-pairs)
+		   dummy (trace "SPLIT src-extra-pairs" src-prefix src-extra-pairs)
 		   tgt-metamodel (model (str (.getName src-metamodel) suffix) (.getMetadata src-metamodel))
 		   tgt-prefix (str src-prefix "." split-key)
-		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
+		   tgt-extra-pairs (concat src-extra-pairs [[split-key]])
 		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
 		   tgt-data-tuple (Result. tgt-metamodel tgt-prefix tgt-extra-pairs :split)]
 	       ;; register it with the global metamodel
@@ -572,15 +572,16 @@
 		    (doall
 		     (map
 		      (fn [#^Update insertion]
-			  (let [[src-model src-extra-values] (.getNewValue insertion)
+			  (let [[src-model split-extra-pairs] (.getNewValue insertion)
+				dummy (println "NEW-VALUE"  split-extra-pairs)
 				chain-fn (fn [#^Model split-model split-extra-value]
-					     (trace "SPLIT - producing new model" split-model split-extra-value)
-					     (let [split-model-tuple (list split-model (concat src-extra-values [[split-key split-extra-value]]))]
+					     (println "SPLIT - producing new model" split-model split-extra-value)
+					     (let [split-model-tuple (list split-model (concat split-extra-pairs [[split-key split-extra-value]]))]
 					       (insert *metamodel* split-model) ;add to global metamodel
 					       (insert tgt-metamodel (doall split-model-tuple)) ;add to metamodel that has been passed downstream
 					       ))]
 			    ;; we have received a model from an upstream operation...
-			    (trace "SPLIT - receiving new model" src-model src-extra-values)
+			    (trace "SPLIT - receiving new model" src-model split-extra-pairs)
 			    ;; plug src-> split -> [chain defined above]
 			    (do-split src-model split-key (or split-key-fn list) identity chain-fn)))
 		      insertions))))
@@ -590,47 +591,55 @@
 (defn dsplit [split-key & [split-key-fn subchain]]
   (fn [src-tuple]
       (let [[src-metadata-fn src-data-fn] src-tuple
-	    ;; apply parent split
+	    ;; thread src into outer split
 	    split-tuple (thread-chain [(dsplit2 split-key (or split-key-fn list))] src-tuple)
 	    [split-metadata-fn split-data-fn] split-tuple
 	    split-metadata-tuple (split-metadata-fn)
-	    [split-metadata split-metaprefix split-extra-keys] split-metadata-tuple
-	    metametametadata (seq-metadata 4) ;TODO - metadata should be set up for Result ... [Model, x, y, z]
-	    metametamodel-name (str "Meta-" split-metaprefix)
-	    metameta-split-keys split-extra-keys ;TODO - investigate..
+	    [split-metadata split-metadata-prefix split-metadata-pairs split-operation] split-metadata-tuple
+	    ;; prepare metameta results
+	    metameta-metadata (seq-metadata 4) ;TODO - metadata should be set up for Result ... [Model, x, y, z]
+	    metameta-metadata-prefix (str "Meta-" split-metadata-prefix)
+	    metameta-metadata-pairs split-metadata-pairs ;TODO - investigate..
 	    ] 
 	(if subchain
 	  [
 	   (fn []
-	       [metametametadata metametamodel-name metameta-split-keys])
+	       ;; the metametadata/metadata is pretty much the same as the metadata coming out of the split
+	       ;; we just have to alter the model name to encode the extra level of meta-ness...
+	       [split-metadata metameta-metadata-prefix split-metadata-pairs split-operation] ;;[metameta-metadata metameta-model-name metameta-metadata-pairs]
+	       )
 	   (fn []
+	       ;; the metadata/data 
 	       (let [split-data-tuple (split-data-fn)
-		     [split-metamodel split-prefix split-extra-pairs split-operation] split-data-tuple
+		     dummy (println "SPLIT-DATA-TUPLE" (map (fn [i] (nth split-data-tuple i)) (range 3)))
+		     [split-data-metamodel split-data-prefix split-data-pairs split-data-operation] split-data-tuple
+		     dummy (println "SPLIT-DATA-PAIRS" split-data-pairs)
 		     ;;
-		     tgt-metametamodel (model metametamodel-name metametametadata)
-		     tgt-prefix split-prefix
-		     tgt-extra-pairs split-extra-pairs ;TODO: does not seem to be coming through correctly
-		     tgt-operation split-operation
+		     tgt-metametamodel (model metameta-metadata-prefix metameta-metadata) ;TODO model-name incomplete ?
+		     tgt-prefix split-data-prefix
+		     tgt-extra-pairs split-data-pairs ;TODO: does not seem to be coming through correctly
+		     tgt-operation split-data-operation
 		     ]
 		 (attach 
-		  split-metamodel
+		  split-data-metamodel
 		  (fn [insertions alterations deletions]
 		      (doall
 		       (map
 		      	(fn [#^Update insertion]
-		      	    (let [[split-data-model split-extra-pair] (.getNewValue insertion)
-				  dummy (println "HERE" (.getNewValue insertion))
+		      	    (let [new-value  (.getNewValue insertion)
+				  dummy (println "NEW-VALUE" new-value)
+				  [split-model split-pairs] new-value
 				  ;; I need to produce a metamodel to
 				  ;; surround the single split model
 				  ;; and make it look like it is a
 				  ;; singleton..
-				  single-data-metamodel (model (.getName split-data-model) split-metadata)
+				  single-data-metamodel (model (.getName split-model) split-metadata)
 				  single-data-fn (fn []
 						     (Result.
 						      single-data-metamodel
-						      split-prefix
-						      split-extra-pairs
-						      split-operation))
+						      split-data-prefix
+						      split-pairs
+						      split-data-operation))
 				  ;; plug this into subchain
 				  dummy (insert single-data-metamodel (.getNewValue insertion))
 				  [sub-metadata-fn sub-data-fn] (thread-chain subchain [split-metadata-fn single-data-fn])

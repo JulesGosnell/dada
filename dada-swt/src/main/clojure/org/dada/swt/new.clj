@@ -5,28 +5,20 @@
   [org.dada.core dql]
   [org.dada.swt swt nattable tab table utils])
  (:import
+  [java.util Collection]
   [java.util.concurrent Executors]
   [org.eclipse.swt.widgets Button Composite Control Display Shell Text Listener Widget]
   [org.eclipse.swt SWT]
-  [org.dada.core Model ModelView SessionManagerNameGetter SimpleModelView Update View ViewNameGetter]
+  [org.dada.core Model ModelView Result SessionManagerNameGetter SimpleModelView Update View ViewNameGetter]
   ))
 
 ;;--------------------------------------------------------------------------------
 
-;; (defmethod create :count [operation model #^Composite parent]
-;;   (make-nattable-meta-view model parent))
-
-;; (defmethod create :sum [operation model #^Composite parent]
-;;   (make-nattable-meta-view model parent))
-
-;; (defmethod create :union [operation model #^Composite parent]
-;;   (make-nattable-meta-view model parent))
-
-;; (defmethod create :split [operation model #^Composite parent]
-;;   (make-tab-meta-view model parent))
-
-(defmethod create :default [operation model #^Composite parent]
-  (make-tab-meta-view model parent))
+(defmethod create :metadata [element #^Composite parent] (tab-make element parent))
+(defmethod create :data [element #^Composite parent] (nattable-make element parent))
+  
+(defmethod extract-key :metadata [element] (list (second (first (nth element 2)))))
+(defmethod extract-key :data [element] (map second (second element)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -44,9 +36,9 @@
    (fn []
        (let [[metadata-fn data-fn] query
 	     results (data-fn)
-	     [metamodel metamodel-name details operation] results
+	     [metamodel] results
 	     shell (create-shell *display* (.getName metamodel))
-	     component (create operation metamodel shell)]
+	     component (create results shell)]
 	 (println results)
 	 (.pack component)
 	 (.pack shell)))))
@@ -74,11 +66,19 @@
     (inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dunion)(dcount)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dunion)(dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-    
     (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-))
+    
+    ;; needs tidying up...
+    (inspect (? (dfrom "Whales")))
+    (inspect (? (dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
+    (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
 
-;; (? (union)(split :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
-;; (? (union)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
+    ;; needs fixing
+    ;;(inspect (? (dunion)(dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
 
+    ;; need a pivot demo...
+    ))
+
+;; (? (dunion)(dsplit :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(dsum :weight)(split :type )])(from "Whales"))
+;; (? (dunion)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))

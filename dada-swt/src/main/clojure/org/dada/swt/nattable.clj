@@ -86,7 +86,7 @@
 ;; Blinking Table
 ;; http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/BlinkingGridExample.java?revision=3912&view=markup
 
-(defn make-nattable [#^Model model #^Composite parent]
+(defn nattable-make [[#^Model model pairs] #^Composite parent]
   (let [#^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
 	getters (map (fn [#^Attribute attribute] (.getGetter attribute)) attributes)
@@ -103,7 +103,7 @@
 	 [IColumnPropertyAccessor]
 	 []
 	 ;; IColumnAccessor<T>
-	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (.get (nth getters columnIndex) rowObject))
+	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (pr-str (.get (nth getters columnIndex) rowObject))) ;TODO - I'd rather not use pr-str here...
 	 (#^int getColumnCount [] (count property-names))
 	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
@@ -168,42 +168,3 @@
 	nattable))))
 
 ;;--------------------------------------------------------------------------------
-
-(defn make-nattable-meta-view [#^Model model #^Composite parent & [#^IFn hook]]
-  (register 
-   model
-   (proxy [View][]
-	  (#^void update [#^Collection insertions #^Collection alterations #^Collection deletions]
-		  (doall (map
-			  (fn [#^Update insertion]
-			      (let [value (.getNewValue insertion)
-				    dummy (println "VALUE:" value)]
-				(if (and (instance? Collection value)
-					 (instance? Model (first value)))
-				  (let [model (first value)
-					nattable (make-nattable model parent)]
-				    (println "NEW NATTABLE:" model nattable)
-				    (.pack nattable)
-				    (if hook (hook nattable))
-				    ))))
-			  insertions)))))
-  parent
-  )
-
-;;--------------------------------------------------------------------------------
-
-;; (if (not *compile-files*)
-;;   (do
-;;     (def table-model (model "Family" (seq-metadata 4)))
-;;     (insert-n table-model (ArrayList. [[3 0 "alexandra" 2005][1 0 "jane" 1969][2 0 "anthony" 2001][0 0 "jules" 1967]]))
-
-;;     (def parent (Shell. (Display.)))
-;;     (.setLayout parent (GridLayout.))
-
-;;     (make-nattable table-model parent)
-
-;;     (.pack parent)
-;;     (.open parent)
-;;     (swt-loop (.getDisplay parent)  parent)
-;;     ))
-  
