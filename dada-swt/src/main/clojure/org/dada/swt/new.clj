@@ -17,8 +17,9 @@
 (defmethod create :metadata [element #^Composite parent] (tab-make element parent))
 (defmethod create :data [element #^Composite parent] (nattable-make element parent))
   
-(defmethod extract-key :metadata [element] (list (second (first (nth element 2)))))
-(defmethod extract-key :data [element] (map second (second element)))
+(defmethod extract-key :default [result]
+  (println "EXTRACT KEY" (.getPairs result))
+  (reduce (fn [output [key value]] (if value (conj output value) output)) nil (.getPairs result)))
 
 ;;--------------------------------------------------------------------------------
 
