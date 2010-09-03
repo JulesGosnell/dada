@@ -645,7 +645,7 @@
 				  ;; surround the single split model
 				  ;; and make it look like it is a
 				  ;; singleton..
-				  single-data-metamodel (model (.getName split-model) split-metadata)
+				  single-data-metamodel (model (.getName split-model) result-metadata)
 				  single-data-fn (fn []
 						     (Result.
 						      single-data-metamodel
