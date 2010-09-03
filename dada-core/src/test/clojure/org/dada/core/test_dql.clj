@@ -17,16 +17,40 @@
 ;;--------------------------------------------------------------------------------
 ;; data model
 
+(def whale-attributes
+     (list
+      [:id       (Integer/TYPE) false]
+      [:version  (Integer/TYPE) true]
+      ;;[:time     Date           true]
+      ;;[:reporter String         true]
+      [:type     clojure.lang.Keyword         false]	;a whale cannot change type
+      [:ocean    clojure.lang.Keyword         true]
+      [:length   (Float/TYPE)   true]
+      ;;[:weight   (Float/TYPE)   true]
+      ))
+
 (def whale-data
-     ;;[id, version, type, ocean, length]
      [[0 0 :blue :atlantic 100]
       [1 0 :blue :pacific  100]
       [2 0 :grey :atlantic 50]
       [3 0 :grey :pacific  50]])
 
-(def whales (model "Whales" (seq-metadata (count (first whale-data)))))
+;;(def whale-metadata (seq-metadata (count (first whale-data))))
+(def whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
+				     Object
+				     [:id]
+				     [:version] 
+				     int-version-comparator 
+				     whale-attributes))
+
+(def whales (model "Whales" whale-metadata))
 (insert *metamodel* whales)
-(insert-n whales whale-data)
+
+;;(insert-n whales whale-data)
+(let [creator (.getCreator whale-metadata)]
+      (insert-n
+       whales
+       (map (fn [datum] (.create creator (into-array Object datum))) whale-data)))
 
 ;;--------------------------------------------------------------------------------
 ;; utils
@@ -37,11 +61,15 @@
 	value (first (.getExtant (.getData model)))]
     (.get (.getGetter #^Attribute (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
+(defn to-list [#^Whale whale]
+  (map (fn [#^Attribute attribute] (.get (.getGetter attribute) whale)) (.getAttributes whale-metadata)))
+
 (defn flat-split-values [[metadata-fn data-fn]]
   (reduce
    (fn [values #^Result result]
        (println (.getModel result) (.getPrefix result) "," (.getPairs result) "," (.getOperation result))
-       (conj values [(map second (.getPairs result)) (.getExtant (.getData (.getModel result)))]))
+       (conj values [(map second (.getPairs result)) 
+		     (map to-list (.getExtant (.getData (.getModel result))))]))
    {}
    (.getExtant (.getData (.getModel (data-fn))))))
 
@@ -56,7 +84,7 @@
     [[key]
      (if (every? (fn [value] (instance? Result value)) values) ;TODO - is this the best I can do ?
        (reduce (fn [map value] (conj map (nested-split-values2 value))) {} values)
-       values)]))
+       (map to-list values))]))
 
 (defn nested-split-values [[metadata-fn data-fn]]
     (second (nested-split-values2 (data-fn))))
@@ -67,6 +95,8 @@
 (defn nested-group-by [[fns-head & fns-tail] data]
   (reduce (fn [current [key val]] (conj current [key (if fns-tail (nested-group-by fns-tail val) val)])) {} (group-by (juxt fns-head) data)))
 
+
+
 ;;--------------------------------------------------------------------------------
 ;; tests
 
@@ -75,20 +105,20 @@
 	 (count whale-data))))
 
 (deftest test-dsum
-  (is (= (reduction-value (? (dsum 4)(dfrom "Whales")))
+  (is (= (reduction-value (? (dsum :length)(dfrom "Whales")))
 	 (reduce (fn [total whale] (+ total (nth whale 4))) 0 whale-data))))
 
 ;; one dimension -  {[[key][whale...]]...}
 (deftest test-split-1d
-  (is (= (flat-split-values (? (dsplit 2)(dfrom "Whales")))
+  (is (= (flat-split-values (? (dsplit :type)(dfrom "Whales")))
 	 (flat-group-by [(fn [[_ _ type]] type)] whale-data))))
 
 ;; 2 dimensions - flat - {[[key1 key2][whale...]]...}
 (deftest test-flat-split-2d
-  (is (= (flat-split-values (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+  (is (= (flat-split-values (? (dsplit :ocean)(dsplit :type)(dfrom "Whales")))
 	 (flat-group-by [(fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)] whale-data))))
 
 ;;2 dimensions - nested - a map of {[[key1]{[[key2][whale...]]}]...}
 (deftest test-nested-split-2d
-  (is (= (nested-split-values (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+  (is (= (nested-split-values (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
 	 (nested-group-by [(fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)] whale-data))))
