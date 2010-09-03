@@ -1,5 +1,4 @@
 (ns 
- #^{:author "Jules Gosnell" :doc "DADA Query Language - DQL"}
  org.dada.core.dql
  (:use [org.dada.core])
  (:use org.dada.core.PivotModel)
@@ -20,6 +19,7 @@
 	   LazyView
 	   Metadata
 	   Metadata$Comparator
+	   MetaResult
 	   Model
 	   PivotModel
 	   Reducer
@@ -38,6 +38,18 @@
  )
 
 ;;--------------------------------------------------------------------------------
+
+(def #^Metadata result-metadata
+     (custom-metadata3 org.dada.core.Result
+		       [:model]		;TODO - this is a BAD idea for a PK
+		       [:model]		;TODO - we need a proper version - or code that can handle versionless data
+		       (proxy [Metadata$Comparator][](higher [lhs rhs] true))
+		       [[:model org.dada.core.Model false]
+			[:prefix String false]
+			[:pairs java.util.Collection false]
+			[:operation java.util.Collection false]]))
+
+;;--------------------------------------------------------------------------------
 ;; needs refactoring from here...
 
 (defn apply-getters [#^ISeq getters value]
@@ -52,68 +64,68 @@
 ;; Filtration - should be implemented as a thin wrapper around Splitter
 ;;----------------------------------------
 
-;;----------------------------------------
-;; transformation
-;; selection of a subset of attributes from one type into another of a different shape
-;; TODO: creation of extra literal and composed values
-;;----------------------------------------
+;; ;;----------------------------------------
+;; ;; transformation
+;; ;; selection of a subset of attributes from one type into another of a different shape
+;; ;; TODO: creation of extra literal and composed values
+;; ;;----------------------------------------
 
-(defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
-  (let [#^Creator creator (.getCreator metadata)]
-    (new
-     Transformer
-     #^Collection
-     (list view)
-     #^Transformer$StatelessStrategy
-     (proxy
-      [Transformer$StatelessStrategy]
-      []
-      (transform 
-       [input]
-       ;; TODO: this code needs to be FAST - executed online
-       (.create creator (into-array Object (map (fn [#^IFn init-fn] (init-fn input)) init-fns))))
-      ))))
+;; (defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
+;;   (let [#^Creator creator (.getCreator metadata)]
+;;     (new
+;;      Transformer
+;;      #^Collection
+;;      (list view)
+;;      #^Transformer$StatelessStrategy
+;;      (proxy
+;;       [Transformer$StatelessStrategy]
+;;       []
+;;       (transform 
+;;        [input]
+;;        ;; TODO: this code needs to be FAST - executed online
+;;        (.create creator (into-array Object (map (fn [#^IFn init-fn] (init-fn input)) init-fns))))
+;;       ))))
 
-;; returns [key type init-fn]
-(defmulti do-transform-attribute (fn [descrip md] (class descrip)))
+;; ;; returns [key type init-fn]
+;; (defmulti do-transform-attribute (fn [descrip md] (class descrip)))
 
-;; simple one-to-one mapping
-;; key -> [key type fn]
-(defmethod do-transform-attribute 
-  clojure.lang.Keyword [#^Keyword key #^Metadata md]
-  (let [#^Attribute attribute (.getAttribute md key)
-	type (.getType attribute)
-	getter (.getGetter attribute)
-	value-fn (fn [value] (.get getter value))]
-    [key type value-fn]))
+;; ;; simple one-to-one mapping
+;; ;; key -> [key type fn]
+;; (defmethod do-transform-attribute 
+;;   clojure.lang.Keyword [#^Keyword key #^Metadata md]
+;;   (let [#^Attribute attribute (.getAttribute md key)
+;; 	type (.getType attribute)
+;; 	getter (.getGetter attribute)
+;; 	value-fn (fn [value] (.get getter value))]
+;;     [key type value-fn]))
 
-;; synthetic attribute
-;; [key type keys fn] -> [key type fn]
-(defmethod do-transform-attribute
-  clojure.lang.PersistentList [attribute #^Metadata md]
-  (let [[key type keys transform-fn] attribute
-	getters (map #(.getGetter (.getAttribute md %)) keys)
-	product-fn (fn [value] (map (fn [#^Getter getter] (.get getter value)) getters))
-	init-fn (fn [value] (apply transform-fn (product-fn value)))]
-    (list key type init-fn)))
+;; ;; synthetic attribute
+;; ;; [key type keys fn] -> [key type fn]
+;; (defmethod do-transform-attribute
+;;   clojure.lang.PersistentList [attribute #^Metadata md]
+;;   (let [[key type keys transform-fn] attribute
+;; 	getters (map #(.getGetter (.getAttribute md %)) keys)
+;; 	product-fn (fn [value] (map (fn [#^Getter getter] (.get getter value)) getters))
+;; 	init-fn (fn [value] (apply transform-fn (product-fn value)))]
+;;     (list key type init-fn)))
 
-(defn third [s] (nth s 2))
+;; (defn third [s] (nth s 2))
 
-(defn do-transform [#^String suffix #^Model src-model & #^Collection attribute-descrips]
-  (let [#^Metadata model-metadata (.getMetadata src-model)
-	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
-	attribute-keys (map first attribute-details)
-	attribute-types (map second attribute-details)
-	init-fns (map third attribute-details)
-	attributes (interleave attribute-keys attribute-types)
-	class-name (name (gensym "org.dada.core.Transform"))
-	superclass Object
-	view-metadata (custom-metadata [(first attribute-keys)] class-name superclass attributes)
-	view-name (str (.getName src-model) "." suffix)
-	view (model view-name view-metadata)
-	transformer (make-transformer init-fns view-metadata view)]
-    (connect src-model transformer)
-    view))
+;; (defn do-transform [#^String suffix #^Model src-model & #^Collection attribute-descrips]
+;;   (let [#^Metadata model-metadata (.getMetadata src-model)
+;; 	attribute-details (map #(do-transform-attribute % model-metadata) attribute-descrips)
+;; 	attribute-keys (map first attribute-details)
+;; 	attribute-types (map second attribute-details)
+;; 	init-fns (map third attribute-details)
+;; 	attributes (interleave attribute-keys attribute-types)
+;; 	class-name (name (gensym "org.dada.core.Transform"))
+;; 	superclass Object
+;; 	view-metadata (custom-metadata [(first attribute-keys)] class-name superclass attributes)
+;; 	view-name (str (.getName src-model) "." suffix)
+;; 	view (model view-name view-metadata)
+;; 	transformer (make-transformer init-fns view-metadata view)]
+;;     (connect src-model transformer)
+;;     view))
 
 ;;----------------------------------------
 ;; splitting
@@ -385,10 +397,10 @@
 ;;----------------------------------------
 ;; still to refactor - also sum()
 
-(defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
-  ;; TODO: accept ready-made View ?
-  ;; TODO: default key/version from src-model
-  (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
+;; (defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
+;;   ;; TODO: accept ready-made View ?
+;;   ;; TODO: default key/version from src-model
+;;   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))
 
 ;;--------------------------------------------------------------------------------
 ;; query operators...
@@ -402,13 +414,13 @@
   (let [prefix (.getName src-model)
 	metaprefix (str "Meta-" prefix)]
     [ ;; metadata
-     (fn [] [(.getMetadata src-model) metaprefix '() :from])
+     (fn [] (MetaResult. (.getMetadata src-model) metaprefix '() [:from]))
      ;; data
      (fn []
-	 (let [metamodel (model metaprefix (seq-metadata 2))]
-	   (insert metamodel [src-model '()])
+	 (let [metamodel (model metaprefix result-metadata)]
+	   (insert metamodel (Result. src-model prefix '() [:from prefix]))
 	   (insert *metamodel* metamodel)
-	   [metamodel prefix]))]))
+	   (Result. metamodel metaprefix '() [:from metaprefix])))]))
 
 (defn dfrom [model-name]
   (metamodel (.find *metamodel* model-name)))
@@ -444,8 +456,8 @@
      (proxy [View] []
 	    (update [insertions alterations deletions]
 		    (doall (map (fn [#^Update insertion]
-				    (trace "INSERTION" (.getNewValue insertion))
-				    (apply f tgt-metamodel (.getNewValue insertion))) insertions)))))
+				    (println "INSERTION" (.getNewValue insertion))
+				    (f tgt-metamodel (.getNewValue insertion))) insertions)))))
     tgt-metamodel))
 
 (defn dunion [& [model-name]]
@@ -458,7 +470,7 @@
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
 		   tgt-model (model (or model-name (str prefix ".union()")) src-metadata)
-		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel src-model extra-pairs] (connect src-model tgt-model)))]
+		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel [src-model _ extra-pairs]] (connect src-model tgt-model)))]
 	       (insert *metamodel* tgt-model)
 	       (insert tgt-metamodel [tgt-model extra-pairs])
 	       (Result. tgt-metamodel (str prefix ".union()") extra-pairs :union)))])))
@@ -474,7 +486,7 @@
 	    tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
 	[ ;; metadata
 	 (fn []
-	     [tgt-metadata (str metaprefix "." (count-value-key count-key)) extra-keys])
+	     (MetaResult. tgt-metadata (str metaprefix "." (count-value-key count-key)) extra-keys [:count]))
 	 ;; direct
 	 (if data-fn
 	   (fn []
@@ -485,7 +497,7 @@
 		     tgt-metamodel (meta-view
 				    (str "." (count-value-key count-key))
 				    src-metamodel
-				    (fn [tgt-metamodel #^Model src-model extra-pairs]
+				    (fn [tgt-metamodel [#^Model src-model _ extra-pairs]]
 					(trace "COUNT extra-pairs [1]:" extra-pairs)
 					(let [count-model (do-reduce-count 
 							   (.getName src-model)
@@ -494,9 +506,9 @@
 							   count-key
 							   (map second extra-pairs))]
 					  (insert *metamodel* count-model)
-					  (insert tgt-metamodel [count-model extra-pairs])
+					  (insert tgt-metamodel (Result. count-model new-prefix extra-pairs [:count count-key]))
 					  (connect src-model count-model))))]
-		 (Result. tgt-metamodel new-prefix extra-pairs :count))))])))
+		 (Result. tgt-metamodel new-prefix extra-pairs [:count]))))])))
 
 (defn dsum [sum-key]
   (fn [[metadata-fn data-fn]]
@@ -517,7 +529,7 @@
 		     tgt-metamodel (meta-view
 				    (str "." (sum-value-key sum-key))
 				    src-metamodel
-				    (fn [tgt-metamodel #^Model src-model extra-pairs]
+				    (fn [tgt-metamodel [#^Model src-model _ extra-pairs]]
 					(trace "SUM extra-pairs [1]:" extra-pairs)
 					(let [sum-model (do-reduce-sum 
 							 (.getName src-model)
@@ -526,9 +538,9 @@
 							 sum-key
 							 (map second extra-pairs))]
 					  (insert *metamodel* sum-model)
-					  (insert tgt-metamodel [sum-model extra-pairs])
+					  (insert tgt-metamodel (Result. sum-model new-prefix extra-pairs [:sum sum-key]))
 					  (connect src-model sum-model))))]
-		 (Result. tgt-metamodel new-prefix extra-pairs :sum))))])))
+		 (Result. tgt-metamodel new-prefix extra-pairs [:sum]))))])))
 
 (defn split-key-value [key]
   (str "split(" (or key "") ")"))
@@ -542,7 +554,7 @@
 	    [src-metadata src-metaprefix src-extra-keys] src-metadata-tuple
 	    label (split-key-value split-key)
 	    suffix (str "." label)
-	    split-metadata-tuple [src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key]) '(:split)]
+	    split-metadata-tuple (MetaResult. src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key]) '(:split))
 	    [split-metadata split-metaprefix split-extra-keys] split-metadata-tuple
 	    split-metadata-fn (fn [] split-metadata-tuple)
 	    tgt-metadata-tuple split-metadata-tuple
@@ -560,7 +572,7 @@
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs (concat src-extra-pairs [[split-key]])
 		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
-		   tgt-data-tuple (Result. tgt-metamodel tgt-prefix tgt-extra-pairs :split)]
+		   tgt-data-tuple (Result. tgt-metamodel tgt-prefix tgt-extra-pairs [:split])]
 	       ;; register it with the global metamodel
 	       (trace "SPLIT DATA SRC  " src-data-tuple)
 	       (insert *metamodel* tgt-metamodel)
@@ -572,13 +584,13 @@
 		    (doall
 		     (map
 		      (fn [#^Update insertion]
-			  (let [[src-model split-extra-pairs] (.getNewValue insertion)
+			  (let [[src-model prefix split-extra-pairs operation] (.getNewValue insertion)
 				dummy (println "NEW-VALUE"  split-extra-pairs)
 				chain-fn (fn [#^Model split-model split-extra-value]
 					     (println "SPLIT - producing new model" split-model split-extra-value)
-					     (let [split-model-tuple (list split-model (concat split-extra-pairs [[split-key split-extra-value]]))]
+					     (let [split-model-tuple (Result. split-model prefix (concat split-extra-pairs [[split-key split-extra-value]]) [:split :TODO])]
 					       (insert *metamodel* split-model) ;add to global metamodel
-					       (insert tgt-metamodel (doall split-model-tuple)) ;add to metamodel that has been passed downstream
+					       (insert tgt-metamodel split-model-tuple) ;add to metamodel that has been passed downstream
 					       ))]
 			    ;; we have received a model from an upstream operation...
 			    (trace "SPLIT - receiving new model" src-model split-extra-pairs)
@@ -597,7 +609,7 @@
 	    split-metadata-tuple (split-metadata-fn)
 	    [split-metadata split-metadata-prefix split-metadata-pairs split-operation] split-metadata-tuple
 	    ;; prepare metameta results
-	    metameta-metadata (seq-metadata 4) ;TODO - metadata should be set up for Result ... [Model, x, y, z]
+	    metameta-metadata result-metadata
 	    metameta-metadata-prefix (str "Meta-" split-metadata-prefix)
 	    metameta-metadata-pairs split-metadata-pairs ;TODO - investigate..
 	    ] 
@@ -628,7 +640,7 @@
 		      	(fn [#^Update insertion]
 		      	    (let [new-value  (.getNewValue insertion)
 				  dummy (println "NEW-VALUE" new-value)
-				  [split-model split-pairs] new-value
+				  [split-model _ split-pairs] new-value
 				  ;; I need to produce a metamodel to
 				  ;; surround the single split model
 				  ;; and make it look like it is a
@@ -684,7 +696,7 @@
 ;; pivot-values - e.g. years
 ;; value-key - e.g. :count(*) - needed to find type of new columns
 
-(defn pivot [pivot-key pivot-values value-key]
+(defn dpivot [pivot-key pivot-values value-key]
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)
 	    dummy (trace "PIVOT METADATA" pivot-key keys value-key)
@@ -700,17 +712,19 @@
 		   dummy (trace "PIVOT extra-pairs before pivot:" extra-pairs)
 		   extra-pairs (remove #(= (first %) pivot-key) extra-pairs)
 		   dummy (trace "PIVOT extra-pairs after pivot: " extra-pairs)
+     new-prefix (str prefix tgt-name)
 		   tgt-model (PivotModel. 
-			      (str prefix tgt-name)
+			      new-prefix
 			      src-metadata
 			      (map second extra-pairs)
 			      value-key
 			      pivot-values
 			      tgt-metadata)
-		   tgt-metamodel (meta-view pivot-key src-metamodel (fn [tgt-metamodel src-model extra-values] (connect src-model tgt-model)))]
+		   tgt-metamodel (meta-view pivot-key src-metamodel (fn [tgt-metamodel [src-model _ extra-values]] (connect src-model tgt-model)))
+     result (Result. tgt-model new-prefix extra-pairs [:pivot])]
 	       (insert *metamodel* tgt-model)
-	       (insert tgt-metamodel [tgt-model extra-pairs])
-	       [tgt-metamodel (str prefix ".union()") extra-pairs]))])
+	       (insert tgt-metamodel result)
+	       result))])
       ))
 
 ;; types

@@ -5,6 +5,8 @@
      [org.dada.core dql])
     (:import
      [org.dada.core
+      Attribute
+      Model
       Result])
     )
 
@@ -30,27 +32,31 @@
 ;; utils
 
 (defn reduction-value [[metadata-fn data-fn]]
-  (let [[metamodel] (data-fn)
-	model (first (first (.getExtant (.getData metamodel))))
+  (let [[#^Model metamodel] (data-fn)
+	#^Model model (.getModel (first (.getExtant (.getData metamodel))))
 	value (first (.getExtant (.getData model)))]
-    (.get (.getGetter (nth (.getAttributes (.getMetadata model)) 1)) value)))
+    (.get (.getGetter #^Attribute (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
 (defn flat-split-values [[metadata-fn data-fn]]
-  (let [[metamodel] (data-fn)
-	models (.getExtant (.getData metamodel))]
-    (reduce (fn [result [model path]] (conj result [(map second path) (.getExtant (.getData model))])) {} models)))
+  (reduce
+   (fn [values #^Result result]
+       (println (.getModel result) (.getPrefix result) "," (.getPairs result) "," (.getOperation result))
+       (conj values [(map second (.getPairs result)) (.getExtant (.getData (.getModel result)))]))
+   {}
+   (.getExtant (.getData (.getModel (data-fn))))))
 
 (defn valid-pairs [pairs]
+  (println "VALID PAIRS" pairs)
   (reduce (fn [current pair] (if (= (count pair) 2) (conj current pair) current)) '() pairs))
 
 (defn nested-split-values2 [result]
-  (if (instance? Result result)
-    (let [[model prefix pairs operation] result]
-      [[(second (first (valid-pairs pairs)))]
-       (reduce (fn [result new] (conj result (nested-split-values2 new))) {} (.getExtant (.getData model)))])
-    (let [[model pairs] result]
-      [[(second (first (valid-pairs pairs)))]
-       (.getExtant (.getData model))])))
+  (let [[#^Model model prefix pairs operation] result
+	key (second (first (valid-pairs pairs)))
+	values (.getExtant (.getData model))]
+    [[key]
+     (if (every? (fn [value] (instance? Result value)) values) ;TODO - is this the best I can do ?
+       (reduce (fn [map value] (conj map (nested-split-values2 value))) {} values)
+       values)]))
 
 (defn nested-split-values [[metadata-fn data-fn]]
     (second (nested-split-values2 (data-fn))))
