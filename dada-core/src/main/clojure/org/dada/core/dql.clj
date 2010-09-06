@@ -256,6 +256,7 @@
      (initialValue [] 0)
      (initialType [type] Integer)
      (currentValue [extra-values & values] ;TODO - should not need (into-array)
+		   (println "COUNT" extra-values values)
 		   (.create creator (into-array Object (concat extra-values values))))
      (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
@@ -462,18 +463,22 @@
 
 (defn dunion [& [model-name]]
   (fn [[metadata-fn direct-fn]]
-      (let [[src-metadata metaprefix extra-keys] (metadata-fn)]
+      (let [[src-metadata metaprefix extra-keys] (metadata-fn)
+	    tgt-metaprefix (str metaprefix ".union()")]
+	(println "DUNION METADATA" extra-keys)
 	[ ;; metadata
 	 (fn []
-	     [src-metadata (str metaprefix ".union()") extra-keys])
+	     (MetaResult. src-metadata tgt-metaprefix extra-keys [:union]))
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
 		   tgt-model (model (or model-name (str prefix ".union()")) src-metadata)
-		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel [src-model _ extra-pairs]] (connect src-model tgt-model)))]
+		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel [src-model _ extra-pairs]] (connect src-model tgt-model)))
+		   tgt-prefix (str prefix ".union()")]
+	       (println "DUNION DATA" extra-pairs)
 	       (insert *metamodel* tgt-model)
-	       (insert tgt-metamodel [tgt-model extra-pairs])
-	       (Result. tgt-metamodel (str prefix ".union()") extra-pairs :union)))])))
+	       (insert tgt-metamodel (Result. tgt-model tgt-prefix  extra-pairs [:union]))
+	       (Result. tgt-metamodel tgt-metaprefix extra-pairs [:union])))])))
 
 ;; extra keys are inserted into attribute list
 ;; extra values are carried in model's row in metamodel
@@ -585,7 +590,6 @@
 		     (map
 		      (fn [#^Update insertion]
 			  (let [[src-model prefix split-extra-pairs operation] (.getNewValue insertion)
-				dummy (println "NEW-VALUE"  split-extra-pairs)
 				chain-fn (fn [#^Model split-model split-extra-value]
 					     (println "SPLIT - producing new model" split-model split-extra-value)
 					     (let [split-model-tuple (Result. split-model prefix (concat split-extra-pairs [[split-key split-extra-value]]) [:split :TODO])]
