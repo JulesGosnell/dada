@@ -12,7 +12,7 @@
 ;;--------------------------------------------------------------------------------
 
 (defn layer [#^Result result]
-  (println "RESULT" (map (fn [i] (nth result i)) (range 4)))
+  (trace "RESULT" (map (fn [i] (nth result i)) (range 4)))
   (if (every? (fn [datum] (instance? Result datum)) (.getExtant (.getData (.getModel result))))
     :metadata
     :data))

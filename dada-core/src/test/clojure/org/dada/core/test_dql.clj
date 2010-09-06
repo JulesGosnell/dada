@@ -102,10 +102,6 @@
   (is (= (reduction-value (? (dcount)(dfrom "Whales")))
 	 (count whale-data))))
 
-(deftest test-dunion
-  (is (= (reduction-value (? (dcount)(dunion)(dsplit :id)(dfrom "Whales")))
-	 (count whale-data))))
-
 (deftest test-dsum
   (is (= (reduction-value (? (dsum :length)(dfrom "Whales")))
 	 (reduce (fn [total whale] (+ total (nth whale 4))) 0 whale-data))))
@@ -125,4 +121,20 @@
   (is (= (nested-split-values (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
 	 (nested-group-by [(fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)] whale-data))))
 
-;; TODO: extend tests to cover union and pivot...
+;; union
+
+(deftest test-dunion-1d-split
+  (is (= (reduction-value (? (dcount)(dunion)(dsplit :id)(dfrom "Whales")))
+ 	 (count whale-data))))
+
+;; (deftest test-dunion-2d-flat-split
+;;   (is (= (reduction-value (? (dcount)(dunion)(dsplit :id)(dsplit :type)(dfrom "Whales")))
+;;  	 (count whale-data))))
+
+;; (deftest test-dunion-2d-nested-split
+;;   (is (= (reduction-value (? (dcount)(dunion)(dsplit :id list [(dsplit :type)])(dfrom "Whales")))
+;;  	 (count whale-data))))
+
+;; try a simple pivot...
+;; ...  and a nested pivot...
+

@@ -22,7 +22,7 @@ public class Result implements Serializable, Indexed {
 		this.prefix = prefix;
 		this.pairs = pairs;
 		this.operation = operation;
-		System.out.println("RESULT: "+prefix+", "+pairs+", "+operation);
+		//System.out.println("RESULT: "+prefix+", "+pairs+", "+operation);
 	}
 
 	public Model<?, ?> getModel() {

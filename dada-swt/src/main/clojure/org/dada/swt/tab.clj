@@ -20,16 +20,16 @@
 ;;   ;; (let [#^CTabItem item (.getSelection folder)
 ;;   ;; 	datum (.getData item)
 ;;   ;; 	model (first datum)
-;;   ;; 	[old] (swap! selection (fn [[old current] new](println "SELECTION" current "->" new) [current new]) model)]
-;;   ;;   (println "OLD" old)
+;;   ;; 	[old] (swap! selection (fn [[old current] new](trace "SELECTION" current "->" new) [current new]) model)]
+;;   ;;   (trace "OLD" old)
 ;;   ;;   ;;(if old (.deregisterView model view))
 ;;   ;;   (if datum (.setControl item (.getControl (drill-down-fn folder datum))))
 ;;   ;;   (.pack folder))
-;;   (println "SELECT" item)
+;;   (trace "SELECT" item)
 ;;   )
 
 ;; (defn tab-deselect [#^CTabItem item]
-;;   (println "DESELECT" item)
+;;   (trace "DESELECT" item)
 ;;   )
 
 ;; (defmethod create :split [operation model #^Composite parent service-factory]
@@ -59,7 +59,7 @@
 ;;      ;; detach
 ;;      (fn [#^Model model #^View view]
 ;; 	 (let [data (.registerView model view)]
-;; 	   (println "DEREGISTER - NYI:" data)))
+;; 	   (trace "DEREGISTER - NYI:" data)))
 ;;      ;; update
 ;;      (fn [insertions alterations deletions]
 ;; 	 (.asyncExec
@@ -84,14 +84,14 @@
 ;; 			    )))
 ;; 	      	    insertions))
 ;; 		  (if (or (not (empty? alterations))(not (empty? deletions)))
-;; 		    (println "TABS: alteration/deletion NYI"))
+;; 		    (trace "TABS: alteration/deletion NYI"))
 ;; 	      	  (.pack parent))))
 ;; 	  ))]
 ;;     ))
 
 (defn tab-insert [element #^Composite parent]
   (let [dummy element]
-    (println "TAB INSERT" element)
+    (trace "TAB INSERT" element)
     (let [#^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))
 	  control (create element parent)]
       (.setText item (pr-str (extract-key element)))

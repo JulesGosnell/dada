@@ -18,8 +18,8 @@
 (defmethod create :data [element #^Composite parent] (nattable-make element parent))
   
 (defmethod extract-key :default [result]
-  (println "EXTRACT KEY" (.getPairs result))
-  (reduce (fn [output [key value]] (if value (conj output value) output)) nil (.getPairs result)))
+  (trace "EXTRACT KEY" (.getPairs result))
+  (reduce (fn [output [key value]] (if value (conj output value) output)) [] (.getPairs result)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@
 	     [metamodel] results
 	     shell (create-shell *display* (.getName metamodel))
 	     component (create results shell)]
-	 (println results)
+	 (trace results)
 	 (.pack component)
 	 (.pack shell)))))
 
@@ -59,16 +59,20 @@
 
 (if false
   (do
+    (inspect (? (dfrom "Whales")))
     (inspect (? (dcount)(dfrom "Whales")))
     (inspect (? (dsplit 2)(dfrom "Whales")))
     (inspect (? (dcount)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dsum 4)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
     (inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dunion)(dcount)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dunion)(dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
+    (inspect (? (dcount)(dunion)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dcount)(dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
     (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
+    (inspect (? (dunion)(dsplit 3)(dsplit 2)(dfrom "Whales")))
     (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+    (inspect (? (dunion)(dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
+    (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
     
     ;; needs tidying up...
     (inspect (? (dfrom "Whales")))

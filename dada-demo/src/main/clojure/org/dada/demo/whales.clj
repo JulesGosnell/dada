@@ -1,24 +1,23 @@
 (ns 
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
- (:use [org.dada core web])
- (:use [org.dada core dsl])
- (:import [clojure.lang
-	   ])
- (:import [java.math
-	   ])
- (:import [java.util
-	   Collection
-	   Date
-	   NavigableSet
-	   TreeSet
-	   ])
- (:import [org.dada.core
-	   Batcher
-	   Creator
-	   Metadata
-	   Model
-	   ])
+ (:use 
+  [org.dada core]
+  [org.dada.core dql]
+  [org.dada.swt new])
+ (:import
+  [java.util
+   Collection
+   Date
+   NavigableSet
+   TreeSet
+   ]
+  [org.dada.core
+   Batcher
+   Creator
+   Metadata
+   Model
+   ])
  )
 
 ;;----------------------------------------------------------------------------------------------------------------------
@@ -119,7 +118,7 @@
 
 (def #^Model whales-model (model "Whales" whale-metadata))
 
-(start-server)
+;;(start-server)
 
 (insert *metamodel* whales-model)
 
@@ -247,46 +246,70 @@
 
 ;;--------------------------------------------------------------------------------
 
-;;(start-client)
-(start-jetty 8080)
-
 ;;(? (split :type)(from "Whales"))
 ;;(? (split :ocean nil [(ccount)])(from "Whales"))
 ;;(? (pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)(from "Whales"))
 
-;;(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )]) (from "Whales"))
-;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )]) (from "Whales"))
 
-;;(? (union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
-;;(? (union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
+(if false
+  (do
 
+    ;; split by type
+    (inspect (? (dsplit :type)(dfrom "Whales")))
+
+    ;; count by ocean
+    (inspect (? (dunion)(dcount)(dsplit :ocean)(dfrom "Whales")))
+
+    ;; count by type and ocean
+    (inspect (? (dunion)(dcount)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
+
+    ;; weight by type and ocean
+    (inspect (? (dunion)(dsum :weight)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
+
+;; TODO
+;; split multiple dimensions at same time...
+;; reduce multiple columns at same time...
+;; rethink pivot 
+;; support adding/deleting UI rows
+;; support updating UI rows
+
+  ;;(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )]) (from "Whales"))
+  ;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )]) (from "Whales"))
+
+  ;; weight/ocean/type
+  (inspect (? (dsplit :type nil [(dpivot :ocean oceans (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :ocean )])(dfrom "Whales")))
+  
+  ;; weight/type/ocean
+  (inspect (? (dsplit :ocean nil [(dpivot :type types (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :type )])(dfrom "Whales")))
+
+  ))
 ;;--------------------------------------------------------------------------------
 
-(import org.dada.core.Attribute)
+;; (import org.dada.core.Attribute)
 
-(defmulti mutate (fn [#^Attribute attribute datum] (.getKey attribute)))
+;; (defmulti mutate (fn [#^Attribute attribute datum] (.getKey attribute)))
 
-(defmethod mutate :version [attribute datum] (inc (.get (.getGetter attribute) datum)))
-(defmethod mutate :time [attribute datum] (Date.))
-(defmethod mutate :reporter [attribute datum] (rnd reporters))
-(defmethod mutate :ocean [attribute datum] (rnd oceans))
-(defmethod mutate :length [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-(defmethod mutate :weight [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-(defmethod mutate :default [attribute datum] (.get (.getGetter attribute) datum))
+;; (defmethod mutate :version [attribute datum] (inc (.get (.getGetter attribute) datum)))
+;; (defmethod mutate :time [attribute datum] (Date.))
+;; (defmethod mutate :reporter [attribute datum] (rnd reporters))
+;; (defmethod mutate :ocean [attribute datum] (rnd oceans))
+;; (defmethod mutate :length [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+;; (defmethod mutate :weight [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+;; (defmethod mutate :default [attribute datum] (.get (.getGetter attribute) datum))
 
-(.start
- (Thread.
-  (fn []
-      (doall
-       (map
-	(fn [n]
-	    (let [model whales-model
-		  metadata (.getMetadata model)
-		  old-value (rnd (.getExtant (.getData model)))
-		  new-value (.create (.getCreator metadata) (into-array Object (map #(mutate % old-value) (.getAttributes metadata))))]
-	      (update model old-value new-value)
-	      (Thread/sleep 500)))
-	(repeat 0))))))
+;; (.start
+;;  (Thread.
+;;   (fn []
+;;       (doall
+;;        (map
+;; 	(fn [n]
+;; 	    (let [model whales-model
+;; 		  metadata (.getMetadata model)
+;; 		  old-value (rnd (.getExtant (.getData model)))
+;; 		  new-value (.create (.getCreator metadata) (into-array Object (map #(mutate % old-value) (.getAttributes metadata))))]
+;; 	      (update model old-value new-value)
+;; 	      (Thread/sleep 500)))
+;; 	(repeat 0))))))
 
 ;;--------------------------------------------------------------------------------
 
