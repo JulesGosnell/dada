@@ -18,6 +18,7 @@ public class MetaResult  implements Serializable, Indexed {
 		this.prefix = prefix;
 		this.pairs = pairs;
 		this.operation = operation;
+		System.out.println("METARESULT: "+prefix+", "+pairs+", "+operation);
 	}
 
 	public Metadata<?, ?> getMetedata() {

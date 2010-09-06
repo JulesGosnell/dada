@@ -95,13 +95,15 @@
 (defn nested-group-by [[fns-head & fns-tail] data]
   (reduce (fn [current [key val]] (conj current [key (if fns-tail (nested-group-by fns-tail val) val)])) {} (group-by (juxt fns-head) data)))
 
-
-
 ;;--------------------------------------------------------------------------------
 ;; tests
 
 (deftest test-dcount
   (is (= (reduction-value (? (dcount)(dfrom "Whales")))
+	 (count whale-data))))
+
+(deftest test-dunion
+  (is (= (reduction-value (? (dcount)(dunion)(dsplit :id)(dfrom "Whales")))
 	 (count whale-data))))
 
 (deftest test-dsum
@@ -122,3 +124,5 @@
 (deftest test-nested-split-2d
   (is (= (nested-split-values (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
 	 (nested-group-by [(fn [[_ _ type]] type)(fn [[_ _ _ ocean]] ocean)] whale-data))))
+
+;; TODO: extend tests to cover union and pivot...
