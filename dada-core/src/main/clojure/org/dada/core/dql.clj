@@ -415,7 +415,7 @@
   (let [prefix (.getName src-model)
 	metaprefix (str "Meta-" prefix)]
     [ ;; metadata
-     (fn [] (MetaResult. (.getMetadata src-model) metaprefix '() [:from]))
+     (fn [] (MetaResult. result-metadata metaprefix '() [:from] (.getMetadata src-model)))
      ;; data
      (fn []
 	 (let [metamodel (model metaprefix result-metadata)]
@@ -457,57 +457,48 @@
      (proxy [View] []
 	    (update [insertions alterations deletions]
 		    (doall (map (fn [#^Update insertion]
-				    (trace "INSERTION" (.getNewValue insertion))
 				    (f tgt-metamodel (.getNewValue insertion))) insertions)))))
     tgt-metamodel))
 
 (defn dunion [& [model-name]]
   (fn [[metadata-fn direct-fn]]
-      (let [[src-metadata metaprefix extra-keys] (metadata-fn)
+      (let [[src-metadata metaprefix extra-keys _ child-metadata] (metadata-fn)
 	    tgt-metaprefix (str metaprefix ".union()")]
-	(trace "DUNION METADATA" extra-keys)
 	[ ;; metadata
 	 (fn []
-	     (MetaResult. src-metadata tgt-metaprefix (drop-last extra-keys) [:union]))
+	     (MetaResult. src-metadata tgt-metaprefix [] [:union] child-metadata))
 	 ;; direct
 	 (fn []
-	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   extra-pairs (drop-last extra-pairs)
-		   tgt-model (model (or model-name (str prefix ".union()")) src-metadata)
-		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel insertion]
-									 (let [[src-model _ extra-pairs] insertion]
-									   (trace "INSERTION: " src-model extra-pairs)
-									   (connect src-model tgt-model))))
-		   tgt-prefix (str prefix ".union()")]
-	       (trace "DUNION DATA" extra-pairs)
+	     (let [[#^Model src-metamodel #^String src-metaprefix #^Collection src-metapairs] (direct-fn)
+		   src-prefix (.substring src-metaprefix 5) ;TODO - strips off "Meta-" - yeugh!
+		   tgt-prefix (str src-prefix ".union()")
+		   tgt-model (model (or model-name tgt-prefix) child-metadata)
+		   tgt-metamodel (meta-view ".union()" src-metamodel (fn [tgt-metamodel insertion] (let [[src-model _ src-pairs] insertion] (connect src-model tgt-model))))]
 	       (insert *metamodel* tgt-model)
-	       (insert tgt-metamodel (Result. tgt-model tgt-prefix  extra-pairs [:union]))
-	       (Result. tgt-metamodel tgt-metaprefix extra-pairs [:union])))])))
+	       (insert tgt-metamodel (Result. tgt-model tgt-prefix [] [:union]))
+	       (Result. tgt-metamodel tgt-metaprefix [] [:union])))])))
 
 ;; extra keys are inserted into attribute list
 ;; extra values are carried in model's row in metamodel
 ;; each split adds an extra key/value downstream that we may need to unwrap upstream
 (defn dcount [& [count-key]]
   (fn [[metadata-fn data-fn]]
-      (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "COUNT METADATA" metaprefix extra-keys)
+      (let [[#^Metadata _ metaprefix extra-keys _ src-metadata] (metadata-fn)
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
 	[ ;; metadata
 	 (fn []
-	     (MetaResult. tgt-metadata (str metaprefix "." (count-value-key count-key)) extra-keys [:count]))
+	     (MetaResult. tgt-metadata (str metaprefix "." (count-value-key count-key)) extra-keys [:count] tgt-metadata))
 	 ;; direct
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
-		     dummy (trace "COUNT extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (count-value-key count-key))
 		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (count-value-key count-key))
 				    src-metamodel
 				    (fn [tgt-metamodel [#^Model src-model _ extra-pairs]]
-					(trace "COUNT extra-pairs [1]:" extra-pairs)
 					(let [count-model (do-reduce-count 
 							   (.getName src-model)
 							   (.getMetadata src-model)
@@ -521,25 +512,22 @@
 
 (defn dsum [sum-key]
   (fn [[metadata-fn data-fn]]
-      (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "SUM METADATA" metaprefix extra-keys)
+      (let [[#^Metadata _ metaprefix extra-keys _ src-metadata] (metadata-fn)
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
 	[ ;; metadata
 	 (fn []
-	     [tgt-metadata (str metaprefix "." (sum-value-key sum-key)) extra-keys])
+	     (MetaResult. tgt-metadata (str metaprefix "." (sum-value-key sum-key)) extra-keys [:sum sum-key] tgt-metadata))
 	 ;; data
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
-		     dummy (trace "SUM extra-pairs [0]:" extra-pairs)
 		     new-prefix (str prefix "." (sum-value-key sum-key))
 		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (sum-value-key sum-key))
 				    src-metamodel
 				    (fn [tgt-metamodel [#^Model src-model _ extra-pairs]]
-					(trace "SUM extra-pairs [1]:" extra-pairs)
 					(let [sum-model (do-reduce-sum 
 							 (.getName src-model)
 							 (.getMetadata src-model)
@@ -560,10 +548,10 @@
 (defn dsplit2 [split-key split-key-fn]
   (fn [[src-metadata-fn direct-fn]]
       (let [src-metadata-tuple (src-metadata-fn)
-	    [src-metadata src-metaprefix src-extra-keys] src-metadata-tuple
+	    [src-metadata src-metaprefix src-extra-keys _ child-metadata] src-metadata-tuple
 	    label (split-key-value split-key)
 	    suffix (str "." label)
-	    split-metadata-tuple (MetaResult. src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key]) '(:split))
+	    split-metadata-tuple (MetaResult. src-metadata (str src-metaprefix suffix) (concat src-extra-keys [split-key]) '(:split) child-metadata)
 	    [split-metadata split-metaprefix split-extra-keys] split-metadata-tuple
 	    split-metadata-fn (fn [] split-metadata-tuple)
 	    tgt-metadata-tuple split-metadata-tuple
@@ -576,17 +564,13 @@
 	 (fn []
 	     (let [src-data-tuple (direct-fn)
 		   [#^Model src-metamodel src-prefix #^Collection src-extra-pairs] src-data-tuple
-		   dummy (trace "SPLIT src-extra-pairs" src-prefix src-extra-pairs)
 		   tgt-metamodel (model (str (.getName src-metamodel) suffix) (.getMetadata src-metamodel))
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs (concat src-extra-pairs [[split-key]])
-		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
 		   tgt-data-tuple (Result. tgt-metamodel tgt-prefix tgt-extra-pairs [:split])]
 	       ;; register it with the global metamodel
-	       (trace "SPLIT DATA SRC  " src-data-tuple)
 	       (insert *metamodel* tgt-metamodel)
 	       ;; view upstream metamodel for the arrival or results
-	       (trace "SPLIT - watching" src-metamodel)
 	       (attach
 		src-metamodel
 		(fn [insertions alterations deletions]
@@ -595,13 +579,11 @@
 		      (fn [#^Update insertion]
 			  (let [[src-model prefix split-extra-pairs operation] (.getNewValue insertion)
 				chain-fn (fn [#^Model split-model split-extra-value]
-					     (trace "SPLIT - producing new model" split-model split-extra-value)
 					     (let [split-model-tuple (Result. split-model prefix (concat split-extra-pairs [[split-key split-extra-value]]) [:split :TODO])]
 					       (insert *metamodel* split-model) ;add to global metamodel
 					       (insert tgt-metamodel split-model-tuple) ;add to metamodel that has been passed downstream
 					       ))]
 			    ;; we have received a model from an upstream operation...
-			    (trace "SPLIT - receiving new model" src-model split-extra-pairs)
 			    ;; plug src-> split -> [chain defined above]
 			    (do-split src-model split-key (or split-key-fn list) identity chain-fn)))
 		      insertions))))
@@ -615,64 +597,65 @@
 	    split-tuple (thread-chain [(dsplit2 split-key (or split-key-fn list))] src-tuple)
 	    [split-metadata-fn split-data-fn] split-tuple
 	    split-metadata-tuple (split-metadata-fn)
-	    [split-metadata split-metadata-prefix split-metadata-pairs split-operation] split-metadata-tuple
+	    [split-metadata split-metadata-prefix split-metadata-pairs split-operation split-child-metadata] split-metadata-tuple
 	    ;; prepare metameta results
 	    metameta-metadata result-metadata
 	    metameta-metadata-prefix (str "Meta-" split-metadata-prefix)
 	    metameta-metadata-pairs split-metadata-pairs ;TODO - investigate..
 	    ] 
 	(if subchain
-	  [
-	   (fn []
-	       ;; the metametadata/metadata is pretty much the same as the metadata coming out of the split
-	       ;; we just have to alter the model name to encode the extra level of meta-ness...
-	       [split-metadata metameta-metadata-prefix split-metadata-pairs split-operation] ;;[metameta-metadata metameta-model-name metameta-metadata-pairs]
-	       )
-	   (fn []
-	       ;; the metadata/data 
-	       (let [split-data-tuple (split-data-fn)
-		     dummy (trace "SPLIT-DATA-TUPLE" (map (fn [i] (nth split-data-tuple i)) (range 3)))
-		     [split-data-metamodel split-data-prefix split-data-pairs split-data-operation] split-data-tuple
-		     dummy (trace "SPLIT-DATA-PAIRS" split-data-pairs)
-		     ;;
-		     tgt-metametamodel (model metameta-metadata-prefix metameta-metadata) ;TODO model-name incomplete ?
-		     tgt-prefix split-data-prefix
-		     tgt-extra-pairs split-data-pairs ;TODO: does not seem to be coming through correctly
-		     tgt-operation split-data-operation
-		     ]
-		 (attach 
-		  split-data-metamodel
-		  (fn [insertions alterations deletions]
-		      (doall
-		       (map
-		      	(fn [#^Update insertion]
-		      	    (let [new-value  (.getNewValue insertion)
-				  dummy (trace "NEW-VALUE" new-value)
-				  [split-model _ split-pairs] new-value
-				  ;; I need to produce a metamodel to
-				  ;; surround the single split model
-				  ;; and make it look like it is a
-				  ;; singleton..
-				  single-data-metamodel (model (.getName split-model) result-metadata)
-				  single-data-fn (fn []
-						     (Result.
-						      single-data-metamodel
-						      split-data-prefix
-						      split-pairs
-						      split-data-operation))
-				  ;; plug this into subchain
-				  dummy (insert single-data-metamodel (.getNewValue insertion))
-				  [sub-metadata-fn sub-data-fn] (thread-chain subchain [split-metadata-fn single-data-fn])
-				  ]
-			      ;; and insert resulting metamodel into metametamodel
-			      (insert tgt-metametamodel (sub-data-fn))
+	  (let []
+	    [
+	     (fn []
+		 ;; the metametadata/metadata is pretty much the same as the metadata coming out of the split
+		 ;; we just have to alter the model name to encode the extra level of meta-ness...
+		 (MetaResult.
+		  split-metadata
+		  metameta-metadata-prefix
+		  split-metadata-pairs
+		  split-operation 
+		  result-metadata))
+	     (fn []
+		 ;; the metadata/data 
+		 (let [split-data-tuple (split-data-fn)
+		       [split-data-metamodel split-data-prefix split-data-pairs split-data-operation] split-data-tuple
+		       tgt-metametamodel (model metameta-metadata-prefix metameta-metadata) ;TODO model-name incomplete ?
+		       tgt-prefix split-data-prefix
+		       tgt-extra-pairs split-data-pairs ;TODO: does not seem to be coming through correctly
+		       tgt-operation split-data-operation
+		       ]
+		   (attach 
+		    split-data-metamodel
+		    (fn [insertions alterations deletions]
+			(doall
+			 (map
+			  (fn [#^Update insertion]
+			      (let [new-value  (.getNewValue insertion)
+				    [#^Model split-model _ split-pairs] new-value
+				    ;; I need to produce a metamodel to
+				    ;; surround the single split model
+				    ;; and make it look like it is a
+				    ;; singleton..
+				    single-data-metamodel (model (.getName split-model) result-metadata)
+				    single-data-fn (fn []
+						       (Result.
+							single-data-metamodel
+							split-data-prefix
+							split-pairs
+							split-data-operation))
+				    ;; plug this into subchain
+				    dummy (insert single-data-metamodel (.getNewValue insertion))
+				    [sub-metadata-fn sub-data-fn] (thread-chain subchain [split-metadata-fn single-data-fn])
+				    ]
+				;; and insert resulting metamodel into metametamodel
+				(insert tgt-metametamodel (sub-data-fn))
+				)
 			      )
-			    )
-		      	insertions))
-		      ))
-		 ;; return data-tuple
-		 (Result. tgt-metametamodel tgt-prefix tgt-extra-pairs tgt-operation)))
-	   ]
+			  insertions))
+			))
+		   ;; return data-tuple
+		   (Result. tgt-metametamodel tgt-prefix tgt-extra-pairs tgt-operation)))
+	     ])
 	  ;; else - return simple split results directly...
 	  split-tuple))))
 
@@ -707,7 +690,6 @@
 (defn dpivot [pivot-key pivot-values value-key]
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "PIVOT METADATA" pivot-key keys value-key)
 	    extra-keys (remove #(= % pivot-key) extra-keys)
 	    tgt-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
 	    tgt-name (str ".pivot(" value-key "/" pivot-key")")
@@ -718,9 +700,7 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   dummy (trace "PIVOT extra-pairs before pivot:" extra-pairs)
 		   extra-pairs (remove #(= (first %) pivot-key) extra-pairs)
-		   dummy (trace "PIVOT extra-pairs after pivot: " extra-pairs)
 		   tgt-prefix (str prefix tgt-name)
 		   tgt-model (PivotModel. 
 			      tgt-prefix

@@ -116,12 +116,13 @@
 	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
 
 	body-layer-stack (DefaultBodyLayerStack.
-			   (BlinkLayer.
-			    (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
-			    body-data-provider
-			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
-			    column-property-accessor
-			    config-registry))
+			   ;; (BlinkLayer.
+			   (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
+			   ;;  body-data-provider
+			   ;;  (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
+			   ;;  column-property-accessor
+			   ;;  config-registry)
+			   )
 
 	column-header-data-provider (DefaultColumnHeaderDataProvider. property-names property-name-to-label)
 	column-header-data-layer (DefaultColumnHeaderDataLayer. column-header-data-provider)

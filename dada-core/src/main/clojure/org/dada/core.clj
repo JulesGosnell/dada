@@ -217,6 +217,7 @@
 (defn #^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
   [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
+  (println class-name  superclass primary-keys version-keys  version-comparator attributes)
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
     (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys version-comparator attributes)))
 

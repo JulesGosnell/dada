@@ -254,17 +254,17 @@
 (if false
   (do
 
-    ;; split by type
-    (inspect (? (dsplit :type)(dfrom "Whales")))
+    ;; split by ocean
+    (inspect (? (dsplit :ocean)(dfrom "Whales")))
 
-    ;; count by ocean
-    (inspect (? (dunion)(dcount)(dsplit :ocean)(dfrom "Whales")))
+    ;; count by type
+    (inspect (? (dunion)(dcount)(dsplit :type)(dfrom "Whales")))
 
     ;; count by type and ocean
     (inspect (? (dunion)(dcount)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
 
     ;; weight by type and ocean
-    (inspect (? (dunion)(dsum :weight)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
+    (inspect (? (dunion)(dsum :length)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
 
 ;; TODO
 ;; split multiple dimensions at same time...

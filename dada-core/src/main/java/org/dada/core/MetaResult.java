@@ -11,17 +11,19 @@ public class MetaResult  implements Serializable, Indexed {
 	private final String prefix;
 	private final Collection<Collection<Object>> pairs;
 	private final Collection<Object> operation;
+        private final  Metadata<?, ?> childMetadata;
 	
-	public MetaResult(Metadata<?, ?> metadata, String prefix, Collection<Collection<Object>> pairs, Collection<Object> operation) {
+        public MetaResult(Metadata<?, ?> metadata, String prefix, Collection<Collection<Object>> pairs, Collection<Object> operation, Metadata<?, ?> childMetadata) {
 		super();
 		this.metadata = metadata;
 		this.prefix = prefix;
 		this.pairs = pairs;
 		this.operation = operation;
+		this.childMetadata = childMetadata;
 		//System.out.println("METARESULT: "+prefix+", "+pairs+", "+operation);
 	}
 
-	public Metadata<?, ?> getMetedata() {
+	public Metadata<?, ?> getMetadata() {
 		return metadata;
 	}
 
@@ -37,11 +39,15 @@ public class MetaResult  implements Serializable, Indexed {
 		return operation;
 	}
 
+	public Metadata<?, ?> getChildMetadata() {
+		return childMetadata;
+	}
+
 	// Indexed
 	
 	@Override
 	public int count() {
-		return 4;
+		return 5;
 	}
 
 	@Override
@@ -56,6 +62,7 @@ public class MetaResult  implements Serializable, Indexed {
 		case 1: return prefix;
 		case 2: return pairs;
 		case 3: return operation;
+		case 4: return childMetadata;
 		default: return notFound;
 		}
 	}
