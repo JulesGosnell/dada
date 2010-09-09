@@ -9,8 +9,8 @@
   [org.eclipse.swt.widgets Composite Display Shell]
   [ca.odell.glazedlists GlazedLists SortedList]
   [net.sourceforge.nattable NatTable]
-  [net.sourceforge.nattable.blink BlinkLayer]
-  [net.sourceforge.nattable.config ConfigRegistry DefaultNatTableStyleConfiguration]
+  [net.sourceforge.nattable.blink BlinkConfigAttributes BlinkLayer IBlinkingCellResolver]
+  [net.sourceforge.nattable.config CellConfigAttributes ConfigRegistry DefaultNatTableStyleConfiguration]
   [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor IRowIdAccessor]
   [net.sourceforge.nattable.extension.glazedlists GlazedListsEventLayer GlazedListsSortModel]
   [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
@@ -22,6 +22,7 @@
   [net.sourceforge.nattable.selection SelectionLayer]
   [net.sourceforge.nattable.selection.config DefaultSelectionStyleConfiguration]
   [net.sourceforge.nattable.sort SortHeaderLayer]
+  [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
   [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
   [net.sourceforge.nattable.viewport ViewportLayer]
 
@@ -114,21 +115,60 @@
 
 	config-registry (ConfigRegistry.)
 	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
-
-	body-layer-stack (DefaultBodyLayerStack.
-			   ;; (BlinkLayer.
-			   (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
-			   ;;  body-data-provider
-			   ;;  (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
-			   ;;  column-property-accessor
-			   ;;  config-registry)
-			   )
+	
+	glazed-lists-event-layer (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
+	blink-layer (BlinkLayer.
+			    glazed-lists-event-layer
+			    body-data-provider
+			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
+			    column-property-accessor
+			    config-registry)
+	dummy (do
+		(.registerConfigAttribute config-registry 
+					  (BlinkConfigAttributes/BLINK_RESOLVER)
+					  (proxy [IBlinkingCellResolver][] (resolve [oldValue newValue] (into-array String ["up"])))
+					  (DisplayMode/NORMAL))
+		(.registerConfigAttribute 
+		 config-registry
+		 (CellConfigAttributes/CELL_STYLE)
+		 (doto (Style.) (.setAttributeValue (CellStyleAttributes/BACKGROUND_COLOR) (.getSystemColor (.getDisplay parent) (SWT/COLOR_GREEN))))
+		 (DisplayMode/NORMAL)
+		 "up")
+		)
+	body-layer-stack (DefaultBodyLayerStack. blink-layer)
 
 	column-header-data-provider (DefaultColumnHeaderDataProvider. property-names property-name-to-label)
 	column-header-data-layer (DefaultColumnHeaderDataLayer. column-header-data-provider)
 	column-header-layer (ColumnHeaderLayer. column-header-data-layer body-layer-stack (.getSelectionLayer body-layer-stack))
-	column-header-layer-stack (proxy [AbstractLayerTransform] [])]
-  
+	column-header-layer-stack (proxy [AbstractLayerTransform] [])
+
+	view (proxy [View][]
+ 		    (#^void update [#^Collection indertions  #^Collection alterations #^Collection deletions]
+ 			    ;;(doall (map insert insertions))
+ 			    (doall
+			     (map
+			      (fn [#^Update alteration]
+				  (let [old-value (.getOldValue alteration)
+					new-value (.getNewValue alteration)]
+				    ;; diff old and new
+				    (doall
+				     (map
+				      (fn [getter property-name]
+					  (let [old (.get getter old-value)
+						new (.get getter new-value)]
+					    (if (not (= old new))
+					      (do
+						(.propertyChange
+						 glazed-lists-event-layer
+						 (java.beans.PropertyChangeEvent. old-value property-name old new))))))
+				      getters
+				      property-names))))
+			      alterations))
+ 			    ;;(doall (map delete deletions))
+			    ))
+	]
+    (.registerView model view)
+    
     (.setUnderlyingLayer column-header-layer-stack (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
 
     ;;--------------------------------------------------------------------------------

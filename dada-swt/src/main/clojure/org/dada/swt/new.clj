@@ -18,7 +18,6 @@
 (defmethod create :data [element #^Composite parent] (nattable-make element parent))
   
 (defmethod extract-key :default [result]
-  (trace "EXTRACT KEY" (.getPairs result))
   (reduce (fn [output [key value]] (if value (conj output value) output)) [] (.getPairs result)))
 
 ;;--------------------------------------------------------------------------------
@@ -44,21 +43,21 @@
 	 (.pack component)
 	 (.pack shell)))))
 
-;; set up a test model
-
-(def whale-data
-     ;;[id, version, type, ocean, length]
-     [[0 0 :blue :atlantic 100]
-      [1 0 :blue :pacific  100]
-      [2 0 :grey :atlantic 50]
-      [3 0 :grey :pacific  50]])
-
-(def whales (model "Whales" (seq-metadata (count (first whale-data)))))
-(insert *metamodel* whales)
-(insert-n whales whale-data)
-
 (if false
   (do
+    ;; set up a test model
+
+    (def whale-data
+	 ;;[id, version, type, ocean, length]
+	 [[0 0 :blue :atlantic 100]
+	  [1 0 :blue :pacific  100]
+	  [2 0 :grey :atlantic 50]
+	  [3 0 :grey :pacific  50]])
+
+    (def whales (model "Whales" (seq-metadata (count (first whale-data)))))
+    (insert *metamodel* whales)
+    (insert-n whales whale-data)
+
     (inspect (? (dfrom "Whales")))
     (inspect (? (dcount)(dfrom "Whales")))
     (inspect (? (dsplit 2)(dfrom "Whales")))

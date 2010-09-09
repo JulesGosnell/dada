@@ -13,8 +13,8 @@
    TreeSet
    ]
   [org.dada.core
+   Attribute
    Batcher
-
    Creator
    Metadata
    Model
@@ -273,6 +273,8 @@
     ;; nested split by type then ocean
     (inspect (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
 
+    (inspect (? (dsplit :type list [(dunion)(dsplit :ocean)])(dfrom "Whales")))
+
     ;; sum weights per ocean
     (inspect (? (dsum :weight)(dsplit :ocean)(dfrom "Whales")))
 
@@ -306,31 +308,28 @@
   ))
 ;;--------------------------------------------------------------------------------
 
-;; (import org.dada.core.Attribute)
+(defmulti mutate (fn [#^Attribute attribute datum] (.getKey attribute)))
 
-;; (defmulti mutate (fn [#^Attribute attribute datum] (.getKey attribute)))
+(defmethod mutate :version [attribute datum] (inc (.get (.getGetter attribute) datum)))
+(defmethod mutate :time [attribute datum] (Date.))
+(defmethod mutate :reporter [attribute datum] (rnd reporters))
+(defmethod mutate :ocean [attribute datum] (rnd oceans))
+(defmethod mutate :length [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+(defmethod mutate :weight [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+(defmethod mutate :default [attribute datum] (.get (.getGetter attribute) datum))
 
-;; (defmethod mutate :version [attribute datum] (inc (.get (.getGetter attribute) datum)))
-;; (defmethod mutate :time [attribute datum] (Date.))
-;; (defmethod mutate :reporter [attribute datum] (rnd reporters))
-;; (defmethod mutate :ocean [attribute datum] (rnd oceans))
-;; (defmethod mutate :length [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-;; (defmethod mutate :weight [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-;; (defmethod mutate :default [attribute datum] (.get (.getGetter attribute) datum))
+(defn create-mutation []
+  (let [model whales-model
+	metadata (.getMetadata model)
+	old-value (rnd (.getExtant (.getData model)))
+	new-value (.create (.getCreator metadata) (into-array Object (map #(mutate % old-value) (.getAttributes metadata))))]
+    ;;(println "MUTATING" old-value "->" new-value)
+    (update model old-value new-value)))
 
-;; (.start
-;;  (Thread.
-;;   (fn []
-;;       (doall
-;;        (map
-;; 	(fn [n]
-;; 	    (let [model whales-model
-;; 		  metadata (.getMetadata model)
-;; 		  old-value (rnd (.getExtant (.getData model)))
-;; 		  new-value (.create (.getCreator metadata) (into-array Object (map #(mutate % old-value) (.getAttributes metadata))))]
-;; 	      (update model old-value new-value)
-;; 	      (Thread/sleep 500)))
-;; 	(repeat 0))))))
+(defn start-model []
+  (.start (Thread. (fn [] (doall (map (fn [n] (create-mutation)(Thread/sleep 500)) (repeat 0)))))))
+
+(if (not *compile-files*) (start-model))
 
 ;;--------------------------------------------------------------------------------
 
