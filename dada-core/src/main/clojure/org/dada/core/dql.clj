@@ -594,17 +594,17 @@
   (fn [src-tuple]
       (let [[src-metadata-fn src-data-fn] src-tuple
 	    ;; thread src into outer split
-	    split-tuple (thread-chain [(dsplit2 split-key (or split-key-fn list))] src-tuple)
-	    [split-metadata-fn split-data-fn] split-tuple
-	    split-metadata-tuple (split-metadata-fn)
-	    [split-metadata split-metadata-prefix split-metadata-pairs split-operation split-child-metadata] split-metadata-tuple
-	    ;; prepare metameta results
-	    metameta-metadata result-metadata
-	    metameta-metadata-prefix (str "Meta-" split-metadata-prefix)
-	    metameta-metadata-pairs split-metadata-pairs ;TODO - investigate..
-	    ] 
+	    split-tuple (thread-chain [(dsplit2 split-key (or split-key-fn list))] src-tuple)]
 	(if subchain
-	  (let []
+	  (let [
+		[split-metadata-fn split-data-fn] split-tuple
+		split-metadata-tuple (split-metadata-fn)
+		[split-metadata split-metadata-prefix split-metadata-pairs split-operation split-child-metadata] split-metadata-tuple
+		;; prepare metameta results
+		metameta-metadata result-metadata
+		metameta-metadata-prefix (str "Meta-" split-metadata-prefix)
+		metameta-metadata-pairs split-metadata-pairs ;TODO - investigate..
+		] 
 	    [
 	     (fn []
 		 ;; the metametadata/metadata is pretty much the same as the metadata coming out of the split
@@ -696,7 +696,7 @@
 	    tgt-metaprefix (str metaprefix tgt-name)]
 	[ ;; metadata
 	 (fn []
-	     [tgt-metadata tgt-metaprefix extra-keys '(:pivot)])
+	     (MetaResult. result-metadata tgt-metaprefix extra-keys '(:pivot) tgt-metadata))
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)

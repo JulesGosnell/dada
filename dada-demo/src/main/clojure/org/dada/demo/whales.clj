@@ -14,6 +14,7 @@
    ]
   [org.dada.core
    Batcher
+
    Creator
    Metadata
    Model
@@ -253,18 +254,38 @@
 
 (if false
   (do
+    
+    ;; all whales
+    (inspect (? (dfrom "Whales")))
+
+    ;; count all whales
+    (inspect (? (dcount)(dfrom "Whales")))
+
+    ;; sum length of all whales
+    (inspect (? (dsum :length)(dfrom "Whales")))
 
     ;; split by ocean
     (inspect (? (dsplit :ocean)(dfrom "Whales")))
 
-    ;; count by type
-    (inspect (? (dunion)(dcount)(dsplit :type)(dfrom "Whales")))
+    ;; flat split by type then ocean
+    (inspect (? (dsplit :ocean)(dsplit :type)(dfrom "Whales")))
 
-    ;; count by type and ocean
-    (inspect (? (dunion)(dcount)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
+    ;; nested split by type then ocean
+    (inspect (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
 
-    ;; weight by type and ocean
-    (inspect (? (dunion)(dsum :length)(dsplit :type )(dsplit :ocean)(dfrom "Whales")))
+    ;; sum weights per ocean
+    (inspect (? (dsum :weight)(dsplit :ocean)(dfrom "Whales")))
+
+    ;; summarise weights per ocean
+    (inspect (? (dunion)(dsum :weight)(dsplit :ocean)(dfrom "Whales")))
+
+    ;; pivot weights per ocean summary
+    (inspect (? (dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean) (dfrom "Whales")))
+
+    ;; for each type - pivot weights per ocean summary
+    (inspect (? (dsplit :type list [(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales")))
+
+    (inspect (? (dsplit :type list [(dunion)(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales")))
 
 ;; TODO
 ;; split multiple dimensions at same time...
@@ -277,10 +298,10 @@
   ;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )]) (from "Whales"))
 
   ;; weight/ocean/type
-  (inspect (? (dsplit :type nil [(dpivot :ocean oceans (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :ocean )])(dfrom "Whales")))
+  ;;(inspect (? (dsplit :type nil [(dpivot :ocean oceans (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :ocean )])(dfrom "Whales")))
   
   ;; weight/type/ocean
-  (inspect (? (dsplit :ocean nil [(dpivot :type types (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :type )])(dfrom "Whales")))
+  ;;(inspect (? (dsplit :ocean nil [(dpivot :type types (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :type )])(dfrom "Whales")))
 
   ))
 ;;--------------------------------------------------------------------------------
