@@ -4,6 +4,7 @@
        [org.dada.swt swt utils])
  (:import
   [java.util ArrayList Collection]
+  [org.dada.swt Mutable]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.layout GridData GridLayout]
   [org.eclipse.swt.widgets Composite Display Shell]
@@ -87,6 +88,16 @@
 ;; Blinking Table
 ;; http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/BlinkingGridExample.java?revision=3912&view=markup
 
+;; TODO - recur
+;; TODO - will terminate on nil-entries...
+(defn index [[head & tail] value function & [i]]
+  (let [i (or i 0)]
+    (if head
+      (if (function head value)
+	i
+	(index tail value function (+ 1 i)))
+      -1)))
+
 (defn nattable-make [[#^Model model pairs] #^Composite parent]
   (let [#^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
@@ -95,7 +106,10 @@
 	property-names (into-array String (map (fn [attribute] (.toString (.getKey attribute))) attributes))
 	property-name-to-index (apply array-map (interleave property-names (iterate inc 0)))
 	property-name-to-label (apply array-map (interleave property-names property-names)) 
-	data (.getExtant (.getData model))
+	;; store list of immutable data as list of mutable singleton arrays of immutable data
+	;; now we can hand off a mutable ref containing immutable data...
+	data (reduce (fn [current new](doto current (.add (Mutable. new)))) (java.util.ArrayList.) (.getExtant (.getData model))) ;hack
+	dummy (println "DATA" data)
 	event-list (GlazedLists/eventList data)
 	sorted-list (SortedList. event-list nil)
       
@@ -104,7 +118,7 @@
 	 [IColumnPropertyAccessor]
 	 []
 	 ;; IColumnAccessor<T>
-	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (pr-str (.get (nth getters columnIndex) rowObject))) ;TODO - I'd rather not use pr-str here...
+	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (pr-str (.get (nth getters columnIndex) (.getDatum rowObject)))) ;TODO - I'd rather not use pr-str here...
 	 (#^int getColumnCount [] (count property-names))
 	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
@@ -120,7 +134,7 @@
 	blink-layer (BlinkLayer.
 			    glazed-lists-event-layer
 			    body-data-provider
-			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter row)))
+			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter (.getDatum row))))
 			    column-property-accessor
 			    config-registry)
 	dummy (do
@@ -143,26 +157,35 @@
 	column-header-layer-stack (proxy [AbstractLayerTransform] [])
 
 	view (proxy [View][]
- 		    (#^void update [#^Collection indertions  #^Collection alterations #^Collection deletions]
+ 		    (#^void update [#^Collection insertions  #^Collection alterations #^Collection deletions]
  			    ;;(doall (map insert insertions))
  			    (doall
 			     (map
 			      (fn [#^Update alteration]
 				  (let [old-value (.getOldValue alteration)
-					new-value (.getNewValue alteration)]
+					new-value (.getNewValue alteration)
+					i (index data old-value (fn [e v](= (.getDatum e) v)))]
+				    ;; hack
+				    (if (> i -1 )
+				      (do
+					(.setDatum (.get data i) new-value)
+					(doall
+					 (map
+					  (fn [getter property-name]
+					      (let [old (.get getter old-value)
+						    new (.get getter new-value)]
+						(if (not (= old new))
+						  (.propertyChange
+						   glazed-lists-event-layer
+						   (java.beans.PropertyChangeEvent. (.get data i) property-name old new)))))
+					  getters
+					  property-names)))
+				      (do
+				      (println "VALUE NOT FOUND:" old-value (.getType old-value) ":" old-value)
+				      (println "DATA" (map (fn [e] (.getType (.getDatum e))) data))
+				      ))
 				    ;; diff old and new
-				    (doall
-				     (map
-				      (fn [getter property-name]
-					  (let [old (.get getter old-value)
-						new (.get getter new-value)]
-					    (if (not (= old new))
-					      (do
-						(.propertyChange
-						 glazed-lists-event-layer
-						 (java.beans.PropertyChangeEvent. old-value property-name old new))))))
-				      getters
-				      property-names))))
+				    ))
 			      alterations))
  			    ;;(doall (map delete deletions))
 			    ))

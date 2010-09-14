@@ -280,6 +280,8 @@
 
     ;; summarise weights per ocean
     (inspect (? (dunion)(dsum :weight)(dsplit :ocean)(dfrom "Whales")))
+    ;; summarise weights per type
+    (inspect (? (dunion)(dsum :weight)(dsplit :type)(dfrom "Whales")))
 
     ;; pivot weights per ocean summary
     (inspect (? (dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean) (dfrom "Whales")))
@@ -339,3 +341,8 @@
 ;; (.getMetadata sm "Whales")
 ;; ;; register a View
 ;; (.registerView sm "Whales" (proxy [org.dada.core.View java.io.Serializable][](update [& rest] (println "UPDATE:" rest))))
+
+;;--------------------------------------------------------------------------------
+;; beginnings of a variance report
+;;--------------------------------------------------------------------------------
+
