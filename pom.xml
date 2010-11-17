@@ -102,7 +102,7 @@
       <!-- <module>dada-cometd</module> -->
       <!-- <module>dada-consensus</module> -->
       <!-- <module>dada-swt</module> -->
-      <module>dada-demo</module>
+      <!-- <module>dada-demo</module> -->
     </modules>
   </profile>
 <!--
