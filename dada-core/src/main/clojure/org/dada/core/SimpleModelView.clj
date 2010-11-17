@@ -56,7 +56,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (.higher version-comparator current new)
+		 (if (or (not version-comparator)(.higher version-comparator current new))
 		   ;; later version - accepted
 		   [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
 		   (do
