@@ -261,6 +261,12 @@
 	keys (map (fn [[key type]] (symbol (attribute-key key))) attributes)]
     (eval `(do (defrecord ~sym ~keys) ~sym)))) ; TODO: put type hints on fields
 
+(defn #^Class named-record-class [class-name attributes]
+  "make an anonymous record Class"
+  (let [sym (symbol class-name)
+	keys (map (fn [[key type]] (symbol (attribute-key key))) attributes)]
+    (eval `(do (defrecord ~sym ~keys) ~sym))))
+
 (defn #^Creator record-creator [#^Class class]
   "make a Creator for the given Class"
   (proxy [Creator] [] 
@@ -285,6 +291,15 @@
 	 version-comparator
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
 
+(defn #^Metadata named-record-metadata2 [class-name primary-keys version-keys version-comparator attributes]
+  "make a record-based Metadata instance"
+  (let [class (named-record-class class-name attributes)]
+    (new MetadataImpl
+	 (record-creator class)
+	 primary-keys
+	 version-keys
+	 version-comparator
+	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
 
 (let [record-metadata-cache (atom {})]
 
@@ -296,6 +311,17 @@
 	record-metadata-cache 
 	(fn [cache key]
 	    (if (contains? cache key) cache (assoc cache key (record-metadata2 primary-keys version-keys version-comparator attributes))))
+	cache-key)
+       cache-key)))
+
+  (defn #^Metadata named-record-metadata
+    "return memoized record-metadata"
+    [class-name primary-keys version-keys version-comparator attributes]
+    (let [cache-key [primary-keys version-keys version-comparator attributes]]
+      ((swap!
+	record-metadata-cache 
+	(fn [cache key]
+	    (if (contains? cache key) cache (assoc cache key (named-record-metadata2 class-name primary-keys version-keys version-comparator attributes))))
 	cache-key)
        cache-key)))
 
