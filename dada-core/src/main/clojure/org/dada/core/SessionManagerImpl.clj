@@ -1,7 +1,6 @@
 (ns
  org.dada.core.SessionManagerImpl
- ;; (:use
- ;;  [clojure.contrib with-ns])
+ (:use [clojure.contrib logging])
  (:import
   [java.util Collection]
   [org.dada.core Data Metadata Model ServiceFactory View]
@@ -55,7 +54,7 @@
   (let [[[_ #^Model metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	model (.find metamodel model-name)]
     (if (nil? model)
-      (do (println "WARN: no Model for name:" model-name) nil) ;should throw Exception
+      (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
       (let [[_ view]
 	    (swap!
 	     mutable
@@ -71,7 +70,7 @@
   (let [[[_ #^Model metamodel #^ServiceFactory service-factory] mutable] (.state this)
 	model (.find metamodel model-name)]
     (if (nil? model)
-      (do (println "WARN: no Model for name:" model-name) nil) ;should throw Exception
+      (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
       (let [[_ view]
 	    (swap!
 	     mutable
@@ -95,7 +94,7 @@
 ;; TODO: consider memoisation of queries, unamiguous DSL, model names, etc...
 ;; TODO: security - arbitrary code can be evaluated here...
 (defn #^Collection -query[#^org.dada.core.SessionManagerImpl this namespace-name query-string]
-  (println "QUERY:" query-string)
+  (info (str "QUERY: " query-string))
   (use (symbol namespace-name))		;TODO - query should be evaluated in temporary namespace
   (let [;;target-namespace (symbol namespace-name) ;TODO - should be part of SessionManager's state
 	[[_ target-metamodel #^ServiceFactory service-factory] mutable] (.state this)

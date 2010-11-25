@@ -1,6 +1,7 @@
 (ns
  org.dada.core
  (:require [org.dada.core SessionManagerImpl SimpleModelView])
+ (:use [clojure.contrib logging])
  (:import
   (clojure.lang
    DynamicClassLoader
@@ -42,20 +43,6 @@
    )
   (org.dada.demo Client)
   ))
-
-;;--------------------------------------------------------------------------------
-
-(defn trace [& args]
-  ;;(apply println args)
-  )
-
-(defn debug [& foo]
-  (println "DEBUG: " foo)
-  foo)
-
-(defn warn [& args]
-  (println "WARN: " args)
-  args)
 
 ;;--------------------------------------------------------------------------------
 
@@ -217,7 +204,6 @@
 (defn #^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
   [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
-  (println class-name  superclass primary-keys version-keys  version-comparator attributes)
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
     (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys version-comparator attributes)))
 
@@ -425,7 +411,7 @@
     )
 
   ;;(.start *metamodel*)
-    (println "Server:" *session-manager-name*)
+    (info (str "Server: " *session-manager-name*))
     (.server *external-session-manager-service-factory* *session-manager* *session-manager-name*))
 
 (defn start-client []

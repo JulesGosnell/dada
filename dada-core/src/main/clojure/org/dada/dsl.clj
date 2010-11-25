@@ -2,6 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.dsl
  (:use [org.dada.core])
+ (:use clojure.contrib.logging)
  (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ]
@@ -443,7 +444,7 @@
      (proxy [View] []
 	    (update [insertions alterations deletions]
 		    (doall (map (fn [#^Update insertion]
-				    (trace "INSERTION" (.getNewValue insertion))
+				    (trace (str "INSERTION " (.getNewValue insertion)))
 				    (apply f tgt-metamodel (.getNewValue insertion))) insertions)))))
     tgt-metamodel))
 
@@ -468,7 +469,7 @@
 (defn ccount [& [count-key]]
   (fn [[metadata-fn data-fn]]
       (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "COUNT METADATA" metaprefix extra-keys)
+	    dummy (trace (str "COUNT METADATA " metaprefix " " extra-keys))
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
 	[ ;; metadata
@@ -478,14 +479,14 @@
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
-		     dummy (trace "COUNT extra-pairs [0]:" extra-pairs)
+		     dummy (trace (str "COUNT extra-pairs [0]: " extra-pairs))
 		     new-prefix (str prefix "." (count-value-key count-key))
 		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (count-value-key count-key))
 				    src-metamodel
 				    (fn [tgt-metamodel #^Model src-model extra-pairs]
-					(trace "COUNT extra-pairs [1]:" extra-pairs)
+					(trace (str "COUNT extra-pairs [1]: " extra-pairs))
 					(let [count-model (do-reduce-count 
 							   (.getName src-model)
 							   (.getMetadata src-model)
@@ -500,7 +501,7 @@
 (defn sum [sum-key]
   (fn [[metadata-fn data-fn]]
       (let [[#^Metadata src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "SUM METADATA" metaprefix extra-keys)
+	    dummy (trace (str "SUM METADATA " metaprefix " " extra-keys))
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
 	[ ;; metadata
@@ -510,14 +511,14 @@
 	 (if data-fn
 	   (fn []
 	       (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (data-fn)
-		     dummy (trace "SUM extra-pairs [0]:" extra-pairs)
+		     dummy (trace (str "SUM extra-pairs [0]: " extra-pairs))
 		     new-prefix (str prefix "." (sum-value-key sum-key))
 		     tgt-model (model new-prefix src-metadata)
 		     tgt-metamodel (meta-view
 				    (str "." (sum-value-key sum-key))
 				    src-metamodel
 				    (fn [tgt-metamodel #^Model src-model extra-pairs]
-					(trace "SUM extra-pairs [1]:" extra-pairs)
+					(trace (str "SUM extra-pairs [1]: " extra-pairs))
 					(let [sum-model (do-reduce-sum 
 							 (.getName src-model)
 							 (.getMetadata src-model)
@@ -545,9 +546,9 @@
 				 (let [[sub-metadata-fn] (thread-chain subchain [split-metadata-fn nil])
 				       sub-metadata-tuple (sub-metadata-fn)
 				       [sub-metadata sub-metaprefix sub-extra-keys] sub-metadata-tuple]
-				   (trace "SPLIT META SRC  " src-metadata-tuple)
-				   (trace "SPLIT META SPLIT" split-metadata-tuple)
-				   (trace "SPLIT META SUB  " sub-metadata-tuple)
+				   (trace (str "SPLIT META SRC   " src-metadata-tuple))
+				   (trace (str "SPLIT META SPLIT " split-metadata-tuple))
+				   (trace (str "SPLIT META SUB   " sub-metadata-tuple))
 				   sub-metadata-tuple
 				   )
 				 split-metadata-tuple)
@@ -560,17 +561,17 @@
 	 (fn []
 	     (let [src-data-tuple (direct-fn)
 		   [#^Model src-metamodel src-prefix #^Collection src-extra-pairs] src-data-tuple
-		   dummy (trace "SPLIT src-extra-pairs" src-extra-pairs)
+		   dummy (trace (str "SPLIT src-extra-pairs " src-extra-pairs))
 		   tgt-metamodel (model (str (.getName src-metamodel) suffix) (.getMetadata src-metamodel))
 		   tgt-prefix (str src-prefix "." split-key)
 		   tgt-extra-pairs src-extra-pairs ;;(concat src-extra-pairs [[split-key "*"]])
-		   dummy (trace "SPLIT tgt-extra-pairs" tgt-extra-pairs)
+		   dummy (trace (str "SPLIT tgt-extra-pairs " tgt-extra-pairs))
 		   tgt-data-tuple [tgt-metamodel tgt-prefix tgt-extra-pairs :split]]
 	       ;; register it with the global metamodel
-	       (trace "SPLIT DATA SRC  " src-data-tuple)
+	       (trace (str "SPLIT DATA SRC   " src-data-tuple))
 	       (insert *metamodel* tgt-metamodel)
 	       ;; view upstream metamodel for the arrival or results
-	       (trace "SPLIT - watching" src-metamodel)
+	       (trace (str "SPLIT - watching " src-metamodel))
 	       (connect
 		src-metamodel
 		(proxy [View] []
@@ -585,19 +586,19 @@
 							  (let [split-metamodel (model (str (.getName src-metamodel) (str suffix "=" split-extra-value)) (.getMetadata src-metamodel))
 								split-prefix (str tgt-prefix "=" split-extra-value)
 								split-extra-pairs (concat src-extra-pairs [[split-key split-extra-value]])
-								dummy (trace "SPLIT split-extra-pairs" split-extra-pairs)
+								dummy (trace (str "SPLIT split-extra-pairs " split-extra-pairs))
 
 								split-data-tuple [split-metamodel split-prefix split-extra-pairs]
 								split-data-fn (fn [] split-data-tuple)
 								[_ sub-data-fn] (thread-chain subchain [split-metadata-fn split-data-fn])
 								sub-data-tuple (sub-data-fn)
 								[sub-metamodel sub-prefix sub-extra-pairs] sub-data-tuple
-								dummy (trace "SPLIT sub-extra-pairs" sub-extra-pairs)
+								dummy (trace (str "SPLIT sub-extra-pairs " sub-extra-pairs))
 
 								split-model-tuple [split-model sub-extra-pairs]]
 							    
-							    (trace "SPLIT DATA SPLIT" split-data-tuple)
-							    (trace "SPLIT DATA SUB" split-data-tuple)
+							    (trace (str "SPLIT DATA SPLIT " split-data-tuple))
+							    (trace (str "SPLIT DATA SUB " split-data-tuple))
 							    (insert *metamodel* split-metamodel) ;add to global metamodel
 							    (insert *metamodel* split-model) ;add to global metamodel
 							    (insert split-metamodel (doall split-model-tuple))
@@ -616,14 +617,14 @@
 									      insertions)))))))
 						      ;; plug split -> tgt
 						      (fn [#^Model split-model split-extra-value]
-							  (trace "SPLIT - producing new model" split-model split-extra-value)
+							  (trace (str "SPLIT - producing new model " split-model " " split-extra-value))
 							  (let [split-model-tuple (list split-model (concat src-extra-values [[split-key split-extra-value]]))]
 							    (insert *metamodel* split-model) ;add to global metamodel
 							    (insert tgt-metamodel (doall split-model-tuple)) ;add to metamodel that has been passed downstream
 							    ))
 						      )]
 				       ;; we have received a model from an upstream operation...
-				       (trace "SPLIT - receiving new model" src-model src-extra-values)
+				       (trace ("SPLIT - receiving new model " src-model " " src-extra-values))
 				       ;; plug src-> split -> [chain defined above]
 				       (do-split src-model split-key (or split-key-fn list) identity chain-fn)))
 				 insertions)))))
@@ -661,7 +662,7 @@
 (defn pivot [pivot-key pivot-values value-key]
   (fn [[metadata-fn direct-fn]]
       (let [[src-metadata metaprefix extra-keys] (metadata-fn)
-	    dummy (trace "PIVOT METADATA" pivot-key keys value-key)
+	    dummy (trace (str "PIVOT METADATA " pivot-key " " keys " " value-key))
 	    extra-keys (remove #(= % pivot-key) extra-keys)
 	    tgt-metadata (pivot-metadata src-metadata extra-keys pivot-values value-key)
 	    tgt-name (str ".pivot(" value-key "/" pivot-key")")]
@@ -671,9 +672,9 @@
 	 ;; direct
 	 (fn []
 	     (let [[#^Model src-metamodel prefix #^Collection extra-pairs] (direct-fn)
-		   dummy (trace "PIVOT extra-pairs before pivot:" extra-pairs)
+		   dummy (trace (str "PIVOT extra-pairs before pivot: " extra-pairs))
 		   extra-pairs (remove #(= (first %) pivot-key) extra-pairs)
-		   dummy (trace "PIVOT extra-pairs after pivot: " extra-pairs)
+		   dummy (trace (str "PIVOT extra-pairs after pivot:  " extra-pairs))
 		   tgt-model (PivotModel. 
 			      (str prefix tgt-name)
 			      src-metadata

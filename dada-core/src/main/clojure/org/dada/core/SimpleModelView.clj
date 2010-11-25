@@ -1,5 +1,6 @@
 (ns org.dada.core.SimpleModelView
     (:use
+     [clojure.contrib logging]
      [org.dada.core counted-set]
      )
     ;; (:require
@@ -166,9 +167,10 @@
 	[_ _ views] @mutable]
     ;;(println "NOTIFY ->" @mutable)
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
-      (println "WARN: empty event raised" (.getStackTrace (Exception.)))
+      (warn "empty event raised" (.getStackTrace (Exception.)))
       (doall (map (fn [#^View view]	;dirty - side-effects
-		      (try (.update view insertions alterations deletions) (catch Throwable t (println "ERROR: " t))))
+		      (try (.update view insertions alterations deletions)
+			   (catch Throwable t (error "View notification failure" t))))
 		  (counted-set-vals views))))))
 
 ;;--------------------------------------------------------------------------------

@@ -256,7 +256,7 @@
      (initialValue [] 0)
      (initialType [type] Integer)
      (currentValue [extra-values & values] ;TODO - should not need (into-array)
-		   (trace "COUNT" extra-values values)
+		   (trace (str "COUNT " extra-values " " values))
 		   (.create creator (into-array Object (concat extra-values values))))
      (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
