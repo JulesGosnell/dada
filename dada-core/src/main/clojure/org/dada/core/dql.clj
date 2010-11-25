@@ -1,6 +1,7 @@
 (ns 
  org.dada.core.dql
  (:use [org.dada.core])
+ (:use clojure.contrib.logging)
  (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ]
