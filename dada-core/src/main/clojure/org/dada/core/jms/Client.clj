@@ -24,11 +24,11 @@
 
 ;; TODO: need getDestination method
 
-(defn -init [#^Session session
-	     #^Destination destination
-	     #^Class interface
-	     #^Long timeout
-	     #^Boolean true-async]
+(defn -init [^Session session
+	     ^Destination destination
+	     ^Class interface
+	     ^Long timeout
+	     ^Boolean true-async]
 
   [ ;; super ctor args
    []
@@ -79,7 +79,7 @@
 		    ;; }
 		    )
 
-	 readObject (fn [#^ObjectInputStream ois]
+	 readObject (fn [^ObjectInputStream ois]
 			;; mutable state should go into an atom
 			(let [session :todo
 			      ;; Session session = getCurrentSession();
@@ -91,17 +91,18 @@
 			  )
 			)
 
-	 writeObject (fn [#^ObjectOutputStream oos]
-			 (.writeObject destination)
-			 (.writeObject interface)
-			 (.writeLong timeout)
-			 (.writeBoolean true-async))
+	 writeObject (fn [^ObjectOutputStream oos]
+			 (.writeObject oos destination)
+			 (.writeObject oos interface)
+			 (.writeLong oos timeout)
+			 (.writeBoolean oos true-async))
 
-	 equals (fn [#^Object object]
+	 equals (fn [^Object object]
 		    (and (not (nil? object))
 			 (let [that (if (Proxy/isProxyClass (.getClass object)) (Proxy/getInvocationHandler object) object)]
 			   (and (instance? SynchronousClient that)
-				(.equals (.getDestination that) destination)))))
+				(let [^Destination that-destination (.getDestination ^SynchronousClient that)]
+				  (.equals that-destination destination))))))
 
 	 hashCode (fn [] (.hashCode destination))
 
@@ -114,23 +115,23 @@
    ])
 
 
-(defn #^Object -invoke [#^org.dada.core.jms.Client this #^Object proxy #^Method method #^"[Object]" args]
+(defn ^Object -invoke [^org.dada.core.jms.Client this ^Object proxy ^Method method ^"[Object]" args]
   (let [[invoke] (.state this)]		;should just use a Clojure (proxy) - would it serialise ?
     (invoke proxy method args)))
 
-(defn -readObject [#^org.dada.core.jms.Client this #^ObjectInputStream ois]
+(defn -readObject [^org.dada.core.jms.Client this ^ObjectInputStream ois]
   (let [[_ readObject] (.state this)]
     (readObject ois)))
 
-(defn #^boolean -equals [#^org.dada.core.jms.Client this #^Object that]
+(defn ^boolean -equals [^org.dada.core.jms.Client this ^Object that]
   (let [[_ _ equals] (.state this)]
     (equals that)))
 
-(defn #^int -hashCode [#^org.dada.core.jms.Client this]
+(defn ^int -hashCode [^org.dada.core.jms.Client this]
   (let [[_ _ _ hashCode] (.state this)]
     (hashCode)))
 
-;; (defn #^String -toString [#^org.dada.core.jms.Client this]
+;; (defn ^String -toString [^org.dada.core.jms.Client this]
 ;;   (let [[_ _ _ _ toString] (.state this)]
 ;;     (toString this)))
 

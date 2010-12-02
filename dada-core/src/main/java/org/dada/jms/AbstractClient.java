@@ -113,5 +113,8 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		return CURRENT_SESSION.get();
 	}
 
+	public Destination getDestination() {
+		return destination;
+	}
 
 }
