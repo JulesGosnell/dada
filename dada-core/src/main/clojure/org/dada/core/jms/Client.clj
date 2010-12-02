@@ -115,7 +115,7 @@
    ])
 
 
-(defn ^Object -invoke [^org.dada.core.jms.Client this ^Object proxy ^Method method ^"[Object]" args]
+(defn -invoke [^org.dada.core.jms.Client this proxy ^Method method args]
   (let [[invoke] (.state this)]		;should just use a Clojure (proxy) - would it serialise ?
     (invoke proxy method args)))
 
