@@ -71,7 +71,9 @@
       <artifactId>dada-slf4j</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>		<!--temporary-->
+    <!--temporary-->
+    <!--
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>7.0.2.v20100331</version>
@@ -82,6 +84,7 @@
         </exclusion>
       </exclusions>
     </dependency>
+-->
   </dependencies>
 
   <build>
