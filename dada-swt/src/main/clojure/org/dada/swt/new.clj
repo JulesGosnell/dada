@@ -1,6 +1,7 @@
 (ns
  org.dada.swt.new
  (:use 
+  [clojure.contrib logging]  
   [org.dada core]  
   [org.dada.core dql]
   [org.dada.swt swt nattable tab table utils])
