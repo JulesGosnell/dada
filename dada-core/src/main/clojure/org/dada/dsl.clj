@@ -209,7 +209,7 @@
 	      (reduce #(+ %1 (or (old-value %2))) 0 deletions))
 	     )
      (apply [currentValue delta]
-	    ;;(println "SUM:" currentValue delta)
+	    ;;(info (str "SUM: " currentValue delta))
 	    (+ currentValue delta))
      )))
 
