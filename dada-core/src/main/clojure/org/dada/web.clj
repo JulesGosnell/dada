@@ -1,6 +1,7 @@
 (ns 
  #^{:author "Jules Gosnell" :doc "HTTP Class Server for DADA"}
  org.dada.web
+ (:use clojure.contrib.logging)
  (:use [org.dada.core])
  ;; (:import [org.eclipse.jetty.server
  ;; 	   Request Server]
@@ -36,8 +37,8 @@
 ;; 				 (.setContentType response "application/binary")
 ;; 				 (.setContentLength response (count bytes))
 ;; 				 (.setStatus response 200)
-;; 				 (println "Serving" request)
-;; 				 (println "Serving" name "=" bytes)
+;; 				 (info (str "Serving " request))
+;; 				 (info (str "Serving " name " = " bytes))
 ;; 				 (.write stream bytes)
 ;; 				 (.close stream))
 ;; 			       (.setHandled request true)))]
