@@ -129,32 +129,28 @@
 
 ;; h/w immutables into fn - slower to carry them as args with every call
 
-(defn update-rhs-tuple [old-lhs old-lhs-rhs-tuple new-lhs rhs-indeces rhs-immutables]
-  (if old-lhs
-    []
-    (map
-     (fn [i [^Getter rhs-pk-getter ^Getter rhs-version-getter ^Metadata$Comparator rhs-version-comparator lhs-fk-getters]]
-       (info ["  update-rhs-tuple: lhs-fk-getters: " i lhs-fk-getters])
-       (map
-	(fn [lhs-getters]
-	  (let [rhs-index (nth rhs-indeces i)]
-	    (info ["found index" i "->" rhs-index ":" rhs-indeces])
-	    (map
-	     (fn [^Getter lhs-getter] 
-	       (let [rhs-pk (.get lhs-getter new-lhs)
-		     ^RHSEntry rhs-entry (rhs-index rhs-pk)
-		     dummy (info ["found entry" rhs-pk "->" rhs-entry ":" rhs-index])
-		     rhs (and rhs-entry (.rhs rhs-entry))
-		     dummy (info ["found datum" rhs-pk "->" rhs])]
-		 rhs))
-	     lhs-getters)))
-	lhs-fk-getters))
-     (range)
-     rhs-immutables)))
-
-(defn update-rhs-indeces [rhs-indeces]
-  (info ["update-rhs-indeces:" rhs-indeces])
-  )
+;; outputs [rhs-tuple rhs-indeces]
+(defn update-rhs-tuple [old-lhs old-lhs-rhs-tuple new-lhs old-rhs-indeces rhs-immutables]
+  [(if old-lhs
+     []
+     (map
+      (fn [rhs-index [_ _ _ lhs-fk-getters-list]]
+	  (map
+	   (fn [lhs-fk-getters]
+	     (map
+	      (fn [^Getter lhs-fk-getter] 
+		(let [rhs-pk (.get lhs-fk-getter new-lhs)
+		      ^RHSEntry old-rhs-entry (rhs-index rhs-pk)
+		      dummy (info ["  found entry" rhs-pk "->" old-rhs-entry ":" rhs-index])
+		      rhs (and old-rhs-entry (.rhs old-rhs-entry))
+		      dummy (info ["  found datum" rhs-pk "->" rhs])
+		      new-rhs-entry (RHSEntry. rhs (conj (.lhs-refs old-rhs-entry) rhs-pk))]
+		  rhs))
+	      lhs-fk-getters))
+	   lhs-fk-getters-list))
+      old-rhs-indeces
+      rhs-immutables))
+   old-rhs-indeces])
 
 ;; returns -> [mutable immutable insertions alterations deletions]
 (defn update-lhs [[lhs-index rhs-indeces] [[^Getter lhs-pk-getter ^Getter lhs-version-getter ^Metadata$Comparator lhs-version-comparator] rhs-immutables] insertions alterations deletions]
@@ -173,12 +169,11 @@
 		   old-rhs-tuple (.rhs-tuple old-lhs-entry)
 		   old-extant (.extant old-lhs-entry)
 		   old-datum (.element old-lhs-entry)
-		   new-rhs-tuple (update-rhs-tuple old-lhs old-rhs-tuple new-lhs rhs-indeces rhs-immutables)
+		   [new-rhs-tuple new-rhs-indeces] (update-rhs-tuple old-lhs old-rhs-tuple new-lhs old-rhs-indeces rhs-immutables)
 		   dummy (info " update-rhs: new-lhs-tuple:" new-rhs-tuple)
 		   new-datum nil ;; TODO
 		   new-lhs-entry (LHSEntry. true (inc old-version) new-lhs new-rhs-tuple new-datum)
-		   new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
-		   new-rhs-indeces (update-rhs-indeces old-rhs-indeces)] ;;TODO
+		   new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)]
 	       (info ["  update-lhs: version accepted" old-lhs-entry "->" new-lhs-entry])
 	       [new-lhs-index
 		new-rhs-indeces
@@ -191,10 +186,9 @@
 	       (info ["  update-lhs: version rejected" lhs-pk])
 	       ;; ignore this update - version is superceded
 	       [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])))
-	 (let [new-rhs-tuple (update-rhs-tuple nil nil new-lhs old-rhs-indeces rhs-immutables)
+	 (let [[new-rhs-tuple new-rhs-indeces] (update-rhs-tuple nil nil new-lhs old-rhs-indeces rhs-immutables)
 	       new-datum nil
-	       new-lhs-index (assoc old-lhs-index lhs-pk (LHSEntry. true 0 new-lhs new-rhs-tuple new-datum))
-	       new-rhs-indeces old-rhs-indeces] ;TODO
+	       new-lhs-index (assoc old-lhs-index lhs-pk (LHSEntry. true 0 new-lhs new-rhs-tuple new-datum))]
 	   (info ["  inserting" lhs-pk])
 	   ;; add a new entry
 	   ;; update corresponding rhses - TODO
