@@ -16,6 +16,7 @@
    Attribute
    Batcher
    Creator
+   JoinModel
    Metadata
    Model
    ])
@@ -147,7 +148,7 @@
 
 ;; create some whales...
 
-(def num-whales 1000)
+(def num-whales 100)
 
 (def some-whales (doall (pmap (fn [id] (whale id)) (range num-whales))))
 
@@ -343,6 +344,56 @@
 ;; (.registerView sm "Whales" (proxy [org.dada.core.View java.io.Serializable][](update [& rest] (println "UPDATE:" rest))))
 
 ;;--------------------------------------------------------------------------------
-;; beginnings of a variance report
+;; lets play with joins
 ;;--------------------------------------------------------------------------------
 
+;; I want to know that max-depth that each whale might swim to (i.e. of the ocean in which it finds itself)
+
+;;--------------------------------------------------------------------------------
+;; we need an Oceans model
+
+(def ocean-attributes
+     (list
+      [:id        String         false]
+      [:version   (Integer/TYPE) true]
+      [:area      (Integer/TYPE) true] ;; may grow and shrink with ice
+      [:max-depth (Integer/TYPE) true]
+      ))
+
+(def #^Metadata ocean-metadata (custom-metadata "org.dada.demo.whales.Ocean" Object [:id] [:version] int-version-comparator ocean-attributes))
+
+(def #^Model oceans-model (model "Oceans" ocean-metadata))
+(insert *metamodel* oceans-model)
+
+(insert-n
+ oceans-model
+ (let [creator (.getCreator ocean-metadata)]
+   [
+    (.create creator (into-array Object ["arctic"   0 0        17880]))
+    (.create creator (into-array Object ["atlantic" 0 41100000 28232]))
+    (.create creator (into-array Object ["indian"   0 28350000 23808]))
+    (.create creator (into-array Object ["pacific"  0 64100000 35797]))
+    (.create creator (into-array Object ["southern" 0 0        23737]))
+    ]))
+
+;;--------------------------------------------------------------------------------
+
+;;(inspect (? (dfrom "Whales")))
+;;(inspect (? (dfrom "Oceans")))
+
+;; try updating an ocean
+(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["arctic"   1 10000000 17880])))
+(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["southern" 1 10000000 23737])))
+
+;; we need a ModelView that listens to Whales AND Oceans and joins them together...
+
+(def join-model
+     (JoinModel.
+      "TestJoin"
+      :ocean
+      [:id]
+      [:version :time :reporter :type :ocean :length :weight]
+      whales-model
+      []
+      [:max-depth]
+      oceans-model))

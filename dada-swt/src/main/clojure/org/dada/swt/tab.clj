@@ -1,6 +1,7 @@
 (ns 
  org.dada.swt.tab
- (:use [org.dada core]
+ (:use [clojure.contrib logging]
+       [org.dada core]
        [org.dada.swt swt utils])
  (:import
   [java.util Collection Comparator Timer TimerTask]
@@ -91,7 +92,7 @@
 
 (defn tab-insert [element #^Composite parent]
   (let [dummy element]
-    (trace "TAB INSERT" element)
+    (trace (str "TAB INSERT " element))
     (let [#^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))
 	  control (create element parent)]
       (.setText item (pr-str (extract-key element)))

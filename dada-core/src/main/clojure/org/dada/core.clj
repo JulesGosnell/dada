@@ -20,7 +20,6 @@
    Lock)
   (org.springframework.context.support ClassPathXmlApplicationContext)
   (org.springframework.beans.factory BeanFactory)
-  (org.slf4j Logger LoggerFactory)
   (org.dada.asm ClassFactory)
   (org.dada.core
    AbstractModel
@@ -47,8 +46,6 @@
 ;;--------------------------------------------------------------------------------
 
 (set! *warn-on-reflection* true)
-
-(def #^Logger *logger* (LoggerFactory/getLogger "org.dada.core"))
 
 ;; TODO: Spring should look after this - see application-context.xml...
 (if (not (System/getProperty "dada.broker.name")) (System/setProperty "dada.broker.name" "DADA"))
