@@ -9,24 +9,15 @@
    )
   (:gen-class
    :extends org.dada.core.AbstractModel
-   :constructors {[String org.dada.core.Model clojure.lang.IFn java.util.Collection] [String org.dada.core.Metadata]}
+   :constructors {[String org.dada.core.Metadata org.dada.core.Model java.util.Map clojure.lang.IFn] [String org.dada.core.Metadata]}
    :init init
    :state state
    :post-init post-init)
   )
 
 ;; these types should really be created on-the-fly to match lhs/rhs relationships
-(defrecord LHSEntry [extant version lhs rhs-tuple element]) ;; rhs-tuple - resolution of lhs fks to rhs references
-(defrecord RHSEntry [rhs lhs-refs]) ;; lhs-refs - {lhs-pk : [lhs-fk-i, ...], ...}
-
-(defn get-immutable [
-		     ;; lhs-key lhs-metadata
-		     ^Model rhs-model]
-  (let [rhs-metadata (.getMetadata rhs-model)
-	;;lhs-getter (.getGetter (.getAttribute lhs-metadata lhs-key))
-	]
-    [(.getPrimaryGetter rhs-metadata)(.getVersionGetter rhs-metadata)(.getVersionComparator rhs-metadata) ;; lhs-getter
-     ]))  
+(defrecord LHSEntry [extant version lhs rhs-refs datum]) ;; rhs-refs - resolution of lhs fks to rhs references
+(defrecord RHSEntry [rhs lhs-pks]) ;; lhs-pks - {lhs-pk : [lhs-fk-i, ...], ...}
 
 (defn get-key-fn [^Metadata metadata keys]
   (let [getters (map (fn [key] (.getGetter (.getAttribute metadata key))) keys)
@@ -35,313 +26,256 @@
       (fn [datum] (.get h datum))
       (fn [datum] (map (fn [^Getter getter] (.get getter datum)) getters)))))
    
+(defn invert-map [m]
+  (reduce (fn [r [k v]] (assoc r v (conj (r v) k))) {} m))
+
+(defn make-notification [old-datum new-datum old-insertions old-alterations old-deletions]
+  (if new-datum
+    (if old-datum
+      [old-insertions (conj old-alterations (Update. old-datum new-datum)) old-deletions] ;alteration
+      [(conj old-insertions (Update. old-datum new-datum)) old-alterations old-deletions]) ;insertion
+    (if old-datum
+      [old-insertions old-alterations (conj old-deletions (Update. old-datum new-datum))] ;deletion
+      [old-insertions old-alterations old-deletions]))) ;no change
+
 (defn -init [^String model-name
+	     model-metadata
 	     ^Model lhs-model
-	     join-fn
-	     rhses]
-  (let [model-metadata nil]
-    (info "Join: init")
-    [ ;; super ctor args
-     [model-name model-metadata]
-     ;; instance state [atom(mutable) immutable]
-     (let [lhs-metadata (.getMetadata lhs-model)
-	   lhs-mutable {}
-	   lhs-immutable (get-immutable lhs-model)
-	   rhs-mutables (apply vector (repeatedly (count rhses) hash-map))
-	   rhs-immutables (map
-			   (fn [[key-lists rhs-model]]
-			     (concat
-			      (get-immutable rhs-model)
-			      [(map
-				(fn [keys]
-				  (map
-				   (fn [key] (.getGetter (.getAttribute lhs-metadata key)))
-				   keys))
-				key-lists)]))
-			   rhses)
-
-	   ;; [[index key-fn] & ...]
-	   ;;fks (mapcat (fn [i [fk-lists]] (map (fn [fk-list] [i (get-key-fn lhs-metadata fk-list)]) fk-lists)) rhses)
-	   
-	   ]
-
-       ;; need to expand rhses into :
-       
-       [(atom [lhs-mutable rhs-mutables]) [lhs-immutable rhs-immutables]])]))
-
-(defn MAKE-ENTRY [& args] ;; TODO
-  (info ["MAKE-ENTRY" args]))
-
-;; returns [new-rhs-indeces new-rhs-tuple new-element]
-(defn process-rhs [old-lhs new-lhs old-rhs-indeces old-rhs-tuple old-element]
-  (info ["process-rhs" old-lhs new-lhs old-rhs-indeces old-rhs-tuple old-element])
-
-  
-  ;; walk across just the fks that we are interested in, comparing old-lhs with new-lhs
-  ;; if we find any changes create a new-rhs-tuple, element and updated rhs-indeces
-
-  ;; what do we need ?
-  ;; rhses, each one of which has a set of lhs-fk-getters
-  ;; we run each lhs-fk-getter against old and new lhs and compare outputs
-
-  ;; find rhs-indeces that need updating
-
-  ;; THIS NEEDS SORTING OUT WITH A FRESH BRAIN TOMORROW
-
-
-
-  ;; NEW-ELEMENT must be identical to OLD_ELEMENT if we don't want any events sent...
-
-  ;; figure out which columns need updating.
-  (let [FKS [] ;; TODO
-	changes (reduce
-		 (fn [reduction [i key-fn]]
-		   (let [old-value (key-fn old-lhs)
-			 new-value (key-fn new-lhs)]
-		     (if (= old-value new-value)
-		       reduction
-		       (conj reduction [i old-value new-value]))))
-		 '()
-		 FKS)]
-    
-    (if (empty? changes)
-      ;; none of the columns relevant to the join have changed
-      [old-rhs-indeces old-rhs-tuple old-element]
-      ;; rebuild rhs-tuple, rhs-indeces and element accordingly
-      (let [[ori ort oev] (reduce
-			   (fn [[old-rhs-indeces old-rhs-tuple old-entry-values] [i old-value new-value]]
-			     ;; update rhs-index
-			     (let [old-rhs-index (nth old-rhs-indeces i)
-				   old-rhs-entry (old-rhs-index old-value)]
-			       ;;(assoc old-rhs-index
-
-			       ;; TODO: RAN OUT OF STEAM HERE...
-			       
-			       ;;(assoc old-rhs-indeces i (RHSEntry. (.rhs)))
-			       ;; update rhs-tuple
-			       ;; update entry-value
-			       ))
-			   [old-rhs-indeces old-rhs-tuple nil ;;(map (fn [getter] (.get getter old-entry)) getters)
-			    ]
-			   )]
-	[ori ort (apply MAKE-ENTRY oev)]
-	))))
-
-;; h/w immutables into fn - slower to carry them as args with every call
-
-;; outputs [rhs-tuple rhs-indeces]
-(defn update-rhs-tuple [old-lhs old-lhs-rhs-tuple new-lhs old-rhs-indeces rhs-immutables]
-  [(if old-lhs
-     []
-     (map
-      (fn [rhs-index [_ _ _ lhs-fk-getters-list]]
-	  (map
-	   (fn [lhs-fk-getters]
-	     (map
-	      (fn [^Getter lhs-fk-getter] 
-		(let [rhs-pk (.get lhs-fk-getter new-lhs)
-		      ^RHSEntry old-rhs-entry (rhs-index rhs-pk)
-		      dummy (info ["  found entry" rhs-pk "->" old-rhs-entry ":" rhs-index])
-		      rhs (and old-rhs-entry (.rhs old-rhs-entry))
-		      dummy (info ["  found datum" rhs-pk "->" rhs])
-		      new-rhs-entry (RHSEntry. rhs (conj (.lhs-refs old-rhs-entry) rhs-pk))]
-		  rhs))
-	      lhs-fk-getters))
-	   lhs-fk-getters-list))
-      old-rhs-indeces
-      rhs-immutables))
-   old-rhs-indeces])
-
-;; returns -> [mutable immutable insertions alterations deletions]
-(defn update-lhs [[lhs-index rhs-indeces] [[^Getter lhs-pk-getter ^Getter lhs-version-getter ^Metadata$Comparator lhs-version-comparator] rhs-immutables] insertions alterations deletions]
-  (info ["update-lhs" [lhs-index rhs-indeces] insertions alterations deletions])
-  
-  (reduce
-   (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
-     (let [new-lhs (.getNewValue update)
-	   lhs-pk (.get lhs-pk-getter new-lhs)]
-       (info [" processing" lhs-pk])
-       (if-let [^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)]
-	 (let [old-lhs (.lhs old-lhs-entry)]
-	   (info [" update-lhs: index alteration" lhs-pk])
-	   (if (.higher lhs-version-comparator old-lhs new-lhs)
-	     (let [old-version (.version old-lhs-entry)
-		   old-rhs-tuple (.rhs-tuple old-lhs-entry)
-		   old-extant (.extant old-lhs-entry)
-		   old-datum (.element old-lhs-entry)
-		   [new-rhs-tuple new-rhs-indeces] (update-rhs-tuple old-lhs old-rhs-tuple new-lhs old-rhs-indeces rhs-immutables)
-		   dummy (info " update-rhs: new-lhs-tuple:" new-rhs-tuple)
-		   new-datum nil ;; TODO
-		   new-lhs-entry (LHSEntry. true (inc old-version) new-lhs new-rhs-tuple new-datum)
-		   new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)]
-	       (info ["  update-lhs: version accepted" old-lhs-entry "->" new-lhs-entry])
-	       [new-lhs-index
-		new-rhs-indeces
-		old-insertions
-		;; TODO: may be an insertion, not an alteration ?
-		(if (identical? old-datum new-datum) old-alterations (conj old-alterations (Update. old-datum new-datum)))
-		old-deletions]
-		)
-	     (do
-	       (info ["  update-lhs: version rejected" lhs-pk])
-	       ;; ignore this update - version is superceded
-	       [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])))
-	 (let [[new-rhs-tuple new-rhs-indeces] (update-rhs-tuple nil nil new-lhs old-rhs-indeces rhs-immutables)
-	       new-datum nil
-	       new-lhs-index (assoc old-lhs-index lhs-pk (LHSEntry. true 0 new-lhs new-rhs-tuple new-datum))]
-	   (info ["  inserting" lhs-pk])
-	   ;; add a new entry
-	   ;; update corresponding rhses - TODO
-	   ;; needs to share code with above...
-	   [new-lhs-index
-	    new-rhs-indeces
-	    ;; TODO - insertion needed here (maybe?)
-	    old-insertions old-alterations old-deletions]))))
-   [lhs-index rhs-indeces nil nil nil]
-   (concat insertions alterations))
-    
-  ;; maintains a map of lhs-pk: [join-version join-value lhs & rhses] (nil if unmatched)
-
-  ;; [maybe] update lhs-index
-  ;; [maybe] update rhs-indeces
-  
-
-
-  ;; THOUGHTS;
-  ;; handle out-of-order versioned updates
-  ;; handle OUTER joins
-  ;; handle more than one join at a time
-  ;; should we copy required cols into output row, or ref them from compound object ?
-  ;; can we handle updates on rhs with same code as lhs but just reverse sides for inputs ?
-  ;; what if output-pk is same as lhs-pk - can we save cycles - similarly on other side ?
-  ;; raise events
-  ;; implement output model
-  ;; if two rows are joined then unjoined will we forget their joined version ? - problem - need to implement 'extinct' as well
-  ;; allow disabling of indeces for faster runtime
-
-  
-  )
-
-(defn update-lhs-index [lhs-index lhs-refs rhs]
-  (info ["update-lhs-index"])
-  (reduce
-   (fn [lhs-index [lhs-key lhs-fk-is]]
-     (let [^LHSEntry old-lhs-entry (lhs-index lhs-key)]
-       (assoc lhs-index
-	 lhs-key
-	 (LHSEntry.
-	  true
-	  (inc (.version old-lhs-entry))
-	  (.lhs old-lhs-entry)
-	  (reduce (fn [lhs-rhs-tuple i] (assoc lhs-rhs-tuple i rhs)) (.rhs-tuple old-lhs-entry) lhs-fk-is) ;; new-rhs-tuple
-	  nil ;; datum - TODO
-	  ))))
-   lhs-index
-   lhs-refs))
-
-;; returns -> [mutable immutable insertions alterations deletions]
-(defn update-rhs [[lhs-index rhs-indeces] [lhs-immutable rhs-immutables] i insertions alterations deletions]
-  ;; TODO: extant/extinct / deletion
-  (info ["update-rhs" i rhs-indeces])
-  (let [rhs-index (nth rhs-indeces i)
-	[^Getter rhs-pk-getter ^Getter rhs-version-getter ^Metadata$Comparator rhs-version-comparator lhs-fk-getters] (nth rhs-immutables i)]
-    (info ["update-rhs:" rhs-index insertions alterations deletions])
-
-    (let [[lhs-index rhs-index insertions alterations deletions]
-	  (reduce
-	   (fn [[lhs-index rhs-index i a d] ^Update update]
-	     (let [new-rhs (.getNewValue update)
-		   rhs-pk (.get rhs-pk-getter new-rhs)]
-	       (if-let [^RHSEntry old-rhs-entry (rhs-index rhs-pk)]
-		 (let [old-rhs (.rhs old-rhs-entry)]
-		   (info [" update-rhs: index alteration" rhs-pk old-rhs new-rhs])
-		   (if (.higher rhs-version-comparator old-rhs new-rhs)
-		     (let [lhs-refs (.lhs-refs old-rhs-entry)
-			   new-lhs-index (update-lhs-index lhs-index lhs-refs new-rhs)
-			   new-rhs-entry (RHSEntry. new-rhs lhs-refs)
-			   new-rhs-index (assoc rhs-index rhs-pk new-rhs-entry)
-			   ;; TODO: if the old-rhs-entry had NO rhs, then this is an INSERTION, if not, an ALTERATION
-			   new-alterations (conj a nil)] ;NYI - notification
-		       (info ["  update-rhs: version accepted" old-rhs-entry "->" new-rhs-entry])
-		       [new-lhs-index new-rhs-index i new-alterations d]
-		       )
-		     (do
-		       (info ["  update-rhs: version rejected" rhs-pk])
-		       [lhs-index rhs-index i a d]))
-		   )
-		 (let [new-rhs-entry (RHSEntry. new-rhs #{})
-		       new-rhs-index (assoc rhs-index rhs-pk new-rhs-entry)]
-		   (info [" update-rhs: index insertion" rhs-pk lhs-index rhs-index])
-		   ;; no notification needed, since no new join occurred
-		   ;; when data is added on lhs, new items may be added to rhs indeces, although rhs datum has not yet been seen
-		   [lhs-index new-rhs-index i a d]
-		   )
-		 )
-	       )
-	     )
-	   [lhs-index rhs-index nil nil nil]
-	   (concat insertions alterations))]
-      [lhs-index (assoc rhs-indeces i rhs-index) insertions alterations deletions]
-      )))
-
-(defn -post-init [^org.dada.core.JoinModel self _ ^Model lhs-model _ rhses]
-  (let [[mutable immutable] (.state self)]
-    
-    (info ["post-init: watching lhs:" lhs-model])
-    (.registerView
-     lhs-model
-     (proxy [View] []
-       (update [insertions alterations deletions]
-	       (let [[_mutable insertions alterations deletions] (swap! mutable update-lhs immutable insertions alterations deletions)]
-		 (.notifyUpdate self insertions alterations deletions)))))
-    (dorun
-     (map
-      (fn [i [_ ^Model rhs-model]]
-	(info ["post-init: watching rhs:" i rhs-model])
-	(.registerView
-	 rhs-model
-	 (proxy [View] []
-	   (update [insertions alterations deletions]
-		   (let [[_mutable insertions alterations deletions] (swap! mutable update-rhs immutable i insertions alterations deletions)]
-		     (.notifyUpdate self insertions alterations deletions))))))
-      (range)
-      rhses))))
-
-(defn -getData [^org.dada.core.JoinModel this]
-  (info "Join: getData")
-  (Data. (vals (nth @(first (.state this)) 4)) nil))
-
-(defn -find [^org.dada.core.JoinModel this key]
-  (info ["Join: find" key])
-  ((nth @(first (.state this)) 4) key))
+	     rhses
+	     join-fn]
+  (debug "Join: init")
+  [ ;; super ctor args
+   [model-name model-metadata]
+   ;; instance state [atom(mutable) immutable]
+   (let [lhs-metadata (.getMetadata lhs-model)
+	 lhs-mutable {}
+	 rhs-mutables (apply vector (repeatedly (count (invert-map rhses)) hash-map))]
+     [(atom [lhs-mutable rhs-mutables])])])
 
 ;;--------------------------------------------------------------------------------
 
-;; an index is a pair of PersistentMaps
+(defn update-lhs-rhs-indeces [lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-rhs-refs old-rhs-indeces]
+  (debug ["update-lhs-rhs-indeces" rhs-i-to-lhs-getters old-rhs-indeces])
+  (reduce
+   (fn [[old-rhs-refs-1 old-rhs-indeces-1] [i lhs-getters rhs-index]]
+     (reduce
+      (fn [[old-rhs-refs-2 old-rhs-indeces-2] [j ^Getter lhs-getter]]
+	(debug [" update-lhs-rhs-indeces: inputs" old-rhs-refs-2 old-rhs-indeces-2])
+	(let [old-rhs-pk (if old-lhs (.get lhs-getter old-lhs))
+	      new-rhs-pk (.get lhs-getter new-lhs)
+	      dummy (debug ["old-rhs-pk new-rhs-pk" old-rhs-pk new-rhs-pk])]
+	  (if (= old-rhs-pk new-rhs-pk)
+	    (do
+	      (debug [" update-lhs-rhs-indeces: unchanged" i old-rhs-pk])
+	      [old-rhs-refs-2 old-rhs-indeces-2])
+	    (let [old-rhs-index (old-rhs-indeces-2 i)
+		  ;; remove lhs from old-rhs-pks (if necessary) - TODO - tidy up
+		  dummy (debug ["old-rhs-pk" old-rhs-pk old-rhs-index])
+		  tmp-rhs-index (if-let [^RHSEntry old-old-rhs-entry (old-rhs-index old-rhs-pk)]
+				  (let [old-lhs-pks (.lhs-pks old-old-rhs-entry)
+					new-lhs-pks (assoc old-lhs-pks j (disj (old-lhs-pks j) lhs-pk))
+					new-old-rhs-entry (RHSEntry. (.rhs old-old-rhs-entry) new-lhs-pks)
+					dummy (debug ["new-old-rhs-entry" new-old-rhs-entry])
+					tmp-rhs-index (assoc old-rhs-index old-rhs-pk new-old-rhs-entry)]
+				    tmp-rhs-index)
+				  old-rhs-index)
+		  ;; add lhs to new-rhs-pks
+		  [rhs new-rhs-index] (let [^RHSEntry old-new-rhs-entry (tmp-rhs-index new-rhs-pk)
+					    [rhs old-lhs-pks] (if old-new-rhs-entry
+								[(.rhs old-new-rhs-entry) (.lhs-pks old-new-rhs-entry)]
+								[nil
+								 ;; TODO - should use templated value
+								 (apply vector (repeatedly (count lhs-getters) hash-set))])
+					    new-lhs-pks (assoc old-lhs-pks j (conj (old-lhs-pks j) lhs-pk))
+					    new-new-rhs-entry (RHSEntry. rhs new-lhs-pks)
+					    dummy (debug ["new-new-rhs-entry" new-new-rhs-entry])
+					    new-rhs-index (assoc tmp-rhs-index new-rhs-pk new-new-rhs-entry)]
+					[rhs new-rhs-index])
+		  ;; update rhs-indeces
+		  new-rhs-indeces (assoc old-rhs-indeces-2 i new-rhs-index)
+		  ;; update rhs-refs
+		  new-rhs-refs (assoc old-rhs-refs-2 i (assoc (old-rhs-refs-2 i) j rhs))]
+	      (debug [" update-lhs-rhs-indeces: changed" i old-rhs-pk "->" new-rhs-pk])
+	      [new-rhs-refs new-rhs-indeces]))))
+      [old-rhs-refs-1 old-rhs-indeces-1]
+      (map (fn [j lhs-getter] [j lhs-getter]) (range) lhs-getters))
+     )
+   [old-rhs-refs old-rhs-indeces]
+   (map (fn [[i lhs-getter] rhs-index] [i lhs-getter rhs-index]) rhs-i-to-lhs-getters old-rhs-indeces))
+  )
 
-;; (defprotocol Indexer
-;;   (insert [index insertion])
-;;   (delete [index deletion])
-;;   (get [keys index values]))
+(defn update-lhs
+  "return new mutable state and events in response to notifications from the left hand side model"
+  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$Comparator lhs-version-comparator rhs-i-to-lhs-getters join-fn]
+  (debug ["update-lhs" rhs-i-to-lhs-getters])
+  (let [initial-rhs-refs [[nil][nil nil]]] ;TODO - parameterise
+    (reduce
+     (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
+       (let [new-lhs (.getNewValue update)
+	     lhs-pk (.get lhs-pk-getter new-lhs)
+	     ^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)
+	     [old-lhs-version old-lhs-rhs-refs old-lhs]
+	     (if old-lhs-entry
+	       [(.version old-lhs-entry)(.rhs-refs old-lhs-entry)(.lhs old-lhs-entry)]
+	       [-1 initial-rhs-refs nil])]
+	 (if (and old-lhs-entry (not (.higher lhs-version-comparator old-lhs new-lhs)))
+	   (do
+	     (debug ["update-lhs - alteration - rejected" old-lhs new-lhs])
+	     [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])
+	   (let [[new-rhs-refs new-rhs-indeces]
+		 (update-lhs-rhs-indeces lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-lhs-rhs-refs old-rhs-indeces)
+		 new-lhs-version (inc old-lhs-version)
+		 old-datum (if old-lhs-entry (.datum old-lhs-entry))
+		 new-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs)
+		 new-lhs-entry (LHSEntry. true new-lhs-version new-lhs new-rhs-refs new-datum)
+		 new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
+		 [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)]
+	     (debug ["update-lhs - insertion/alteration - accepted" old-lhs new-lhs])
+	     [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions]
+	     ))))
+     [old-lhs-index old-rhs-indeces nil nil nil]
+     (concat insertions alterations))))
 
-;; (deftype LazyIndexer [key-fn]
-;;   Indexer
-;;   ;; do nothing up front
-;;   (insert [index insertion])
-;;   (delete [index deletion])
-;;   (get [key index values]
-;; 	 ;; scan collection for matching elements
-;; 	 (filter (fn [v] (= key (key-fn v))) values)))
+;;--------------------------------------------------------------------------------
 
-;; (deftype AgressiveIndexer [key-fn]
-;;   Indexer
-;;   ;; do work up front - update index
-;;   (insert [[extant old-extinct] old-value new-value]
-;; 	  (let [key (key-fn new-value)
-;; 		new-extinct (dissoc old-extinct key)]
-;; 	    (if (identical? 
-;; 				    )
-;;   (delete [index deletion])
-  
-;;   (get [key index values]
-;; 	 (index key)))
+(defn update-rhs-lhs-index [old-lhs-index lhs-pks-list i new-rhs join-fn old-insertions old-alterations old-deletions]
+  (debug ["update-rhs-lhs-index" old-lhs-index lhs-pks-list new-rhs])
+  (reduce
+   (fn [[old-lhs-index old-insertions old-alterations old-deletions] [j lhs-pks]]
+     (reduce
+      (fn [[old-lhs-index old-insertions old-alterations old-deletions] lhs-pk]
+	(let [^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)
+	      old-lhs-rhs-refs (.rhs-refs old-lhs-entry)
+	      new-lhs-rhs-refs (assoc old-lhs-rhs-refs i (assoc (old-lhs-rhs-refs i) j new-rhs))
+	      new-lhs-version (inc (.version old-lhs-entry))
+	      lhs (.lhs old-lhs-entry)
+	      old-datum (if old-lhs-entry (.datum old-lhs-entry))
+	      new-datum (join-fn lhs-pk new-lhs-version lhs new-lhs-rhs-refs)
+	      [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)
+	      new-lhs-index (assoc old-lhs-index lhs-pk (LHSEntry. (.extant old-lhs-entry) new-lhs-version lhs new-lhs-rhs-refs new-datum))]
+	  [new-lhs-index new-insertions new-alterations new-deletions]))
+      [old-lhs-index old-insertions old-alterations old-deletions]
+      lhs-pks))
+   [old-lhs-index old-insertions old-alterations old-deletions]
+   (map (fn [j lhs-pks][j lhs-pks])(range)lhs-pks-list)))
+
+(defn update-rhs
+  "return new mutable state and events in response to notifications from a right hand side model"
+  [[old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$Comparator rhs-version-comparator lhs-getters join-fn]
+  (let [initial-lhs-pks (apply vector (repeatedly (count lhs-getters) hash-set)) ;TODO - do not rebuild each time...
+	old-rhs-index (nth old-rhs-indeces i)]
+    (debug ["update-rhs" i lhs-getters old-rhs-index])
+
+    ;; insertions/alterations
+    (let [[new-lhs-index new-rhs-index new-insertions new-alterations new-deletions]
+	  (reduce
+	   (fn [[old-lhs-index old-rhs-index old-insertions old-alterations old-deletions] ^Update update]
+	     (let [new-rhs (.getNewValue update)
+		   rhs-pk (.get rhs-pk-getter new-rhs)]
+	       (if-let [^RHSEntry old-rhs-entry (old-rhs-index rhs-pk)]
+		 (let [old-rhs (.rhs old-rhs-entry)]
+		   (if (or (nil? old-rhs) (.higher rhs-version-comparator old-rhs new-rhs))
+		     (let [new-rhs-entry (RHSEntry. new-rhs (if old-rhs-entry (.lhs-pks old-rhs-entry) initial-lhs-pks))
+			   new-rhs-index (assoc old-rhs-index rhs-pk new-rhs-entry)
+			   [new-lhs-index new-insertions new-alterations-new-deletions]
+			   (update-rhs-lhs-index old-lhs-index (.lhs-pks old-rhs-entry) i new-rhs join-fn old-insertions old-alterations old-deletions)]
+		       (debug ["update-rhs - alteration - accepted" old-rhs new-rhs])
+		       [new-lhs-index new-rhs-index new-insertions new-alterations-new-deletions])
+		     (do
+		       (debug ["update-rhs - alteration - rejected" old-rhs new-rhs])
+		       [old-lhs-index old-rhs-index old-insertions old-alterations old-deletions])))
+		 (let [new-rhs-entry (RHSEntry. new-rhs initial-lhs-pks)
+		       new-rhs-index (assoc old-rhs-index rhs-pk new-rhs-entry)]
+		   (debug ["update-rhs - insertion" new-rhs])
+		   [old-lhs-index new-rhs-index old-insertions old-alterations old-deletions]))))
+	   [old-lhs-index old-rhs-index nil nil nil]
+	   (concat insertions alterations))
+	  new-rhs-indeces (assoc old-rhs-indeces i new-rhs-index)]
+      [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions])
+    
+    ;; deletions - TO DO
+    
+    ))
+
+;;--------------------------------------------------------------------------------
+
+(defn -post-init [^org.dada.core.JoinModel self _ _ ^Model lhs-model rhses join-fn]
+  (let [[mutable immutable] (.state self)
+	rhs-model-to-lhs-fks (invert-map rhses)
+	lhs-metadata (.getMetadata lhs-model)
+	get-lhs-getter (fn [key] (.getGetter (.getAttribute lhs-metadata key)))
+	i-to-rhs-model-and-lhs-getters (into
+					(sorted-map)
+					(map
+					 (fn [i [^Model model keys]]
+					   [i [model (map get-lhs-getter keys)]])
+					 (range)
+					 rhs-model-to-lhs-fks))
+	i-to-lhs-getters (into (sorted-map) (map (fn [[i [model getters]]] [i getters]) i-to-rhs-model-and-lhs-getters))]
+    
+    (debug ["post-init: watching lhs:" lhs-model])
+    (let [^Metadata lhs-metadata (.getMetadata lhs-model)
+	  lhs-pk-getter (.getPrimaryGetter lhs-metadata)
+	  lhs-version-comparator (.getVersionComparator lhs-metadata)
+	  ^Data data
+	  (.registerView
+	   lhs-model
+	   (proxy [View] []
+	     (update [insertions alterations deletions]
+		     (let [[_ _ insertions alterations deletions]
+			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn)]
+		       (.notifyUpdate self insertions alterations deletions)))))]
+      (swap! mutable update-lhs
+	     (map (fn [extant] (Update. nil extant))(.getExtant data))
+	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn) ;; TODO - deletions/extinct
+      )
+    (dorun
+     (map
+      (fn [[i [^Model rhs-model lhs-getters]]]
+	(debug ["post-init: watching rhs:" i rhs-model])
+	(let [^Metadata rhs-metadata (.getMetadata rhs-model)
+	      rhs-pk-getter (.getPrimaryGetter rhs-metadata)
+	      rhs-version-comparator (.getVersionComparator rhs-metadata)
+	      ^Data data
+	      (.registerView
+	       rhs-model
+	       (proxy [View] []
+		 (update [insertions alterations deletions]
+			 (let [[_ _ insertions alterations deletions]
+			       (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
+			   (.notifyUpdate self insertions alterations deletions)))))]
+	  (swap! mutable update-rhs
+		 (map (fn [extant] (Update. nil extant))(.getExtant data))
+		 nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
+      i-to-rhs-model-and-lhs-getters))))
+
+(defn -getData [^org.dada.core.JoinModel this]
+  (let [[extant extinct]
+	(reduce
+	 (fn [[extant extinct] ^LHSEntry entry] (if (.extant entry) [(conj extant (.datum entry)) extinct] [extant (conj extinct (.datum entry))]))
+	 [nil nil]
+	 (.values ^Map (first @(first (.state this)))))]
+    (Data. extant extinct)))
+
+(defn -find [^org.dada.core.JoinModel this key]
+  (if-let [^LHSEntry entry ((first @(first (.state this))) key)]
+    (if (.extant entry)
+      (.datum entry))))  
+
+;; TODO
+;; deletion
+;; abstract out Index interface and provide eager and lazy implementations
+;; optimise
+;; tidy up and polish
+;; clarify role of join-fn
+;; remaining TODOs
+;; compound keys
+
+;; THOUGHTS
+;; indeces should live on data model not join model - then they can be shared between many joins/splits etc...
+;; outer joins ?
+;; why are we so LHS oriented ? should we be ?
+;; compound keys ?
+;; use lists instead of entries - they may be cheaper to update
+;; don't store rhs-refs on lhs, but rhs-entries (or rhs-pks?) - consider
+;; make whole thing a macro which generates inline code specific to each individual join
