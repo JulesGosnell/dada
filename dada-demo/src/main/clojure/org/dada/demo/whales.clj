@@ -148,7 +148,7 @@
 
 ;; create some whales...
 
-(def num-whales 100)
+(def num-whales 20)
 
 (def some-whales (doall (pmap (fn [id] (whale id)) (range num-whales))))
 
@@ -334,6 +334,17 @@
 
 (if (not *compile-files*) (start-model))
 
+(defmethod mutate :max-depth [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 4))) 100)))
+(defmethod mutate :area [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 4))) 100)))
+
+(defn mutate-datum [^Model model]
+  (let [metadata (.getMetadata model)
+	old-value (rnd (.getExtant (.getData model)))
+	new-value (.create (.getCreator metadata) (into-array Object (map #(mutate % old-value) (.getAttributes metadata))))]
+    (update model old-value new-value)))
+
+;;--------------------------------------------------------------------------------
+
 ;;--------------------------------------------------------------------------------
 
 ;; ;; create a client to a remote session manager
@@ -382,18 +393,45 @@
 ;;(inspect (? (dfrom "Oceans")))
 
 ;; try updating an ocean
-(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["arctic"   1 10000000 17880])))
-(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["southern" 1 10000000 23737])))
+(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["arctic"   13 99999999 17880])))
+(insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["southern" 2  10000000 23737])))
+
+
+(def #^Metadata join-metadata
+  (custom-metadata "org.dada.demo.whales.Join" Object [:id] [:version] int-version-comparator
+		   (list
+		    [:id        (Integer/TYPE) false]
+		    [:version   (Integer/TYPE) true]
+		    [:type      String         false]
+		    [:length    (Integer/TYPE) true]
+		    [:weight    (Integer/TYPE) true]
+		    [:ocean     String         true]
+		    [:ocean-area      (Integer/TYPE) true] ;; may grow and shrink with ice
+		    [:ocean-max-depth (Integer/TYPE) true]
+		    )))
+
+(def join-creator (.getCreator join-metadata))
+(defn make-join [& args] (.create join-creator (into-array Object args)))
 
 ;; we need a ModelView that listens to Whales AND Oceans and joins them together...
 
-(def join-model
+(def joins-model
      (JoinModel.
-      "TestJoin"
-      :ocean
-      [:id]
-      [:version :time :reporter :type :ocean :length :weight]
+      "WhalesAndOceans"
+      join-metadata
       whales-model
-      []
-      [:max-depth]
-      oceans-model))
+      {:ocean oceans-model}
+      (fn [id version whale [[ocean]]]
+	(let [[type length weight] (if whale [(.getType whale)(.getLength whale)(.getWeight whale)][nil 0 0])
+	      [ocean ocean-area ocean-max-depth] (if ocean [(.getId ocean)(.getMax_minus_depth ocean)(.getArea ocean)] [nil 0 0])]
+	  (make-join id version type length weight ocean ocean-area ocean-max-depth)
+	  ))))
+(insert *metamodel* joins-model)
+
+;;(inspect (? (dfrom "WhalesAndOceans")))
+
+;;(insert whales-model (.create (.getCreator whale-metadata) (into-array Object [10000 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100])))
+;;(.find whales-model 10000)
+
+;;(.start (Thread. (fn [] (doall (map (fn [n] (mutate-datum oceans-model)(Thread/sleep 500)) (repeat 0))))))
+

@@ -103,7 +103,7 @@
 	attributes (.getAttributes metadata)
 	getters (map (fn [#^Attribute attribute] (.getGetter attribute)) attributes)
 	pk-getter (.getPrimaryGetter metadata)
-	property-names (into-array String (map (fn [attribute] (.toString (.getKey attribute))) attributes))
+	property-names (into-array String (map (fn [^Attribute attribute] (.toString (.getKey attribute))) attributes))
 	property-name-to-index (apply array-map (interleave property-names (iterate inc 0)))
 	property-name-to-label (apply array-map (interleave property-names property-names)) 
 	;; store list of immutable data as list of mutable singleton arrays of immutable data
@@ -118,7 +118,7 @@
 	 [IColumnPropertyAccessor]
 	 []
 	 ;; IColumnAccessor<T>
-	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (pr-str (.get (nth getters columnIndex) (.getDatum rowObject)))) ;TODO - I'd rather not use pr-str here...
+	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (.get (nth getters columnIndex) (.getDatum rowObject)))
 	 (#^int getColumnCount [] (count property-names))
 	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
