@@ -1,14 +1,15 @@
 (ns
  org.dada.swt.nattable
- (:use [org.dada core]
-       [org.dada.swt swt utils])
+ (:use
+  [clojure.contrib logging]
+  [org.dada core]
+  [org.dada.swt swt utils])
  (:import
-  [java.util ArrayList Collection]
-  [org.dada.swt Mutable]
+  [java.util ArrayList Collection HashMap List Map]
   [org.eclipse.swt SWT]
   [org.eclipse.swt.layout GridData GridLayout]
   [org.eclipse.swt.widgets Composite Display Shell]
-  [ca.odell.glazedlists GlazedLists SortedList]
+  [ca.odell.glazedlists EventList GlazedLists SortedList]
   [net.sourceforge.nattable NatTable]
   [net.sourceforge.nattable.blink BlinkConfigAttributes BlinkLayer IBlinkingCellResolver]
   [net.sourceforge.nattable.config CellConfigAttributes ConfigRegistry DefaultNatTableStyleConfiguration]
@@ -26,60 +27,9 @@
   [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
   [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
   [net.sourceforge.nattable.viewport ViewportLayer]
-
-  [org.dada.core Attribute Metadata Model Update View]
+  [org.dada.core Attribute Getter Metadata Metadata$VersionComparator Model Update View]
+  [org.dada.swt Mutable]
   ))
-
-;;--------------------------------------------------------------------------------
-;; hopefully this code will bridge between a DADA View and a GL EventList - untested...
-;;--------------------------------------------------------------------------------
-;; (defn #^EventList make-dada-gl-event-list [#^Model model]
-;;   (let [extant (ArrayList.)
-;; 	extinct (ArrayList.)
-;; 	publisher (ListEventAssembler/createListEventPublisher)
-;; 	read-write-lock (.createReadWriteLock (J2SE50LockFactory.))
-;; 	list-event-assenbler (atom nil)
-;; 	pk-fn (.getPrimaryGetter (.getMetadata model))
-;; 	pk-comparator (proxy [Comparable][]
-;; 			     (#^int compareTo [#^Comparable lhs #^Comparable rhs] (.compareTo (pk-fn lhs)(pk-fn rhs)))
-;; 			     (#^boolean equals [lhs rhs] (.equals  (pk-fn lhs)(pk-fn rhs))))
-;; 	insert (fn [#^Update update]
-;; 		   (let [datum (.getNewValue update)
-;; 			 index (- (Math/abs (Collections/binarySearch extant datum pk-comparator)) 1)]
-;; 		     (.insert extant index datum)
-;; 		     (.elementInserted list-event-assenbler index datum)))
-;; 	alter (fn [#^Update update]
-;; 		  (let [datum (.getNewValue update)
-;; 			index (Collections/binarySearch extant datum pk-comparator)
-;; 			old-value (.get extant index)]
-;; 		    (.set extant index datum)
-;; 		    (.elementUpdated list-event-assenbler index datum)))
-;; 	delete (fn [#^Update update]
-;; 		   (let [datum (.getOldValue update)
-;; 			 index (Collections/binarySearch extant datum pk-comparator)
-;; 			 old-value (.remove extant index)]
-;; 		     (.elementDeleted list-event-assenbler index old-value datum)))
-;; 	event-list (proxy [EventList][]
-;; 			  ;; 1
-;; 			  (#^ListEventPublisher getPublisher [] publisher)
-;; 			  ;; 2
-;; 			  (#^ReadWriteLock getReadWriteLock [] read-write-lock)
-;; 			  ;; 3
-;; 			  (#^int size [] (.size extant))
-;; 			  ;; 4
-;; 			  (#^void addListEventListener [#^ListEventListener listener] (.addListEventListener @list-event-assenbler listener))
-;; 			  ;; 5
-;; 			  (#^Objectget [#^int index] (.get extant index)))
-;; 	view (proxy [View][]
-;; 		    (#^void update [#^Collection indertions  #^Collection alterations #^Collection deletions]
-;; 			    (doall (map insert insertions))
-;; 			    (doall (map alter alterations))
-;; 			    (doall (map delete deletions))))]
-;;     (swap! list-event-assenbler (fn [old new] new) (ListEventAssembler. event-list publisher))
-;;     (doall (map insert (.getExtant (.registerView model view))))
-;;     event-list))
-
-;; (def event-list (make-dada-gl-event-list my-model))
 
 ;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
@@ -88,29 +38,67 @@
 ;; Blinking Table
 ;; http://nattable.svn.sourceforge.net/viewvc/nattable/trunk/nattable/net.sourceforge.nattable.examples/src/net/sourceforge/nattable/examples/demo/BlinkingGridExample.java?revision=3912&view=markup
 
-;; TODO - recur
-;; TODO - will terminate on nil-entries...
-(defn index [[head & tail] value function & [i]]
-  (let [i (or i 0)]
-    (if head
-      (if (function head value)
-	i
-	(index tail value function (+ 1 i)))
-      -1)))
+(defn apply-updates [^Getter pk-getter ^Metadata$VersionComparator version-comparator ^EventList event-list ^Map index ^GlazedListsEventLayer event-layer property-names getters ^Collection insertions ^Collection alterations ^Collection deletions]
+  ;; since insertions may be carrying an old-value and deletions a new value - do we need to handle them differently ? - consider...
+  (dorun
+   (map
+    (fn [^Update update]
+      (if-let [new-value (.getNewValue update)]
+	;; insertion/alteration
+	(let [pk (.get pk-getter new-value)
+	      lock (.writeLock (.getReadWriteLock event-list))]
+	  (try
+	    (.lock lock)       ;we are holding this for a long time...
+	    (if-let [^Mutable old-mutable (.get index pk)]
+	      ;; alteration
+	      (let [old-value (.getDatum old-mutable)]
+		(if (< (.compareTo version-comparator old-value new-value) 0)
+		  (do
+		    (.setDatum old-mutable new-value)
+		    (dorun
+		     (map
+		      (fn [^Getter getter property-name]
+			(let [old (.get getter old-value)
+			      new (.get getter new-value)]
+			  (if (not (= old new))
+			    (.propertyChange event-layer (java.beans.PropertyChangeEvent. old-mutable property-name old new)))))
+		      getters
+		      property-names)))
+		  (warn ["rejecting out-of-order version: " old-value new-value])))
+	      ;; insertion
+	      (let [new-mutable (Mutable. new-value)]
+		(.put index pk new-mutable)
+		(.add event-list new-mutable)))
+	    (finally
+	     (.unlock lock))))
+	;; deletion
+	(let [old-value (.getOldValue update)
+	      pk (.get pk-getter old-value)
+	      lock (.writeLock (.getReadWriteLock event-list))]
+	  ;; TODO: HOW CAN WE COMPARE VERSIONS HERE ?
+	  (try
+	    (.lock lock)
+	    (println "DELETING:" pk (.get index pk))
+	    (if-let [old-mutable (.remove index pk)]
+	      (.remove event-list old-mutable))
+	    (finally
+	     (.unlock lock))))))
+    (concat insertions alterations deletions))))
 
-(defn nattable-make [[#^Model model pairs] #^Composite parent]
-  (let [#^Metadata metadata (.getMetadata model)
+(defn nattable-make [[^Model model pairs] ^Composite parent]
+  (let [^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
-	getters (map (fn [#^Attribute attribute] (.getGetter attribute)) attributes)
+	getters (map (fn [^Attribute attribute] (.getGetter attribute)) attributes)
 	pk-getter (.getPrimaryGetter metadata)
+	version-comparator (.getVersionComparator metadata)
 	property-names (into-array String (map (fn [^Attribute attribute] (.toString (.getKey attribute))) attributes))
 	property-name-to-index (apply array-map (interleave property-names (iterate inc 0)))
 	property-name-to-label (apply array-map (interleave property-names property-names)) 
 	;; store list of immutable data as list of mutable singleton arrays of immutable data
 	;; now we can hand off a mutable ref containing immutable data...
-	data (reduce (fn [current new](doto current (.add (Mutable. new)))) (java.util.ArrayList.) (.getExtant (.getData model))) ;hack
-	dummy (println "DATA" data)
-	event-list (GlazedLists/eventList data)
+	;; this index only to be used inside the event-list's lock
+	^Map index (reduce (fn [^Map reduction datum] (doto reduction (.put (.get pk-getter datum) (Mutable. datum)))) (HashMap.) (.getExtant (.getData model)))
+	event-list (GlazedLists/eventList (.values index))
 	sorted-list (SortedList. event-list nil)
       
 	column-property-accessor
@@ -118,13 +106,13 @@
 	 [IColumnPropertyAccessor]
 	 []
 	 ;; IColumnAccessor<T>
-	 (#^Object getDataValue [#^Collection rowObject #^int columnIndex] (.get (nth getters columnIndex) (.getDatum rowObject)))
-	 (#^int getColumnCount [] (count property-names))
+	 (^Object getDataValue [^Mutable rowObject ^int columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
+	 (^int getColumnCount [] (count property-names))
 	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
 	 ;;IColumnPropertyResolver 
-	 (#^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
-	 (#^int getColumnIndex [#^String propertyName] (property-name-to-index propertyName))
+	 (^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
+	 (^int getColumnIndex [^String propertyName] (property-name-to-index propertyName))
 	 )
 
 	config-registry (ConfigRegistry.)
@@ -134,7 +122,7 @@
 	blink-layer (BlinkLayer.
 			    glazed-lists-event-layer
 			    body-data-provider
-			    (proxy [IRowIdAccessor][](#^Serializable getRowId [#^Object row] (.get pk-getter (.getDatum row))))
+			    (proxy [IRowIdAccessor][](^Serializable getRowId [^Mutable row] (.get pk-getter (.getDatum row))))
 			    column-property-accessor
 			    config-registry)
 	dummy (do
@@ -157,38 +145,8 @@
 	column-header-layer-stack (proxy [AbstractLayerTransform] [])
 
 	view (proxy [View][]
- 		    (#^void update [#^Collection insertions  #^Collection alterations #^Collection deletions]
- 			    ;;(doall (map insert insertions))
- 			    (doall
-			     (map
-			      (fn [#^Update alteration]
-				  (let [old-value (.getOldValue alteration)
-					new-value (.getNewValue alteration)
-					i (index data old-value (fn [e v](= (.getDatum e) v)))]
-				    ;; hack
-				    (if (> i -1 )
-				      (do
-					(.setDatum (.get data i) new-value)
-					(doall
-					 (map
-					  (fn [getter property-name]
-					      (let [old (.get getter old-value)
-						    new (.get getter new-value)]
-						(if (not (= old new))
-						  (.propertyChange
-						   glazed-lists-event-layer
-						   (java.beans.PropertyChangeEvent. (.get data i) property-name old new)))))
-					  getters
-					  property-names)))
-				      (do
-				      (println "VALUE NOT FOUND:" old-value (.getType old-value) ":" old-value)
-				      (println "DATA" (map (fn [e] (.getType (.getDatum e))) data))
-				      ))
-				    ;; diff old and new
-				    ))
-			      alterations))
- 			    ;;(doall (map delete deletions))
-			    ))
+	       (^void update [^Collection insertions ^Collection alterations ^Collection deletions]
+		      (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))
 	]
     (.registerView model view)
     
@@ -232,3 +190,8 @@
 	nattable))))
 
 ;;--------------------------------------------------------------------------------
+;; TODO
+;; is there really no faster way to remove from an event-list that by identity ?
+;; version check
+;; when window is closed view should be removed...
+;; highlight should be configurable

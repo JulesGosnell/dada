@@ -22,6 +22,8 @@
    ])
  )
 
+(def sleep-period 2)
+
 ;;----------------------------------------------------------------------------------------------------------------------
 ;; TODO - this will have to wait until we have an extended ClassFactory
 
@@ -330,12 +332,12 @@
     (update model old-value new-value)))
 
 (defn start-model []
-  (.start (Thread. (fn [] (doall (map (fn [n] (create-mutation)(Thread/sleep 500)) (repeat 0)))))))
+  (.start (Thread. (fn [] (doall (map (fn [n] (create-mutation)(Thread/sleep sleep-period)) (repeat 0)))))))
 
 (if (not *compile-files*) (start-model))
 
-(defmethod mutate :max-depth [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 4))) 100)))
-(defmethod mutate :area [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 4))) 100)))
+(defmethod mutate :max-depth [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100)))
+(defmethod mutate :area [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100)))
 
 (defn mutate-datum [^Model model]
   (let [metadata (.getMetadata model)
@@ -389,9 +391,6 @@
 
 ;;--------------------------------------------------------------------------------
 
-;;(inspect (? (dfrom "Whales")))
-;;(inspect (? (dfrom "Oceans")))
-
 ;; try updating an ocean
 (insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["arctic"   13 99999999 17880])))
 (insert oceans-model (.create (.getCreator ocean-metadata) (into-array Object ["southern" 2  10000000 23737])))
@@ -423,15 +422,20 @@
       {:ocean oceans-model}
       (fn [id version whale [[ocean]]]
 	(let [[type length weight] (if whale [(.getType whale)(.getLength whale)(.getWeight whale)][nil 0 0])
-	      [ocean ocean-area ocean-max-depth] (if ocean [(.getId ocean)(.getMax_minus_depth ocean)(.getArea ocean)] [nil 0 0])]
+	      [ocean ocean-max-depth ocean-area] (if ocean [(.getId ocean)(.getMax_minus_depth ocean)(.getArea ocean)] [nil 0 0])]
 	  (make-join id version type length weight ocean ocean-area ocean-max-depth)
 	  ))))
 (insert *metamodel* joins-model)
 
+;;--------------------------------------------------------------------------------
+
+;;(inspect (? (dfrom "Whales")))
+;;(inspect (? (dfrom "Oceans")))
 ;;(inspect (? (dfrom "WhalesAndOceans")))
 
-;;(insert whales-model (.create (.getCreator whale-metadata) (into-array Object [10000 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100])))
-;;(.find whales-model 10000)
+;;(.start (Thread. (fn [] (doall (map (fn [n] (mutate-datum oceans-model)(Thread/sleep sleep-period)) (repeat 0))))))
 
-;;(.start (Thread. (fn [] (doall (map (fn [n] (mutate-datum oceans-model)(Thread/sleep 500)) (repeat 0))))))
+;;(insert whales-model (.create (.getCreator whale-metadata) (into-array Object [10000 4000000 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100])))
+;;(delete whales-model (.create (.getCreator whale-metadata) (into-array Object [10000 5000000 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100])))
+;;(.find whales-model 10000)
 

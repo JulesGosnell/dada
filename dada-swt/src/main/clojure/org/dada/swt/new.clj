@@ -37,9 +37,9 @@
    (fn []
        (let [[metadata-fn data-fn] query
 	     results (data-fn)
-	     [metamodel] results
-	     shell (create-shell *display* (.getName metamodel))
-	     component (create results shell)]
+	     [^Model metamodel] results
+	     ^Composite shell (create-shell *display* (.getName metamodel))
+	     ^Composite component (create results shell)]
 	 (trace results)
 	 (.pack component)
 	 (.pack shell)))))
