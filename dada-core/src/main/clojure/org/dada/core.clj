@@ -28,7 +28,7 @@
    DummyLock
    Getter
    Metadata
-   Metadata$Comparator
+   Metadata$VersionComparator
    MetadataImpl
    Model
    ServiceFactory
@@ -200,7 +200,7 @@
 
 (defn #^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
+  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$VersionComparator version-comparator #^Collection attributes]
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
     (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys version-comparator attributes)))
 
@@ -208,7 +208,7 @@
 
   (defn #^Metadata custom-metadata
     "create metadata for a Model containing instances of a Class"
-    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$Comparator version-comparator #^Collection attributes]
+    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$VersionComparator version-comparator #^Collection attributes]
     (let [cache-key [superclass primary-keys version-keys attributes]]
       ((swap!
 	custom-metadata-cache 
@@ -229,7 +229,7 @@
        (proxy [Creator] [] (create [args] args))
        [0]
        [1]
-       (proxy [Metadata$Comparator][] (higher [[_ v1] [_ v2]] (> v2 v1)))
+       (proxy [Metadata$VersionComparator][] (compareTo [[_ v1] [_ v2]] (- v1 v2)))
        (map
 	(fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
 	(range length))))
@@ -381,7 +381,7 @@
 			 nil		;creator
 			 [:name]	;primary-keys
 			 []		;version-keys
-			 (proxy [Metadata$Comparator][](higher [old new] true)) ;version-comparator
+			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
 			 [(Attribute. :name String false (proxy [Getter][] (get [#^Model model] (.getName model))))])) ;attributes
 
 (do

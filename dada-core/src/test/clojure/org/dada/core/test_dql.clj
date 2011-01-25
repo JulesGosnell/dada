@@ -112,7 +112,7 @@
       (let [result1 (first extant1)
 	    model1 (.getModel result1)]
 	(is (= (.getChildMetadata metaresult0) (.getMetadata model1)))
-	(is (= model1 whales))
+;;	(is (= model1 whales))
 	(is (= (.getPrefix result1) "Whales"))
 	(is (= (.getPairs result1) []))
 	(is (= (first (.getOperation result1)) :from))

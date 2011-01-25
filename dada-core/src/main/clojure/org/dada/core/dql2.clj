@@ -5,7 +5,7 @@
   [org.dada.core
    Getter
    Metadata
-   Metadata$Comparator
+   Metadata$VersionComparator
    Model
    Result2
    MetaResult2
@@ -25,7 +25,7 @@
      (custom-metadata3 org.dada.core.Result
 		       [:model]	   ;TODO - this is a BAD idea for a PK
 		       [:model]	;TODO - we need a proper version - or code that can handle versionless data
-		       (proxy [Metadata$Comparator][](higher [lhs rhs] true))
+		       (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] -1))
 		       [[:model org.dada.core.Model false]
 			[:prefix String false]
 			[:pairs java.util.Collection false]

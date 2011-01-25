@@ -47,7 +47,7 @@
 		     ;; first time seen
 		     [(assoc extant key new) extinct views (cons (Update. nil new) i) a d] ;insertion
 		     ;; already deleted
-		     (if (.higher version-comparator removed new)
+		     (if (< (.compareTo version-comparator removed new) 0)
 		       ;; later version - reinstated
 		       [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
 		       (do
@@ -57,7 +57,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (or (not version-comparator)(.higher version-comparator current new))
+		 (if (or (not version-comparator)(< (.compareTo version-comparator current new) 0))
 		   ;; later version - accepted
 		   [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
 		   (do
@@ -76,14 +76,14 @@
 		   (if (nil? removed)
 		     ;; neither extant or extinct - mark extinct
 		     [extant (dissoc extinct key) views i a d]
-		     (if (.higher version-comparator removed new)
+		     (if (< (.compareTo version-comparator removed new) 0)
 		       ;; later version - accepted
 		       [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
 		       (do
 			 ;; earlier version - ignored
 			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct views i a d]))))
-		 (if (.higher version-comparator current new)
+		 (if (< (.compareTo version-comparator current new) 0)
 		   ;; later version - accepted
 		   [(dissoc extant key) (assoc extinct key new) views i a (cons (Update. current new) d)]
 		   (do

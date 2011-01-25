@@ -132,7 +132,7 @@
 		     (let [new-pivotted (pivot-fn pivotted key new)]
 		       [(assoc extant key new) extinct new-pivotted (cons (Update. nil new-pivotted) i) a d]) ;insertion
 		     ;; already deleted
-		     (if (.higher version-comparator removed new)
+		     (if (< (.compareTo version-comparator removed new) 0)
 		       ;; later version - reinstated
 		       (let [new-pivotted (pivot-fn pivotted key new)]
 			 [(assoc extant key new) (dissoc extinct key) new-pivotted (cons (Update. nil new-pivotted) i) a d])
@@ -143,7 +143,7 @@
 		     )
 		   )
 		 ;; alteration...
-		 (if (.higher version-comparator current new)
+		 (if (< (.compareTo version-comparator current new) 0)
 		   ;; later version - accepted
 		   (let [new-pivotted (pivot-fn pivotted key new)]
 		     [(assoc extant key new) extinct new-pivotted i (cons (Update. pivotted new-pivotted) a) d]) ;alteration
@@ -163,7 +163,7 @@
 		   (if (nil? removed)
 		     ;; neither extant or extinct - mark extinct
 		     [extant (dissoc extinct key) pivotted i a d]
-		     (if (.higher version-comparator removed new)
+		     (if (< (.compareTo version-comparator removed new) 0)
 		       ;; later version - accepted
 		       (let [new-pivotted  (pivot-fn pivotted key new)]
 			 [extant (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)]) ;TODO - is this right ?
@@ -171,7 +171,7 @@
 			 ;; earlier version - ignored
 			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
 			 [extant extinct pivotted i a d]))))
-		 (if (.higher version-comparator current new)
+		 (if (< (.compareTo version-comparator current new) 0)
 		   ;; later version - accepted
 		   (let [new-pivotted (unpivot-fn pivotted key)]
 		     [(dissoc extant key) (assoc extinct key new) new-pivotted i a (cons (Update. pivotted new-pivotted) d)])

@@ -5,7 +5,7 @@
    )
   (:import
    [java.util Collection LinkedHashMap Map]
-   [org.dada.core AbstractModel Attribute Data Getter Metadata Metadata$Comparator Model Tuple Update View]
+   [org.dada.core AbstractModel Attribute Data Getter Metadata Metadata$VersionComparator Model Tuple Update View]
    )
   (:gen-class
    :extends org.dada.core.AbstractModel
@@ -106,7 +106,7 @@
 
 (defn update-lhs
   "return new mutable state and events in response to notifications from the left hand side model"
-  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$Comparator lhs-version-comparator rhs-i-to-lhs-getters join-fn]
+  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn]
   (debug ["update-lhs" rhs-i-to-lhs-getters])
   (let [initial-rhs-refs [[nil][nil nil]]] ;TODO - parameterise
     (reduce
@@ -118,7 +118,7 @@
 	     (if old-lhs-entry
 	       [(.version old-lhs-entry)(.rhs-refs old-lhs-entry)(.lhs old-lhs-entry)]
 	       [-1 initial-rhs-refs nil])]
-	 (if (and old-lhs-entry (not (.higher lhs-version-comparator old-lhs new-lhs)))
+	 (if (and old-lhs-entry (not (< (.compareTo lhs-version-comparator old-lhs new-lhs) 0)))
 	   (do
 	     (debug ["update-lhs - alteration - rejected" old-lhs new-lhs])
 	     [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])
@@ -161,7 +161,7 @@
 
 (defn update-rhs
   "return new mutable state and events in response to notifications from a right hand side model"
-  [[old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$Comparator rhs-version-comparator lhs-getters join-fn]
+  [[old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$VersionComparator rhs-version-comparator lhs-getters join-fn]
   (let [initial-lhs-pks (apply vector (repeatedly (count lhs-getters) hash-set)) ;TODO - do not rebuild each time...
 	old-rhs-index (nth old-rhs-indeces i)]
     (debug ["update-rhs" i lhs-getters old-rhs-index])
@@ -174,7 +174,7 @@
 		   rhs-pk (.get rhs-pk-getter new-rhs)]
 	       (if-let [^RHSEntry old-rhs-entry (old-rhs-index rhs-pk)]
 		 (let [old-rhs (.rhs old-rhs-entry)]
-		   (if (or (nil? old-rhs) (.higher rhs-version-comparator old-rhs new-rhs))
+		   (if (or (nil? old-rhs) (< (.compareTo rhs-version-comparator old-rhs new-rhs) 0))
 		     (let [new-rhs-entry (RHSEntry. new-rhs (if old-rhs-entry (.lhs-pks old-rhs-entry) initial-lhs-pks))
 			   new-rhs-index (assoc old-rhs-index rhs-pk new-rhs-entry)
 			   [new-lhs-index new-insertions new-alterations-new-deletions]
@@ -224,7 +224,8 @@
 	     (update [insertions alterations deletions]
 		     (let [[_ _ insertions alterations deletions]
 			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn)]
-		       (.notifyUpdate self insertions alterations deletions)))))]
+		       (if (or insertions alterations deletions)
+			 (.notifyUpdate self insertions alterations deletions))))))]
       (swap! mutable update-lhs
 	     (map (fn [extant] (Update. nil extant))(.getExtant data))
 	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn) ;; TODO - deletions/extinct
@@ -243,7 +244,8 @@
 		 (update [insertions alterations deletions]
 			 (let [[_ _ insertions alterations deletions]
 			       (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
-			   (.notifyUpdate self insertions alterations deletions)))))]
+			   (if (or insertions alterations deletions)
+			     (.notifyUpdate self insertions alterations deletions))))))]
 	  (swap! mutable update-rhs
 		 (map (fn [extant] (Update. nil extant))(.getExtant data))
 		 nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))

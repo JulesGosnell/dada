@@ -19,7 +19,7 @@
 	   Getter
 	   LazyView
 	   Metadata
-	   Metadata$Comparator
+	   Metadata$VersionComparator
 	   MetaResult
 	   Model
 	   PivotModel
@@ -44,7 +44,7 @@
      (custom-metadata3 org.dada.core.Result
 		       [:model]		;TODO - this is a BAD idea for a PK
 		       [:model]		;TODO - we need a proper version - or code that can handle versionless data
-		       (proxy [Metadata$Comparator][](higher [lhs rhs] true))
+		       (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] -1))
 		       [[:model org.dada.core.Model false]
 			[:prefix String false]
 			[:pairs java.util.Collection false]
@@ -57,9 +57,9 @@
   "apply a list of getters to a value returning a list of their results"
   (map (fn [#^Getter getter] (.get getter value)) getters))
 
-(def #^Metadata$Comparator int-version-comparator
-     (proxy [Metadata$Comparator][]
-	    (higher [old new] (> (.getVersion new) (.getVersion old)))))
+(def #^Metadata$VersionComparator int-version-comparator
+     (proxy [Metadata$VersionComparator][]
+	    (compareTo [old new] (- (.getVersion old) (.getVersion new)))))
 
 ;;----------------------------------------
 ;; Filtration - should be implemented as a thin wrapper around Splitter

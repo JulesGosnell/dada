@@ -34,8 +34,8 @@ import java.util.List;
 
 public interface Metadata<K, V> extends Serializable {
 	
-	public static interface Comparator<V> extends Serializable {
-		boolean higher(V oldValue, V newValue);
+	public static interface VersionComparator<V> extends Serializable {
+		int compareTo(V oldValue, V newValue);
 	}
 
 	Creator<V> getCreator();
@@ -46,7 +46,7 @@ public interface Metadata<K, V> extends Serializable {
 	
 	Collection<Object> getVersionKeys();
 	Getter<?, V> getVersionGetter();
-	Comparator<V> getVersionComparator();
+	VersionComparator<V> getVersionComparator();
 	
 	// keyed access
 	List<Attribute<Object, V>> getAttributes();

@@ -20,7 +20,7 @@
 	   Getter
 	   LazyView
 	   Metadata
-	   Metadata$Comparator
+	   Metadata$VersionComparator
 	   Model
 	   PivotModel
 	   Reducer
@@ -44,9 +44,9 @@
   "apply a list of getters to a value returning a list of their results"
   (map (fn [^Getter getter] (.get getter value)) getters))
 
-(def ^Metadata$Comparator int-version-comparator
-     (proxy [Metadata$Comparator][]
-	    (higher [old new] (> (.getVersion new) (.getVersion old)))))
+(def ^Metadata$VersionComparator int-version-comparator
+     (proxy [Metadata$VersionComparator][]
+	    (higher [old new] (- (.getVersion old) (.getVersion new)))))
 
 ;;----------------------------------------
 ;; Filtration - should be implemented as a thin wrapper around Splitter

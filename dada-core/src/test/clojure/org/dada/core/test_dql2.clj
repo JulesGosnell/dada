@@ -6,7 +6,7 @@
     (:import
      [org.dada.core
       Attribute
-      Metadata$Comparator
+      Metadata$VersionComparator
       Model
       Result])
     )
@@ -36,9 +36,9 @@
       [2 0 :grey :atlantic 50]
       [3 0 :grey :pacific  50]])
 
-(def #^Metadata$Comparator int-version-comparator
-     (proxy [Metadata$Comparator][]
-	    (higher [old new] (> (.getVersion new) (.getVersion old)))))
+(def #^Metadata$VersionComparator int-version-comparator
+     (proxy [Metadata$VersionComparator][]
+	    (compareTo [lhs rhs] (- (.getVersion lhs) (.getVersion rhs)))))
 
 (def whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
 				     Object

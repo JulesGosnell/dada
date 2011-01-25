@@ -87,7 +87,7 @@ public class StringMetadata implements Metadata<String, String> {
 	}
 
 	@Override
-	public Comparator<String> getVersionComparator() {
+	public VersionComparator<String> getVersionComparator() {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}

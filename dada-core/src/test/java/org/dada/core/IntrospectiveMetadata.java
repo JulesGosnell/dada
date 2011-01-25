@@ -114,7 +114,7 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	}
 
 	@Override
-	public org.dada.core.Metadata.Comparator<V> getVersionComparator() {
+	public org.dada.core.Metadata.VersionComparator<V> getVersionComparator() {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("NYI");
 	}
