@@ -99,7 +99,7 @@
       (.setControl item control))))
 
 (defn tab-update [#^Composite parent insertions _ deletions]
-  (doall (map (fn [insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
+  (doall (map (fn [^Update insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
   (.setSelection parent 0)
   (.pack parent))
 									 

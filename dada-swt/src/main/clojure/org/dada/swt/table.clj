@@ -239,7 +239,7 @@
   )
 
 (defn update-table-meta-view [#^Composite parent insertions _ deletions]
-  (doall (map (fn [insertion] (insert-table-meta-view parent (.getNewValue insertion))) insertions)))
+  (doall (map (fn [^Update insertion] (insert-table-meta-view parent (.getNewValue insertion))) insertions)))
 									 
 (defn make-table-meta-view [#^Model async-model #^Composite parent]
   ;; this model will accept unordered async events and put out ordered
