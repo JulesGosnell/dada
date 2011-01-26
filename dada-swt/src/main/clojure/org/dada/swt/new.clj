@@ -31,6 +31,7 @@
 	(def *display* (Display.))
 	(swt-loop *display*)))))
 
+;; TODO - detach View on closing
 (defn inspect [query]
   (.asyncExec
    *display*
@@ -44,46 +45,3 @@
 	 (.pack component)
 	 (.pack shell)))))
 
-(if false
-  (do
-    ;; set up a test model
-
-    (def whale-data
-	 ;;[id, version, type, ocean, length]
-	 [[0 0 :blue :atlantic 100]
-	  [1 0 :blue :pacific  100]
-	  [2 0 :grey :atlantic 50]
-	  [3 0 :grey :pacific  50]])
-
-    (def whales (model "Whales" (seq-metadata (count (first whale-data)))))
-    (insert *metamodel* whales)
-    (insert-n whales whale-data)
-
-    (inspect (? (dfrom "Whales")))
-    (inspect (? (dcount)(dfrom "Whales")))
-    (inspect (? (dsplit 2)(dfrom "Whales")))
-    (inspect (? (dcount)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dsum 4)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-    (inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dcount)(dunion)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dcount)(dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-    (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dunion)(dsplit 3)(dsplit 2)(dfrom "Whales")))
-    (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-    (inspect (? (dunion)(dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-    (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-    
-    ;; needs tidying up...
-    (inspect (? (dfrom "Whales")))
-    (inspect (? (dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-    (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-
-    ;; needs fixing
-    ;;(inspect (? (dunion)(dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-
-    ;; need a pivot demo...
-    ))
-
-;; (? (dunion)(dsplit :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(dsum :weight)(split :type )])(from "Whales"))
-;; (? (dunion)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))

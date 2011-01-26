@@ -1,35 +1,35 @@
 (ns
- org.dada.swt.nattable
- (:use
-  [clojure.contrib logging]
-  [org.dada core]
-  [org.dada.swt swt utils])
- (:import
-  [java.util ArrayList Collection HashMap List Map]
-  [org.eclipse.swt SWT]
-  [org.eclipse.swt.layout GridData GridLayout]
-  [org.eclipse.swt.widgets Composite Display Shell]
-  [ca.odell.glazedlists EventList GlazedLists SortedList]
-  [net.sourceforge.nattable NatTable]
-  [net.sourceforge.nattable.blink BlinkConfigAttributes BlinkLayer IBlinkingCellResolver]
-  [net.sourceforge.nattable.config CellConfigAttributes ConfigRegistry DefaultNatTableStyleConfiguration]
-  [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor IRowIdAccessor]
-  [net.sourceforge.nattable.extension.glazedlists GlazedListsEventLayer GlazedListsSortModel]
-  [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
-  [net.sourceforge.nattable.grid.layer ColumnHeaderLayer CornerLayer DefaultColumnHeaderDataLayer DefaultRowHeaderDataLayer GridLayer RowHeaderLayer]
-  [net.sourceforge.nattable.hideshow ColumnHideShowLayer]
-  [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer]
-  [net.sourceforge.nattable.layer.stack DefaultBodyLayerStack]
-  [net.sourceforge.nattable.reorder ColumnReorderLayer]
-  [net.sourceforge.nattable.selection SelectionLayer]
-  [net.sourceforge.nattable.selection.config DefaultSelectionStyleConfiguration]
-  [net.sourceforge.nattable.sort SortHeaderLayer]
-  [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
-  [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
-  [net.sourceforge.nattable.viewport ViewportLayer]
-  [org.dada.core Attribute Getter Metadata Metadata$VersionComparator Model Update View]
-  [org.dada.swt Mutable]
-  ))
+    org.dada.swt.nattable
+  (:use
+   [clojure.contrib logging]
+   [org.dada core]
+   [org.dada.swt swt utils])
+  (:import
+   [java.util ArrayList Collection HashMap List Map]
+   [org.eclipse.swt SWT]
+   [org.eclipse.swt.layout GridData GridLayout]
+   [org.eclipse.swt.widgets Composite Display Shell]
+   [ca.odell.glazedlists EventList GlazedLists SortedList]
+   [net.sourceforge.nattable NatTable]
+   [net.sourceforge.nattable.blink BlinkConfigAttributes BlinkLayer IBlinkingCellResolver]
+   [net.sourceforge.nattable.config CellConfigAttributes ConfigRegistry DefaultNatTableStyleConfiguration]
+   [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor IRowIdAccessor]
+   [net.sourceforge.nattable.extension.glazedlists GlazedListsEventLayer GlazedListsSortModel]
+   [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
+   [net.sourceforge.nattable.grid.layer ColumnHeaderLayer CornerLayer DefaultColumnHeaderDataLayer DefaultRowHeaderDataLayer GridLayer RowHeaderLayer]
+   [net.sourceforge.nattable.hideshow ColumnHideShowLayer]
+   [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer]
+   [net.sourceforge.nattable.layer.stack DefaultBodyLayerStack]
+   [net.sourceforge.nattable.reorder ColumnReorderLayer]
+   [net.sourceforge.nattable.selection SelectionLayer]
+   [net.sourceforge.nattable.selection.config DefaultSelectionStyleConfiguration]
+   [net.sourceforge.nattable.sort SortHeaderLayer]
+   [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
+   [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
+   [net.sourceforge.nattable.viewport ViewportLayer]
+   [org.dada.core Attribute Getter Metadata Metadata$VersionComparator Model Update View]
+   [org.dada.swt Mutable]
+   ))
 
 ;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
@@ -66,24 +66,38 @@
 		      property-names)))
 		  (warn ["rejecting out-of-order version: " old-value new-value])))
 	      ;; insertion
+	      ;; TODO - we should check that old-value-version is not > new-value version - if it is, we should remember it as extinct
 	      (let [new-mutable (Mutable. new-value)]
 		(.put index pk new-mutable)
-		(.add event-list new-mutable)))
-	    (finally
-	     (.unlock lock))))
-	;; deletion
-	(let [old-value (.getOldValue update)
-	      pk (.get pk-getter old-value)
-	      lock (.writeLock (.getReadWriteLock event-list))]
-	  ;; TODO: HOW CAN WE COMPARE VERSIONS HERE ?
-	  (try
-	    (.lock lock)
-	    (println "DELETING:" pk (.get index pk))
-	    (if-let [old-mutable (.remove index pk)]
-	      (.remove event-list old-mutable))
+		(.add event-list new-mutable)
+		;; TODO - flashing whole row by flashing all cells is a bit brute force...
+		(dorun
+		 (map
+		  (fn [^Getter getter property-name]
+		    (.propertyChange event-layer (java.beans.PropertyChangeEvent. new-mutable property-name nil (.get getter new-value))))
+		  getters
+		  property-names))))
 	    (finally
 	     (.unlock lock))))))
-    (concat insertions alterations deletions))))
+    (concat insertions alterations)))
+  
+  (dorun
+   (map
+    (fn [^Update update]
+      (let [old-value (.getOldValue update)
+	    pk (.get pk-getter old-value)
+	    lock (.writeLock (.getReadWriteLock event-list))]
+	;; TODO: we should remember the latest of old and new version here as extinct
+	(try
+	  (.lock lock)
+	  (if-let [old-mutable (.remove index pk)]
+	    (.remove event-list old-mutable))
+	  (finally
+	   (.unlock lock)))))
+    deletions))
+  
+
+  )
 
 (defn nattable-make [[^Model model pairs] ^Composite parent]
   (let [^Metadata metadata (.getMetadata model)
@@ -103,28 +117,28 @@
       
 	column-property-accessor
 	(proxy 
-	 [IColumnPropertyAccessor]
-	 []
-	 ;; IColumnAccessor<T>
-	 (^Object getDataValue [^Mutable rowObject ^int columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
-	 (^int getColumnCount [] (count property-names))
-	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
+	    [IColumnPropertyAccessor]
+	    []
+	  ;; IColumnAccessor<T>
+	  (^Object getDataValue [^Mutable rowObject ^int columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
+	  (^int getColumnCount [] (count property-names))
+	  ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
-	 ;;IColumnPropertyResolver 
-	 (^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
-	 (^int getColumnIndex [^String propertyName] (property-name-to-index propertyName))
-	 )
+	  ;;IColumnPropertyResolver 
+	  (^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
+	  (^int getColumnIndex [^String propertyName] (property-name-to-index propertyName))
+	  )
 
 	config-registry (ConfigRegistry.)
 	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
 	
 	glazed-lists-event-layer (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
 	blink-layer (BlinkLayer.
-			    glazed-lists-event-layer
-			    body-data-provider
-			    (proxy [IRowIdAccessor][](^Serializable getRowId [^Mutable row] (.get pk-getter (.getDatum row))))
-			    column-property-accessor
-			    config-registry)
+		     glazed-lists-event-layer
+		     body-data-provider
+		     (proxy [IRowIdAccessor][](^Serializable getRowId [^Mutable row] (.get pk-getter (.getDatum row))))
+		     column-property-accessor
+		     config-registry)
 	dummy (do
 		(.registerConfigAttribute config-registry 
 					  (BlinkConfigAttributes/BLINK_RESOLVER)
