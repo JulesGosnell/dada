@@ -169,9 +169,9 @@
     ;;(println "NOTIFY ->" @mutable)
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
       (warn "empty event raised" (.getStackTrace (Exception.)))
-      (doall (map (fn [#^View view]	;dirty - side-effects
-		      (try (.update view insertions alterations deletions)
-			   (catch Throwable t (error "View notification failure" t))))
+      (dorun (map (fn [#^View view]	;dirty - side-effects
+		    (try (.update view insertions alterations deletions)
+			 (catch Throwable t (error "View notification failure" t))))
 		  (counted-set-vals views))))))
 
 ;;--------------------------------------------------------------------------------
