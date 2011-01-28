@@ -240,12 +240,16 @@
 				       :jules (RHSEntry. jules-0 [#{0} #{}])}]
 				     nil [(Update. old-datum new-datum)] nil])))
 
+  ;; getData
   ;; TODO: should be able to compare two Data instances...
   (let [data (.getData join-model)]
     (is (= (.getExtant data) [[0 4 txn-1 jane-0 jules-0 usd-0]]))
     (is (= (.getExtinct data) [])))
 
+  ;; find
   (is (= (.find join-model 0) [0 4 txn-1 jane-0 jules-0 usd-0]))
   (is (= (.find join-model 1) nil))
+  
+  ;; deletion
   
   )
