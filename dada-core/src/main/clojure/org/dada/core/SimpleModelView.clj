@@ -68,25 +68,27 @@
 
 	 process-deletion
 	 (fn [[extant extinct views i a d] #^Update deletion]
-	   (let [new (or (.getNewValue deletion) (.getOldValue deletion))
-		 key (key-fn new)
-		 current (extant key)]
+	   (let [old (.getOldValue deletion)
+		 new (.getNewValue deletion)
+		 key (key-fn old)
+		 current (extant key)
+		 latest (or new old)]
 	     (if (nil? current)
 	       (let [removed (extinct key)]
 		 (if (nil? removed)
 		   ;; neither extant or extinct - mark extinct
 		   ;; we will remember the id in case we get an out of order insertion later
-		   [extant (assoc extinct key new) views i a (conj d (Update. nil new))]
-		   (if (< (.compareTo version-comparator removed new) 0)
+		   [extant (assoc extinct key latest) views i a (conj d (Update. nil new))]
+		   (if (< (.compareTo version-comparator removed latest) 0)
 		     ;; later version - accepted
 		     [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
 		     (do
 		       ;; earlier version - ignored
-		       (warn ["out of order deletion - ignored" removed new])
+		       (warn ["out of order deletion - ignored" removed latest])
 		       [extant extinct views i a d]))))
-	       (if (< (.compareTo version-comparator current new) 0)
-		 ;; later version - accepted
-		 [(dissoc extant key) (assoc extinct key new) views i a (cons (Update. current new) d)]
+	       (if (<= (.compareTo version-comparator current old) 0)
+		 ;; deletion of current or later version - accepted
+		 [(dissoc extant key) (assoc extinct key latest) views i a (cons (Update. current new) d)]
 		 (do
 		   ;; earlier version - ignored
 		   (warn ["out of order deletion - ignored" current new])

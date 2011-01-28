@@ -32,11 +32,24 @@
   (is (= (get-mutable account-model) [{:jules jules-1} {} {} [] [] []]))
   
   ;; out of order deletion
-  (delete account-model jules-1)
+  (delete account-model jules-0)
   (is (= (get-mutable account-model) [{:jules jules-1} {} {} [] [] []]))
 
-  ;; successful deletion
+  ;; successful direct deletion
+  (delete account-model jules-1)
+  (is (= (get-mutable account-model) [{} {:jules jules-1} {} [] [] [(Update. jules-1 nil)]]))
+
+  ;; unsucessful re-insertion
+  (insert account-model jules-1)
+  (is (= (get-mutable account-model) [{} {:jules jules-1} {} [] [] []]))
+
+  ;; sucessful re-insertion
   (def jules-2 [:jules 2 nil])
-  (delete account-model jules-2)
-  (is (= (get-mutable account-model) [{} {:jules jules-2} {} [] [] [(Update. jules-1 jules-2)]]))
+  (insert account-model jules-2)
+  (is (= (get-mutable account-model) [{:jules jules-2} {} {} [(Update. nil jules-2)] [] []]))
+
+  ;; successful indirect deletion (amend away)
+  (def jules-3 [:jules 3 "JAFG"])
+  (.update account-model [] [] [(Update. jules-2 jules-3)])
+  (is (= (get-mutable account-model) [{} {:jules jules-3} {} [] [] [(Update. jules-2 jules-3)]]))
   )
