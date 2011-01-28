@@ -104,37 +104,56 @@
    (map (fn [[i lhs-getter] rhs-index] [i lhs-getter rhs-index]) rhs-i-to-lhs-getters old-rhs-indeces))
   )
 
+(defn reduce-lhs [reduction updates lhs-pk-getter initial-rhs-refs lhs-version-comparator rhs-i-to-lhs-getters join-fn delete]
+  (reduce
+   (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
+     (let [new-lhs (.getNewValue update)
+	   lhs-pk (.get lhs-pk-getter new-lhs)
+	   ^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)
+	   [old-lhs-version old-lhs-rhs-refs old-lhs]
+	   (if old-lhs-entry
+	     [(.version old-lhs-entry)(.rhs-refs old-lhs-entry)(.lhs old-lhs-entry)]
+	     [-1 initial-rhs-refs nil])]
+       (if (and old-lhs-entry (not (< (.compareTo lhs-version-comparator old-lhs new-lhs) 0)))
+	 (do
+	   (debug ["update-lhs - alteration - rejected" old-lhs new-lhs])
+	   [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])
+	 (let [[new-rhs-refs new-rhs-indeces]
+	       (update-lhs-rhs-indeces lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-lhs-rhs-refs old-rhs-indeces)
+	       new-lhs-version (inc old-lhs-version)
+	       old-datum (if old-lhs-entry (.datum old-lhs-entry))
+	       new-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs)
+	       new-lhs-entry (LHSEntry. true new-lhs-version new-lhs new-rhs-refs new-datum)
+	       new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
+	       [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)]
+	   (debug ["update-lhs - insertion/alteration - accepted" old-lhs new-lhs])
+	   [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions]
+	   ))))
+   reduction
+   updates))
+
 (defn update-lhs
   "return new mutable state and events in response to notifications from the left hand side model"
   [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn]
   (debug ["update-lhs" rhs-i-to-lhs-getters])
   (let [initial-rhs-refs [[nil][nil nil]]] ;TODO - parameterise
-    (reduce
-     (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
-       (let [new-lhs (.getNewValue update)
-	     lhs-pk (.get lhs-pk-getter new-lhs)
-	     ^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)
-	     [old-lhs-version old-lhs-rhs-refs old-lhs]
-	     (if old-lhs-entry
-	       [(.version old-lhs-entry)(.rhs-refs old-lhs-entry)(.lhs old-lhs-entry)]
-	       [-1 initial-rhs-refs nil])]
-	 (if (and old-lhs-entry (not (< (.compareTo lhs-version-comparator old-lhs new-lhs) 0)))
-	   (do
-	     (debug ["update-lhs - alteration - rejected" old-lhs new-lhs])
-	     [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])
-	   (let [[new-rhs-refs new-rhs-indeces]
-		 (update-lhs-rhs-indeces lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-lhs-rhs-refs old-rhs-indeces)
-		 new-lhs-version (inc old-lhs-version)
-		 old-datum (if old-lhs-entry (.datum old-lhs-entry))
-		 new-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs)
-		 new-lhs-entry (LHSEntry. true new-lhs-version new-lhs new-rhs-refs new-datum)
-		 new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
-		 [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)]
-	     (debug ["update-lhs - insertion/alteration - accepted" old-lhs new-lhs])
-	     [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions]
-	     ))))
-     [old-lhs-index old-rhs-indeces nil nil nil]
-     (concat insertions alterations))))
+    (reduce-lhs     
+     (reduce-lhs     
+      [old-lhs-index old-rhs-indeces nil nil nil]
+      (concat insertions alterations)
+      lhs-pk-getter
+      initial-rhs-refs
+      lhs-version-comparator
+      rhs-i-to-lhs-getters
+      join-fn
+      false)
+     deletions
+     lhs-pk-getter
+     initial-rhs-refs
+     lhs-version-comparator
+     rhs-i-to-lhs-getters
+     join-fn
+     true)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -281,3 +300,4 @@
 ;; use lists instead of entries - they may be cheaper to update
 ;; don't store rhs-refs on lhs, but rhs-entries (or rhs-pks?) - consider
 ;; make whole thing a macro which generates inline code specific to each individual join
+;; compound key join ?

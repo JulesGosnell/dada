@@ -1,27 +1,27 @@
 (ns org.dada.core.SimpleModelView
-    (:use
-     [clojure.contrib logging]
-     [org.dada.core counted-set]
-     )
-    ;; (:require
-    ;;  [org.dada.core BaseModelView]
-    ;;  )
-    (:import
-     [java.util Collection]
-     [org.dada.core Data Metadata RemoteModel Update View]
-     )
-    (:gen-class
-     ;;:extends org.dada.core.BaseModelView
-     :implements [org.dada.core.ModelView java.io.Serializable]
-     :constructors {[String org.dada.core.Metadata]
-     ;;[String org.dada.core.Metadata]
-     []
-     }
-     :methods [[writeReplace [] Object]]
-     :init init
-     :state state
-     )
-    )
+  (:use
+   [clojure.contrib logging]
+   [org.dada.core counted-set]
+   )
+  ;; (:require
+  ;;  [org.dada.core BaseModelView]
+  ;;  )
+  (:import
+   [java.util Collection]
+   [org.dada.core Data Metadata RemoteModel Update View]
+   )
+  (:gen-class
+   ;;:extends org.dada.core.BaseModelView
+   :implements [org.dada.core.ModelView java.io.Serializable]
+   :constructors {[String org.dada.core.Metadata]
+		  ;;[String org.dada.core.Metadata]
+		  []
+		  }
+   :methods [[writeReplace [] Object]]
+   :init init
+   :state state
+   )
+  )
 
 ;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
 
@@ -37,86 +37,87 @@
 
 	 process-addition
 	 (fn [[extant extinct views i a d] #^Update addition]
-	     (let [new (.getNewValue addition)
-		   key (key-fn new)
-		   current (extant key)]
-	       (if (nil? current)
-		 ;; insertion...
-		 (let [removed (extinct key)]
-		   (if (nil? removed)
-		     ;; first time seen
-		     [(assoc extant key new) extinct views (cons (Update. nil new) i) a d] ;insertion
-		     ;; already deleted
-		     (if (< (.compareTo version-comparator removed new) 0)
-		       ;; later version - reinstated
-		       [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
-		       (do
-			 ;; out of order or duplicate version - ignored
-			 ;;(println "WARN: OUT OF ORDER INSERT" current new)
-			 [extant extinct views i a d]))
-		     )
+	   (let [new (.getNewValue addition)
+		 key (key-fn new)
+		 current (extant key)]
+	     (if (nil? current)
+	       ;; insertion...
+	       (let [removed (extinct key)]
+		 (if (nil? removed)
+		   ;; first time seen
+		   [(assoc extant key new) extinct views (cons (Update. nil new) i) a d] ;insertion
+		   ;; already deleted
+		   (if (< (.compareTo version-comparator removed new) 0)
+		     ;; later version - reinstated
+		     [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
+		     (do
+		       ;; out of order or duplicate version - ignored
+		       ;;(println "WARN: OUT OF ORDER INSERT" current new)
+		       [extant extinct views i a d]))
 		   )
-		 ;; alteration...
-		 (if (or (not version-comparator)(< (.compareTo version-comparator current new) 0))
-		   ;; later version - accepted
-		   [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
-		   (do
-		     ;; out of order or duplicate version - ignored
-		     ;;(println "WARN: OUT OF ORDER UPDATE" current new)
-		     [extant extinct views i a d]))
-		 )))
+		 )
+	       ;; alteration...
+	       (if (or (not version-comparator)(< (.compareTo version-comparator current new) 0))
+		 ;; later version - accepted
+		 [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
+		 (do
+		   ;; out of order or duplicate version - ignored
+		   ;;(println "WARN: OUT OF ORDER UPDATE" current new)
+		   [extant extinct views i a d]))
+	       )))
 
 	 process-deletion
 	 (fn [[extant extinct views i a d] #^Update deletion]
-	     (let [new (.getNewValue deletion)
-		   key (key-fn new)
-		   current (extant key)]
-	       (if (nil? current)
-		 (let [removed (extinct key)]
-		   (if (nil? removed)
-		     ;; neither extant or extinct - mark extinct
-		     [extant (dissoc extinct key) views i a d]
-		     (if (< (.compareTo version-comparator removed new) 0)
-		       ;; later version - accepted
-		       [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
-		       (do
-			 ;; earlier version - ignored
-			 ;;(println "WARN: OUT OF ORDER DELETION" current new)
-			 [extant extinct views i a d]))))
-		 (if (< (.compareTo version-comparator current new) 0)
-		   ;; later version - accepted
-		   [(dissoc extant key) (assoc extinct key new) views i a (cons (Update. current new) d)]
-		   (do
-		     ;; earlier version - ignored
-		     ;;(println "WARN: OUT OF ORDER DELETION" current new)
-		     [extant extinct views i a d])))))
+	   (let [new (or (.getNewValue deletion) (.getOldValue deletion))
+		 key (key-fn new)
+		 current (extant key)]
+	     (if (nil? current)
+	       (let [removed (extinct key)]
+		 (if (nil? removed)
+		   ;; neither extant or extinct - mark extinct
+		   ;; we will remember the id in case we get an out of order insertion later
+		   [extant (assoc extinct key new) views i a (conj d (Update. nil new))]
+		   (if (< (.compareTo version-comparator removed new) 0)
+		     ;; later version - accepted
+		     [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
+		     (do
+		       ;; earlier version - ignored
+		       (warn ["out of order deletion - ignored" removed new])
+		       [extant extinct views i a d]))))
+	       (if (< (.compareTo version-comparator current new) 0)
+		 ;; later version - accepted
+		 [(dissoc extant key) (assoc extinct key new) views i a (cons (Update. current new) d)]
+		 (do
+		   ;; earlier version - ignored
+		   (warn ["out of order deletion - ignored" current new])
+		   [extant extinct views i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we
 	 ;; compare-and-swap, in order to avoid starvation of larger
 	 ;; batches...
 	 swap-state-fn (fn [[extant extinct views] insertions alterations deletions]
-			   (reduce process-deletion
-				   (reduce process-addition
-					   (reduce process-addition
-						   [extant extinct views '() '() '()]
-						   insertions)
-					   alterations)
-				   deletions))
+			 (reduce process-deletion
+				 (reduce process-addition
+					 (reduce process-addition
+						 [extant extinct views '() '() '()]
+						 insertions)
+					 alterations)
+				 deletions))
 
 	 mutable-state (atom [{} {} {}]) ;extant, extinct, views
 
 	 update-fn
 	 (fn [inputs]
-	     ;;(println "UPDATE ->" @mutable-state)
-	     (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
-	       ;;(println "UPDATE <-" @mutable-state)
-	       [i a d]))
+	   ;;(println "UPDATE ->" @mutable-state)
+	   (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
+	     ;;(println "UPDATE <-" @mutable-state)
+	     [i a d]))
 	 
 	 getData-fn
 	 (fn []
-	     ;;(println "GET DATA ->" @mutable-state)
-	     (let [[extant extinct] @mutable-state]
-	       (Data. (vals extant) (vals extinct))))
+	   ;;(println "GET DATA ->" @mutable-state)
+	   (let [[extant extinct] @mutable-state]
+	     (Data. (vals extant) (vals extinct))))
 	 ]
      
      [[

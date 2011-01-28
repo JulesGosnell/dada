@@ -90,7 +90,7 @@
 ;;    (make-whale 6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100)
 ;;    (make-whale 7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100)])
 
-
+;; see http://en.wikipedia.org/wiki/Cetacea#Tree
 (def whale-hierarchy
   (let [h (make-hierarchy)
 	h (derive h :cetacea :mysticeti)     ; baleen whales
@@ -115,27 +115,185 @@
 	h (derive h   :neobalaenidae :pygmy-right-whale)
 	h (derive h :cetacea :odontoceti)      ;toothed whales
 	h (derive h  :odontoceti :delphinidae) ;dolphins
-	h (derive h   :delphinidae :bottlenose-dolphin)
-	h (derive h   :delphinidae :false-killer-whale)
+	h (derive h   :delphinidae :commersons-dolphin)
+	h (derive h   :delphinidae :chilean-dolphin)
+	h (derive h   :delphinidae :heavisides-dolphin)
+	h (derive h   :delphinidae :hectors-dolphin)
+	h (derive h   :delphinidae :long-beaked-common-dolphin)
+	h (derive h   :delphinidae :short-beaked-common-dolphin)
+	h (derive h   :delphinidae :arabian-common-dolphin)
+	h (derive h   :delphinidae :pygmy-killer-whale)
+	h (derive h   :delphinidae :short-finned-pilot-whale)
+	h (derive h   :delphinidae :long-finned-pilot-whale)
+	h (derive h   :delphinidae :rissos-dolphin)
+	h (derive h   :delphinidae :frasers-dolphin)
+	h (derive h   :delphinidae :atlantic-white-sided-dolphin)
+	h (derive h   :delphinidae :white-beaked-dolphin)
+	h (derive h   :delphinidae :peales-dolphin)
+	h (derive h   :delphinidae :hourglass-dolphin)
+	h (derive h   :delphinidae :pacific-white-sided-dolphin)
+	h (derive h   :delphinidae :dusky-dolphin)
+	h (derive h   :delphinidae :northern-right-whale-dolphin)
+	h (derive h   :delphinidae :southern-right-whale-dolphin)
+	h (derive h   :delphinidae :irawaddy-dolphin)
+	h (derive h   :delphinidae :australian-snubfin-dolphin)
 	h (derive h   :delphinidae :killer-whale)
 	h (derive h   :delphinidae :melon-headed-whale)
-	h (derive h   :delphinidae :pilot-whale)
+	h (derive h   :delphinidae :false-killer-whale)
+	h (derive h   :delphinidae :tucuxi)
+	h (derive h   :delphinidae :costero)
+	h (derive h   :delphinidae :pacific-humpback-dolphin)
+	h (derive h   :delphinidae :indian-humpback-dolphin)
+	h (derive h   :delphinidae :atlantic-humpback-dolphin)
+	h (derive h   :delphinidae :pantropical-spotted-dolphin)
+	h (derive h   :delphinidae :clymene-dolphin)
+	h (derive h   :delphinidae :striped-dolphin)
+	h (derive h   :delphinidae :atlantic-spotted-dolphin)
 	h (derive h   :delphinidae :spinner-dolphin)
-	h (derive h  :odontoceti :iniidae) ;river dolphins
-	h (derive h   :iniidae :amazon-river-dolphin)
+	h (derive h   :delphinidae :rough-toothed-dolphin)
+	h (derive h   :delphinidae :indian-ocean-bottlenose-dolphin)
+	h (derive h   :delphinidae :common-bottlenose-dolphin)
 	h (derive h  :odontoceti :monodontidae)
 	h (derive h   :monodontidae :beluga-whale)
 	h (derive h   :monodontidae :narwhal)
 	h (derive h  :odontoceti :phocoenidae)	; porpoises
+	h (derive h   :phocoenidae :finless-porpoise)
+	h (derive h   :phocoenidae :spectacled-porpoise)
 	h (derive h   :phocoenidae :harbour-porpoise)
+	h (derive h   :phocoenidae :vaquita)
+	h (derive h   :phocoenidae :burmeisters-porpoise)
+	h (derive h   :phocoenidae :dalls-porpoise)
 	h (derive h  :odontoceti :physeteridae) ; sperm whales
 	h (derive h   :physeteridae :sperm-whale)
-	h (derive h   :physeteridae :dwarf-sperm-whale)
 	h (derive h   :physeteridae :pygmy-sperm-whale)
+	h (derive h   :physeteridae :dwarf-sperm-whale)
+	h (derive h  :odontoceti :iniidae) ;river dolphins
+	h (derive h   :iniidae :amazon-river-dolphin)
+	h (derive h   :iniidae :bolivian-river-dolphin)
+	h (derive h   :iniidae :baiji)
+	h (derive h   :iniidae :la-plata-dolphin)
+	h (derive h   :iniidae :ganges-river-dolphin)
+	h (derive h   :iniidae :indus-river-dolphin)
 	h (derive h  :odontoceti :zyphidae) ;beaked whale
-	h (derive h   :zyphidae :beaked-whale)
+	h (derive h   :zyphidae :arnouxs-beaked-whale)
+	h (derive h   :zyphidae :bairds-beaked-whale)
+	h (derive h   :zyphidae :northern-bottlenose-whale)
+	h (derive h   :zyphidae :southern-bottlenose-whale)
+	h (derive h   :zyphidae :indo-pacific-beaked-whale)
+	h (derive h   :zyphidae :sowerbys-beaked-whale)
+	h (derive h   :zyphidae :andrews-beaked-whale)
+	h (derive h   :zyphidae :hubbs-beaked-whale)
+	h (derive h   :zyphidae :blainvilles-beaked-whale)
+	h (derive h   :zyphidae :gervais-beaked-whale)
+	h (derive h   :zyphidae :ginkgo-toothed-beaked-whale)
+	h (derive h   :zyphidae :grays-beaked-whale)
+	h (derive h   :zyphidae :hectors-beaked-whale)
+	h (derive h   :zyphidae :layards-beaked-whale)
+	h (derive h   :zyphidae :trues-beaked-whale)
+	h (derive h   :zyphidae :perrins-beaked-whale)
+	h (derive h   :zyphidae :pygmy-beaked-whale)
+	h (derive h   :zyphidae :stejnegers-beaked-whale)
+	h (derive h   :zyphidae :spade-toothed--whale)
+	h (derive h   :zyphidae :tasman-beaked-whale)
+	h (derive h   :zyphidae :cuviers-beaked-whale)
 	]
     h))
+
+(def ref-data
+  [
+   [:bowhead-whale			"Balaena mysticetus"]
+   [:north-atlantic-right-whale		"Eubalaena glacialis"]
+   [:north-pacific-right-whale		"Eubalaena japonica"]
+   [:southern-right-whale		"Eubalaena australis"]
+   [:common-minke-whale			"Balaenoptera acutorostrata"]
+   [:antarctic-minke-whale		"Balaenoptera bonaerensis"]
+   [:sei-whale				"Balaenoptera borealis"]
+   [:brydes-whale			"Balaenoptera brydei"]
+   [:edens-whale			"Balaenoptera edeni"]
+   [:omuras-whale			"Balaenoptera omurai"]
+   [:blue-whale				"Balaenoptera musculus"]
+   [:fin-whale				"Balaenoptera physalus"]
+   [:humpback-whale			"Megaptera novaeangliae"]
+   [:gray-whale				"Eschrichtius robustus"]
+   [:pygmy-right-whale			"Caperea marginata"]
+   [:commersons-dolphin			"Cephalorhyncus commersonii"]
+   [:chilean-dolphin			"Cephalorhyncus eutropia"]
+   [:heavisides-dolphin			"Cephalorhyncus heavisidii"]
+   [:hectors-dolphin			"Cephalorhyncus hectori"]
+   [:long-beaked-common-dolphin         "Delphinus capensis"]
+   [:short-beaked-common-dolphin        "Delphinus delphis"]
+   [:arabian-common-dolphin		"Delphinus tropicalis"]
+   [:pygmy-killer-whale			"Feresa attenuata"]
+   [:short-finned-pilot-whale		"Globicephala macrorhyncus"]
+   [:long-finned-pilot-whale		"Globicephala melas"]
+   [:rissos-dolphin			"Grampus griseus"]
+   [:frasers-dolphin			"Lagenodelphis hosei"]
+   [:atlantic-white-sided-dolphin       "Lagenorhynchus acutus"]
+   [:white-beaked-dolphin		"Lagenorhynchus albirostris"]
+   [:peales-dolphin			"Lagenorhynchus australis"]
+   [:hourglass-dolphin			"Lagenorhynchus cruciger"]
+   [:pacific-white-sided-dolphin        "Lagenorhynchus obliquidens"]
+   [:dusky-dolphin			"Lagenorhynchus obscurus"]
+   [:northern-right-whale-dolphin       "Lissodelphis borealis"]
+   [:southern-right-whale-dolphin       "Lissodelphis peronii"]
+   [:irawaddy-dolphin			"Orcaella brevirostris"]
+   [:australian-snubfin-dolphin         "Orcaella heinsohni"]
+   [:killer-whale			"Orcinus orca"]
+   [:melon-headed-whale			"Peponocephala electra"]
+   [:false-killer-whale			"Pseudorca crassidens"]
+   [:tucuxi				"Sotalia fluviatilis"]
+   [:costero				"Sotalia guianensis"]
+   [:pacific-humpback-dolphin		"Sousa chinensis"]
+   [:indian-humpback-dolphin		"Sousa plumbea"]
+   [:atlantic-humpback-dolphin		"Sousa teuszii"]
+   [:pantropical-spotted-dolphin        "Stenella attenuata"]
+   [:clymene-dolphin			"Stenella clymene"]
+   [:striped-dolphin			"Stenella coeruleoalba"]
+   [:atlantic-spotted-dolphin		"Stenella frontalis"]
+   [:spinner-dolphin			"Stenella longirostris"]
+   [:rough-toothed-dolphin		"Steno bredanensis"]
+   [:indian-ocean-bottlenose-dolphin    "Tursiops aduncus"]
+   [:common-bottlenose-dolphin		"Tursiops truncatus"]
+   [:beluga-whale			"Delphinapterus leucas"]
+   [:narwhal				"Monodon monoceros"]
+   [:finless-porpoise			"Neophocaena phocaenoides"]
+   [:spectacled-porpoise		"Phocoena dioptrica"]
+   [:harbour-porpoise			"Phocoena phocaena"]
+   [:vaquita				"Phocoena sinus"]
+   [:burmeisters-porpoise		"Phocoena spinipinnis"]
+   [:dalls-porpoise			"Phocoenoides dalli"]
+   [:sperm-whale			"Physeter catodon"]
+   [:pygmy-sperm-whale			"Kogia breviceps"]
+   [:dwarf-sperm-whale			"Kogia sima"]
+   [:amazon-river-dolphin		"Inia geoffrensis"]
+   [:bolivian-river-dolphin		"Inia boliviensis"]
+   [:baiji            			"Lipotes vexillifer"]
+   [:la-plata-dolphin			"Pontoporia blainvillei"]
+   [:ganges-river-dolphin		"Platanista gangetica"]
+   [:indus-river-dolphin		"Platanista minor"]
+   [:arnouxs-beaked-whale		"Berardius arnuxii"]
+   [:bairds-beaked-whale		"Berardius bairdii"]
+   [:northern-bottlenose-whale		"Hyperoodon ampullatus"]
+   [:southern-bottlenose-whale		"Hyperoodon planifrons"]
+   [:indo-pacific-beaked-whale		"Indopacetus pacificus"]
+   [:sowerbys-beaked-whale		"Mesoplodon bidens"]
+   [:andrews-beaked-whale		"Mesoplodon bowdoini"]
+   [:hubbs-beaked-whale			"Mesoplodon carlhubbsi"]
+   [:blainvilles-beaked-whale		"Mesoplodon densirostris"]
+   [:gervais-beaked-whale		"Mesoplodon europaeus"]
+   [:ginkgo-toothed-beaked-whale        "Mesoplodon ginkgodens"]
+   [:grays-beaked-whale			"Mesoplodon grayi"]
+   [:hectors-beaked-whale		"Mesoplodon hectori"]
+   [:layards-beaked-whale		"Mesoplodon layardii"]
+   [:trues-beaked-whale			"Mesoplodon mirus"]
+   [:perrins-beaked-whale		"Mesoplodon perrini"]
+   [:pygmy-beaked-whale			"Mesoplodon peruvianus"]
+   [:stejnegers-beaked-whale		"Mesoplodon stejnegeri"]
+   [:spade-toothed--whale		"Mesoplodon traversii"]
+   [:tasman-beaked-whale		"Tasmacetus shepherdi"]
+   [:cuviers-beaked-whale		"Ziphius cavirostris"]
+   ])
+
 
 (do
 
@@ -151,11 +309,9 @@
 	       "southern"])
 
   (def reporters ["jules"
-		  "andy"
-		  "ian"
-		  "steve"
-		  "mitesh"
-		  "ameen"])
+		  "jane"
+		  "anthony"
+		  "lexie"])
 
   (def num-years 10)
 
@@ -270,8 +426,8 @@
     (insert oceans-model (make-ocean "arctic"   1000000 99999999 17880))
     (insert oceans-model (make-ocean "southern" 1000000  10000000 23737))
 
-    (insert whales-model (make-whale 10000 4000000 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
-    (delete whales-model (make-whale 10000 5000000 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
+    (insert whales-model (make-whale 50 3011 (Date. 0 1 1) "jules" "blue whale" "atlantic" 100 100))
+    (delete whales-model (make-whale 50 3100 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
     (.find whales-model 10000)
 
     ))
@@ -303,18 +459,29 @@
     ;; we're only interested in rorquals
     (inspect (? (dsplit :type (fn [type] (if (isa? whale-hierarchy :balaenopteridae type) [:balaenopteridae] []))) (dfrom "Whales")))
 
+    ;; split by suborder
+    (do
+      (def whale-hierarchy-children
+	(reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
+      
+      (def whale-type-to-suborder
+	(reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children (whale-hierarchy-children type))])) {} types))
+      
+      (inspect (? (dsplit :type (fn [type] [(whale-type-to-suborder type)])) (dfrom "Whales"))))
+    
     ;; split by family
     (do
       (def whale-hierarchy-children
 	(reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
       
       (def whale-type-to-family
-	(reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children (whale-hierarchy-children type))])) {} types))
+	(reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children type)])) {} types))
       
       (inspect (? (dsplit :type (fn [type] [(whale-type-to-family type)])) (dfrom "Whales"))))
-    
+
     ;; split by ocean
-    (inspect (? (dsplit :ocean)(dfrom "Whales")));; TODO - nattable delete not working
+    (inspect (? (dsplit :ocean)(dfrom "Whales")))
+    (inspect (? (dsplit :ocean)(dfrom "WhalesAndOceans")))
 
     ;; flat split by type then ocean
     (inspect (? (dsplit :ocean)(dsplit :type)(dfrom "Whales")))
