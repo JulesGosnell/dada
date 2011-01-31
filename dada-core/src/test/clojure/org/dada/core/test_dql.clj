@@ -6,6 +6,9 @@
     (:import
      [org.dada.core
       Attribute
+      Getter
+      Metadata
+      MetaResult
       Model
       Result])
     )
@@ -36,7 +39,7 @@
       [3 0 :grey :pacific  50]])
 
 ;;(def whale-metadata (seq-metadata (count (first whale-data))))
-(def whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
+(def ^Metadata whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
 				     Object
 				     [:id]
 				     [:version] 
@@ -57,7 +60,7 @@
 
 (defn reduction-value [[metadata-fn data-fn]]
   (let [[#^Model metamodel] (data-fn)
-	#^Model model (.getModel (first (.getExtant (.getData metamodel))))
+	#^Model model (.getModel ^Result (first (.getExtant (.getData metamodel))))
 	value (first (.getExtant (.getData model)))]
     (.get (.getGetter #^Attribute (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
@@ -71,7 +74,7 @@
        (conj values [(map second (.getPairs result)) 
 		     (map to-list (.getExtant (.getData (.getModel result))))]))
    {}
-   (.getExtant (.getData (.getModel (data-fn))))))
+   (.getExtant (.getData (.getModel ^Result (data-fn))))))
 
 (defn valid-pairs [pairs]
   ;;(println "VALID PAIRS" pairs)
@@ -100,8 +103,8 @@
 
 (deftest test-dfrom
   (let [tuple0 (? (dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (first (.getOperation metaresult0)) :from))
@@ -109,7 +112,7 @@
     (is (= (first (.getOperation result0)) :from))
     (let [extant1 (.getExtant (.getData model0))]
       (is (= (count extant1) 1))
-      (let [result1 (first extant1)
+      (let [^Result result1 (first extant1)
 	    model1 (.getModel result1)]
 	(is (= (.getChildMetadata metaresult0) (.getMetadata model1)))
 ;;	(is (= model1 whales))
@@ -120,8 +123,8 @@
 
 (deftest test-dunion
   (let [tuple0 (? (dunion)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (first (.getOperation metaresult0)) :union))
@@ -129,7 +132,7 @@
     (is (= (first (.getOperation result0)) :union))
     (let [extant1 (.getExtant (.getData model0))]
       (is (= (count extant1) 1))
-      (let [result1 (first extant1)
+      (let [^Result result1 (first extant1)
 	    model1 (.getModel result1)]
 	(is (= (.getMetadata model1) (.getChildMetadata metaresult0)))
 	(is (= (.getMetadata model1) whale-metadata))
@@ -153,8 +156,8 @@
 
 (deftest test-split-1d-2
   (let [tuple0 (? (dsplit :type)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     ;; check outer result.
     (is (= (.getMetadata metaresult0) (.getMetadata model0) result-metadata))
@@ -169,15 +172,15 @@
       ;; check inner results
       (doall
        (map
-	(fn [[model prefix pairs operation]]
+	(fn [[^Model model prefix pairs operation]]
 	    (is (= (.getMetadata model) (.getChildMetadata metaresult0) whale-metadata))
 	    (is (= (count pairs) 1))
 	    (is (first (first pairs)) :type)
-	    (let [getters (map (fn [attribute] (.getGetter attribute)) (.getAttributes (.getMetadata model)))]
+	    (let [getters (map (fn [^Attribute attribute] (.getGetter attribute)) (.getAttributes (.getMetadata model)))]
 	      ;; check correct whales are present
 	      (is (=
 		   ;; make a list of lists of values extracted from model's whales
-		   (map (fn [whale] (map (fn [getter] (.get getter whale)) getters))(.getExtant (.getData model)))
+		   (map (fn [whale] (map (fn [^Getter getter] (.get getter whale)) getters))(.getExtant (.getData model)))
 		   ;; compare to whale-data of this type
 		   (type-to-whales (second (first pairs))))))
 	    (is (= (first operation) :split))
@@ -188,14 +191,14 @@
 
 (deftest test-union-split-1d
   (let [tuple0 (? (dunion)(dsplit :type)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getPairs result0) []))
     (is (= (first (.getOperation result0)) :union))
     (let [extant1 (.getExtant (.getData model0))]
       (is (= (count extant1) 1))
-       (let [result1 (first extant1)
+       (let [^Result result1 (first extant1)
 	     model1 (.getModel result1)
 	     extant (.getExtant (.getData model1))]
 	 (is (= (.getMetadata model1) (.getChildMetadata metaresult0) whale-metadata))
@@ -209,8 +212,8 @@
 
 (deftest test-count-split-1d
   (let [tuple0 (? (dcount)(dsplit :type)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     ;; (is (= (.getPairs result0) []))
     ;; (is (= (first (.getOperation result0)) :union))
@@ -231,8 +234,8 @@
 
 (deftest test-sum-split-1d
   (let [tuple0 (? (dsum :length)(dsplit :type)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     ;; (is (= (.getPairs result0) []))
     ;; (is (= (first (.getOperation result0)) :union))
@@ -265,15 +268,15 @@
 ;; copy of test-union-split-1d
 (deftest test-union-flat-split-2d
   (let [tuple0 (? (dunion)(dsplit :ocean)(dsplit :type)(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (.getPairs result0) []))
     (is (= (first (.getOperation result0)) :union))
     (let [extant1 (.getExtant (.getData model0))]
       (is (= (count extant1) 1))
-       (let [result1 (first extant1)
+       (let [^Result result1 (first extant1)
 	     model1 (.getModel result1)
 	     extant (.getExtant (.getData model1))]
 	 (is (= (.getMetadata model1) (.getChildMetadata metaresult0) whale-metadata))
@@ -292,8 +295,8 @@
 
 (deftest test-nested-split-2d
   (let [tuple0 (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (.getPairs result0) [[:type]]))
@@ -302,7 +305,7 @@
       (is (= (count extant1) 2))
       (doall
        (map
-	(fn [[model1 prefix1 pairs1 operation1]]
+	(fn [[^Model model1 prefix1 pairs1 operation1]]
 	    (is (= (count pairs1) 2))
 	    (let [metadata1 (.getMetadata model1)
 		  [type-pair ocean-pair] pairs1]
@@ -318,7 +321,7 @@
 		(is (= (count extant2) 2))
 		(doall
 		 (map
-		  (fn [[model2 prefix2 pairs2 operation2]]
+		  (fn [[^Model model2 prefix2 pairs2 operation2]]
 		      (is (= (count pairs2) 2))
 		      (let [metadata2 (.getMetadata model2)
 			    [type-pair ocean-pair] pairs2]
@@ -343,15 +346,15 @@
 	extant1)))))
 
 
-(defn print-keys [metadata]
-  (println (map (fn [attribute](.getKey attribute))(.getAttributes metadata))))
+(defn print-keys [^Metadata metadata]
+  (println (map (fn [^Attribute attribute](.getKey attribute))(.getAttributes metadata))))
 
 
 ;; returns a metametamodel, containing two metamodels (the unions), containing a model, containing 2 whales each
 (deftest test-inner-union-nested-split-2d
   (let [tuple0 (? (dsplit :type list [(dunion)(dsplit :ocean)])(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (.getPairs result0) [[:type]]))
@@ -360,13 +363,13 @@
       (is (= (count extant1) 2))
       (doall
        (map
-	(fn [[model1 prefix1 pairs1 operation1]]
+	(fn [[^Model model1 prefix1 pairs1 operation1]]
 	    (is (= (.getMetadata model1)(.getChildMetadata metaresult0) result-metadata))
 	    (let [extant2 (.getExtant (.getData model1))]
 	      (is (= (count extant2) 1))
 	      (doall
 	       (map
-		(fn [[model2 prefix2 pairs2 operation2]]
+		(fn [[^Model model2 prefix2 pairs2 operation2]]
 		    (is (= (.getMetadata model2) whale-metadata))
 		    (is (= pairs2 [])) ;TODO - is this right ?
 		    (is (= (first operation2) :union))
@@ -384,8 +387,8 @@
 ;; returns a metametamodel containing a single metamodel (the union), containing 4 models, containing a whale each...
 (deftest test-outer-union-nested-split-2d
   (let [tuple0 (? (dunion)(dsplit :type list [(dsplit :ocean)])(dfrom "Whales"))
-	metaresult0 ((first tuple0))
-	result0 ((second tuple0))
+	^MetaResult metaresult0 ((first tuple0))
+	^Result result0 ((second tuple0))
 	model0 (.getModel result0)]
     (is (= (.getMetadata metaresult0) result-metadata))
     (is (= (.getPairs result0) []))
@@ -394,7 +397,7 @@
       (is (= (count extant1) 1))
       (doall
        (map
-	(fn [[model1 prefix1 pairs1 operation1]]
+	(fn [[^Model model1 prefix1 pairs1 operation1]]
 	    (is (= pairs1 []))		;TODO - is this right ?
 	    (is (= (first operation1) :union))
 	    (is (= (.getMetadata model1) (.getChildMetadata metaresult0) result-metadata))
@@ -402,7 +405,7 @@
 	      (is (= (count extant2) 4))
 	      (doall
 	       (map
-		(fn [[model2 prefix2 [[type-key type-val][ocean-key ocean-val]] operation2]]
+		(fn [[^Model model2 prefix2 [[type-key type-val][ocean-key ocean-val]] operation2]]
 		    (is (= (.getMetadata model2) whale-metadata))
 		    (is (= type-key :type))
 		    (is (= ocean-key :ocean))

@@ -484,7 +484,7 @@
 ;; each split adds an extra key/value downstream that we may need to unwrap upstream
 (defn dcount [& [count-key]]
   (fn [[metadata-fn data-fn]]
-      (let [[#^Metadata _ metaprefix extra-keys _ src-metadata] (metadata-fn)
+      (let [[#^Metadata _ metaprefix extra-keys _ ^Metadata src-metadata] (metadata-fn)
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (count-reducer-metadata extra-keys count-key extra-attributes)]
 	[ ;; metadata
@@ -513,7 +513,7 @@
 
 (defn dsum [sum-key]
   (fn [[metadata-fn data-fn]]
-      (let [[#^Metadata _ metaprefix extra-keys _ src-metadata] (metadata-fn)
+      (let [[#^Metadata _ metaprefix extra-keys _ ^Metadata src-metadata] (metadata-fn)
 	    extra-attributes (map (fn [key] (.getAttribute src-metadata key)) extra-keys)
 	    tgt-metadata (sum-reducer-metadata extra-keys sum-key extra-attributes)]
 	[ ;; metadata
