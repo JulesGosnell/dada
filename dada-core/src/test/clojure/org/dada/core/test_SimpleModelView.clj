@@ -5,7 +5,7 @@
    [org.dada core]
    )
   (:import
-   [org.dada.core Data SimpleModelView Update]
+   [org.dada.core Data Model SimpleModelView Update]
    )
   )
 
@@ -13,7 +13,7 @@
 
 (deftest test-simple-model-view
 
-  (def account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
+  (def ^Model account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
 
   (is (= (get-mutable account-model) [{} {} {}]))
 
