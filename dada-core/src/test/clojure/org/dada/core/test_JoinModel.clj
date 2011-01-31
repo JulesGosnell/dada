@@ -12,7 +12,6 @@
 
 (defn get-mutable [^JoinModel model] @(first (.state model)))
 
-
 ;; problem - rhs indeces will be arranged in an indeterminate order...
 
 (deftest rhs-first
@@ -184,7 +183,7 @@
 
   ;; update lhs (rhses do not exist)
   (def txn-1 [0 1 100 :jane :jules :usd])
-  (insert transaction-model txn-1)
+ (insert transaction-model txn-1)
   (let [old-datum [0 0 txn-0 nil nil nil]
 	new-datum [0 1 txn-1 nil nil nil]]
     (is (= (get-mutable join-model) [{0 (LHSEntry. true 1 txn-1 [[nil] [nil nil]] new-datum)}
@@ -250,6 +249,41 @@
   (is (= (.find join-model 0) [0 4 txn-1 jane-0 jules-0 usd-0]))
   (is (= (.find join-model 1) nil))
   
-  ;; deletion
+  ;; delete lhs - lhs -> nil
+  (delete transaction-model txn-1)
+  (let [old-datum [0 4 txn-1 jane-0 jules-0 usd-0]]
+    (is (= (get-mutable join-model)
+	   [{0 (LHSEntry. false 4 txn-1 [[nil] [nil nil]] old-datum)}
+	    [{:usd   (RHSEntry. usd-0   [#{}])
+	      :gbp   (RHSEntry. gbp-0   [#{}])}
+	     {:jules (RHSEntry. jules-0 [#{} #{}])
+	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
+	    nil nil [(Update. old-datum nil)]])))
+
+  ;; reinsert txn, so we can delete again
+  (def txn-2 [0 2 100 :jane :jules :usd])
+  (insert transaction-model txn-2)
+  (let [new-datum [0 5 txn-2 jane-0 jules-0 usd-0]]
+    (is (= (get-mutable join-model) [{0 (LHSEntry. true 5 txn-2 [[usd-0] [jules-0 jane-0]] new-datum)}
+				     [{:usd   (RHSEntry. usd-0 [#{0}])
+				       :gbp   (RHSEntry. gbp-0 [#{}])}
+				      {:jules (RHSEntry. jules-0 [#{0} #{}])
+				       :jane  (RHSEntry. jane-0 [#{} #{0}])}]
+				     [(Update. nil new-datum)] nil nil])))
+  
+  
+  ;; ;; split delete x -> x+1 (in another model)
+  ;; (def txn-3 [0 3 100 :jane :jules :usd])
+  ;; (.update transaction-model [] [] [(Update. txn-2 txn-3)])
+  ;; (let [old-datum [0 5 txn-2 jane-0 jules-0 usd-0]
+  ;; 	new-datum [0 5 txn-3 jane-0 jules-0 usd-0]]
+  ;;   (is (= (get-mutable join-model)
+  ;; 	   [{0 (LHSEntry. false 5 txn-3 [[nil] [nil nil]] old-datum)}
+  ;; 	    [{:usd   (RHSEntry. usd-0   [#{}])
+  ;; 	      :gbp   (RHSEntry. gbp-0   [#{}])}
+  ;; 	     {:jules (RHSEntry. jules-0 [#{} #{}])
+  ;; 	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
+  ;; 	    nil nil [(Update. old-datum nil)]])))
+  ;; ;; second delete on top of first - should be ignored ?
   
   )

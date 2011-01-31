@@ -15,6 +15,7 @@
    :post-init post-init)
   )
 
+
 ;; these types should really be created on-the-fly to match lhs/rhs relationships
 (defrecord LHSEntry [extant version lhs rhs-refs datum]) ;; rhs-refs - resolution of lhs fks to rhs references
 (defrecord RHSEntry [rhs lhs-pks]) ;; lhs-pks - {lhs-pk : [lhs-fk-i, ...], ...}
@@ -29,10 +30,13 @@
 (defn invert-map [m]
   (reduce (fn [r [k v]] (assoc r v (conj (r v) k))) {} m))
 
-(defn make-notification [old-datum new-datum old-insertions old-alterations old-deletions]
+(defn make-notification [old-datum new-datum old-insertions old-alterations old-deletions delete]
+  (info ["make-notification" old-datum new-datum old-insertions old-alterations old-deletions delete])
   (if new-datum
     (if old-datum
-      [old-insertions (conj old-alterations (Update. old-datum new-datum)) old-deletions] ;alteration
+      (if delete
+	[old-insertions old-alterations (conj old-deletions (Update. old-datum nil))] ;deletion
+	[old-insertions (conj old-alterations (Update. old-datum new-datum)) old-deletions]) ;alteration
       [(conj old-insertions (Update. old-datum new-datum)) old-alterations old-deletions]) ;insertion
     (if old-datum
       [old-insertions old-alterations (conj old-deletions (Update. old-datum new-datum))] ;deletion
@@ -54,7 +58,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn update-lhs-rhs-indeces [lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-rhs-refs old-rhs-indeces]
+(defn update-lhs-rhs-indeces [lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-rhs-refs old-rhs-indeces delete]
   (debug ["update-lhs-rhs-indeces" rhs-i-to-lhs-getters old-rhs-indeces])
   (reduce
    (fn [[old-rhs-refs-1 old-rhs-indeces-1] [i lhs-getters rhs-index]]
@@ -80,7 +84,9 @@
 				    tmp-rhs-index)
 				  old-rhs-index)
 		  ;; add lhs to new-rhs-pks
-		  [rhs new-rhs-index] (let [^RHSEntry old-new-rhs-entry (tmp-rhs-index new-rhs-pk)
+		  [rhs new-rhs-index] (if delete ;we have already deleted rhs backptrs - do no more
+					[nil tmp-rhs-index]
+					(let [^RHSEntry old-new-rhs-entry (tmp-rhs-index new-rhs-pk)
 					    [rhs old-lhs-pks] (if old-new-rhs-entry
 								[(.rhs old-new-rhs-entry) (.lhs-pks old-new-rhs-entry)]
 								[nil
@@ -90,7 +96,7 @@
 					    new-new-rhs-entry (RHSEntry. rhs new-lhs-pks)
 					    dummy (debug ["new-new-rhs-entry" new-new-rhs-entry])
 					    new-rhs-index (assoc tmp-rhs-index new-rhs-pk new-new-rhs-entry)]
-					[rhs new-rhs-index])
+					[rhs new-rhs-index]))
 		  ;; update rhs-indeces
 		  new-rhs-indeces (assoc old-rhs-indeces-2 i new-rhs-index)
 		  ;; update rhs-refs
@@ -108,25 +114,27 @@
   (reduce
    (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
      (let [new-lhs (.getNewValue update)
-	   lhs-pk (.get lhs-pk-getter new-lhs)
-	   ^LHSEntry old-lhs-entry (old-lhs-index lhs-pk)
-	   [old-lhs-version old-lhs-rhs-refs old-lhs]
-	   (if old-lhs-entry
-	     [(.version old-lhs-entry)(.rhs-refs old-lhs-entry)(.lhs old-lhs-entry)]
-	     [-1 initial-rhs-refs nil])]
-       (if (and old-lhs-entry (not (< (.compareTo lhs-version-comparator old-lhs new-lhs) 0)))
+	   latest-lhs (or new-lhs (.getOldValue update))
+	   lhs-pk (.get lhs-pk-getter latest-lhs)
+	   ^LHSEntry crt-lhs-entry (old-lhs-index lhs-pk)
+	   [crt-lhs-entry-version crt-lhs-entry-extant crt-lhs-entry-rhs-refs crt-lhs]
+	   (if crt-lhs-entry
+	     [(.version crt-lhs-entry)(.extant crt-lhs-entry)(.rhs-refs crt-lhs-entry)(.lhs crt-lhs-entry)]
+	     [-1 false initial-rhs-refs nil])]
+       (if (and crt-lhs-entry (not ((if delete <= <) (.compareTo lhs-version-comparator crt-lhs (if delete latest-lhs new-lhs)) 0)))
 	 (do
-	   (debug ["update-lhs - alteration - rejected" old-lhs new-lhs])
+	   (debug ["update-lhs - alteration - rejected" crt-lhs new-lhs])
 	   [old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions])
 	 (let [[new-rhs-refs new-rhs-indeces]
-	       (update-lhs-rhs-indeces lhs-pk old-lhs new-lhs rhs-i-to-lhs-getters old-lhs-rhs-refs old-rhs-indeces)
-	       new-lhs-version (inc old-lhs-version)
-	       old-datum (if old-lhs-entry (.datum old-lhs-entry))
-	       new-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs)
-	       new-lhs-entry (LHSEntry. true new-lhs-version new-lhs new-rhs-refs new-datum)
+	       (update-lhs-rhs-indeces lhs-pk (if crt-lhs-entry-extant crt-lhs nil) new-lhs rhs-i-to-lhs-getters crt-lhs-entry-rhs-refs old-rhs-indeces delete)
+	       new-lhs-version (if delete crt-lhs-entry-version (inc crt-lhs-entry-version))
+	       crt-entry-datum (if crt-lhs-entry (.datum crt-lhs-entry))
+	       new-datum (if delete crt-entry-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs))
+	       dummy (info [new-datum crt-lhs-entry])
+	       new-lhs-entry (LHSEntry. (not delete) new-lhs-version (if delete (or new-lhs crt-lhs) new-lhs) new-rhs-refs new-datum)
 	       new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
-	       [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)]
-	   (debug ["update-lhs - insertion/alteration - accepted" old-lhs new-lhs])
+	       [new-insertions new-alterations new-deletions] (make-notification (if crt-lhs-entry-extant crt-entry-datum nil) new-datum old-insertions old-alterations old-deletions delete)]
+	   (debug ["update-lhs - insertion/alteration - accepted" crt-lhs new-lhs])
 	   [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions]
 	   ))))
    reduction
@@ -170,7 +178,7 @@
 	      lhs (.lhs old-lhs-entry)
 	      old-datum (if old-lhs-entry (.datum old-lhs-entry))
 	      new-datum (join-fn lhs-pk new-lhs-version lhs new-lhs-rhs-refs)
-	      [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions)
+	      [new-insertions new-alterations new-deletions] (make-notification old-datum new-datum old-insertions old-alterations old-deletions false) ;TODO
 	      new-lhs-index (assoc old-lhs-index lhs-pk (LHSEntry. (.extant old-lhs-entry) new-lhs-version lhs new-lhs-rhs-refs new-datum))]
 	  [new-lhs-index new-insertions new-alterations new-deletions]))
       [old-lhs-index old-insertions old-alterations old-deletions]
