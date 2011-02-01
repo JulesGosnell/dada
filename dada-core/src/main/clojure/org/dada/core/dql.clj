@@ -53,7 +53,7 @@
 ;;--------------------------------------------------------------------------------
 ;; needs refactoring from here...
 
-(defn apply-getters [#^ISeq getters value]
+(defn apply-getters [getters value]
   "apply a list of getters to a value returning a list of their results"
   (map (fn [#^Getter getter] (.get getter value)) getters))
 
@@ -71,7 +71,7 @@
 ;; ;; TODO: creation of extra literal and composed values
 ;; ;;----------------------------------------
 
-;; (defn make-transformer [#^ISeq init-fns #^Metadata metadata #^View view]
+;; (defn make-transformer [init-fns #^Metadata metadata #^View view]
 ;;   (let [#^Creator creator (.getCreator metadata)]
 ;;     (new
 ;;      Transformer
@@ -84,7 +84,7 @@
 ;;       (transform 
 ;;        [input]
 ;;        ;; TODO: this code needs to be FAST - executed online
-;;        (.create creator (into-array Object (map (fn [#^IFn init-fn] (init-fn input)) init-fns))))
+;;        (.create creator (into-array Object (map (fn [init-fn] (init-fn input)) init-fns))))
 ;;       ))))
 
 ;; ;; returns [key type init-fn]
@@ -93,7 +93,7 @@
 ;; ;; simple one-to-one mapping
 ;; ;; key -> [key type fn]
 ;; (defmethod do-transform-attribute 
-;;   clojure.lang.Keyword [#^Keyword key #^Metadata md]
+;;   clojure.lang.Keyword [key #^Metadata md]
 ;;   (let [#^Attribute attribute (.getAttribute md key)
 ;; 	type (.getType attribute)
 ;; 	getter (.getGetter attribute)
@@ -135,7 +135,7 @@
 ;;----------------------------------------
 
 (defn make-splitter
-  [#^IFn src-name-fn #^Model src-model key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  [src-name-fn #^Model src-model key value-to-keys key-to-value view-hook]
   (let [src-metadata (.getMetadata src-model)
 	mutable (.getMutable (.getAttribute src-metadata key))
 	map (new ConcurrentHashMap)
@@ -164,7 +164,7 @@
       ))))
 
 (defn do-split
-  [#^Model src-model #^Keyword key #^IFn value-to-keys #^IFn key-to-value #^IFn view-hook]
+  [#^Model src-model key value-to-keys key-to-value view-hook]
   (connect src-model (make-splitter
 		      (fn [value] (str (.getName src-model) "." "split(" key "=" value")"))
 		      src-model
@@ -178,7 +178,7 @@
 ;;----------------------------------------
 
 (defn reducer
-  [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata reduction-key #^Collection extra-values #^IFn strategy-fn #^IFn value-key-fn]
+  [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata reduction-key #^Collection extra-values strategy-fn value-key-fn]
   (let [strategy (strategy-fn src-metadata tgt-metadata reduction-key)]
     (Reducer. (str src-name "." (value-key-fn reduction-key))
 	      tgt-metadata extra-values strategy)))
@@ -308,7 +308,7 @@
 ;; ;; [name & options :name string :type class :convert fn :default val/fn] - TODO: :key, :version
 ;; ;; TODO :default not a good idea - would replace nulls
 ;; ;; TODO what about type hints on lambdas ?
-;; (defn expand-property [#^Class src-type #^Getter src-getter #^Keyword src-key & pvec]
+;; (defn expand-property [#^Class src-type #^Getter src-getter src-key & pvec]
 ;;   (let [pmap (apply array-map pvec)
 ;; 	tgt-type (or (pmap :type) src-type)
 ;; 	tgt-key (or (pmap :name) src-key)
@@ -346,7 +346,7 @@
 ;; ;; allow splitting :split <split-fn> implemented by router - should provide fn for tgt-view construction...
 ;; ;; abstract out tgt-view construction so it can be done from parameters, during select, or on-demand from router...
 
-;; (defn select [#^Model src-model #^Keyword src-key-key #^Keyword src-version-key #^ISeq attrs & pvec]
+;; (defn select [#^Model src-model src-key-key src-version-key attrs & pvec]
 ;;   (let [pmap (apply array-map pvec)
 ;; 	src-metadata (. src-model getMetadata)
 ;; 	src-keys (map keyword (. src-metadata getAttributeKeys))
@@ -399,7 +399,7 @@
 ;;----------------------------------------
 ;; still to refactor - also sum()
 
-;; (defn dtransform [#^Model src-model #^String suffix #^Keyword key-key #^Keyword version-key & #^Collection attribute-descrips]
+;; (defn dtransform [#^Model src-model #^String suffix key-key version-key & #^Collection attribute-descrips]
 ;;   ;; TODO: accept ready-made View ?
 ;;   ;; TODO: default key/version from src-model
 ;;   (insert *metamodel* (apply do-transform suffix src-model key-key version-key attribute-descrips)))

@@ -120,13 +120,13 @@
 	    [IColumnPropertyAccessor]
 	    []
 	  ;; IColumnAccessor<T>
-	  (^Object getDataValue [^Mutable rowObject ^int columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
-	  (^int getColumnCount [] (count property-names))
+	  (^Object getDataValue [^Mutable rowObject columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
+	  (getColumnCount [] (count property-names))
 	  ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
 	  ;;IColumnPropertyResolver 
 	  (^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
-	  (^int getColumnIndex [^String propertyName] (property-name-to-index propertyName))
+	  (getColumnIndex [^String propertyName] (property-name-to-index propertyName))
 	  )
 
 	config-registry (ConfigRegistry.)

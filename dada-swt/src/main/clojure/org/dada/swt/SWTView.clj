@@ -54,7 +54,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn -init [#^Model model #^Keyword operation #^ServiceFactory service-factory #^Composite parent]
+(defn -init [#^Model model operation #^ServiceFactory service-factory #^Composite parent]
   (println "OPERATION" operation)
   [ ;; super ctor args
    []
