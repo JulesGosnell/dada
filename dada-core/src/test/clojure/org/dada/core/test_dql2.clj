@@ -6,6 +6,8 @@
     (:import
      [org.dada.core
       Attribute
+      Creator
+      Metadata
       Metadata$VersionComparator
       Model
       Result])
@@ -40,18 +42,18 @@
      (proxy [Metadata$VersionComparator][]
 	    (compareTo [lhs rhs] (- (.getVersion lhs) (.getVersion rhs)))))
 
-(def whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
-				     Object
-				     [:id]
-				     [:version] 
-				     int-version-comparator 
-				     whale-attributes))
+(def ^Metadata whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
+					       Object
+					       [:id]
+					       [:version] 
+					       int-version-comparator 
+					       whale-attributes))
 
 (def whales (model "Whales" whale-metadata))
 (insert *metamodel* whales)
 
 ;;(insert-n whales whale-data)
-(let [creator (.getCreator whale-metadata)]
+(let [^Creator creator (.getCreator whale-metadata)]
       (insert-n
        whales
        (map (fn [datum] (.create creator (into-array Object datum))) whale-data)))
