@@ -5,7 +5,7 @@
    [org.dada core]
    )
   (:import
-   [org.dada.core Data JoinModel Update]
+   [org.dada.core Data JoinModel Model Update]
    [org.dada.core.JoinModel LHSEntry RHSEntry]
    )
   )
@@ -25,12 +25,12 @@
 			      (seq-metadata 3)
 			      transaction-model
 			      {3 account-model
-			       4 account-model
-			       5 currency-model}
+			      4 account-model
+			      5 currency-model}
 			      (fn [id version txn [[ccy] [to-acc from-acc]]]
-				(info ["JOIN" id version txn from-acc to-acc ccy])
-				[id version txn from-acc to-acc ccy]
-				)))
+				  ;;(info ["JOIN" id version txn from-acc to-acc ccy])
+				  [id version txn from-acc to-acc ccy]
+				  )))
 
   (is (= (get-mutable join-model) [{} [{}{}] nil nil nil]))
 
@@ -155,18 +155,18 @@
   (def account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
   (def currency-model (model "Currencies" (seq-metadata 3))) ;; id, version, name
   
-  (def ^JoinModel join-model (JoinModel.
-			      "Join"
-			      (seq-metadata 3)
-			      transaction-model
-			      {3 account-model
-			       4 account-model
-			       5 currency-model}
-			      (fn [id version txn [[ccy] [to-acc from-acc]]]
-				(info ["JOIN" id version txn from-acc to-acc ccy])
-				[id version txn from-acc to-acc ccy]
-				)
-			      ))
+  (def ^Model join-model (JoinModel.
+			  "Join"
+			  (seq-metadata 3)
+			  transaction-model
+			  {3 account-model
+			  4 account-model
+			  5 currency-model}
+			  (fn [id version txn [[ccy] [to-acc from-acc]]]
+			      ;;(info ["JOIN" id version txn from-acc to-acc ccy])
+			      [id version txn from-acc to-acc ccy]
+			      )
+			  ))
 
   (is (= (get-mutable join-model) [{} [{}{}] nil nil nil]))
 
@@ -241,7 +241,7 @@
 
   ;; getData
   ;; TODO: should be able to compare two Data instances...
-  (let [data (.getData join-model)]
+  (let [data (.getData ^Model join-model)]
     (is (= (.getExtant data) [[0 4 txn-1 jane-0 jules-0 usd-0]]))
     (is (= (.getExtinct data) [])))
 
@@ -271,19 +271,40 @@
 				       :jane  (RHSEntry. jane-0 [#{} #{0}])}]
 				     [(Update. nil new-datum)] nil nil])))
   
-  
-  ;; ;; split delete x -> x+1 (in another model)
-  ;; (def txn-3 [0 3 100 :jane :jules :usd])
-  ;; (.update transaction-model [] [] [(Update. txn-2 txn-3)])
-  ;; (let [old-datum [0 5 txn-2 jane-0 jules-0 usd-0]
-  ;; 	new-datum [0 5 txn-3 jane-0 jules-0 usd-0]]
-  ;;   (is (= (get-mutable join-model)
-  ;; 	   [{0 (LHSEntry. false 5 txn-3 [[nil] [nil nil]] old-datum)}
-  ;; 	    [{:usd   (RHSEntry. usd-0   [#{}])
-  ;; 	      :gbp   (RHSEntry. gbp-0   [#{}])}
-  ;; 	     {:jules (RHSEntry. jules-0 [#{} #{}])
-  ;; 	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
-  ;; 	    nil nil [(Update. old-datum nil)]])))
-  ;; ;; second delete on top of first - should be ignored ?
-  
+  ;; split delete x -> x+1 (in another model)
+  (def txn-3 [0 3 100 :jane :jules :usd])
+  (.update transaction-model [] [] [(Update. txn-2 txn-3)])
+  (let [old-datum [0 5 txn-2 jane-0 jules-0 usd-0]
+  	new-datum [0 5 txn-3 jane-0 jules-0 usd-0]]
+    (is (= (get-mutable join-model)
+  	   [{0 (LHSEntry. false 5 txn-3 [[nil] [nil nil]] old-datum)}
+  	    [{:usd   (RHSEntry. usd-0   [#{}])
+  	      :gbp   (RHSEntry. gbp-0   [#{}])}
+  	     {:jules (RHSEntry. jules-0 [#{} #{}])
+  	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
+  	    nil nil [(Update. old-datum nil)]])))
+
+  ;; second delete on top of first - should be ignored ?
+  (.update transaction-model [] [] [(Update. txn-2 nil)])
+  (let [old-datum [0 5 txn-2 jane-0 jules-0 usd-0]
+  	new-datum [0 5 txn-3 jane-0 jules-0 usd-0]]
+    (is (= (get-mutable join-model)
+  	   [{0 (LHSEntry. false 5 txn-3 [[nil] [nil nil]] old-datum)}
+  	    [{:usd   (RHSEntry. usd-0   [#{}])
+  	      :gbp   (RHSEntry. gbp-0   [#{}])}
+  	     {:jules (RHSEntry. jules-0 [#{} #{}])
+  	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
+  	    nil nil [(Update. old-datum nil)]])))
+
+  ;; another delete
+  (.update transaction-model [] [] [(Update. txn-3 nil)])
+  (let [old-datum [0 5 txn-2 jane-0 jules-0 usd-0]
+  	new-datum [0 5 txn-3 jane-0 jules-0 usd-0]]
+    (is (= (get-mutable join-model)
+  	   [{0 (LHSEntry. false 5 txn-3 [[nil] [nil nil]] old-datum)}
+  	    [{:usd   (RHSEntry. usd-0   [#{}])
+  	      :gbp   (RHSEntry. gbp-0   [#{}])}
+  	     {:jules (RHSEntry. jules-0 [#{} #{}])
+  	      :jane  (RHSEntry. jane-0  [#{} #{}])}]
+  	    nil nil [(Update. old-datum nil)]])))  
   )

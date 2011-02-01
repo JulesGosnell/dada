@@ -31,7 +31,7 @@
   (reduce (fn [r [k v]] (assoc r v (conj (r v) k))) {} m))
 
 (defn make-notification [old-datum new-datum old-insertions old-alterations old-deletions delete]
-  (info ["make-notification" old-datum new-datum old-insertions old-alterations old-deletions delete])
+  (debug ["make-notification" old-datum new-datum old-insertions old-alterations old-deletions delete])
   (if new-datum
     (if old-datum
       (if delete
@@ -68,10 +68,10 @@
 	(let [old-rhs-pk (if old-lhs (.get lhs-getter old-lhs))
 	      new-rhs-pk (.get lhs-getter new-lhs)
 	      dummy (debug ["old-rhs-pk new-rhs-pk" old-rhs-pk new-rhs-pk])]
-	  (if (= old-rhs-pk new-rhs-pk)
+	  (if (and (not delete) (= old-rhs-pk new-rhs-pk))
 	    (do
 	      (debug [" update-lhs-rhs-indeces: unchanged" i old-rhs-pk])
-	      [old-rhs-refs-2 old-rhs-indeces-2])
+	      [ old-rhs-refs-2 old-rhs-indeces-2])
 	    (let [old-rhs-index (old-rhs-indeces-2 i)
 		  ;; remove lhs from old-rhs-pks (if necessary) - TODO - tidy up
 		  dummy (debug ["old-rhs-pk" old-rhs-pk old-rhs-index])
@@ -110,7 +110,7 @@
    (map (fn [[i lhs-getter] rhs-index] [i lhs-getter rhs-index]) rhs-i-to-lhs-getters old-rhs-indeces))
   )
 
-(defn reduce-lhs [reduction updates lhs-pk-getter initial-rhs-refs lhs-version-comparator rhs-i-to-lhs-getters join-fn delete]
+(defn reduce-lhs [reduction updates ^Getter lhs-pk-getter initial-rhs-refs ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn delete]
   (reduce
    (fn [[old-lhs-index old-rhs-indeces old-insertions old-alterations old-deletions] ^Update update]
      (let [new-lhs (.getNewValue update)
@@ -130,7 +130,7 @@
 	       new-lhs-version (if delete crt-lhs-entry-version (inc crt-lhs-entry-version))
 	       crt-entry-datum (if crt-lhs-entry (.datum crt-lhs-entry))
 	       new-datum (if delete crt-entry-datum (join-fn lhs-pk new-lhs-version new-lhs new-rhs-refs))
-	       dummy (info [new-datum crt-lhs-entry])
+	       dummy (debug [new-datum crt-lhs-entry])
 	       new-lhs-entry (LHSEntry. (not delete) new-lhs-version (if delete (or new-lhs crt-lhs) new-lhs) new-rhs-refs new-datum)
 	       new-lhs-index (assoc old-lhs-index lhs-pk new-lhs-entry)
 	       [new-insertions new-alterations new-deletions] (make-notification (if crt-lhs-entry-extant crt-entry-datum nil) new-datum old-insertions old-alterations old-deletions delete)]
