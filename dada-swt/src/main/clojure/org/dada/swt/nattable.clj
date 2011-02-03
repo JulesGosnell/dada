@@ -64,7 +64,7 @@
 			    (.propertyChange event-layer (java.beans.PropertyChangeEvent. old-mutable property-name old new)))))
 		      getters
 		      property-names)))
-		  (warn ["rejecting out-of-order version: " old-value new-value])))
+		  (debug ["rejecting out-of-order version: " old-value new-value])))
 	      ;; insertion
 	      ;; TODO - we should check that old-value-version is not > new-value version - if it is, we should remember it as extinct
 	      (let [new-mutable (Mutable. new-value)]
