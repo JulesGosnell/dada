@@ -52,7 +52,7 @@
 		     [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
 		     (do
 		       ;; out of order or duplicate version - ignored
-		       ;;(println "WARN: OUT OF ORDER INSERT" current new)
+		       (debug ["out of order insertion" current new])
 		       [extant extinct views i a d]))
 		   )
 		 )
@@ -62,7 +62,7 @@
 		 [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
 		 (do
 		   ;; out of order or duplicate version - ignored
-		   ;;(println "WARN: OUT OF ORDER UPDATE" current new)
+		   (debug ["out of order update" current new])
 		   [extant extinct views i a d]))
 	       )))
 
@@ -84,14 +84,14 @@
 		     [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
 		     (do
 		       ;; earlier version - ignored
-		       (warn ["out of order deletion - ignored" removed latest])
+		       (debug ["out of order deletion - ignored" removed latest])
 		       [extant extinct views i a d]))))
 	       (if (<= (.compareTo version-comparator current old) 0)
 		 ;; deletion of current or later version - accepted
 		 [(dissoc extant key) (assoc extinct key latest) views i a (cons (Update. current new) d)]
 		 (do
 		   ;; earlier version - ignored
-		   (warn ["out of order deletion - ignored" current new])
+		   (debug ["out of order deletion - ignored" current new])
 		   [extant extinct views i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we
