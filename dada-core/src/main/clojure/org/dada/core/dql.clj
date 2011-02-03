@@ -213,7 +213,9 @@
      []
      (initialValue [] 0)
      (initialType [type] type)
-     (currentValue [keys & args] (.create creator (into-array Object (concat keys args))))
+     (currentValue [keys version value]
+		   (trace (str "SUM " (pr-str keys) " -  " (type version) " " version " " value))
+		   (.create creator (into-array Object (concat keys [(Integer. version) value])))) ;TODO - inefficient
      (reduce [insertions alterations deletions]
 	     (-
 	      (+
@@ -256,9 +258,9 @@
      []
      (initialValue [] 0)
      (initialType [type] Integer)
-     (currentValue [extra-values & values] ;TODO - should not need (into-array)
-		   (trace (str "COUNT " extra-values " " values))
-		   (.create creator (into-array Object (concat extra-values values))))
+     (currentValue [extra-values version value]
+		   (trace (str "COUNT " (pr-str extra-values) " -  " (type version) " " version " " value))
+		   (.create creator (into-array Object (concat extra-values [(Integer. version) value])))) ;TODO - inefficient
      (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
      (apply [currentValue delta] (+ currentValue delta))
      )

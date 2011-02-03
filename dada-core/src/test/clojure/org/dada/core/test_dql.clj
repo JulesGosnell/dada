@@ -33,10 +33,10 @@
       ))
 
 (def whale-data
-     [[0 0 :blue :atlantic 100]
-      [1 0 :blue :pacific  100]
-      [2 0 :grey :atlantic 50]
-      [3 0 :grey :pacific  50]])
+     [[0 0 :blue :atlantic 100.0]
+      [1 0 :blue :pacific  100.0]
+      [2 0 :grey :atlantic 50.0]
+      [3 0 :grey :pacific  50.0]])
 
 ;;(def whale-metadata (seq-metadata (count (first whale-data))))
 (def ^Metadata whale-metadata (custom-metadata "org.dada.core.tmp.Whale" 
@@ -64,7 +64,7 @@
 	value (first (.getExtant (.getData model)))]
     (.get (.getGetter #^Attribute (nth (.getAttributes (.getMetadata model)) 1)) value)))
 
-(defn to-list [#^Whale whale]
+(defn to-list [whale]
   (map (fn [#^Attribute attribute] (.get (.getGetter attribute) whale)) (.getAttributes whale-metadata)))
 
 (defn flat-split-values [[metadata-fn data-fn]]
