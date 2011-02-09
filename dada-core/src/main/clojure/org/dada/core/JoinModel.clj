@@ -241,7 +241,7 @@
 	i-to-lhs-getters (into (sorted-map) (map (fn [[i [model getters]]] [i getters]) i-to-rhs-model-and-lhs-getters))]
     
     (dorun
-     (pmap
+     (map
       (fn [[i [^Model rhs-model lhs-getters]]]
 	(debug ["post-init: watching rhs:" i rhs-model])
 	(let [^Metadata rhs-metadata (.getMetadata rhs-model)
