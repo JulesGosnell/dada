@@ -8,7 +8,7 @@
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
   <name>dada</name>
-  <url>http://ouroboros.dnsalias.net/hudson/job/dada/site/</url>
+  <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
 
   <licenses>
     <license>
@@ -31,8 +31,8 @@
     <jmock.version>2.5.1</jmock.version>
     <junit.version>3.8.1</junit.version>
     <java.version>1.6</java.version>
-    <clojure.version>1.2.0</clojure.version>
-    <!-- <clojure.version>1.3.0-alpha3</clojure.version> -->
+<!--    <clojure.version>1.2.0</clojure.version> -->
+    <clojure.version>1.3.0-alpha4</clojure.version>
     <asm.version>3.2</asm.version>
     <commons-lang.version>2.5</commons-lang.version>
     <derby.version>10.6.1.0</derby.version>
@@ -49,8 +49,8 @@
   </issueManagement>
 
   <ciManagement>
-    <system>Hudson</system>
-    <url>http://ouroboros.dnsalias.net/hudson</url>
+    <system>Jenkins</system>
+    <url>http://ouroboros.dnsalias.net/jenkins</url>
   </ciManagement>
 
   <distributionManagement>
@@ -81,7 +81,7 @@
       <id>jules</id>
       <name>Jules Gosnell</name>
       <email>jules_gosnell@yahoo.com</email>
-      <url>http://ouroboros.dnsalias.net/hudson/job/dada/site/</url>
+      <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
       <roles>
         <role>architect</role>
         <role>developer</role>
@@ -238,19 +238,18 @@
       <artifactId>clojure</artifactId>
       <version>${clojure.version}</version>
     </dependency>
+<!--
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure-contrib</artifactId>
       <version>${clojure.version}</version>
     </dependency>
-<!--
+-->
     <dependency>
       <groupId>org.clojure.contrib</groupId>
       <artifactId>logging</artifactId>
       <version>${clojure.version}</version>
     </dependency>
--->
-
 <!--
     <dependency>
       <groupId>org.coconut.forkjoin</groupId>

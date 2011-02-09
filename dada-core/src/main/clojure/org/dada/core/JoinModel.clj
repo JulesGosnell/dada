@@ -240,23 +240,6 @@
 					 rhs-model-to-lhs-fks))
 	i-to-lhs-getters (into (sorted-map) (map (fn [[i [model getters]]] [i getters]) i-to-rhs-model-and-lhs-getters))]
     
-    (debug ["post-init: watching lhs:" lhs-model])
-    (let [^Metadata lhs-metadata (.getMetadata lhs-model)
-	  lhs-pk-getter (.getPrimaryGetter lhs-metadata)
-	  lhs-version-comparator (.getVersionComparator lhs-metadata)
-	  ^Data data
-	  (.registerView
-	   lhs-model
-	   (proxy [View] []
-	     (update [insertions alterations deletions]
-		     (let [[_ _ insertions alterations deletions]
-			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn)]
-		       (if (or insertions alterations deletions)
-			 (.notifyUpdate self insertions alterations deletions))))))]
-      (swap! mutable update-lhs
-	     (map (fn [extant] (Update. nil extant))(.getExtant data))
-	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn) ;; TODO - deletions/extinct
-      )
     (dorun
      (map
       (fn [[i [^Model rhs-model lhs-getters]]]
@@ -276,7 +259,25 @@
 	  (swap! mutable update-rhs
 		 (map (fn [extant] (Update. nil extant))(.getExtant data))
 		 nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
-      i-to-rhs-model-and-lhs-getters))))
+      i-to-rhs-model-and-lhs-getters))
+
+    (debug ["post-init: watching lhs:" lhs-model])
+    (let [^Metadata lhs-metadata (.getMetadata lhs-model)
+	  lhs-pk-getter (.getPrimaryGetter lhs-metadata)
+	  lhs-version-comparator (.getVersionComparator lhs-metadata)
+	  ^Data data
+	  (.registerView
+	   lhs-model
+	   (proxy [View] []
+	     (update [insertions alterations deletions]
+		     (let [[_ _ insertions alterations deletions]
+			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn)]
+		       (if (or insertions alterations deletions)
+			 (.notifyUpdate self insertions alterations deletions))))))]
+      (swap! mutable update-lhs
+	     (map (fn [extant] (Update. nil extant))(.getExtant data))
+	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn) ;; TODO - deletions/extinct
+      )))
 
 (defn -getData [^org.dada.core.JoinModel this]
   (let [[extant extinct]
