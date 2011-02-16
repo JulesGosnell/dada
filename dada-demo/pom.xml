@@ -56,6 +56,7 @@
 
       <plugin>
 	<artifactId>maven-resources-plugin</artifactId>
+	<version>2.4.2</version>
 	<executions>
 	  <execution>
 	    <id>copy-clojure-src</id>
