@@ -310,6 +310,36 @@
 
   )
 
+(defmacro def-record-metadata [var-name class-name fields & [version-comparator]]
+  (let [pks (concat '(list)(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
+	vks (concat '(list)(map keyword (filter (fn [field] (:version-key (meta field))) fields)))
+	attrs (concat
+	       '(list)
+	       (map 
+		(fn [field]
+		    (let [m (meta field)
+			  key (keyword field)
+			  tag (or (:tag m) Object)]
+		      `(Attribute.
+		       ~key
+		       ~tag
+		       ~(not (or (:primary-key m) (:immutable m)))
+		       (proxy [Getter] [] (^{:tag ~tag} get [
+							     ;;^{:tag ~class-name}
+							     datum#] (~(symbol (str "." (name key))) datum#))))))
+		fields))]
+    `(do
+       (defrecord ~class-name ~fields)
+       (def ^Metadata ~var-name
+	    (MetadataImpl.
+	     (record-creator ~class-name)
+	     ~pks
+	     ~vks
+	     (proxy [Metadata$VersionComparator] [] (compareTo [lhs# rhs#] (~version-comparator lhs# rhs#)))
+	     ~attrs
+	     ))
+       )))
+
 ;;--------------------------------------------------------------------------------
 
 (defn sql-attributes 

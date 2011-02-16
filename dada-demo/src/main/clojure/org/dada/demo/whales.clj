@@ -7,6 +7,8 @@
   [org.dada.core dql]
   [org.dada.swt new])
  (:import
+  [clojure.lang
+   Keyword]
   [java.util
    Collection
    Date
@@ -32,63 +34,57 @@
 ;; Oceans
 ;;--------------------------------------------------------------------------------
 
-(def #^Metadata ocean-metadata
-  (record-metadata
-   [:id] [:version]
-   (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] (- (.version lhs)(.version rhs))))
-   [[:id        String         false]
-    [:version   (Integer/TYPE) true]
-    [:area      (Integer/TYPE) true] ;; may grow and shrink with ice
-    [:max-depth (Integer/TYPE) true]]))
+(def-record-metadata
+    ocean-metadata
+    Ocean
+    [^{:tag String         :primary-key true} id
+     ^{:tag (Integer/TYPE) :version-key true} version
+     ^{:tag (Integer/TYPE)}                   area
+     ^{:tag (Integer/TYPE)}                   max-depth]
+    (fn [^Ocean lhs ^Ocean rhs] (- (int (.version lhs))(int (.version rhs)))))
 
-(def ocean-creator (.getCreator ocean-metadata))
-(defn make-ocean [& args] (.create ocean-creator (into-array Object args)))
-
-(def #^Model oceans-model (model "Oceans" ocean-metadata))
+(def ^Model oceans-model (model "Oceans" ocean-metadata))
 
 (insert *metamodel* oceans-model)
 
 (insert-n
  oceans-model
- [(make-ocean "arctic"   0 0        17880)
-  (make-ocean "atlantic" 0 41100000 28232)
-  (make-ocean "indian"   0 28350000 23808)
-  (make-ocean "pacific"  0 64100000 35797)
-  (make-ocean "southern" 0 0        23737)])
+ [(Ocean. "arctic"   0 0        17880)
+  (Ocean. "atlantic" 0 41100000 28232)
+  (Ocean. "indian"   0 28350000 23808)
+  (Ocean. "pacific"  0 64100000 35797)
+  (Ocean. "southern" 0 0        23737)])
 
 ;;--------------------------------------------------------------------------------
 ;; Whales
 ;;--------------------------------------------------------------------------------
 
-(def #^Metadata whale-metadata
-  (record-metadata
-   [:id] [:version]
-   (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] (- (.version lhs)(.version rhs))))
-   [[:id       (Integer/TYPE)       false]
-    [:version  (Integer/TYPE)       true]
-    [:time     Date                 true]
-    [:reporter String               true]
-    [:type     clojure.lang.Keyword false]	;a whale cannot change type
-    [:ocean    String               true]
-    [:length   (Float/TYPE)         true]
-    [:weight   (Float/TYPE)         true]]))
+(def-record-metadata
+    whale-metadata
+    Whale
+    [^{:tag (Integer/TYPE) :primary-key true} id
+     ^{:tag (Integer/TYPE) :version-key true} version
+     ^{:tag Date}                             time
+     ^{:tag String}                           reporter
+     ^{:tag Keyword :immutable true}          type
+     ^{:tag String}                           ocean
+     ^{:tag (Float/TYPE)}                     length
+     ^{:tag (Float/TYPE)}                     weight]
+    (fn [^Whale lhs ^Whale rhs] (- (int (.version lhs))(int (.version rhs)))))
 
-(def whale-creator (.getCreator whale-metadata))
-(defn make-whale [& args] (.create whale-creator (into-array Object args)))
-
-(def #^Model whales-model (model "Whales" whale-metadata))
+(def ^Model whales-model (model "Whales" whale-metadata))
 
 (insert *metamodel* whales-model)
 
 ;; (def some-whales
-;;   [(make-whale 0 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100)
-;;    (make-whale 1 0 (Date. 0 1 1) "jules" "blue whale" "indian" 200 100)
-;;    (make-whale 2 0 (Date. 0 1 1) "jules" "gray whale" "arctic" 100 100)
-;;    (make-whale 3 0 (Date. 0 1 1) "jules" "gray whale" "indian" 200 100)
-;;    (make-whale 4 0 (Date. 1 1 1) "jules" "blue whale" "arctic" 100 100)
-;;    (make-whale 5 0 (Date. 1 1 1) "jules" "blue whale" "indian" 200 100)
-;;    (make-whale 6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100)
-;;    (make-whale 7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100)])
+;;   [(Whale. 0 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100)
+;;    (Whale. 1 0 (Date. 0 1 1) "jules" "blue whale" "indian" 200 100)
+;;    (Whale. 2 0 (Date. 0 1 1) "jules" "gray whale" "arctic" 100 100)
+;;    (Whale. 3 0 (Date. 0 1 1) "jules" "gray whale" "indian" 200 100)
+;;    (Whale. 4 0 (Date. 1 1 1) "jules" "blue whale" "arctic" 100 100)
+;;    (Whale. 5 0 (Date. 1 1 1) "jules" "blue whale" "indian" 200 100)
+;;    (Whale. 6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100)
+;;    (Whale. 7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100)])
 
 ;; see http://en.wikipedia.org/wiki/Cetacea#Tree
 (def whale-hierarchy
@@ -322,7 +318,7 @@
 	max-weight-x-100 (* max-weight 100)]
 
     (defn random-whale [id]
-      (make-whale
+      (Whale.
        id
        0
        (Date. (rand-int num-years)
@@ -346,23 +342,18 @@
 ;; A Join
 ;;--------------------------------------------------------------------------------
 
-(def #^Metadata join-metadata
-  (record-metadata
-   [:id] [:version]
-   (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] (- (.version lhs)(.version rhs))))
-   (list
-    [:id        (Integer/TYPE)       false]
-    [:version   (Integer/TYPE)       true]
-    [:type      clojure.lang.Keyword false]
-    [:length    (Integer/TYPE)       true]
-    [:weight    (Integer/TYPE)       true]
-    [:ocean     String               true]
-    [:ocean-area      (Integer/TYPE) true] ;; may grow and shrink with ice
-    [:ocean-max-depth (Integer/TYPE) true]
-    )))
-
-(def join-creator (.getCreator join-metadata))
-(defn make-join [& args] (.create join-creator (into-array Object args)))
+(def-record-metadata
+    join-metadata
+    Join
+    [^{:tag (Integer/TYPE) :primary-key true} id
+     ^{:tag (Integer/TYPE) :version-key true} version
+     ^{:tag Keyword :immutable true}          type
+     ^{:tag (Float/TYPE)}                     length
+     ^{:tag (Float/TYPE)}                     weight
+     ^{:tag String}                           ocean
+     ^{:tag (Integer/TYPE)}                   ocean-area
+     ^{:tag (Integer/TYPE)}                   ocean-max-depth]
+    (fn [^Join lhs ^Join rhs] (- (int (.version lhs))(int (.version rhs)))))
 
 (def joins-model
      (JoinModel.
@@ -370,10 +361,10 @@
       join-metadata
       whales-model
       {:ocean oceans-model}
-      (fn [id version whale [[ocean]]]
+      (fn [id version ^Whale whale [[ocean]]] ;TODO - type hints
 	(let [[type length weight] (if whale [(.type whale)(.length whale)(.weight whale)][nil 0 0])
-	      [ocean ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max_minus_depth ocean)(.area ocean)] [nil 0 0])]
-	  (make-join id version type length weight ocean ocean-area ocean-max-depth)
+	      [ocean ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max-depth ocean)(.area ocean)] [nil 0 0])]
+	  (Join. id version type length weight ocean ocean-area ocean-max-depth)
 	  ))))
 
 (insert *metamodel* joins-model)
@@ -382,19 +373,19 @@
 ;; Animation
 ;;--------------------------------------------------------------------------------
 
-(defmulti mutate (fn [#^Attribute attribute datum] (.getKey attribute)))
+(defmulti mutate (fn [^Attribute attribute datum] (.getKey attribute)))
 
 ;; whale attributes
-(defmethod mutate :version   [attribute datum] (inc (.get (.getGetter attribute) datum)))
-(defmethod mutate :time      [attribute datum] (Date.))
-(defmethod mutate :reporter  [attribute datum] (rnd reporters))
-(defmethod mutate :ocean     [attribute datum] (rnd oceans))
-(defmethod mutate :length    [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-(defmethod mutate :weight    [attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
-(defmethod mutate :default   [attribute datum] (.get (.getGetter attribute) datum))
+(defmethod mutate :version   [^Attribute attribute datum] (inc (.get (.getGetter attribute) datum)))
+(defmethod mutate :time      [^Attribute attribute datum] (Date.))
+(defmethod mutate :reporter  [^Attribute attribute datum] (rnd reporters))
+(defmethod mutate :ocean     [^Attribute attribute datum] (rnd oceans))
+(defmethod mutate :length    [^Attribute attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+(defmethod mutate :weight    [^Attribute attribute datum] (+ 1 (.get (.getGetter attribute) datum)))
+(defmethod mutate :default   [^Attribute attribute datum] (.get (.getGetter attribute) datum))
 ;; ocean attributes
-(defmethod mutate :max-depth [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100))) ;; +/- 2%
-(defmethod mutate :area      [attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100))) ;; +/- 2%
+(defmethod mutate :max-depth [^Attribute attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100))) ;; +/- 2%
+(defmethod mutate :area      [^Attribute attribute datum] (int (/ (* (.get (.getGetter attribute) datum) (+ 98 (rand-int 5))) 100))) ;; +/- 2%
 
 (defn mutate-datum [^Model model]
   (let [metadata (.getMetadata model)
@@ -423,11 +414,11 @@
     (inspect (? (dfrom "Oceans")))
     (inspect (? (dfrom "WhalesAndOceans")))
 
-    (insert oceans-model (make-ocean "arctic"   1000000 99999999 17880))
-    (insert oceans-model (make-ocean "southern" 1000000  10000000 23737))
+    (insert oceans-model (Ocean. "arctic"   1000000 99999999 17880))
+    (insert oceans-model (Ocean. "southern" 1000000  10000000 23737))
 
-    (insert whales-model (make-whale 50 3011 (Date. 0 1 1) "jules" "blue whale" "atlantic" 100 100))
-    (delete whales-model (make-whale 50 3100 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
+    (insert whales-model (Whale. 50 3011 (Date. 0 1 1) "jules" "blue whale" "atlantic" 100 100))
+    (delete whales-model (Whale. 50 3100 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
     (.find whales-model 10000)
 
     ))
@@ -530,10 +521,10 @@
     
     ;;(start-server)
 
-    (def #^Collection some-years (map #(Date. % 0 1) (range num-years)))
-    (def #^NavigableSet years (TreeSet. some-years))
+    (def ^Collection some-years (map #(Date. % 0 1) (range num-years)))
+    (def ^NavigableSet years (TreeSet. some-years))
 
-    (defn by-year [time] (list (or (.lower years time) time)))
+    (defn by-year [^Date time] (list (or (.lower years time) time)))
 
     ;; (? (from "Whales"))
 
@@ -648,7 +639,7 @@
 ;;--------------------------------------------------------------------------------
 
 ;; ;; create a client to a remote session manager
-;; (def #^org.dada.core.SessionManager sm (.client *external-session-manager-service-factory* "SessionManager"))
+;; (def ^org.dada.core.SessionManager sm (.client *external-session-manager-service-factory* "SessionManager"))
 ;; ;; get the metadata for a remote model
 ;; (.getMetadata sm "Whales")
 ;; ;; register a View

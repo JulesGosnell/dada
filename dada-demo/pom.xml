@@ -85,7 +85,7 @@
 	  <warnOnReflection>true</warnOnReflection>
 	  <namespaces>
             <!-- <namespace>org.dada.demo</namespace> -->
-            <namespace>!org.dada.demo.*</namespace>
+            <!-- <namespace>!org.dada.demo.*</namespace> -->
 	  </namespaces>
 	</configuration>
 	<executions>
