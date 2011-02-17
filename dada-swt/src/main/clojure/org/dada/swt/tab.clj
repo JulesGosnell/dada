@@ -98,7 +98,7 @@
       (.setText item (pr-str (extract-key element)))
       (.setControl item control))))
 
-(defn tab-update [#^Composite parent insertions _ deletions]
+(defn tab-update [#^CTabFolder parent insertions _ deletions]
   (doall (map (fn [^Update insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
   (.setSelection parent 0)
   (.pack parent))

@@ -18,17 +18,17 @@
 (defmethod create :metadata [element #^Composite parent] (tab-make element parent))
 (defmethod create :data [element #^Composite parent] (nattable-make element parent))
   
-(defmethod extract-key :default [result]
+(defmethod extract-key :default [^Result result]
   (reduce (fn [output [key value]] (if value (conj output value) output)) [] (.getPairs result)))
 
 ;;--------------------------------------------------------------------------------
 
 (if *compile-files*
-  (def *display* (Display.))
+  (def ^Display *display* (Display.))
   (.start
    (Thread.
     (fn []
-	(def *display* (Display.))
+	(def ^Display *display* (Display.))
 	(swt-loop *display*)))))
 
 ;; TODO - detach View on closing
