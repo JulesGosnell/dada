@@ -23,7 +23,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(if *compile-files*
+(if (not *compile-files*)
   (def ^Display *display* (Display.))
   (.start
    (Thread.
