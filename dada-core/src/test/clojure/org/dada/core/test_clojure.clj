@@ -22,7 +22,8 @@
 (defrecord Value [v])
 
 (deftest test-get
-  (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v)))))
+  (if (not (.contains (.toLowerCase (System/getProperty "java.vm.vendor")) "ibm")) ;TODO - this assumption does not hold true on IBM - maybe we should generate code accordingly ?
+    (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v))))))
 
 (import java.lang.reflect.Constructor)
 (deftest test-construction
