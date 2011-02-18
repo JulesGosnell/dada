@@ -4,6 +4,8 @@
      )
     )
 
+(set! *warn-on-reflection* true)
+
 ;; test the speed of various bits of clojure to help ascertain which way DADA should do things
 
 (defmacro millis [times body]
@@ -62,8 +64,41 @@
 ;;(deftest assoc-vs-conj
 ;;  (is (faster 1 (reduce (fn [r i] (assoc r i i)) {} (range 3000000)) (reduce (fn [r i] (conj r [i i])) {} (range 3000000)))))
 
-;; surely some mistake (on my part) here - I can look up a field in a record 100o x faster than I can in an array - I expected it to be fater, but...
+;; surely some mistake (on my part) here - I can look up a field in a record 100o x faster than I can in an array - I expected it to be faster, but...
+;; this is down to reflection - investigate how to use an Object array efficiently
+;; type hint was wrong - but why ?
 (deftest record-vs-array-access
   (let [^Value r (Value. 0)
-	^{:tag (type (into-array Object []))} a (into-array Object [0])]
-    (is (faster 1000000 (.v r) (aget a 0)))))
+ 	^objects a (into-array Object [0])]
+    (is (faster 1000000000 (.v r) (aget a 0)))))
+
+;; but accessing a record field still appears to be 10 times faster than an array - is the int being boxed on the way out ?
+(deftest record-vs-int-array-access
+  (let [^Value r (Value. 0)
+	^ints a (int-array [0])]
+    (is (faster 1000000000 (.v r) (aget a 0)))))
+
+;; no it's not autoboxing slowing down the int-array test - array access is slower than record access - by a factor of 10
+(deftest record-vs-object-array-access
+  (let [^Value r (Value. 0)
+	^objects a (object-array [0])]
+    (is (faster 1000000000 (.v r) (aget a 0)))))
+
+(defrecord Foo (^int a))
+(defrecord Bar (^Integer a))
+
+;; int is faster (5x) - to be expected
+(deftest record-int-vs-integer
+  (let [f (Foo. 1)
+	b (Bar. 1)]
+    (is (faster 1000000000 (.a b)  (.a f)))))
+
+;; interesting - reading an int out of a record and pssing it into
+;; another fn (causing it to be auto-boxed) is still 5-10x faster than
+;; just reading an Integer out of a record and passing it straight
+;; into the same fn...
+(deftest record-boxed-int-vs-integer
+  (let [f (Foo. 1)
+	b (Bar. 1)]
+    (is (faster 1000000000 (identity (.a b))  (identity (.a f))))))
+  
