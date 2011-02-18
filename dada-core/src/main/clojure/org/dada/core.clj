@@ -314,7 +314,8 @@
 (defmacro defrecord-creator [class-name field-names]
   `(proxy [Creator] []
      (^{:tag ~class-name} create [#^{:tag (type (into-array Object []))} args#]
-      (apply (fn [~@field-names] (~(symbol (str (name class-name) "." )) ~@field-names)) args#))))
+      (let [~(apply vector field-names) args#] (~(symbol (str (name class-name) "." )) ~@field-names)))
+     ))
 
 (defmacro defrecord-getter [field-name input-type output-type]
   `(proxy [Getter] [] (^{:tag ~output-type} get [^{:tag ~input-type} datum#] (~(symbol (str "." field-name)) datum#))))
