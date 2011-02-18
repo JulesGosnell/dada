@@ -310,26 +310,32 @@
 
   )
 
+(defmacro defcreator [class-name field-names]
+  `(proxy [Creator] []
+     (^{:tag ~class-name} create [#^{:tag (type (into-array Object []))} args#]
+      (apply (fn [~@field-names] (~(symbol (str (name class-name) "." )) ~@field-names)) args#))))
+
+;; TODO - split out  defgetter and defattribute
 (defmacro def-record-metadata [var-name class-name fields & [version-comparator]]
   `(do
      (defrecord ~class-name ~fields)
      (def ^Metadata ~var-name
 	  (MetadataImpl.
-	   (record-creator ~class-name)
+	   (defcreator ~class-name ~fields)
 	   (list ~@(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
 	   (list ~@(map keyword (filter (fn [field] (:version-key (meta field))) fields)))
 	   (proxy [Metadata$VersionComparator] [] (compareTo [lhs# rhs#] (~version-comparator lhs# rhs#)))
 	   (list
 	    ~@(map 
 	       (fn [field]
-		   (let [m (meta field)
-			 key (keyword field)
-			 tag (or (:tag m) Object)]
-		     `(Attribute.
-		       ~key
-		       ~tag
-		       ~(not (or (:primary-key m) (:immutable m)))
-		       (proxy [Getter] [] (^{:tag ~tag} get [^{:tag ~class-name} datum#] (~(symbol (str "." (name key))) datum#))))))
+		 (let [m (meta field)
+		       key (keyword field)
+		       tag (or (:tag m) Object)]
+		   `(Attribute.
+		     ~key
+		     ~tag
+		     ~(not (or (:primary-key m) (:immutable m)))
+		     (proxy [Getter] [] (^{:tag ~tag} get [^{:tag ~class-name} datum#] (~(symbol (str "." (name key))) datum#))))))
 	       fields))
 	   ))
      ))
