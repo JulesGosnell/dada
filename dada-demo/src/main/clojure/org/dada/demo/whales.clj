@@ -38,7 +38,7 @@
 ;; Oceans
 ;;--------------------------------------------------------------------------------
 
-(def-record-metadata
+(defrecord-metadata
     ocean-metadata
     Ocean
     [^{:tag String         :primary-key true} id
@@ -64,7 +64,7 @@
 ;; Whales
 ;;--------------------------------------------------------------------------------
 
-(def-record-metadata
+(defrecord-metadata
     whale-metadata
     Whale
     [^{:tag (Integer/TYPE) :primary-key true} id
@@ -347,7 +347,7 @@
 ;; A Join
 ;;--------------------------------------------------------------------------------
 
-(def-record-metadata
+(defrecord-metadata
     join-metadata
     Join
     [^{:tag (Integer/TYPE) :primary-key true} id
