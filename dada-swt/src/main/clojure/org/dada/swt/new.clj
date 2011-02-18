@@ -23,13 +23,14 @@
 
 ;;--------------------------------------------------------------------------------
 
-(if (not *compile-files*)
-  (def ^Display *display* (Display.))
-  (.start
-   (Thread.
-    (fn []
-	(def ^Display *display* (Display.))
-	(swt-loop *display*)))))
+ (if (not *compile-files*)
+   (do
+     (def ^Display *display* (Display.))
+     (.start
+      (Thread.
+       (fn []
+	   (def ^Display *display* (Display.))
+	   (swt-loop *display*))))))
 
 ;; TODO - detach View on closing
 (defn inspect [query]
