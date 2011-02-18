@@ -30,6 +30,10 @@
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
+(import org.dada.core.MetadataImpl)
+(import org.dada.core.Getter)
+(import org.dada.core.Attribute)
+
 ;;--------------------------------------------------------------------------------
 ;; Oceans
 ;;--------------------------------------------------------------------------------
@@ -47,13 +51,14 @@
 
 (insert *metamodel* oceans-model)
 
-(insert-n
- oceans-model
- [(Ocean. "arctic"   0 0        17880)
-  (Ocean. "atlantic" 0 41100000 28232)
-  (Ocean. "indian"   0 28350000 23808)
-  (Ocean. "pacific"  0 64100000 35797)
-  (Ocean. "southern" 0 0        23737)])
+(if (not *compile-files*)
+  (insert-n
+   oceans-model
+   [(Ocean. "arctic"   0 0        17880)
+    (Ocean. "atlantic" 0 41100000 28232)
+    (Ocean. "indian"   0 28350000 23808)
+    (Ocean. "pacific"  0 64100000 35797)
+    (Ocean. "southern" 0 0        23737)]))
 
 ;;--------------------------------------------------------------------------------
 ;; Whales
@@ -361,7 +366,7 @@
       join-metadata
       whales-model
       {:ocean oceans-model}
-      (fn [id version ^Whale whale [[ocean]]] ;TODO - type hints
+      (fn [id version ^Whale whale [[^Ocean ocean]]]
 	(let [[type length weight] (if whale [(.type whale)(.length whale)(.weight whale)][nil 0 0])
 	      [ocean ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max-depth ocean)(.area ocean)] [nil 0 0])]
 	  (Join. id version type length weight ocean ocean-area ocean-max-depth)
