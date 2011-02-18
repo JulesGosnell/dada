@@ -23,24 +23,25 @@
 
 ;;--------------------------------------------------------------------------------
 
- (if (not *compile-files*)
-   (do
-     (def ^Display *display* (Display.))
-     (.start
-      (Thread.
-       (fn []
-	   (def ^Display *display* (Display.))
-	   (swt-loop *display*))))))
+(let [display (atom nil)]
+  (defn ensure-display []
+    (swap! display (fn [d] (or d (Display.))))))
+
+(if (not *compile-files*)
+  (.start
+   (Thread.
+    (fn []
+      (swt-loop (ensure-display))))))
 
 ;; TODO - detach View on closing
 (defn inspect [query]
   (.asyncExec
-   *display*
+   (ensure-display)
    (fn []
        (let [[metadata-fn data-fn] query
 	     results (data-fn)
 	     [^Model metamodel] results
-	     ^Composite shell (create-shell *display* (.getName metamodel))
+	     ^Composite shell (create-shell (ensure-display) (.getName metamodel))
 	     ^Composite component (create results shell)]
 	 (trace results)
 	 (.pack component)
