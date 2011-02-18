@@ -37,3 +37,8 @@
   (let [^Value r (Value. 0)
 	^String p ""]
     (faster 100000000 (.v r)(.length p))))
+
+(deftest int-arithmetic
+  (is (faster 10000000
+	      ((fn [^Integer lhs ^Integer rhs](< (int lhs)(int rhs))) 1 2)
+	      ((fn [^Integer lhs ^Integer rhs](< lhs rhs)) 1 2))))
