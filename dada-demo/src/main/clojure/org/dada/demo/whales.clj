@@ -45,7 +45,7 @@
      ^{:tag (Integer/TYPE) :version-key true} version
      ^{:tag (Integer/TYPE)}                   area
      ^{:tag (Integer/TYPE)}                   max-depth]
-    (fn [^Ocean lhs ^Ocean rhs] (- (int (.version lhs))(int (.version rhs)))))
+    (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def ^Model oceans-model (model "Oceans" ocean-metadata))
 
@@ -75,7 +75,7 @@
      ^{:tag String}                           ocean
      ^{:tag (Float/TYPE)}                     length
      ^{:tag (Float/TYPE)}                     weight]
-    (fn [^Whale lhs ^Whale rhs] (- (int (.version lhs))(int (.version rhs)))))
+    (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def ^Model whales-model (model "Whales" whale-metadata))
 
@@ -358,7 +358,7 @@
      ^{:tag String}                           ocean
      ^{:tag (Integer/TYPE)}                   ocean-area
      ^{:tag (Integer/TYPE)}                   ocean-max-depth]
-    (fn [^Join lhs ^Join rhs] (- (int (.version lhs))(int (.version rhs)))))
+    (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def joins-model
      (JoinModel.

@@ -311,37 +311,48 @@
   )
 
 ;; TODO - creator should take a collection OR an array ?
-(defmacro defrecord-creator [class-name field-names]
+(defmacro make-record-creator [class-name field-names]
   `(proxy [Creator] []
      (^{:tag ~class-name} create [#^{:tag (type (into-array Object []))} args#]
       (let [~(apply vector field-names) args#] (~(symbol (str (name class-name) "." )) ~@field-names)))
      ))
 
-(defmacro defrecord-getter [field-name input-type output-type]
+(defmacro make-record-getter [field-name input-type output-type]
   `(proxy [Getter] [] (^{:tag ~output-type} get [^{:tag ~input-type} datum#] (~(symbol (str "." field-name)) datum#))))
 
+;; this can't be right but I cannot figure out a better way to get the same result...
+(defmacro make-key-fn [input-type keys]
+  (list 'fn [(with-meta 'v {:tag input-type})]
+	(apply (if (= (count keys) 1) identity vector) (map (fn [key] (list (symbol (str "." key)) 'v)) keys))))
+	
+(defmacro make-version-comparator [input-type version-keys version-comparator]
+  `(let [version-fn# (make-key-fn ~input-type ~version-keys)]
+     (proxy [Metadata$VersionComparator] []
+ 	    (compareTo [lhs# rhs#] (~version-comparator (version-fn# lhs#) (version-fn# rhs#))))))
+
 (defmacro defrecord-metadata [var-name class-name fields & [version-comparator]]
-  `(do
-     (defrecord ~class-name ~fields)
-     (def ^Metadata ~var-name
-	  (MetadataImpl.
-	   (defrecord-creator ~class-name ~fields)
-	   (list ~@(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
-	   (list ~@(map keyword (filter (fn [field] (:version-key (meta field))) fields)))
-	   (proxy [Metadata$VersionComparator] [] (compareTo [lhs# rhs#] (~version-comparator lhs# rhs#)))
-	   (list
-	    ~@(map 
-	       (fn [field]
-		 (let [m (meta field)
-		       tag (or (:tag m) Object)]
-		   `(Attribute.
-		     ~(keyword field)
-		     ~tag
-		     ~(not (or (:primary-key m) (:immutable m)))
-		     (defrecord-getter ~field ~class-name ~tag))))
-	       fields))
-	   ))
-     ))
+  (let [version-keys (filter (fn [field] (:version-key (meta field))) fields)]
+    `(do
+       (defrecord ~class-name ~fields)
+       (def ^Metadata ~var-name
+	    (MetadataImpl.
+	     (make-record-creator ~class-name ~fields)
+	     (list ~@(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
+	     (list ~@(map keyword version-keys))
+	     (make-version-comparator ~class-name ~version-keys ~version-comparator)
+	     (list
+	      ~@(map 
+		 (fn [field]
+		     (let [m (meta field)
+			   tag (or (:tag m) Object)]
+		       `(Attribute.
+			 ~(keyword field)
+			 ~tag
+			 ~(not (or (:primary-key m) (:immutable m)))
+			 (make-record-getter ~field ~class-name ~tag))))
+		 fields))
+	      ))
+	    )))
 
 ;;--------------------------------------------------------------------------------
 
