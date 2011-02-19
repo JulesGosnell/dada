@@ -26,8 +26,8 @@
 (if (not (.contains (.toLowerCase (System/getProperty "java.vm.vendor")) "ibm")) ;TODO - these assumptions do not hold true on IBM - maybe we should generate code accordingly ?
   (do
     
-    (deftest test-get
-      (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v)))))
+    ;; (deftest test-get
+    ;;   (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v)))))
 
     (deftest int-arithmetic
       (is (faster 10000000
@@ -51,8 +51,8 @@
 
 ;; this may be needed for where we need to access a field via a function rather than a java accessor... - not much in it...
 
-(deftest test-get
-  (let [^Value v (Value. 0)] (is (faster 1000000000 ((fn [^Value v] (.v v)) v) (:v v)))))
+;; (deftest test-get
+;;   (let [^Value v (Value. 0)] (is (faster 1000000000 ((fn [^Value v] (.v v)) v) (:v v)))))
 
 ;; doseq nearly twice as fast
 
