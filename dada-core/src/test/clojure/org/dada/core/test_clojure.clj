@@ -76,10 +76,11 @@
     (is (faster 1000000000 (.v r) (aget a 0)))))
 
 ;; but accessing a record field still appears to be 10 times faster than an array - is the int being boxed on the way out ?
-(deftest record-vs-int-array-access
-  (let [^Value r (Value. 0)
-	^ints a (int-array [0])]
-    (is (faster 1000000000 (.v r) (aget a 0)))))
+(if (not (ibm?))
+  (deftest record-vs-int-array-access
+    (let [^Value r (Value. 0)
+	  ^ints a (int-array [0])]
+      (is (faster 1000000000 (.v r) (aget a 0))))))
 
 ;; no it's not autoboxing slowing down the int-array test - array access is slower than record access - by a factor of 10
 (deftest record-vs-object-array-access
@@ -109,3 +110,100 @@
 	  b (Bar. 1)]
       (is (faster 1000000000 (identity (.a b))  (identity (.a f)))))))
   
+(import 'java.util.concurrent.locks.ReadWriteLock)
+(import 'java.util.concurrent.locks.ReentrantReadWriteLock)
+(import 'java.util.concurrent.locks.Lock)
+(import 'java.util.Map)
+(import 'java.util.HashMap)
+
+;; (deftest rw-mutable-vs-immutable
+;;   (let [lock ^ReadWriteLock (ReentrantReadWriteLock.)
+;; 	wr (.writeLock lock)
+;; 	m ^Map (HashMap.)
+;; 	a (atom {})
+;; 	n 10000000]
+;;     (is (faster 1
+;; 		(dotimes [i n] (try (.lock wr) (.put m i i) (catch Exception e)(finally (.unlock wr))))
+;; 		(dotimes [i n] (swap! a conj [i i]))
+;; 		))))
+
+;; atom 4 times faster on J6/C1.3a4  
+(deftest atom-vs-ref
+  (let [a (atom 0)
+	r (ref 0)]
+    (dosync
+     (is (faster 10000000
+		 (swap! a inc)
+		 (alter r inc))))))
+
+;; [with two cores] pmap is about 50x slower than map - i.e. the
+;; overhead of dispatching and collating each thread means that you
+;; need to do a significant amount of work on it before it will pay
+;; off....
+(deftest map-vs-pmap
+  (let [data (doall (range 1000000))]
+    (is (faster 
+	 1
+	 (doall (map identity data))
+	 (doall (pmap identity data))))))
+		    
+;; (import 'java.util.concurrent.Executors)
+;; (import 'java.util.concurrent.ExecutorService)
+;; (import 'java.util.concurrent.CountDownLatch)
+;; (import 'java.util.concurrent.ConcurrentLinkedQueue)
+;; (import 'java.util.Queue)
+
+
+;; (def ^ExecutorService pool (Executors/newFixedThreadPool 2))
+
+;; (defn jmap [f & seqs]
+;;   (let [n (atom 0)
+;; 	^CountDownLatch latch (CountDownLatch. 1)
+;; 	^Queue results (ConcurrentLinkedQueue.)]
+;;     (dorun
+;;      (apply
+;;       map
+;;       (fn [& elts]
+;; 	  (swap! n inc)
+;; 	  (.execute
+;; 	   pool
+;; 	   (fn []	
+;; 		(.add results (apply f elts))
+;; 		(if (= 0 (swap! n dec)) (.countDown latch))
+;; 		)))
+;;       seqs))
+;;     (.await latch)
+;;     results))
+
+;; ;;(let [data (doall (range 1000000))] (millis 1 (doall (jmap identity data))))
+
+
+
+;; (deftest map-vs-pmap
+;;   (let [data (doall (range 1000000))]
+;;     (is (faster 
+;; 	 1
+;; 	 (doall (map identity data))
+;; 	 (doall (pmap identity data))))))
+
+
+;; ;; (deftest transient-vs-persistemt
+;; ;;   (let [times 1000000]
+;; ;;     (is (faster 
+;; ;; 	 1
+;; ;; 	 (persistent! (reduce (fn [r i] (conj! r i)) (transient []) (range times)))
+;; ;; 	 (reduce (fn [r i] (conj r i)) [] (range times))))))
+
+;; ;; (deftest transient-vector-vs-ArrayList
+;; ;;   (let [times 1000000]
+;; ;;     (is (faster 
+;; ;; 	 1
+;; ;; 	 (reduce (fn [^java.util.List r i] (doto r (.add i))) (java.util.ArrayList.) (range times))
+;; ;; 	 (persistent! (reduce (fn [r i] (conj! r i)) (transient []) (range times)))))))
+
+;; (deftest transient-map-vs-HashMap
+;;   (let [times 1000000]
+;;     (is (faster 
+;; 	 1
+;; 	 (reduce (fn [^java.util.Map r i] (doto r (.put i i))) (java.util.HashMap.) (range times))
+;; 	 (persistent! (reduce (fn [r i] (conj! r [i i])) (transient {}) (range times)))))))  
