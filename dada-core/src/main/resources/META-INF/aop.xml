@@ -1,12 +1,18 @@
 <!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
 
 <aspectj>
-  
-  <weaver>
+
+  <weaver options="-showWeaveInfo -XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler">
+ <!--
+   <include within="java.lang.*"/>
+    <include within="java.security.*"/>
+-->
+    <include within="clojure.lang.*"/>
     <include within="org.dada.ltw.*"/><!-- only weave classes in our application-specific packages -->
   </weaver>
   
   <aspects>
+<!--    <aspect name="org.dada.ltw.ClassLoadingAspect"/> -->
     <aspect name="org.dada.ltw.ProfilingAspect"/>
     <aspect name="org.dada.ltw.AccessorTracingAspect"/>
   </aspects>
