@@ -26,7 +26,7 @@
   (let [[#^MethodMapper mapper] (.state this)
 	#^Invocation invocation (.getObject request)
 	;; TODO - handle Exceptions later
-	#^Method method (.getMethod mapper (.getMethodIndex invocation))
+	#^Method method (.getMethod mapper (Integer. (.getMethodIndex invocation)))
 	args (.getArgs invocation)
 	;;dummy (println "POJO INCOMING:" (str "sessionManager." (.getName method) "(" (apply str (interpose ", " args)) ")"))
 	results (.invoke method target args) ;TODO: introspection - slow

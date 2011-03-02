@@ -247,9 +247,9 @@
   (let [display (.getDisplay parent)
 	#^ModelView sync-model (SimpleModelView. "table-meta-view" (.getMetadata async-model))
 	async-view (proxy [View] [] (update [i a d] (try
-						     ;;(.asyncExec display (fn []
-						     (.update sync-model i a d)
-									     ;;))
+						     (.asyncExec display (fn []
+									   (.update sync-model i a d)
+									   ))
 						     (catch Throwable t (.printStackTrace t)))))] ;TODO: Should be Serialisable
     (register async-model async-view)
     

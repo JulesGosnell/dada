@@ -5,10 +5,11 @@
    )
   (:import
    [java.util Collection LinkedHashMap Map]
-   [org.dada.core AbstractModel Attribute Data Getter Metadata Metadata$VersionComparator Model Tuple Update View]
+   [org.dada.core AbstractModel Attribute Data Getter Metadata Metadata$VersionComparator Model RemoteModel Tuple Update View]
    )
   (:gen-class
    :extends org.dada.core.AbstractModel
+   :implements [org.dada.core.ModelView java.io.Serializable]
    :constructors {[String org.dada.core.Metadata org.dada.core.Model java.util.Map clojure.lang.IFn] [String org.dada.core.Metadata]}
    :init init
    :state state
@@ -54,7 +55,7 @@
    (let [lhs-metadata (.getMetadata lhs-model)
 	 lhs-mutable {}
 	 rhs-mutables (apply vector (repeatedly (count (invert-map rhses)) hash-map))]
-     [(atom [lhs-mutable rhs-mutables])])])
+     [(atom [lhs-mutable rhs-mutables]) model-name model-metadata])])
 
 ;;--------------------------------------------------------------------------------
 
@@ -310,3 +311,7 @@
 ;; don't store rhs-refs on lhs, but rhs-entries (or rhs-pks?) - consider
 ;; make whole thing a macro which generates inline code specific to each individual join
 ;; compound key join ?
+
+(defn #^{:private true} -writeReplace [#^org.dada.core.JoinModel this]
+  (let [[[_mutable name metadata]] (.state this)]
+      (RemoteModel. name metadata)))

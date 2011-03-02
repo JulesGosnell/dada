@@ -3,48 +3,38 @@
  org.dada.web
  (:use clojure.contrib.logging)
  (:use [org.dada.core])
- ;; (:import [org.eclipse.jetty.server
- ;; 	   Request Server]
- ;; 	  [org.eclipse.jetty.server.handler
- ;; 	   AbstractHandler]
- ;; 	  [java.io
- ;; 	   ByteArrayOutputStream ObjectOutputStream OutputStream]
- ;; 	  [javax.servlet.http
- ;; 	   HttpServletRequest HttpServletResponse])
+ (:import
+  [clojure.lang DynamicClassLoader]
+  [org.eclipse.jetty.server Request Server]
+  [org.eclipse.jetty.server.handler AbstractHandler]
+  [java.io OutputStream]
+  [javax.servlet.http HttpServletResponse])
  )
 
+;; only works when URLClassLoader has been given a URL ending in '/'
+(defn handle-request [^String target ^Request base-request ^Request request ^HttpServletResponse response] 
+  (let [^String path-info (.getPathInfo base-request)
+	class-name (.replace (.substring path-info 1 (- (.length path-info) 6)) \/ \.)]
+    (if-let [^"[B" bytes (DynamicClassLoader/byteCodeForName class-name)]
+      (let [size (count bytes)]
+	(info (str "Serving: " class-name " (" size " bytes)"))
+	(doto response
+	  (.setContentType "application/binary")
+	  (.setContentLength (count bytes))
+	  (.setStatus 200))
+	(with-open [^OutputStream stream (.getOutputStream response)]
+	  (doseq [byte bytes] (.write stream (int byte)))))
+      (do
+	(info (str "Not Serving: " class-name))
+	(doto response
+	  (.setContentLength 0)
+	  (.setStatus 404)))))
+  (.setHandled request true))
 
-;; (def #^Server *jetty* nil)
+(defn ^Server start-jetty [^Integer port]
+  (doto (Server. port)
+    (.setHandler (proxy [AbstractHandler] [] (handle [& args] (apply handle-request args))))
+    (.start)))
 
-;; (defn serialise [class]
-;;   (let [baos (ByteArrayOutputStream.)
-;; 	oos (ObjectOutputStream. baos)]
-;;     (.writeObject class oos)
-;;     (.toByteArray baos)))
-
-;; (defn start-jetty [port]
-;;   (let [jetty (Server. port)
-;; 	handler (proxy [AbstractHandler] []
-;; 		       (handle [#^String target
-;; 				#^Request base-request
-;; 				#^Request request
-;; 				#^HttpServletResponse response] 
-;; 			       (let [path (.getPathInfo base-request)
-;; 				     name (.substring path (+ (.lastIndexOf path "/") 1))
-;; 				     ;;#^"[B" bytes (@*exported-classes* name)
-;; 				     #^"[B" bytes (serialise (eval symbol name)) ;; TODO - write bytes directly to stream ?
-;; 				     #^OutputStream stream (.getOutputStream response)]
-;; 				 (.setContentType response "application/binary")
-;; 				 (.setContentLength response (count bytes))
-;; 				 (.setStatus response 200)
-;; 				 (info (str "Serving " request))
-;; 				 (info (str "Serving " name " = " bytes))
-;; 				 (.write stream bytes)
-;; 				 (.close stream))
-;; 			       (.setHandled request true)))]
-;;     (.setHandler jetty handler)
-;;     (def #^Server *jetty* jetty)
-;;     (.start jetty)))
-
-;; (defn stop-jetty []
-;;   (.stop *jetty*))
+(defn stop-jetty [^Server jetty]
+  (.stop jetty))

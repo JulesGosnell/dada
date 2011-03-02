@@ -106,10 +106,10 @@
 (defn tab-make [[model prefix pairs operation] #^Composite parent] ; TODO - should be element
   ;; this model will accept unordered async events and put out ordered
   ;; sync events, suitable for the gui...
-  (let [display (.getDisplay parent)
-	#^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
+  (let [^Display display (.getDisplay parent)
+	^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
-    (register model (proxy [View] [] (update [i a d] (tab-update folder i a d))))
+    (register model (proxy [View] [] (update [i a d] (.asyncExec display (fn [] (tab-update folder i a d))))))
     folder
     ))
   

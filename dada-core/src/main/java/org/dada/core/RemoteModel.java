@@ -24,7 +24,7 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
 		sessionManager = SessionManagerHelper.getCurrentSessionManager();
-		if (sessionManager == null) new Exception().printStackTrace();
+		if (sessionManager == null) new Exception("SessionManagerHelper has no current SessionManager").printStackTrace();
 	}
 	 
 	@Override

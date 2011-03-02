@@ -100,7 +100,8 @@
   )
 
 (defn nattable-make [[^Model model pairs] ^Composite parent]
-  (let [^Metadata metadata (.getMetadata model)
+  (let [^Display display (.getDisplay parent)
+	^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
 	getters (map (fn [^Attribute attribute] (.getGetter attribute)) attributes)
 	pk-getter (.getPrimaryGetter metadata)
@@ -147,7 +148,7 @@
 		(.registerConfigAttribute 
 		 config-registry
 		 (CellConfigAttributes/CELL_STYLE)
-		 (doto (Style.) (.setAttributeValue (CellStyleAttributes/BACKGROUND_COLOR) (.getSystemColor (.getDisplay parent) (SWT/COLOR_GREEN))))
+		 (doto (Style.) (.setAttributeValue (CellStyleAttributes/BACKGROUND_COLOR) (.getSystemColor display (SWT/COLOR_GREEN))))
 		 (DisplayMode/NORMAL)
 		 "up")
 		)
@@ -160,7 +161,10 @@
 
 	view (proxy [View][]
 	       (^void update [^Collection insertions ^Collection alterations ^Collection deletions]
-		      (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))
+		      (.asyncExec
+		       display
+		       (fn []
+			 (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
 	]
     (.registerView model view)
     

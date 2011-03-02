@@ -47,3 +47,14 @@
 	 (.pack component)
 	 (.pack shell)))))
 
+
+(defn inspect-model [^Model model]
+  (.asyncExec
+   (ensure-display)
+   (fn []
+     (let [results (Result. model "Foo" [] [])
+	   ^Composite shell (create-shell (ensure-display) (.getName model))
+	   ^Composite component (create results shell)]
+       (trace results)
+       (.pack component)
+       (.pack shell)))))

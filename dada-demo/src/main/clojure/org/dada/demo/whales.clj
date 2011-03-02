@@ -3,6 +3,7 @@
  org.dada.demo.whales
  (:use
   [clojure set]
+  [org.dada web]
   [org.dada core]
   [org.dada.core dql]
   [org.dada.swt new])
@@ -23,8 +24,27 @@
    Metadata
    Metadata$VersionComparator
    Model
-   ])
+
+   ServiceFactory
+   SessionManager
+   SessionManagerNameGetter
+   SessionManagerImpl
+   View
+   ViewNameGetter]
+  [org.dada.core.jms
+   JMSServiceFactory
+   POJOInvoker]
+  [org.dada.jms
+   QueueFactory
+   TopicFactory
+   SimpleMethodMapper]
+  [org.springframework.beans.factory
+   BeanFactory])
  )
+
+;; TODO - resets *metamodel*
+(if (not *compile-files*)
+  (start-server))
 
 ;;--------------------------------------------------------------------------------
 
@@ -651,3 +671,39 @@
 ;; (.registerView sm "Whales" (proxy [org.dada.core.View java.io.Serializable][](update [& rest] (println "UPDATE:" rest))))
 
 ;;--------------------------------------------------------------------------------
+
+(if (not *compile-files*)
+  (do
+   
+    (def jetty (start-jetty 8888))
+
+    (def ^ServiceFactory *pojo-view-service-factory*
+	 (JMSServiceFactory.
+	  (.getBean ^BeanFactory *spring-context* "session")
+	  View
+	  (.getBean ^BeanFactory *spring-context* "executorService")
+	  true
+	  10000
+	  (ViewNameGetter.)
+	  (.getBean ^BeanFactory *spring-context* "topicFactory")
+	  (POJOInvoker. (SimpleMethodMapper. View))
+	  "POJO"))
+      
+    (def ^SessionManager *pojo-session-manager*
+	 (SessionManagerImpl. "SessionManager" *metamodel* *pojo-view-service-factory*))
+
+    (def ^ServiceFactory *pojo-session-manager-service-factory*
+	 (JMSServiceFactory.
+	  (.getBean ^BeanFactory *spring-context* "session") 
+	  SessionManager
+	  (.getBean ^BeanFactory *spring-context* "executorService")
+	  true
+	  10000
+	  (SessionManagerNameGetter.)
+	  (.getBean ^BeanFactory *spring-context* "topicFactory")
+	  (POJOInvoker. (SimpleMethodMapper. SessionManager))
+	  "POJO"))
+
+    (.server ^JMSServiceFactory *pojo-session-manager-service-factory* *pojo-session-manager* "SessionManager")
+
+    ))
