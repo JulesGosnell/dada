@@ -102,8 +102,10 @@
 ;; another fn (causing it to be auto-boxed) is still 5-10x faster than
 ;; just reading an Integer out of a record and passing it straight
 ;; into the same fn...
-(deftest record-boxed-int-vs-integer
-  (let [f (Foo. 1)
-	b (Bar. 1)]
-    (is (faster 1000000000 (identity (.a b))  (identity (.a f))))))
+
+(if (not (ibm?))
+  (deftest record-boxed-int-vs-integer
+    (let [f (Foo. 1)
+	  b (Bar. 1)]
+      (is (faster 1000000000 (identity (.a b))  (identity (.a f)))))))
   
