@@ -59,8 +59,9 @@
 
 ;; doseq nearly twice as fast
 
-(deftest doseq-vs-dorun-map
-  (is (faster 1 (doseq [n (range 10000000)] (identity n)) (dorun (map identity (range 10000000))))))
+(if (not (ibm?))
+  (deftest doseq-vs-dorun-map
+    (is (faster 1 (doseq [n (range 10000000)] (identity n)) (dorun (map identity (range 10000000)))))))
 
 ;; seems to be true - but so close I can't rely on it not to fail build
 
