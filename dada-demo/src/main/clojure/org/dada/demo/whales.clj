@@ -6,7 +6,8 @@
   [org.dada web]
   [org.dada core]
   [org.dada.core dql]
-  [org.dada.swt new])
+  [org.dada.swt new]
+  [org.dada.demo server])
  (:import
   [clojure.lang
    Keyword]
@@ -42,17 +43,9 @@
    BeanFactory])
  )
 
-;; TODO - resets *metamodel*
-(if (not *compile-files*)
-  (start-server))
-
 ;;--------------------------------------------------------------------------------
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
-
-(import org.dada.core.MetadataImpl)
-(import org.dada.core.Getter)
-(import org.dada.core.Attribute)
 
 ;;--------------------------------------------------------------------------------
 ;; Oceans
@@ -660,50 +653,3 @@
 
 ;; (? (dunion)(dsplit :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(dsum :weight)(split :type )])(from "Whales"))
 ;; (? (dunion)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
-
-;;--------------------------------------------------------------------------------
-
-;; ;; create a client to a remote session manager
-;; (def ^org.dada.core.SessionManager sm (.client *external-session-manager-service-factory* "SessionManager"))
-;; ;; get the metadata for a remote model
-;; (.getMetadata sm "Whales")
-;; ;; register a View
-;; (.registerView sm "Whales" (proxy [org.dada.core.View java.io.Serializable][](update [& rest] (println "UPDATE:" rest))))
-
-;;--------------------------------------------------------------------------------
-
-(if (not *compile-files*)
-  (do
-   
-    (def jetty (start-jetty 8888))
-
-    (def ^ServiceFactory *pojo-view-service-factory*
-	 (JMSServiceFactory.
-	  (.getBean ^BeanFactory *spring-context* "session")
-	  View
-	  (.getBean ^BeanFactory *spring-context* "executorService")
-	  true
-	  10000
-	  (ViewNameGetter.)
-	  (.getBean ^BeanFactory *spring-context* "topicFactory")
-	  (POJOInvoker. (SimpleMethodMapper. View))
-	  "POJO"))
-      
-    (def ^SessionManager *pojo-session-manager*
-	 (SessionManagerImpl. "SessionManager" *metamodel* *pojo-view-service-factory*))
-
-    (def ^ServiceFactory *pojo-session-manager-service-factory*
-	 (JMSServiceFactory.
-	  (.getBean ^BeanFactory *spring-context* "session") 
-	  SessionManager
-	  (.getBean ^BeanFactory *spring-context* "executorService")
-	  true
-	  10000
-	  (SessionManagerNameGetter.)
-	  (.getBean ^BeanFactory *spring-context* "topicFactory")
-	  (POJOInvoker. (SimpleMethodMapper. SessionManager))
-	  "POJO"))
-
-    (.server ^JMSServiceFactory *pojo-session-manager-service-factory* *pojo-session-manager* "SessionManager")
-
-    ))
