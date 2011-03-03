@@ -11,6 +11,7 @@
    :extends org.dada.core.AbstractModel
    :implements [org.dada.core.ModelView java.io.Serializable]
    :constructors {[String org.dada.core.Metadata org.dada.core.Model java.util.Map clojure.lang.IFn] [String org.dada.core.Metadata]}
+   :methods [[writeReplace [] Object]]
    :init init
    :state state
    :post-init post-init)
@@ -313,5 +314,5 @@
 ;; compound key join ?
 
 (defn #^{:private true} -writeReplace [#^org.dada.core.JoinModel this]
-  (let [[[_mutable name metadata]] (.state this)]
+  (let [[_mutable name metadata] (.state this)]
       (RemoteModel. name metadata)))
