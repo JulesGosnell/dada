@@ -3,7 +3,6 @@
  org.dada.demo.whales
  (:use
   [clojure set]
-  [org.dada web]
   [org.dada core]
   [org.dada.core dql]
   [org.dada.swt new]
@@ -19,31 +18,14 @@
    ]
   [org.dada.core
    Attribute
-   Batcher
-   Creator
    JoinModel
-   Metadata
-   Metadata$VersionComparator
    Model
-
-   ServiceFactory
-   SessionManager
-   SessionManagerNameGetter
-   SessionManagerImpl
-   View
-   ViewNameGetter]
-  [org.dada.core.jms
-   JMSServiceFactory
-   POJOInvoker]
-  [org.dada.jms
-   QueueFactory
-   TopicFactory
-   SimpleMethodMapper]
-  [org.springframework.beans.factory
-   BeanFactory])
+   ]
+  )
  )
 
 ;;--------------------------------------------------------------------------------
+;; utils
 
 (defn rnd [seq] (nth seq (rand-int (count seq))))
 
