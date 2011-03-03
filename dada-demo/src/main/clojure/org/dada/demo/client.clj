@@ -93,10 +93,11 @@
 
     ;; (inspect-model local-metamodel)
 
-    (def whales-model (model "Whales" (.getMetadata session-manager "Whales")))
+    (defn inspect-remote-model [model-name]
+      (let [local-model (model model-name (.getMetadata session-manager model-name))]
+	(.registerView session-manager model-name (.decouple view-service-factory local-model))
+	(inspect-model local-model)))
 
-    (.registerView session-manager "Whales" (.decouple view-service-factory whales-model))
-
-    (inspect-model whales-model)
+    (inspect-remote-model "Whales")
 
     ))
