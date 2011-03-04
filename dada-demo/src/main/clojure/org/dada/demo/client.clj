@@ -101,6 +101,6 @@
     
     (def *remote-metamodel*  (remote-model "MetaModel"))
     
-    (inspect-model *metamodel*)
+    (inspect-model *remote-metamodel* (fn [^Model model] (inspect-model model)))
     
     ))

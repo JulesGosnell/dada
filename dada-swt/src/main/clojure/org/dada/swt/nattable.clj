@@ -18,11 +18,13 @@
    [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
    [net.sourceforge.nattable.grid.layer ColumnHeaderLayer CornerLayer DefaultColumnHeaderDataLayer DefaultRowHeaderDataLayer GridLayer RowHeaderLayer]
    [net.sourceforge.nattable.hideshow ColumnHideShowLayer]
-   [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer]
+   [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer ILayerListener]
+   [net.sourceforge.nattable.layer.event ILayerEvent]
    [net.sourceforge.nattable.layer.stack DefaultBodyLayerStack]
    [net.sourceforge.nattable.reorder ColumnReorderLayer]
    [net.sourceforge.nattable.selection SelectionLayer]
    [net.sourceforge.nattable.selection.config DefaultSelectionStyleConfiguration]
+   [net.sourceforge.nattable.selection.event CellSelectionEvent]
    [net.sourceforge.nattable.sort SortHeaderLayer]
    [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
    [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
@@ -30,6 +32,15 @@
    [org.dada.core Attribute Getter Metadata Metadata$VersionComparator Model Update View]
    [org.dada.swt Mutable]
    ))
+
+(defn handle-layer-event [^EventList event-list ^NatTable nattable ^ILayerEvent event & [drilldown-fn]]
+  (if (instance? CellSelectionEvent event)
+    (try
+     (if (and (.isWithShiftMask ^CellSelectionEvent event) drilldown-fn)
+       (let [datum (.getDatum (.get event-list (- (.getRowPosition ^CellSelectionEvent event) 1)))]
+	 (if (and datum (instance? Model datum))
+	   (drilldown-fn datum))))
+     (catch Exception e (error e)))))       
 
 ;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
@@ -99,7 +110,7 @@
 
   )
 
-(defn nattable-make [[^Model model pairs] ^Composite parent]
+(defn nattable-make [[^Model model pairs] ^Composite parent & [drilldown-fn]]
   (let [^Display display (.getDisplay parent)
 	^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
@@ -166,8 +177,14 @@
 		       (fn []
 			 (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
 	]
-    (.registerView model view)
-    
+      
+    (let [data (.registerView model view)]
+      (.update
+       view
+       (map (fn [datum] (Update. nil datum)) (.getExtant data))
+       '()
+       (map (fn [datum] (Update. datum nil)) (.getExtinct data))))
+
     (.setUnderlyingLayer column-header-layer-stack (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
 
     ;;--------------------------------------------------------------------------------
@@ -179,18 +196,16 @@
       (.setUnderlyingLayer row-header-layer-stack row-header-layer)
 
       ;; define parent...
-      (let [nattable (NatTable.
-		      parent
-		      (GridLayer. 
-		       body-layer-stack
-		       column-header-layer-stack
-		       row-header-layer
-		       (CornerLayer.
-			(DataLayer.
-			 (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
-			row-header-layer-stack
-			column-header-layer-stack))
-		      false)]
+      (let [grid-layer (GridLayer. 
+			body-layer-stack
+			column-header-layer-stack
+			row-header-layer
+			(CornerLayer.
+			 (DataLayer.
+			  (DefaultCornerDataProvider. column-header-data-provider row-header-data-provider))
+			 row-header-layer-stack
+			 column-header-layer-stack))
+	    nattable (NatTable. parent grid-layer false)]
 	(doto
 	    nattable
 	  (.setConfigRegistry config-registry)
@@ -202,10 +217,11 @@
 	  ;; nattable.addConfiguration(getCustomComparatorConfiguration(glazedListsGridLayer.getColumnHeaderLayerStack().getDataLayer()));
 	  (.addConfiguration (DefaultSelectionStyleConfiguration.))
 	  (.configure)
+	  
+	  (.addLayerListener (proxy [ILayerListener][](handleLayerEvent [event] (handle-layer-event sorted-list nattable event drilldown-fn))))
 
 	  (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
-	  (.pack))
-	nattable))))
+	  (.pack))))))
 
 ;;--------------------------------------------------------------------------------
 ;; TODO

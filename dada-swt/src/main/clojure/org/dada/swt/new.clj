@@ -15,8 +15,8 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defmethod create :metadata [element #^Composite parent] (tab-make element parent))
-(defmethod create :data [element #^Composite parent] (nattable-make element parent))
+(defmethod create :metadata [element #^Composite parent & [drilldown-fn]] (tab-make element parent))
+(defmethod create :data [element #^Composite parent & [drilldown-fn]] (nattable-make element parent drilldown-fn))
   
 (defmethod extract-key :default [^Result result]
   (reduce (fn [output [key value]] (if value (conj output value) output)) [] (.getPairs result)))
@@ -34,7 +34,7 @@
       (swt-loop (ensure-display))))))
 
 ;; TODO - detach View on closing
-(defn inspect [query]
+(defn inspect [query & [drilldown-fn]]
   (.asyncExec
    (ensure-display)
    (fn []
@@ -42,19 +42,19 @@
 	     results (data-fn)
 	     [^Model metamodel] results
 	     ^Composite shell (create-shell (ensure-display) (.getName metamodel))
-	     ^Composite component (create results shell)]
+	     ^Composite component (create results shell drilldown-fn)]
 	 (trace results)
 	 (.pack component)
 	 (.pack shell)))))
 
 
-(defn inspect-model [^Model model]
+(defn inspect-model [^Model model & [drilldown-fn]]
   (.asyncExec
    (ensure-display)
    (fn []
      (let [results (Result. model "Foo" [] [])
 	   ^Composite shell (create-shell (ensure-display) (.getName model))
-	   ^Composite component (create results shell)]
+	   ^Composite component (create results shell drilldown-fn)]
        (trace results)
        (.pack component)
        (.pack shell)))))

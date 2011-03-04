@@ -13,7 +13,7 @@
     :metadata
     :data))
 
-(defmulti create (fn [element #^Composite parent] (layer element)))
+(defmulti create (fn [element #^Composite parent & [drilldown-fn]] (layer element)))
 
 (defmulti extract-key (fn [element] (layer element)))
 
