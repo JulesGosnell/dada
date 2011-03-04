@@ -24,6 +24,7 @@
     SessionManagerNameGetter
     SessionManager
     SessionManagerHelper
+    Update
     View
     ViewNameGetter]
    [org.dada.core.jms
@@ -86,20 +87,20 @@
     (def session-manager (.client session-manager-service-factory "SessionManager"))
     (SessionManagerHelper/setCurrentSessionManager session-manager)
 
-    ;; (def local-oceans (model "MetaModel" metamodel-metadata))
-
-    ;; (.registerView session-manager "MetaModel"
-    ;; 		   (.decouple view-service-factory local-metamodel))
-
-    ;; (inspect-model local-metamodel)
-
-    (defn inspect-remote-model [model-name]
-      (let [local-model (model model-name (.getMetadata session-manager model-name))]
-	(.registerView session-manager model-name (.decouple view-service-factory local-model))
-	(inspect-model local-model)
-	local-model
+    (defn remote-model [model-name]
+      (let [a-model (model model-name (.getMetadata session-manager model-name))
+	    data (.registerView session-manager model-name (.decouple view-service-factory a-model))]
+	(.update
+	 a-model
+	 (map (fn [datum] (Update. nil datum)) (.getExtant data))
+	 '()
+	 (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
+	
+	a-model
 	))
-
-    (inspect-remote-model "MetaModel")
-
+    
+    (def *remote-metamodel*  (remote-model "MetaModel"))
+    
+    (inspect-model *metamodel*)
+    
     ))
