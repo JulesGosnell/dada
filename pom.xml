@@ -8,7 +8,7 @@
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
   <name>dada</name>
-  <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
+  <url>http://ouroboros.dnsalias.net/ci/job/dada/site/</url>
 
   <licenses>
     <license>
@@ -49,7 +49,7 @@
 
   <ciManagement>
     <system>Jenkins</system>
-    <url>http://ouroboros.dnsalias.net/jenkins</url>
+    <url>http://ouroboros.dnsalias.net/ci</url>
   </ciManagement>
 
   <distributionManagement>
@@ -80,7 +80,7 @@
       <id>jules</id>
       <name>Jules Gosnell</name>
       <email>jules_gosnell@yahoo.com</email>
-      <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
+      <url>http://ouroboros.dnsalias.net/ci/job/dada/site/</url>
       <roles>
         <role>architect</role>
         <role>developer</role>
