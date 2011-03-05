@@ -8,7 +8,7 @@
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
   <name>dada</name>
-  <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
+  <url>http://ouroboros.dnsalias.net/ci/job/dada/site/</url>
 
   <licenses>
     <license>
@@ -49,25 +49,25 @@
 
   <ciManagement>
     <system>Jenkins</system>
-    <url>http://ouroboros.dnsalias.net/jenkins</url>
+    <url>http://ouroboros.dnsalias.net/ci</url>
   </ciManagement>
 
   <distributionManagement>
     <repository>
       <id>ouroboros</id>
       <name>Jules' Home Repository</name>
-      <url>http://ouroboros.dnsalias.net/artifactory/libs-snapshots-local</url>
+      <url>http://ouroboros.dnsalias.net/repo/libs-snapshots-local</url>
     </repository>
   </distributionManagement>
 
   <repositories>
     <repository>
       <id>ouroboros-cache</id>
-      <url>http://ouroboros.dnsalias.net/artifactory/repos</url>
+      <url>http://ouroboros.dnsalias.net/repo/repos</url>
     </repository>
     <repository>
       <id>ouroboros-ext</id>
-      <url>http://ouroboros.dnsalias.net/artifactory/ext-releases-local</url>
+      <url>http://ouroboros.dnsalias.net/repo/ext-releases-local</url>
     </repository>
     <repository>  <!-- clojure, clojure-contrib: nightly -->
       <id>clojure-releases</id>
@@ -80,7 +80,7 @@
       <id>jules</id>
       <name>Jules Gosnell</name>
       <email>jules_gosnell@yahoo.com</email>
-      <url>http://ouroboros.dnsalias.net/jenkins/job/dada/site/</url>
+      <url>http://ouroboros.dnsalias.net/ci/job/dada/site/</url>
       <roles>
         <role>architect</role>
         <role>developer</role>
