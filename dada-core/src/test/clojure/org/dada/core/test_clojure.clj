@@ -71,10 +71,11 @@
 ;; surely some mistake (on my part) here - I can look up a field in a record 100o x faster than I can in an array - I expected it to be faster, but...
 ;; this is down to reflection - investigate how to use an Object array efficiently
 ;; type hint was wrong - but why ?
-(deftest record-vs-array-access
-  (let [^Value r (Value. 0)
- 	^objects a (into-array Object [0])]
-    (is (faster 1000000000 (.v r) (aget a 0)))))
+(if (not (ibm?))
+  (deftest record-vs-array-access
+    (let [^Value r (Value. 0)
+	  ^objects a (into-array Object [0])]
+      (is (faster 1000000000 (.v r) (aget a 0))))))
 
 ;; but accessing a record field still appears to be 10 times faster than an array - is the int being boxed on the way out ?
 (if (not (ibm?))
