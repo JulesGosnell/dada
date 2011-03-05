@@ -1,0 +1,13 @@
+#!/bin/sh -x
+
+M2_REPO=$HOME/.m2/repository
+
+nodename=`uname -n`
+name=`basename $nodename .home`
+jvmID=$name"_"$$
+
+exec java\
+ -Dclojure.jvmID=$jvmID \
+ -cp ./dada-demo/target/classes:`cat ./dada-demo/.clojure-classpath.txt` \
+ org.dada.demo.client \
+ $@
