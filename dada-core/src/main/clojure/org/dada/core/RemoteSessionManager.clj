@@ -117,7 +117,7 @@
 ;; implemented - but should not have to
 
 (defn ^Data -getData [^org.dada.core.RemoteSessionManager this ^String model-name]
-  warn("RemoteSessionManager: calling getData(), but should not have to")
+  ;;warn("RemoteSessionManager: calling getData(), but should not have to")
   (let [[^SessionManager peer] (.state this)]
     (.getData peer model-name)))
 
