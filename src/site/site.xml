@@ -23,10 +23,10 @@
     </menu>
 
     <menu name="Developers">
-      <item name="Coverage" href="http://ouroboros.dnsalias.net/jenkins/job/dada/cobertura"/>
+      <item name="Coverage" href="http://ouroboros.dnsalias.net/ci/job/dada/cobertura"/>
       <item name="GitHub" href="http://github.com/JulesGosnell/dada"/>
       <item name="Issue Manager" href="http://github.com/JulesGosnell/dada/issues"/>
-      <item name="Continuous Integration" href="http://ouroboros.dnsalias.net/jenkins/"/>
+      <item name="Continuous Integration" href="http://ouroboros.dnsalias.net/ci/"/>
       <item name="Repository Manager" href="http://ouroboros.dnsalias.net/artifactory/webapp/home.html"/>
       <item name="Clojure Home" href="http://clojure.org/"/>
       <item name="Clojure Group" href="http://groups.google.com/group/clojure"/>
