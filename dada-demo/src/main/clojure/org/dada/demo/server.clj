@@ -51,7 +51,7 @@
 	  true
 	  10000
 	  (SessionManagerNameGetter.)
-	  (.getBean ^BeanFactory *spring-context* "topicFactory")
+	  (.getBean ^BeanFactory *spring-context* "queueFactory")
 	  (POJOInvoker. (SimpleMethodMapper. SessionManager))
 	  "POJO"))
 
