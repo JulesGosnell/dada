@@ -53,6 +53,7 @@
      view
      (map (fn [datum] (Update. nil datum)) (.getExtant data))
      '()
-     (map (fn [datum] (Update. datum nil)) (.getExtinct data)))))
-	 
+     (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
+    data))
+
 ;;--------------------------------------------------------------------------------

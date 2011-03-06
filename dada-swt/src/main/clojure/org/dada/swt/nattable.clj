@@ -178,12 +178,7 @@
 			 (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
 	]
       
-    (let [data (.registerView model view)]
-      (.update
-       view
-       (map (fn [datum] (Update. nil datum)) (.getExtant data))
-       '()
-       (map (fn [datum] (Update. datum nil)) (.getExtinct data))))
+    (register model view)
 
     (.setUnderlyingLayer column-header-layer-stack (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
 
