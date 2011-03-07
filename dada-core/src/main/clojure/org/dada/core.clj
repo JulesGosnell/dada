@@ -68,6 +68,9 @@
 (defn delete [#^View view value]
   (.update view '() '() (list (Update. value nil))))
 
+(defn delete-n [#^View view #^ISeq items]
+  (.update view '() '() (map (fn [item] (Update. item nil)) items)))
+
 ;;--------------------------------------------------------------------------------
 
 ;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?

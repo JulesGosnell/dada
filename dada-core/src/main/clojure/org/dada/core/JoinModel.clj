@@ -144,26 +144,25 @@
 
 (defn update-lhs
   "return new mutable state and events in response to notifications from the left hand side model"
-  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn]
+  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn initial-rhs-refs]
   (debug ["update-lhs" rhs-i-to-lhs-getters])
-  (let [initial-rhs-refs [[nil][nil nil]]] ;TODO - parameterise
-    (reduce-lhs     
-     (reduce-lhs     
-      [old-lhs-index old-rhs-indeces nil nil nil]
-      (concat insertions alterations)
-      lhs-pk-getter
-      initial-rhs-refs
-      lhs-version-comparator
-      rhs-i-to-lhs-getters
-      join-fn
-      false)
-     deletions
-     lhs-pk-getter
-     initial-rhs-refs
-     lhs-version-comparator
-     rhs-i-to-lhs-getters
-     join-fn
-     true)))
+  (reduce-lhs     
+   (reduce-lhs     
+    [old-lhs-index old-rhs-indeces nil nil nil]
+    (concat insertions alterations)
+    lhs-pk-getter
+    initial-rhs-refs
+    lhs-version-comparator
+    rhs-i-to-lhs-getters
+    join-fn
+    false)
+   deletions
+   lhs-pk-getter
+   initial-rhs-refs
+   lhs-version-comparator
+   rhs-i-to-lhs-getters
+   join-fn
+   true))
 
 ;;--------------------------------------------------------------------------------
 
@@ -264,7 +263,8 @@
       i-to-rhs-model-and-lhs-getters))
 
     (debug ["post-init: watching lhs:" lhs-model])
-    (let [^Metadata lhs-metadata (.getMetadata lhs-model)
+    (let [initial-rhs-refs (apply vector (map (fn [[k vs]] (apply vector (map (fn [v] nil) vs))) rhs-model-to-lhs-fks))
+	  ^Metadata lhs-metadata (.getMetadata lhs-model)
 	  lhs-pk-getter (.getPrimaryGetter lhs-metadata)
 	  lhs-version-comparator (.getVersionComparator lhs-metadata)
 	  ^Data data
@@ -273,12 +273,12 @@
 	   (proxy [View] []
 	     (update [insertions alterations deletions]
 		     (let [[_ _ insertions alterations deletions]
-			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn)]
+			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
 		       (if (or insertions alterations deletions)
 			 (.notifyUpdate self insertions alterations deletions))))))]
       (swap! mutable update-lhs
 	     (map (fn [extant] (Update. nil extant))(.getExtant data))
-	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn) ;; TODO - deletions/extinct
+	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs) ;; TODO - deletions/extinct
       )))
 
 (defn -getData [^org.dada.core.JoinModel this]

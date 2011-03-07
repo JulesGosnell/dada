@@ -7,25 +7,49 @@
   [clojure.lang DynamicClassLoader]
   [org.eclipse.jetty.server Request Server]
   [org.eclipse.jetty.server.handler AbstractHandler]
-  [java.io OutputStream]
+  [java.io InputStream OutputStream ByteArrayOutputStream]
   [javax.servlet.http HttpServletResponse])
  )
+
+;; TODO: we should use a package name filter to avoid serving homonyms with different content...
+
+(defn static-class-bytes [^String path]
+  (if-let [is (.getResourceAsStream (.getContextClassLoader (Thread/currentThread)) path)]
+      (let [bufsize 256
+	    os (ByteArrayOutputStream.)
+	    bytes (byte-array bufsize)]
+	(try
+	 (loop []
+	   (let [
+		 nbytes (.read is bytes 0 bufsize)]
+	     (if (> nbytes 0)
+	       (do
+		 (.write os bytes 0 nbytes)
+		 (recur))
+	       ["static class " (.toByteArray os)])))
+	 (finally
+	  (.close is)
+	  (.close os))))))
+
+(defn dynamic-class-bytes [^String path-info]
+  (if-let [bytes (DynamicClassLoader/byteCodeForName (.replace (.substring path-info 0 (- (.length path-info) 6)) \/ \.))]
+      ["dynamic class" bytes]))
 
 ;; only works when URLClassLoader has been given a URL ending in '/'
 (defn handle-request [^String target ^Request base-request ^Request request ^HttpServletResponse response] 
   (let [^String path-info (.getPathInfo base-request)
-	class-name (.replace (.substring path-info 1 (- (.length path-info) 6)) \/ \.)]
-    (if-let [^"[B" bytes (DynamicClassLoader/byteCodeForName class-name)]
-      (let [size (count bytes)]
-	(info (str "Serving: " class-name " (" size " bytes)"))
-	(doto response
-	  (.setContentType "application/binary")
-	  (.setContentLength (count bytes))
-	  (.setStatus 200))
-	(with-open [^OutputStream stream (.getOutputStream response)]
-	  (doseq [byte bytes] (.write stream (int byte)))))
+	^String path-info (if (.startsWith path-info "/") (.substring path-info 1) path-info)]
+    (if-let [[class-type ^"[B" bytes] (or (dynamic-class-bytes path-info) (static-class-bytes path-info))]
+	(let [size (count bytes)]
+	  (info (str "Serving " class-type " : " path-info " (" size " bytes)"))
+	  (doto response
+	    (.setContentType "application/binary")
+	    (.setContentLength (count bytes))
+	    (.setStatus 200))
+	  (with-open [^OutputStream stream (.getOutputStream response)]
+	      (doseq [byte bytes] (.write stream (int byte)))))
       (do
-	(info (str "Not Serving: " class-name))
+	(info (str "Not Serving: " path-info))
 	(doto response
 	  (.setContentLength 0)
 	  (.setStatus 404)))))

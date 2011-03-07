@@ -1,4 +1,4 @@
-(ns #^{:author "Jules Gosnell" :doc "Demo Client for DADA"} org.dada.demo.client
+(ns #^{:author "Jules Gosnell" :doc "Simple Client for DADA"} org.dada.swt.client
     (:gen-class)
     (:use
      [org.dada core]
@@ -14,6 +14,7 @@
     )
 
 (defn -main [& args]
+
 
   (def ^SessionManager session-manager (RemoteSessionManager. "POJO" nil nil))
   
