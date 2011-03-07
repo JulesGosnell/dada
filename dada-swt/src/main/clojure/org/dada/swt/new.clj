@@ -52,9 +52,7 @@
   (.asyncExec
    (ensure-display)
    (fn []
-     (let [results (Result. model "Foo" [] [])
-	   ^Composite shell (create-shell (ensure-display) (.getName model))
-	   ^Composite component (create results shell drilldown-fn)]
-       (trace results)
+     (let [^Composite shell (create-shell (ensure-display) (.getName model))
+	   ^Composite component (nattable-make model shell drilldown-fn)]
        (.pack component)
        (.pack shell)))))

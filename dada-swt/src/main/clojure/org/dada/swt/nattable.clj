@@ -110,7 +110,7 @@
 
   )
 
-(defn nattable-make [[^Model model pairs] ^Composite parent & [drilldown-fn]]
+(defn nattable-make [^Model model ^Composite parent & [drilldown-fn]]
   (let [^Display display (.getDisplay parent)
 	^Metadata metadata (.getMetadata model)
 	attributes (.getAttributes metadata)
