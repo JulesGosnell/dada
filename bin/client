@@ -8,6 +8,6 @@ jvmID=$name"_"$$
 
 exec java\
  -Dclojure.jvmID=$jvmID \
- -cp ./dada-demo/target/classes:`cat ./dada-demo/.clojure-classpath.txt` \
- org.dada.demo.client \
+ -cp ./dada-swt/target/classes:`cat ./dada-swt/.clojure-classpath.txt` \
+ org.dada.swt.client \
  $@
