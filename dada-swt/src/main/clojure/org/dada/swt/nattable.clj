@@ -12,17 +12,19 @@
    [ca.odell.glazedlists EventList GlazedLists SortedList]
    [net.sourceforge.nattable NatTable]
    [net.sourceforge.nattable.blink BlinkConfigAttributes BlinkLayer IBlinkingCellResolver]
+   [net.sourceforge.nattable.command DisposeResourcesCommand ILayerCommand ILayerCommandHandler]
    [net.sourceforge.nattable.config CellConfigAttributes ConfigRegistry DefaultNatTableStyleConfiguration]
    [net.sourceforge.nattable.data ListDataProvider IColumnPropertyAccessor IRowIdAccessor]
    [net.sourceforge.nattable.extension.glazedlists GlazedListsEventLayer GlazedListsSortModel]
    [net.sourceforge.nattable.grid.data DefaultColumnHeaderDataProvider DefaultCornerDataProvider DefaultRowHeaderDataProvider]
    [net.sourceforge.nattable.grid.layer ColumnHeaderLayer CornerLayer DefaultColumnHeaderDataLayer DefaultRowHeaderDataLayer GridLayer RowHeaderLayer]
    [net.sourceforge.nattable.hideshow ColumnHideShowLayer]
-   [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer ILayerListener]
+   [net.sourceforge.nattable.layer AbstractLayerTransform DataLayer ILayer ILayerListener]
    [net.sourceforge.nattable.layer.event ILayerEvent]
    [net.sourceforge.nattable.layer.stack DefaultBodyLayerStack]
    [net.sourceforge.nattable.reorder ColumnReorderLayer]
    [net.sourceforge.nattable.selection SelectionLayer]
+   [net.sourceforge.nattable.selection.command SelectCellCommand]
    [net.sourceforge.nattable.selection.config DefaultSelectionStyleConfiguration]
    [net.sourceforge.nattable.selection.event CellSelectionEvent]
    [net.sourceforge.nattable.sort SortHeaderLayer]
@@ -33,14 +35,22 @@
    [org.dada.swt Mutable]
    ))
 
-(defn handle-layer-event [^EventList event-list ^NatTable nattable ^ILayerEvent event & [drilldown-fn]]
-  (if (instance? CellSelectionEvent event)
-    (try
-     (if (and (.isWithShiftMask ^CellSelectionEvent event) drilldown-fn)
-       (let [datum (.getDatum (.get event-list (- (.getRowPosition ^CellSelectionEvent event) 1)))]
-	 (if (and datum (instance? Model datum))
-	   (drilldown-fn datum))))
-     (catch Exception e (error e)))))       
+;; (defn handle-layer-event [^EventList event-list ^NatTable nattable ^ILayerEvent event ^ILayer layer & [drilldown-fn]]
+;;   (if (instance? CellSelectionEvent event)
+;;     (try
+;;      (if (and (.isWithShiftMask ^CellSelectionEvent event) drilldown-fn (.convertToLocal event))
+;;        (let [datum (.getDatum (.get event-list (- (.getRowPosition ^CellSelectionEvent event) 1)))]
+;; 	 (if (and datum (instance? Model datum))
+;; 	   (drilldown-fn datum))))
+;;      (catch Exception e (error e)))))
+
+(defn handle-select-cell [^NatTable nattable ^SelectCellCommand command ^ILayer target-layer ^EventList event-list & [drilldown-fn]]
+  (if (.convertToTargetLayer command target-layer)
+    (if (and (not (.isShiftMask command)) drilldown-fn)
+      (let [row (.getRowPosition command)
+	    datum (.getDatum (.get event-list row))]
+	(if (and datum (instance? Model datum))
+	  (drilldown-fn datum))))))
 
 ;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
@@ -143,8 +153,9 @@
 
 	config-registry (ConfigRegistry.)
 	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
-	
-	glazed-lists-event-layer (GlazedListsEventLayer. (DataLayer. body-data-provider) event-list)
+
+	data-layer (DataLayer. body-data-provider)
+	glazed-lists-event-layer (GlazedListsEventLayer. data-layer event-list)
 	blink-layer (BlinkLayer.
 		     glazed-lists-event-layer
 		     body-data-provider
@@ -201,8 +212,19 @@
 			 row-header-layer-stack
 			 column-header-layer-stack))
 	    nattable (NatTable. parent grid-layer false)]
-	(doto
-	    nattable
+
+	;; deregister view on disposal
+	(println "ATTACHING DISPOSE HANDLER")
+	(.registerCommandHandler 
+	 grid-layer
+	 (proxy [ILayerCommandHandler] []
+		(^Class getCommandClass [] ILayerCommand)
+		(^Boolean doCommand [^ILayer targetLayer ^ILayerCommand command]
+			  (if (instance? SelectCellCommand command) (handle-select-cell nattable command data-layer sorted-list drilldown-fn))
+			  (if (instance? DisposeResourcesCommand command) (.deregisterView model view))
+			  false)))
+
+	(doto nattable
 	  (.setConfigRegistry config-registry)
 	  (.addConfiguration (DefaultNatTableStyleConfiguration.))
 	  (.addConfiguration (SingleClickSortConfiguration.))
@@ -213,7 +235,7 @@
 	  (.addConfiguration (DefaultSelectionStyleConfiguration.))
 	  (.configure)
 	  
-	  (.addLayerListener (proxy [ILayerListener][](handleLayerEvent [event] (handle-layer-event sorted-list nattable event drilldown-fn))))
+	  ;;(.addLayerListener (proxy [ILayerListener][](handleLayerEvent [event] (handle-layer-event sorted-list nattable event data-layer drilldown-fn))))
 
 	  (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
 	  (.pack))))))
