@@ -34,15 +34,20 @@
 	 (.sleep display))
        (recur)))))
 
-(defn create-shell [#^Display display #^String text]
-  (let [shell (Shell. display)]
+(defn create-shell [#^Display display #^String text & [close-fn]]
+  (let [shell (Shell. display)
+	layout (GridLayout.)]
     (doto shell
       (.setText text)
-      (.setLayout (GridLayout.))
+      (.setLayout layout)
       (.addShellListener 
        (proxy
 	[ShellAdapter] []
-	(shellClosed [evt] (try (doto shell (.setVisible false)(.dispose)) (catch Throwable t (.printStackTrace t))))))
+	(shellClosed [evt]
+		     (try
+		      (doseq [child (.getChildren shell)](.dispose child)) ;why is this not done for us ?
+		      (doto shell (.setVisible false) (.dispose))
+		      (catch Throwable t (.printStackTrace t))))))
       (.pack)
       (.open))
     shell))
