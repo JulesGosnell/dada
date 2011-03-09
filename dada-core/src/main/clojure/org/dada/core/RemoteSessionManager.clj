@@ -86,12 +86,14 @@
 					      true
 					      10000
 					      (ViewNameGetter.)
-					      (TopicFactory.)
+					      (QueueFactory.)
 					      (POJOInvoker. (SimpleMethodMapper. View))
 					      session-manager-name)
 	^SessionManager peer (.client session-manager-service-factory "SessionManager")
 
-	;; should we remember views that we have decoupled ?
+	;; TODO: should we remember views that we have decoupled ?
+	;; yes - and when they deregister, we should tidy them up
+	;; somehow...
 	remote-view (fn [^View view] (.decouple view-service-factory view))
 	]
     [ ;; super ctor args
