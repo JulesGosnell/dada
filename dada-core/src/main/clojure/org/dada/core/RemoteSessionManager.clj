@@ -50,12 +50,12 @@
 (defn -init [^ConnectionFactory connection-factory ^String classes-url ^String protocol ^Integer num-threads]
 
   ;; install our class-loader in hierarchy
-  (let [current-thread (Thread/currentThread)]
-    (.setContextClassLoader
-     current-thread
-     (URLClassLoader.
-      (into-array [(URL. classes-url)])
-      (.getContextClassLoader current-thread))))
+  ;; (let [current-thread (Thread/currentThread)]
+  ;;   (.setContextClassLoader
+  ;;    current-thread
+  ;;    (URLClassLoader.
+  ;;     (into-array [(URL. classes-url)])
+  ;;     (.getContextClassLoader current-thread))))
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))

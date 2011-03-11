@@ -25,7 +25,26 @@ HashMap<Integer, Object[]> constantVals = new HashMap<Integer, Object[]>();
 static ConcurrentHashMap<String, SoftReference<Class>>classCache =
         new ConcurrentHashMap<String, SoftReference<Class> >();
 
-static final URL[] EMPTY_URLS = new URL[]{};
+static final URL[] EMPTY_URLS;
+
+static {
+	String classURL = System.getProperty("clojure.class.url");
+	
+	URL[] urls;
+	if (classURL != null) {
+		try {
+			urls = new URL[]{new URL(classURL)};
+		} catch (Exception e) {
+			System.err.println("could not use clojure.class.url");
+			e.printStackTrace();
+			urls = new URL[]{};
+		}
+	} else {
+		urls = new URL[]{};
+	}
+
+	EMPTY_URLS = urls;
+}
 
 static final ReferenceQueue rq = new ReferenceQueue();
 
