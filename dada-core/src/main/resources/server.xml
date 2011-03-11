@@ -1,0 +1,38 @@
+<beans
+   xmlns="http://www.springframework.org/schema/beans"
+   xmlns:amq="http://activemq.apache.org/schema/core"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+		       http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"
+   >
+  
+  <amq:broker useJmx="true" persistent="false" brokerName="${dada.broker.name}" advisorySupport="false">
+
+    <amq:destinationPolicy>
+      <amq:policyMap>
+	<amq:policyEntries>
+	  <amq:policyEntry queue=">" optimizedDispatch="true"/>
+	</amq:policyEntries>
+      </amq:policyMap>
+    </amq:destinationPolicy>
+
+    <amq:transportConnectors>
+      <!-- <amq:transportConnector name="nio" uri="nio://0.0.0.0:61616"/> -->
+      <!-- <amq:transportConnector name="openwire" uri="tcp://localhost:61616" discoveryUri="multicast://default"/> -->
+      <amq:transportConnector name="openwire" uri="${dada.broker.uri}"/>
+    </amq:transportConnectors>
+
+  </amq:broker>
+
+  <bean id="connectionUrl" class="java.lang.String">
+    <constructor-arg><value>vm://${dada.broker.name}?marshal=false&amp;broker.persistent=false&amp;create=false</value></constructor-arg>
+  </bean>
+
+  <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+    <constructor-arg ref="connectionUrl"></constructor-arg>
+    <property name="optimizedMessageDispatch"><value>true</value></property>
+    <property name="objectMessageSerializationDefered"><value>true</value></property>
+    <property name="watchTopicAdvisories"><value>false</value></property> <!-- avoid "Cannot publish to a deleted Detination" on temporary Queues-->
+  </bean>
+
+</beans>
