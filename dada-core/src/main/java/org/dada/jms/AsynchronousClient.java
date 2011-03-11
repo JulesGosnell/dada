@@ -28,6 +28,7 @@
  */
 package org.dada.jms;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.ObjectMessage;
+import javax.jms.BytesMessage;
 import javax.jms.Session;
 
 import org.dada.slf4j.Logger;
@@ -50,10 +51,10 @@ public class AsynchronousClient extends AbstractClient {
 		super(session, destination, interfaze, timeout, trueAsync);
 	}
 
-	public void invoke(Method method, Object[] args, AsyncInvocationListener listener) throws JMSException {
-		ObjectMessage message = session.createObjectMessage();
+	public void invoke(Method method, Object[] args, AsyncInvocationListener listener) throws JMSException, IOException {
+		BytesMessage message = session.createBytesMessage();
 		Integer methodIndex = mapper.getKey(method);
-		message.setObject(new Invocation(methodIndex, args));
+		Utils.writeObject(message, new Invocation(methodIndex, args));
 		String correlationId = "" + count++;
 		message.setJMSCorrelationID(correlationId);
 		message.setJMSReplyTo(resultsQueue);
@@ -80,8 +81,8 @@ public class AsynchronousClient extends AbstractClient {
 			if (listener == null) {
 				logger.warn("no listener for message: {}", message);
 			} else {
-				ObjectMessage response = (ObjectMessage) message;
-				Results results = (Results) response.getObject();
+				BytesMessage response = (BytesMessage) message;
+				Results results = (Results) Utils.readObject(response);
 				Object value = results.getValue();
 				if (results.isException()) {
 					listener.onError((Exception) value);
@@ -90,7 +91,11 @@ public class AsynchronousClient extends AbstractClient {
 				}
 			}
 		} catch (JMSException e) {
-		        logger.error("problem extracting data from message: {}", message);
+	        logger.error("problem extracting data from message: {}", e, message);
+		} catch (IOException e) {
+	        logger.error("problem extracting data from message: {}", e, message);
+		} catch (ClassNotFoundException e) {
+	        logger.error("problem extracting data from message: {}", e, message);
 		}
 	}
 }

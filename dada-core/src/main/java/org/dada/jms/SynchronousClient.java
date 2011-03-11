@@ -43,7 +43,7 @@ import java.util.concurrent.TimeoutException;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.ObjectMessage;
+import javax.jms.BytesMessage;
 import javax.jms.Session;
 
 import org.dada.slf4j.Logger;
@@ -71,31 +71,35 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 			String correlationID = message.getJMSCorrelationID();
 			Exchanger<Results> exchanger = correlationIdToResults.remove(correlationID);
 			if (exchanger == null) {
-			       LOGGER.warn("{}: no exchanger for message: {}", System.identityHashCode(this), message);
+				LOGGER.warn("{}: no exchanger for message: {}", System.identityHashCode(this), message);
 			} else {
-				ObjectMessage response = (ObjectMessage) message;
-				Results results = (Results) response.getObject();
+				BytesMessage response = (BytesMessage) message;
+				Results results = (Results) Utils.readObject(response);
 				LOGGER.trace("RECEIVING: {} <- {}", results, message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);
 			}
 		} catch (JMSException e) {
-                        LOGGER.warn("problem unpacking message {}: ", e, message);
+			LOGGER.warn("problem unpacking message {}: ", e, message);
 		} catch (InterruptedException e) {
 			// TODO: how should we deal with this...
 		} catch (TimeoutException e) {
-                        LOGGER.warn("timed out waiting for exchange: {}", e, message);
+			LOGGER.warn("timed out waiting for exchange: {}", e, message);
+		} catch (IOException e) {
+			LOGGER.warn("problem unpacking message {}: ", e, message);
+		} catch (ClassNotFoundException e) {
+			LOGGER.warn("problem unpacking message {}: ", e, message);
 		}
 	}
 
 	@Override
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		ObjectMessage message = session.createObjectMessage();
+		BytesMessage message = session.createBytesMessage();
 		Integer methodIndex = mapper.getKey(method);
 		if (methodIndex == null) {
 			// log.warn("unproxied method invoked: {}", method);
 			return method.invoke(this, args);
 		}
-		message.setObject(new Invocation(methodIndex, args));
+		Utils.writeObject(message, new Invocation(methodIndex, args));
 
 		// TODO: whether a method is to be used asynchronously should be stored with it to save runtime overhead...
 		boolean async = trueAsync && method.getReturnType().equals(Void.TYPE) && method.getExceptionTypes().length == 0;

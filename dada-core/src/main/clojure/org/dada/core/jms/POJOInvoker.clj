@@ -1,8 +1,8 @@
 (ns org.dada.core.jms.POJOInvoker
     (:import
      [java.lang.reflect Method]
-     [javax.jms MessageProducer ObjectMessage Session]
-     [org.dada.jms AbstractClient Invocation MethodMapper Results]
+     [javax.jms MessageProducer BytesMessage Session]
+     [org.dada.jms AbstractClient Invocation MethodMapper Results Utils]
      )
     (:gen-class
      :implements [org.dada.core.jms.Invoker]
@@ -20,11 +20,11 @@
    [mapper]
    ])
 
-(defn -invoke [#^org.dada.core.jms.POJOInvoker this target #^Session session #^ObjectMessage request #^MessageProducer producer]
+(defn -invoke [#^org.dada.core.jms.POJOInvoker this target #^Session session #^BytesMessage request #^MessageProducer producer]
   (AbstractClient/setCurrentSession session) ;; allows object being deserialised to find current session
   ;; TODO: handle URI ClassLoading stuff here...
   (let [[#^MethodMapper mapper] (.state this)
-	#^Invocation invocation (.getObject request)
+	#^Invocation invocation (Utils/readObject request)
 	;; TODO - handle Exceptions later
 	#^Method method (.getMethod mapper (Integer. (.getMethodIndex invocation)))
 	args (.getArgs invocation)
@@ -33,9 +33,9 @@
 	reply-to (.getJMSReplyTo request)
 	correlation-id (.getJMSCorrelationID request)]
     (if (and reply-to correlation-id)
-      (let [#^ObjectMessage response (.createObjectMessage session)]
+      (let [#^BytesMessage response (.createBytesMessage session)]
 	(.setJMSCorrelationID response correlation-id)
-	(.setObject response (Results. false results))
+	(Utils/writeObject response (Results. false results))
 	;;(println "POJO OUTGOING:" results)
 	(.send producer reply-to response)
 	))

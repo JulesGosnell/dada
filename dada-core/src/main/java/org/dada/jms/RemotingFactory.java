@@ -28,6 +28,9 @@
  */
 package org.dada.jms;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -39,9 +42,10 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
+import javax.jms.BytesMessage;
 import javax.jms.Session;
 
+import org.apache.activemq.util.ClassLoadingAwareObjectInputStream;
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
 
@@ -96,6 +100,7 @@ public class RemotingFactory<T> {
 			executorService.execute(runnable);
 		}
 
+
 		public void process(Message message) {
 			String correlationId = null;
 			Destination replyTo = null;
@@ -105,9 +110,9 @@ public class RemotingFactory<T> {
 			try {
 				correlationId = message.getJMSCorrelationID();
 				replyTo = message.getJMSReplyTo();
-				ObjectMessage request = (ObjectMessage) message;
+				BytesMessage request = (BytesMessage) message;
 				AbstractClient.setCurrentSession(session);
-				Invocation invocation = (Invocation) request.getObject();
+				Invocation invocation = (Invocation) Utils.readObject(request);
 				int methodIndex = invocation.getMethodIndex();
 				Object[] args = invocation.getArgs();
 				Method method = mapper.getMethod(methodIndex);
@@ -122,21 +127,29 @@ public class RemotingFactory<T> {
 			} catch (InvocationTargetException e) {
 				isException = true;
 				result = e.getTargetException();
+			} catch (IOException e) {
+				isException = true;
+				result = e;
+			} catch (ClassNotFoundException e) {
+				isException = true;
+				result = e;
 			}
 
 			if (isException)
 				logger.warn("returning exception", (Throwable) result);
 			if (correlationId != null && replyTo != null) {
-				ObjectMessage response = null;
+				BytesMessage response = null;
 				try {
-					response = session.createObjectMessage();
+					response = session.createBytesMessage();
 					response.setJMSCorrelationID(correlationId);
 					Results results = new Results(isException, result);
-					response.setObject(results);
+					Utils.writeObject(response, results);
 					logger.trace("RESPONDING: {} -> {}", results, replyTo);
 					producer.send(replyTo, response);
 				} catch (JMSException e) {
-				        logger.warn("problem replying to message: {}", e, response);
+			        logger.warn("problem replying to message: {}", e, response);
+				} catch (IOException e) {
+			        logger.warn("problem replying to message: {}", e, response);
 				}
 			}
 		}

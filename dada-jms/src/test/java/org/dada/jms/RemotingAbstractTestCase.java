@@ -28,6 +28,7 @@
  */
 package org.dada.jms;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
@@ -42,7 +44,6 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
@@ -200,15 +201,19 @@ public abstract class RemotingAbstractTestCase extends TestCase {
 			@Override
 			public void onMessage(Message arg0) {
 				try {
-					logger.info(((ObjectMessage)arg0).getObject().toString());
+					logger.info(Utils.readObject(((BytesMessage)arg0)).toString());
 				} catch (JMSException e) {
-					// ignore
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
 				}
 				latch.countDown();
 			}
 		});
-		ObjectMessage message = session.createObjectMessage();
-		message.setObject(serializable);
+		BytesMessage message = session.createBytesMessage();
+		Utils.writeObject(message, serializable);
 		producer.send(message);
 		assertTrue(latch.await(1000L, TimeUnit.MILLISECONDS));
 	}

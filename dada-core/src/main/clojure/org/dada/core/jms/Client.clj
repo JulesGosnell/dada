@@ -7,11 +7,11 @@
      [java.util
       Map UUID]
      [javax.jms
-      Destination JMSException Message ObjectMessage Session MessageConsumer MessageListener MessageProducer Queue]
+      Destination JMSException Message BytesMessage Session MessageConsumer MessageListener MessageProducer Queue]
      [org.dada.slf4j
       Logger LoggerFactory]
      [org.dada.jms
-      SynchronousClient]
+      SynchronousClient Utils]
      )
     (:gen-class
      :implements [java.lang.reflect.InvocationHandler java.io.Serializable] ;;  MessageListener
@@ -35,13 +35,13 @@
    ;; instance state
    (let [invoke (fn []
 		    ;; public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		    ;; 	ObjectMessage message = session.createObjectMessage();
+		    ;; 	BytesMessage message = session.createBytesMessage();
 		    ;; 	Integer methodIndex = mapper.getKey(method);
 		    ;; 	if (methodIndex == null) {
 		    ;; 		// log.warn("unproxied method invoked: {}", method);
 		    ;; 		return method.invoke(this, args);
 		    ;; 	}
-		    ;; 	message.setObject(new Invocation(methodIndex, args));
+		    ;; 	(Utils/writeObject message new Invocation(methodIndex, args));
 
 		    ;; 	// TODO: whether a method is to be used asynchronously should be stored with it to save runtime overhead...
 		    ;; 	boolean async = trueAsync && method.getReturnType().equals(Void.TYPE) && method.getExceptionTypes().length == 0;
