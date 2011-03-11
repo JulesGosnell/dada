@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.UUID;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -55,7 +54,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 	protected boolean trueAsync;
 
 	protected transient Logger logger;
-	protected transient UUID uuid;
+
 	protected transient Session session;
 	protected transient MessageProducer producer;
 	protected transient Queue resultsQueue;
@@ -74,11 +73,9 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		this.destination = destination;
 		this.trueAsync = trueAsync;
 		this.timeout = timeout;
-		this.uuid = UUID.randomUUID();
-
 		this.session = session;
 		this.producer = session.createProducer(null);
-		this.resultsQueue = session.createQueue(interfaze.getCanonicalName() + "." + uuid);
+		this.resultsQueue = session.createTemporaryQueue();
 		this.consumer = session.createConsumer(resultsQueue);
 		this.consumer.setMessageListener(this);
 	}
