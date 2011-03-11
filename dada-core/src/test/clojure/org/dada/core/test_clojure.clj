@@ -131,14 +131,14 @@
 ;; 		))))
 
 ;; atom 4 times faster on J6/C1.3a4
-(if (not (ibm?))
-  (deftest atom-vs-ref
-    (let [a (atom 0)
-	  r (ref 0)]
-      (dosync
-       (is (faster 10000000
-		   (swap! a inc)
-		   (alter r inc)))))))
+;; (if (not (ibm?))
+;;   (deftest atom-vs-ref
+;;     (let [a (atom 0)
+;; 	  r (ref 0)]
+;;       (dosync
+;;        (is (faster 10000000
+;; 		   (swap! a inc)
+;; 		   (alter r inc)))))))
 
 ;; [with two cores] pmap is about 50x slower than map - i.e. the
 ;; overhead of dispatching and collating each thread means that you
