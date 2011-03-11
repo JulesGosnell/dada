@@ -39,12 +39,12 @@
 
 ;;     ))
 
-(import java.lang.reflect.Constructor)
-(deftest test-construction
-  (let [^Constructor c (.getConstructor Value (into-array Class [Object]))]
-    (is (faster 10000000 (Value. 0) (.newInstance c (into-array Object [0]))))
-    (let [^{:tag (type (into-array Object []))} a (into-array Object [0])]
-      (is (faster 100000000 (Value. 0) (.newInstance c a))))))
+;; (import java.lang.reflect.Constructor)
+;; (deftest test-construction
+;;   (let [^Constructor c (.getConstructor Value (into-array Class [Object]))]
+;;     (is (faster 10000000 (Value. 0) (.newInstance c (into-array Object [0]))))
+;;     (let [^{:tag (type (into-array Object []))} a (into-array Object [0])]
+;;       (is (faster 100000000 (Value. 0) (.newInstance c a))))))
 
 ;; I'm not going to test this - just make a note of it...
 (deftest test-record-vs-pojo
