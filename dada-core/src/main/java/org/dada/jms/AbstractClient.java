@@ -77,7 +77,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		this.uuid = UUID.randomUUID();
 
 		this.session = session;
-		this.producer = session.createProducer(destination);
+		this.producer = session.createProducer(null);
 		this.resultsQueue = session.createQueue(interfaze.getCanonicalName() + "." + uuid);
 		this.consumer = session.createConsumer(resultsQueue);
 		this.consumer.setMessageListener(this);
