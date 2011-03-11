@@ -49,6 +49,10 @@ JAVA_ARGS="-Xmx2048m -Djava.library.path=/usr/local/lib"
 nodename=`uname -n`
 name=`basename $nodename .home`
 jvmID=$name"_"$$
+
+## if we are the client and want to enable dynamic classloading:
+## -Dclojure.class.url=http://localhost:8888/
+
 exec java  -Dclojure.jvmID=$jvmID $JAVA_ARGS -cp $CLASSPATH clojure.main
 #exec java -cp $CLASSPATH jline.ConsoleRunner clojure.lang.Repl
 #exec java -cp $CLASSPATH jline.ConsoleRunner clojure.main
