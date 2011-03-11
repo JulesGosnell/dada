@@ -151,6 +151,7 @@
     ;; N.B. does not check to see if View is already Registered
     ;;(println "VIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
+    (println "SimpleModelView: VIEW REGISTERED" (@mutable 2))
     ;;(println "VIEW <-" @mutable)
     (Data. (vals extant) (vals extinct))
     )
@@ -161,6 +162,7 @@
 	[extant extinct] @mutable]
     ;;(println "UNVIEW ->" @mutable)
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
+    (println "SimpleModelView: VIEW DEREGISTERED" (@mutable 2))
     ;;(println "UNVIEW <-" @mutable)
     (Data. (vals extant) (vals extinct))
     ))

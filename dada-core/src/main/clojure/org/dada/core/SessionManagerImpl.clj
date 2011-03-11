@@ -34,8 +34,9 @@
   (let [[[_ ^Model metamodel]] (.state this)]
     (.find metamodel name)))
 
-(defn ^Model -find [^org.dada.core.SessionManagerImpl this ^String model-name key]
-  (.find (.getModel this model-name) key))
+(defn ^Model -find [^org.dada.core.SessionManagerImpl this ^Model model key]
+  (let [model-name (.getName model)]
+    (.find (.getModel this model-name) key)))
 
 (defn ^Metadata -getMetadata [^org.dada.core.SessionManagerImpl this ^String name]
   (let [[[_ ^Model metamodel]] (.state this)]
@@ -50,12 +51,15 @@
 ;; TODO: I think we will need multiple SessionManagers so that one can
 ;; speak Serialised POJOs, one XML etc...
 
-(defn ^Data -registerView [^org.dada.core.SessionManagerImpl this ^String model-name ^View view]
-  (let [[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+(defn ^Data -registerView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
+  (let [model-name (.getName model)
+	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+	dummy (println model-name metamodel (if metamodel (.getExtant (.getData metamodel))))
 	^Model model (.find metamodel model-name)]
+    (println "LocalSessionManager: registerView " model view)
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
-      (let [[_ view]
+      (let [[_ _view]
 	    (swap!
 	     mutable
 	     (fn [[exports]]
@@ -66,12 +70,15 @@
 	  (.getData model)
 	  )))))
 
-(defn ^Data -deregisterView [^org.dada.core.SessionManagerImpl this ^String model-name ^View view]
-  (let [[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+(defn ^Data -deregisterView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
+  (let [model-name (.getName model)
+	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+	dummy (println metamodel (if metamodel (.getExtant (.getData metamodel))))
 	^Model model (.find metamodel model-name)]
+    (println "LocalSessionManager: deregisterView " model view)
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
-      (let [[_ view]
+      (let [[_ _view]
 	    (swap!
 	     mutable
 	     (fn [[exports]]

@@ -12,11 +12,9 @@ public interface SessionManager {
 	
 	Metadata<Object, Object> getMetadata(String modelName);
 	
-	Data<Object> registerView(String modelName, View<Object> view);
-	Data<Object> deregisterView(String name, View<Object> view);
-	
+	Data<Object> registerView(Model<Object, Object> model, View<Object> view);
+	Data<Object> deregisterView(Model<Object, Object> model, View<Object> view);
+    Model<Object, Object> find(Model<Object, Object> model, Object key);
+    
     Collection<Object> query(String namespace, String query);
-	
-    Model<Object, Object> find(String modelName, Object key);
-	
 }

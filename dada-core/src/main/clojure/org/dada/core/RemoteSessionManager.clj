@@ -20,6 +20,7 @@
     Data
     Metadata
     Model
+    RemoteModel
     SessionManager
     SessionManagerHelper
     SessionManagerNameGetter
@@ -30,6 +31,7 @@
     JMSServiceFactory
     POJOInvoker]
    [org.dada.jms
+    DestinationFactory
     QueueFactory
     TopicFactory
     SimpleMethodMapper]
@@ -86,7 +88,10 @@
 	;; TODO: should we remember views that we have decoupled ?
 	;; yes - and when they deregister, we should tidy them up
 	;; somehow...
-	remote-view (fn [^View view] (.decouple view-service-factory view))
+	remote-view (fn [^RemoteModel model ^View view]
+			;; TODO:
+			(println "ENDPOINT: " (.getEndPoint model))
+			(.decouple view-service-factory view))
 	]
     [ ;; super ctor args
      []
@@ -96,17 +101,19 @@
 (defn -post-init [this & _]
   (SessionManagerHelper/setCurrentSessionManager this))
 
-(defn ^Model -find [this ^String model-name key]
+(defn ^Model -find [this ^Model model key]
   (let [[^SessionManager peer] (.state this)]
-    (.find peer model-name key)))
+    (.find peer model key)))
 
-(defn ^Data -registerView [this ^String model-name ^View view]
+(defn ^Data -registerView [this ^Model model ^View view]
+  (println "RemoteSessionManager: registerView " model view)
   (let [[^SessionManager peer remote-view] (.state this)]
-    (.registerView peer model-name (remote-view view))))
+    (.registerView peer model (remote-view model view))))
 
-(defn ^Data -deregisterView [this ^String model-name ^View view]
+(defn ^Data -deregisterView [this ^Model model ^View view]
+  (println "RemoteSessionManager: deregisterView " model view)
   (let [[^SessionManager peer remote-view] (.state this)]
-    (.deregisterView peer model-name (remote-view view)))) ;stop server for this view
+    (.deregisterView peer model (remote-view model view)))) ;stop server for this view
 
 ;; implemented - but should not have to
 

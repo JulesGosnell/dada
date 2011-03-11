@@ -76,14 +76,16 @@ public class JMSServiceFactory<T> implements ServiceFactory<T> {
 		}
 	}
 
+	// TODO - in order to support DestinationFactories which do not honour name hint (i.e. create e.g. tmp Queue) these methods need to be rethought
+	
 	@Override
 	public T client(String endPoint) throws Exception {
 		return factory.createSynchronousClient(endPoint, trueAsync);
 	}
 	
 	@Override
-	public void server(T model, String endPoint) throws Exception {
-		factory.createServer(model, destinationFactory.createDestination(session, endPoint), executorService);
+	public void server(T target, String endPoint) throws Exception {
+		factory.createServer(target, destinationFactory.createDestination(session, endPoint), executorService);
 	}
 
 }
