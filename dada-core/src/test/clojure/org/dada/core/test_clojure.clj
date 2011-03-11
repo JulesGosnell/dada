@@ -26,18 +26,18 @@
 (defn ibm? []
   (.contains (.toLowerCase (System/getProperty "java.vm.vendor")) "ibm"))
 
-(if (not (ibm?)) ;TODO - these assumptions do not hold true on IBM - maybe we should generate code accordingly ?
-  (do
+;; (if (not (ibm?)) ;TODO - these assumptions do not hold true on IBM - maybe we should generate code accordingly ?
+;;   (do
     
-    ;; (deftest test-get
-    ;;   (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v)))))
+;;     ;; (deftest test-get
+;;     ;;   (let [^Value v (Value. 0)] (is (faster 100000000 (.v v)(:v v)))))
 
-    (deftest int-arithmetic
-      (is (faster 10000000
-		  ((fn [^Integer lhs ^Integer rhs](< (int lhs)(int rhs))) 1 2)
-		  ((fn [^Integer lhs ^Integer rhs](< lhs rhs)) 1 2)))) ;; on IBM Java6 - this approach seems [very] slightly faster
+;;     (deftest int-arithmetic
+;;       (is (faster 10000000
+;; 		  ((fn [^Integer lhs ^Integer rhs](< (int lhs)(int rhs))) 1 2)
+;; 		  ((fn [^Integer lhs ^Integer rhs](< lhs rhs)) 1 2)))) ;; on IBM Java6 - this approach seems [very] slightly faster
 
-    ))
+;;     ))
 
 (import java.lang.reflect.Constructor)
 (deftest test-construction
