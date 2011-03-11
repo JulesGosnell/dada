@@ -6,8 +6,11 @@ nodename=`uname -n`
 name=`basename $nodename .home`
 jvmID=$name"_"$$
 
+cd dada-swt
+
 exec java\
  -Dclojure.jvmID=$jvmID \
- -cp ./dada-swt/target/classes:`cat ./dada-swt/.clojure-classpath.txt` \
+ -Dclojure.class.url=http://localhost:8888/ \
+ -cp ./target/classes:`cat ./.clojure-classpath.txt` \
  org.dada.swt.client \
  $@
