@@ -84,7 +84,7 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
             // set up client side
             one(session).createQueue(with(any(String.class)));
 			will(returnValue(clientQueue));
-			one(session).createProducer(clientQueue);
+			one(session).createProducer(null);
 			will(returnValue(clientProducer));
             one(session).createQueue(with(any(String.class)));
 			will(returnValue(clientServerQueue));
