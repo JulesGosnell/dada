@@ -16,6 +16,8 @@
 
 (defn -main [& args]
 
+  (.setContextClassLoader (Thread/currentThread) (clojure.lang.RT/makeClassLoader))
+  
   (def ^SessionManager session-manager (.getBean #^BeanFactory (ClassPathXmlApplicationContext. "client.xml") "sessionManager"))
   
   (def ^Model *remote-metamodel*  (.find session-manager "MetaModel" "MetaModel"))
