@@ -9,6 +9,7 @@
       BeanFactory]
      [org.dada.core
       Model
+      RemoteModel
       SessionManager
       ]
      )
@@ -20,7 +21,7 @@
   
   (def ^SessionManager session-manager (.getBean #^BeanFactory (ClassPathXmlApplicationContext. "client.xml") "sessionManager"))
   
-  (def ^Model *remote-metamodel*  (.find session-manager "MetaModel" "MetaModel"))
+  (def ^Model *remote-metamodel*  (.find session-manager (RemoteModel. "MetaModel" nil) "MetaModel"))
 
   (inspect-model *remote-metamodel* inspect-model)
     
