@@ -16,8 +16,6 @@
     Connection
     ConnectionFactory
     Session]
-   [org.apache.activemq
-    ActiveMQConnectionFactory]
    [org.dada.core
     Data
     Metadata
@@ -38,7 +36,7 @@
    )
   (:gen-class
    :implements [org.dada.core.SessionManager]
-   :constructors {[String org.dada.core.Model org.dada.core.ServiceFactory] []}
+   :constructors {[javax.jms.ConnectionFactory String String Integer] []}
    :methods []
    :init init
    :post-init post-init
@@ -49,26 +47,20 @@
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
 
-(defn -init [^String session-manager-name ^Model metamodel ^ServiceFactory service-factory]
+(defn -init [^ConnectionFactory connection-factory ^String classes-url ^String protocol ^Integer num-threads]
 
   ;; install our class-loader in hierarchy
   (let [current-thread (Thread/currentThread)]
     (.setContextClassLoader
      current-thread
      (URLClassLoader.
-      (into-array [(URL. "http://localhost:8888/")])
+      (into-array [(URL. classes-url)])
       (.getContextClassLoader current-thread))))
 
-  (let [^ConnectionFactory connection-factory (doto (ActiveMQConnectionFactory. "" "" "tcp://localhost:61616")
-						(.setOptimizedMessageDispatch true)
-						(.setObjectMessageSerializationDefered true)
-						(.setWatchTopicAdvisories false))
-	^Connection connection (doto (.createConnection connection-factory)
-				 (.start))
+  (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
-
-	^Executor thread-pool (Executors/newFixedThreadPool 2)
-
+	^Executor thread-pool (Executors/newFixedThreadPool num-threads)
+	
 	^ServiceFactory session-manager-service-factory (JMSServiceFactory.
 							 session
 							 SessionManager
@@ -78,7 +70,7 @@
 							 (SessionManagerNameGetter.)
 							 (QueueFactory.)
 							 (POJOInvoker. (SimpleMethodMapper. SessionManager))
-							 session-manager-name)
+							 protocol)
 	^ServiceFactory view-service-factory (JMSServiceFactory.
 					      session
 					      View
@@ -88,7 +80,7 @@
 					      (ViewNameGetter.)
 					      (QueueFactory.)
 					      (POJOInvoker. (SimpleMethodMapper. View))
-					      session-manager-name)
+					      protocol)
 	^SessionManager peer (.client session-manager-service-factory "SessionManager")
 
 	;; TODO: should we remember views that we have decoupled ?
@@ -101,7 +93,7 @@
      ;; instance state
      [peer remote-view]]))
 
-(defn -post-init [this #^Model model & _]
+(defn -post-init [this & _]
   (SessionManagerHelper/setCurrentSessionManager this))
 
 (defn ^Model -find [this ^String model-name key]
