@@ -96,11 +96,11 @@
 
 ;; int is faster (5x) - to be expected
 
-(if (not (ibm?))
-  (deftest record-int-vs-integer
-    (let [f (Foo. 1)
-	  b (Bar. 1)]
-      (is (faster 1000000000 (.a b)  (.a f))))))
+;; (if (not (ibm?))
+;;   (deftest record-int-vs-integer
+;;     (let [f (Foo. 1)
+;; 	  b (Bar. 1)]
+;;       (is (faster 1000000000 (.a b)  (.a f))))))
 
 ;; interesting - reading an int out of a record and pssing it into
 ;; another fn (causing it to be auto-boxed) is still 5-10x faster than
