@@ -36,6 +36,7 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.TemporaryQueue;
 
 import org.dada.core.Getter;
 import org.dada.core.ServiceFactory;
@@ -65,7 +66,7 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 
 		final Destination serverDestination = (Destination)mock(Destination.class, "serverDestination");
 		final MessageConsumer serverConsumer = (MessageConsumer)mock(MessageConsumer.class, "serverConsumer");
-		final Queue clientQueue = (Queue)mock(Queue.class, "clientQueue");
+		final Queue clientQueue = (Queue)mock(TemporaryQueue.class, "clientQueue");
 		final MessageProducer clientProducer = (MessageProducer)mock(MessageProducer.class, "clientProducer");
 		final Queue clientServerQueue = (Queue)mock(Queue.class, "clientServerQueue");
 		final MessageConsumer clientServerConsumer = (MessageConsumer)mock(MessageConsumer.class, "clientServerConsumer");
@@ -82,13 +83,13 @@ public class JMSServiceFactoryTestCase extends MockObjectTestCase {
             will(returnValue(serverConsumer));
             one(serverConsumer).setMessageListener(with(any(MessageListener.class)));
             // set up client side
-            one(session).createQueue(with(any(String.class)));
+            one(session).createTemporaryQueue();
 			will(returnValue(clientQueue));
 			one(session).createProducer(null);
 			will(returnValue(clientProducer));
             one(session).createQueue(with(any(String.class)));
 			will(returnValue(clientServerQueue));
-            one(session).createConsumer(with(clientServerQueue));
+            one(session).createConsumer(with(clientQueue));
             will(returnValue(clientServerConsumer));
             one(clientServerConsumer).setMessageListener(with(any(MessageListener.class)));
         }});
