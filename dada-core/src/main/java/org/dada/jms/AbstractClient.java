@@ -40,6 +40,7 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.TemporaryQueue;
 
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 
 	protected transient Session session;
 	protected transient MessageProducer producer;
-	protected transient Queue resultsQueue;
+	protected transient TemporaryQueue resultsQueue;
 	protected transient MessageConsumer consumer;
 	protected /* final */ SimpleMethodMapper mapper;
 	protected transient int count; // used by subclasses
@@ -80,6 +81,12 @@ public abstract class AbstractClient implements MessageListener, Serializable {
 		this.consumer.setMessageListener(this);
 	}
 
+	public void close() throws JMSException {
+		consumer.close();
+		resultsQueue.delete();
+		producer.close();
+	}
+	
 	//@Override
 	private void writeObject(ObjectOutputStream oos) throws IOException {
 		oos.writeObject(destination);

@@ -88,6 +88,10 @@ public class RemotingFactory<T> {
 			consumer.setMessageListener(this);
 		}
 
+		public void close() throws JMSException {
+			consumer.close();
+		}
+
 		@Override
 		public void onMessage(final Message message) {
 			//process(message);
@@ -153,6 +157,7 @@ public class RemotingFactory<T> {
 				}
 			}
 		}
+		
 	}
 
 	//----------------------------------------------------------------------------
@@ -165,6 +170,10 @@ public class RemotingFactory<T> {
 	public T createServer(T target, Destination destination, ExecutorService executorService) throws JMSException {
 		new Server(target, destination, executorService);
 		return target;
+	}
+
+	public Server createServer2(T target, Destination destination, ExecutorService executorService) throws JMSException {
+		return new Server(target, destination, executorService);
 	}
 
 	@SuppressWarnings("unchecked")

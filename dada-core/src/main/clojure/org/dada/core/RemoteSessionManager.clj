@@ -5,6 +5,8 @@
   (:require
    [org.dada.core.jms JMSServiceFactory POJOInvoker])
   (:import
+   [java.lang.reflect
+    Proxy]
    [java.net
     URL
     URLClassLoader]
@@ -86,51 +88,24 @@
 
 	^RemotingFactory remoting-factory (RemotingFactory. session View 10000)
 
-	;; TODO: should we remember views that we have decoupled ?
-	;; yes - and when they deregister, we should tidy them up
-	;; somehow...
 	lock (ReentrantLock.)
 	view-map (atom {})
 	register-view-fn (fn [^RemoteModel model ^View view]
-			     ;; we are using the atom for mutability NOT atomicity.
-			     ;; we have side-effects, so to guarantee that they are ONLY executed once, we are locking
-			     ;; (with-lock
-			     ;;  lock
-			     ;;  (let [[n queue client server] (or (@view-map view)
-			     ;; 				    (let [queue (.createTemporaryQueue session)]
-			     ;; 				      [0
-			     ;; 				       queue
-			     ;; 				       (.createSynchronousClient remoting-factory queue true)
-			     ;; 				       (.createServer remoting-factory view queue thread-pool)]))]
-			     ;;    (swap! view-map assoc view [queue client server (inc n)])
-			     ;;    client))
 			     (let [queue (.createTemporaryQueue session)
-				   server (.createServer remoting-factory view queue thread-pool)
+				   server (.createServer2 remoting-factory view queue thread-pool)
 				   client (.createSynchronousClient remoting-factory queue true)]
 			       (swap! view-map assoc view [queue client server])
 			       (.registerView peer model client)
 			       ))
 	
 	deregister-view-fn (fn [^RemoteModel model ^View view]
-			       ;; we are using the atom for mutability NOT atomicity.
-			       ;; we have side-effects, so to guarantee that they are ONLY executed once, we are locking
-			       ;; (with-lock
-			       ;;  lock
-			       ;;  (if-let [[n ^TemporaryQueue queue client server] (@view-map view)]
-			       ;;      (if (= n 1)
-			       ;; 	 (try
-			       ;; 	  (swap! view-map dissoc view)
-			       ;; 	  ;; close server
-			       ;; 	  ;; close client
-			       ;; 	  (.delete queue)
-			       ;; 	  (catch Exception e ))
-			       ;; 	 (swap! view-map assoc view [client server (dec n)]))))
-			       (if-let [[queue client server] (@view-map view)]
-				   (let [data (.deregisterView peer model client)]
-				     ;;close consumer
-				     ;;(.delete queue)
-				     (swap! view-map dissoc view)
-				     data)))
+			     (if-let [[^TemporaryQueue queue ^Proxy client server] (@view-map view)]
+			       (let [data (.deregisterView peer model client)]
+				 (.close server)
+				 (.close (Proxy/getInvocationHandler client))
+				 (.delete queue)
+				 (swap! view-map dissoc view)
+				 data)))
 	]
     [ ;; super ctor args
      []
