@@ -12,10 +12,13 @@
     Collection]
    [java.util.concurrent
     Executors]
+   [java.util.concurrent.locks
+    ReentrantLock]
    [javax.jms
     Connection
     ConnectionFactory
-    Session]
+    Session
+    TemporaryQueue]
    [org.dada.core
     Data
     Metadata
@@ -33,6 +36,7 @@
    [org.dada.jms
     DestinationFactory
     QueueFactory
+    RemotingFactory
     TopicFactory
     SimpleMethodMapper]
    )
@@ -45,6 +49,11 @@
    :state state
    )
   )
+
+(defmacro with-lock [lock & body]
+  `(let [lock# ~lock]
+     (.lock lock#)
+     (try ~@body (finally (.unlock lock#)))))
 
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
@@ -61,7 +70,7 @@
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
-	^Executor thread-pool (Executors/newFixedThreadPool num-threads)
+	^Executors thread-pool (Executors/newFixedThreadPool num-threads)
 	
 	^ServiceFactory session-manager-service-factory (JMSServiceFactory.
 							 session
@@ -73,30 +82,60 @@
 							 (QueueFactory.)
 							 (POJOInvoker. (SimpleMethodMapper. SessionManager))
 							 protocol)
-	^ServiceFactory view-service-factory (JMSServiceFactory.
-					      session
-					      View
-					      thread-pool
-					      true
-					      10000
-					      (ViewNameGetter.)
-					      (QueueFactory.)
-					      (POJOInvoker. (SimpleMethodMapper. View))
-					      protocol)
 	^SessionManager peer (.client session-manager-service-factory "SessionManager")
+
+	^RemotingFactory remoting-factory (RemotingFactory. session View 10000)
 
 	;; TODO: should we remember views that we have decoupled ?
 	;; yes - and when they deregister, we should tidy them up
 	;; somehow...
-	remote-view (fn [^RemoteModel model ^View view]
-			;; TODO:
-			(println "ENDPOINT: " (.getEndPoint model))
-			(.decouple view-service-factory view))
+	lock (ReentrantLock.)
+	view-map (atom {})
+	register-view-fn (fn [^RemoteModel model ^View view]
+			     ;; we are using the atom for mutability NOT atomicity.
+			     ;; we have side-effects, so to guarantee that they are ONLY executed once, we are locking
+			     ;; (with-lock
+			     ;;  lock
+			     ;;  (let [[n queue client server] (or (@view-map view)
+			     ;; 				    (let [queue (.createTemporaryQueue session)]
+			     ;; 				      [0
+			     ;; 				       queue
+			     ;; 				       (.createSynchronousClient remoting-factory queue true)
+			     ;; 				       (.createServer remoting-factory view queue thread-pool)]))]
+			     ;;    (swap! view-map assoc view [queue client server (inc n)])
+			     ;;    client))
+			     (let [queue (.createTemporaryQueue session)
+				   server (.createServer remoting-factory view queue thread-pool)
+				   client (.createSynchronousClient remoting-factory queue true)]
+			       (swap! view-map assoc view [queue client server])
+			       (.registerView peer model client)
+			       ))
+	
+	deregister-view-fn (fn [^RemoteModel model ^View view]
+			       ;; we are using the atom for mutability NOT atomicity.
+			       ;; we have side-effects, so to guarantee that they are ONLY executed once, we are locking
+			       ;; (with-lock
+			       ;;  lock
+			       ;;  (if-let [[n ^TemporaryQueue queue client server] (@view-map view)]
+			       ;;      (if (= n 1)
+			       ;; 	 (try
+			       ;; 	  (swap! view-map dissoc view)
+			       ;; 	  ;; close server
+			       ;; 	  ;; close client
+			       ;; 	  (.delete queue)
+			       ;; 	  (catch Exception e ))
+			       ;; 	 (swap! view-map assoc view [client server (dec n)]))))
+			       (if-let [[queue client server] (@view-map view)]
+				   (let [data (.deregisterView peer model client)]
+				     ;;close consumer
+				     ;;(.delete queue)
+				     (swap! view-map dissoc view)
+				     data)))
 	]
     [ ;; super ctor args
      []
      ;; instance state
-     [peer remote-view]]))
+     [peer register-view-fn deregister-view-fn]]))
 
 (defn -post-init [this & _]
   (SessionManagerHelper/setCurrentSessionManager this))
@@ -107,13 +146,13 @@
 
 (defn ^Data -registerView [this ^Model model ^View view]
   (println "RemoteSessionManager: registerView " model view)
-  (let [[^SessionManager peer remote-view] (.state this)]
-    (.registerView peer model (remote-view model view))))
+  (let [[^SessionManager peer register-view-fn] (.state this)]
+    (register-view-fn model view)))
 
 (defn ^Data -deregisterView [this ^Model model ^View view]
   (println "RemoteSessionManager: deregisterView " model view)
-  (let [[^SessionManager peer remote-view] (.state this)]
-    (.deregisterView peer model (remote-view model view)))) ;stop server for this view
+  (let [[^SessionManager peer _ deregister-view-fn] (.state this)]
+    (deregister-view-fn model view)))
 
 ;; implemented - but should not have to
 
