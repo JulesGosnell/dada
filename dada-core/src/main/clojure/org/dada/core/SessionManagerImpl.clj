@@ -54,9 +54,7 @@
 (defn ^Data -registerView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
   (let [model-name (.getName model)
 	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
-	dummy (println model-name metamodel (if metamodel (.getExtant (.getData metamodel))))
 	^Model model (.find metamodel model-name)]
-    (println "LocalSessionManager: registerView " model view)
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
       (let [[_ _view]

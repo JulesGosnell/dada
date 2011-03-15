@@ -214,7 +214,6 @@
 	    nattable (NatTable. parent grid-layer false)]
 
 	;; deregister view on disposal
-	(println "ATTACHING DISPOSE HANDLER")
 	(.registerCommandHandler 
 	 grid-layer
 	 (proxy [ILayerCommandHandler] []

@@ -20,7 +20,7 @@
     Connection
     ConnectionFactory
     Session
-    TemporaryQueue]
+    Topic]
    [org.dada.core
     Data
     Metadata
@@ -90,20 +90,20 @@
 
 	lock (ReentrantLock.)
 	view-map (atom {})
+	;; TOOD - these fns need rethinking to take a properly atomic approach - there are race conditions in these impls
 	register-view-fn (fn [^RemoteModel model ^View view]
-			     (let [queue (.createTemporaryQueue session)
-				   server (.createServer2 remoting-factory view queue thread-pool)
-				   client (.createSynchronousClient remoting-factory queue true)]
-			       (swap! view-map assoc view [queue client server])
+			     (let [topic (.createTopic session (str "DADA." (.getName model)))
+				   server (.createServer2 remoting-factory view topic thread-pool)
+				   client (.createSynchronousClient remoting-factory topic true)]
+			       (swap! view-map assoc view [topic client server])
 			       (.registerView peer model client)
 			       ))
 	
 	deregister-view-fn (fn [^RemoteModel model ^View view]
-			     (if-let [[^TemporaryQueue queue ^Proxy client server] (@view-map view)]
+			     (if-let [[^Topic topic ^Proxy client server] (@view-map view)]
 			       (let [data (.deregisterView peer model client)]
 				 (.close server)
 				 (.close (Proxy/getInvocationHandler client))
-				 (.delete queue)
 				 (swap! view-map dissoc view)
 				 data)))
 	]

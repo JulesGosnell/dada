@@ -37,89 +37,88 @@
 
 	 process-addition
 	 (fn [[extant extinct views i a d] #^Update addition]
-	   (let [new (.getNewValue addition)
-		 key (key-fn new)
-		 current (extant key)]
-	     (if (nil? current)
-	       ;; insertion...
-	       (let [removed (extinct key)]
-		 (if (nil? removed)
-		   ;; first time seen
-		   [(assoc extant key new) extinct views (cons (Update. nil new) i) a d] ;insertion
-		   ;; already deleted
-		   (if (< (.compareTo version-comparator removed new) 0)
-		     ;; later version - reinstated
-		     [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
-		     (do
-		       ;; out of order or duplicate version - ignored
-		       (debug ["out of order insertion" current new])
-		       [extant extinct views i a d]))
+	     (let [new (.getNewValue addition)
+		   key (key-fn new)
+		   current (extant key)]
+	       (if (nil? current)
+		 ;; insertion...
+		 (let [removed (extinct key)]
+		   (if (nil? removed)
+		     ;; first time seen
+		     [(assoc extant key new) extinct views (cons (Update. nil new) i) a d] ;insertion
+		     ;; already deleted
+		     (if (< (.compareTo version-comparator removed new) 0)
+		       ;; later version - reinstated
+		       [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
+		       (do
+			 ;; out of order or duplicate version - ignored
+			 (debug ["out of order insertion" current new])
+			 [extant extinct views i a d]))
+		     )
 		   )
-		 )
-	       ;; alteration...
-	       (if (or (not version-comparator)(< (.compareTo version-comparator current new) 0))
-		 ;; later version - accepted
-		 [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
-		 (do
-		   ;; out of order or duplicate version - ignored
-		   (debug ["out of order update" current new])
-		   [extant extinct views i a d]))
-	       )))
+		 ;; alteration...
+		 (if (or (not version-comparator)(< (.compareTo version-comparator current new) 0))
+		   ;; later version - accepted
+		   [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
+		   (do
+		     ;; out of order or duplicate version - ignored
+		     (debug ["out of order update" current new])
+		     [extant extinct views i a d]))
+		 )))
 
 	 process-deletion
 	 (fn [[extant extinct views i a d] #^Update deletion]
-	   (let [old (.getOldValue deletion)
-		 new (.getNewValue deletion)
-		 key (key-fn old)
-		 current (extant key)
-		 latest (or new old)]
-	     (if (nil? current)
-	       (let [removed (extinct key)]
-		 (if (nil? removed)
-		   ;; neither extant or extinct - mark extinct
-		   ;; we will remember the id in case we get an out of order insertion later
-		   [extant (assoc extinct key latest) views i a (conj d (Update. nil new))]
-		   (if (< (.compareTo version-comparator removed latest) 0)
-		     ;; later version - accepted
-		     [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
-		     (do
-		       ;; earlier version - ignored
-		       (debug ["out of order deletion - ignored" removed latest])
-		       [extant extinct views i a d]))))
-	       (if (<= (.compareTo version-comparator current old) 0)
-		 ;; deletion of current or later version - accepted
-		 [(dissoc extant key) (assoc extinct key latest) views i a (cons (Update. current new) d)]
-		 (do
-		   ;; earlier version - ignored
-		   (debug ["out of order deletion - ignored" current new])
-		   [extant extinct views i a d])))))
+	     (let [old (.getOldValue deletion)
+		   new (.getNewValue deletion)
+		   key (key-fn old)
+		   current (extant key)
+		   latest (or new old)]
+	       (if (nil? current)
+		 (let [removed (extinct key)]
+		   (if (nil? removed)
+		     ;; neither extant or extinct - mark extinct
+		     ;; we will remember the id in case we get an out of order insertion later
+		     [extant (assoc extinct key latest) views i a (conj d (Update. nil new))]
+		     (if (< (.compareTo version-comparator removed latest) 0)
+		       ;; later version - accepted
+		       [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
+		       (do
+			 ;; earlier version - ignored
+			 (debug ["out of order deletion - ignored" removed latest])
+			 [extant extinct views i a d]))))
+		 (if (<= (.compareTo version-comparator current old) 0)
+		   ;; deletion of current or later version - accepted
+		   [(dissoc extant key) (assoc extinct key latest) views i a (cons (Update. current new) d)]
+		   (do
+		     ;; earlier version - ignored
+		     (debug ["out of order deletion - ignored" current new])
+		     [extant extinct views i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we
 	 ;; compare-and-swap, in order to avoid starvation of larger
 	 ;; batches...
 	 swap-state-fn (fn [[extant extinct views] insertions alterations deletions]
-			 (reduce process-deletion
-				 (reduce process-addition
-					 (reduce process-addition
-						 [extant extinct views '() '() '()]
-						 insertions)
-					 alterations)
-				 deletions))
+			   (reduce process-deletion
+				   (reduce process-addition
+					   (reduce process-addition
+						   [extant extinct views '() '() '()]
+						   insertions)
+					   alterations)
+				   deletions))
 
 	 mutable-state (atom [{} {} {}]) ;extant, extinct, views
 
 	 update-fn
 	 (fn [inputs]
-	   ;;(println "UPDATE ->" @mutable-state)
-	   (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
-	     ;;(println "UPDATE <-" @mutable-state)
-	     [i a d]))
+	     (trace ["UPDATE ->" @mutable-state])
+	     (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
+	       (trace ["UPDATE <-" @mutable-state])
+	       [i a d]))
 	 
 	 getData-fn
 	 (fn []
-	   ;;(println "GET DATA ->" @mutable-state)
-	   (let [[extant extinct] @mutable-state]
-	     (Data. (vals extant) (vals extinct))))
+	     (let [[extant extinct] @mutable-state]
+	       (Data. (vals extant) (vals extinct))))
 	 ]
      
      [[
@@ -149,10 +148,9 @@
   (let [[_ mutable] (.state this)
 	[extant extinct] @mutable]
     ;; N.B. does not check to see if View is already Registered
-    ;;(println "VIEW ->" @mutable)
+    (debug ["REGISTER VIEW   ->" view (@mutable 2)])
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
-    (println "SimpleModelView: VIEW REGISTERED" (@mutable 2))
-    ;;(println "VIEW <-" @mutable)
+    (debug ["REGISTER VIEW   <-" (@mutable 2)])
     (Data. (vals extant) (vals extinct))
     )
   )
@@ -160,17 +158,16 @@
 (defn #^Data -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)
 	[extant extinct] @mutable]
-    ;;(println "UNVIEW ->" @mutable)
+    (debug ["DEREGISTER VIEW ->" view (@mutable 2)])
     (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
-    (println "SimpleModelView: VIEW DEREGISTERED" (@mutable 2))
-    ;;(println "UNVIEW <-" @mutable)
+    (debug ["DEREGISTER VIEW <-" (@mutable 2)])
     (Data. (vals extant) (vals extinct))
     ))
 
 (defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]
   (let [[_ mutable] (.state this)
 	[_ _ views] @mutable]
-    ;;(println "NOTIFY ->" @mutable)
+    (trace ["NOTIFY ->" @mutable])
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
       (warn "empty event raised" (.getStackTrace (Exception.)))
       (dorun (map (fn [#^View view]	;dirty - side-effects
