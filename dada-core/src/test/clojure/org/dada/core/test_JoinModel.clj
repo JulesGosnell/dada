@@ -10,7 +10,7 @@
    )
   )
 
-(defn get-mutable [^JoinModel model] @(first (.state model)))
+(defn get-mutable [^JoinModel model] (rest @(first (.state model))))
 
 ;; problem - rhs indeces will be arranged in an indeterminate order...
 
