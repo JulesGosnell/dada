@@ -85,11 +85,11 @@
       (is (faster 1000000000 (.v r) (aget a 0))))))
 
 ;; no it's not autoboxing slowing down the int-array test - array access is slower than record access - by a factor of 10
-(if (not (ibm?))
-  (deftest record-vs-object-array-access
-    (let [^Value r (Value. 0)
-	  ^objects a (object-array [0])]
-      (is (faster 1000000000 (.v r) (aget a 0))))))
+;; (if (not (ibm?))
+;;   (deftest record-vs-object-array-access
+;;     (let [^Value r (Value. 0)
+;; 	  ^objects a (object-array [0])]
+;;       (is (faster 1000000000 (.v r) (aget a 0))))))
 
 (defrecord Foo (^int a))
 (defrecord Bar (^Integer a))
