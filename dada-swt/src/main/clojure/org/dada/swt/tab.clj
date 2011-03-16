@@ -2,7 +2,7 @@
  org.dada.swt.tab
  (:use [clojure.contrib logging]
        [org.dada core]
-       [org.dada.swt swt utils])
+       [org.dada.swt utils])
  (:import
   [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model ModelView SessionManager SimpleModelView ServiceFactory Update View]
@@ -90,28 +90,28 @@
 ;; 	  ))]
 ;;     ))
 
-(defn tab-insert [element #^Composite parent]
-  (let [dummy element]
-    (trace (str "TAB INSERT " element))
-    (let [#^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))
-	  control (create element parent)]
-      (.setText item (pr-str (extract-key element)))
-      (.setControl item control))))
+;; (defn tab-insert [element #^Composite parent]
+;;   (let [dummy element]
+;;     (trace (str "TAB INSERT " element))
+;;     (let [#^CTabItem item (CTabItem. parent (reduce bit-and [(SWT/CLOSE)]))
+;; 	  control (create element parent)]
+;;       (.setText item (pr-str (extract-key element)))
+;;       (.setControl item control))))
 
-(defn tab-update [#^CTabFolder parent insertions _ deletions]
-  (doall (map (fn [^Update insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
-  (.setSelection parent 0)
-  (.pack parent))
+;; (defn tab-update [#^CTabFolder parent insertions _ deletions]
+;;   (doall (map (fn [^Update insertion] (tab-insert (.getNewValue insertion) parent)) insertions))
+;;   (.setSelection parent 0)
+;;   (.pack parent))
 									 
-(defn tab-make [[model prefix pairs operation] #^Composite parent] ; TODO - should be element
-  ;; this model will accept unordered async events and put out ordered
-  ;; sync events, suitable for the gui...
-  (let [^Display display (.getDisplay parent)
-	^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
-    (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
-    (register model (proxy [View] [] (update [i a d] (.asyncExec display (fn [] (tab-update folder i a d))))))
-    folder
-    ))
+;; (defn tab-make [[model prefix pairs operation] #^Composite parent] ; TODO - should be element
+;;   ;; this model will accept unordered async events and put out ordered
+;;   ;; sync events, suitable for the gui...
+;;   (let [^Display display (.getDisplay parent)
+;; 	^CTabFolder folder (CTabFolder. parent (reduce bit-and [(SWT/TOP)]))]
+;;     (.setLayoutData folder (GridData. (SWT/FILL) (SWT/FILL) true true))
+;;     (register model (proxy [View] [] (update [i a d] (.asyncExec display (fn [] (tab-update folder i a d))))))
+;;     folder
+;;     ))
   
   ;; make a View
   ;; connect it to a Model to handle events arriving in wrong order

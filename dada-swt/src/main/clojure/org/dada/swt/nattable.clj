@@ -3,7 +3,7 @@
   (:use
    [clojure.contrib logging]
    [org.dada core]
-   [org.dada.swt swt utils])
+   [org.dada.swt utils])
   (:import
    [java.util ArrayList Collection HashMap List Map]
    [org.eclipse.swt SWT]

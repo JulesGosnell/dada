@@ -4,21 +4,13 @@
   [clojure.contrib logging]  
   [org.dada core]  
   [org.dada.core dql]
-  [org.dada.swt swt nattable tab utils])
+  [org.dada.swt nattable tab utils])
  (:import
   [java.util Collection]
   [org.eclipse.swt.widgets Composite Display Shell]
   [org.eclipse.swt SWT]
   [org.dada.core Model ModelView Result SessionManagerNameGetter SimpleModelView Update View ViewNameGetter]
   ))
-
-;;--------------------------------------------------------------------------------
-
-(defmethod create :metadata [element #^Composite parent & [drilldown-fn]] (tab-make element parent))
-(defmethod create :data [element #^Composite parent & [drilldown-fn]] (nattable-make element parent drilldown-fn))
-  
-(defmethod extract-key :default [^Result result]
-  (reduce (fn [output [key value]] (if value (conj output value) output)) [] (.getPairs result)))
 
 ;;--------------------------------------------------------------------------------
 
