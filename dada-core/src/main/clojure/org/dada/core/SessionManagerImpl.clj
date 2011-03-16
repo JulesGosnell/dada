@@ -78,13 +78,13 @@
 	    (swap!
 	     mutable
 	     (fn [[exports]]
-		 (let [entry (exports model-name)]
-		   (if entry
-		     (let [[count view] entry]
-		       (if (= count 1)
-			 [(dissoc exports model-name) view]
-			 [(assoc exports model-name [(dec count) view])]))
-n		     [exports]))))]
+	       (let [entry (exports model-name)]
+		 (if entry
+		   (let [[count view] entry]
+		     (if (= count 1)
+		       [(dissoc exports model-name) view]
+		       [(assoc exports model-name [(dec count) view])]))
+		   [exports]))))]
 	(if view
 	  (.deregisterView model view)
 	  (.getData model)
