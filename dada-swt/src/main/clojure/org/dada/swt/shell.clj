@@ -55,7 +55,7 @@
      lock
      (let [[n display] (swap! display-state (fn [[n display]] [(dec n) display]))]
        (if (zero? n)
-	 (do (.syncExec display (fn [] (println "Desstroying SWT Display") (.dispose display))) nil)
+	 (do (.syncExec display (fn [] (println "Destroying SWT Display") (.dispose display))) nil)
 	 display))))
 
   )
