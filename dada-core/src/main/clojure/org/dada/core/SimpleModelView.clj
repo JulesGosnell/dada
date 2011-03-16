@@ -3,20 +3,13 @@
    [clojure.contrib logging]
    [org.dada.core counted-set]
    )
-  ;; (:require
-  ;;  [org.dada.core BaseModelView]
-  ;;  )
   (:import
    [java.util Collection]
    [org.dada.core Data Metadata RemoteModel Update View]
    )
   (:gen-class
-   ;;:extends org.dada.core.BaseModelView
    :implements [org.dada.core.ModelView java.io.Serializable]
-   :constructors {[String org.dada.core.Metadata]
-		  ;;[String org.dada.core.Metadata]
-		  []
-		  }
+   :constructors {[String org.dada.core.Metadata] []}
    :methods [[writeReplace [] Object]]
    :init init
    :state state
@@ -28,7 +21,6 @@
 (defn -init [#^String name #^Metadata metadata]
 
   [ ;; super ctor args
-   ;;[name metadata]
    []
    ;; instance state
    (let [key-getter (.getPrimaryGetter metadata)
@@ -145,29 +137,24 @@
     (extant key)))
 
 (defn #^Data -registerView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[_ mutable] (.state this)
-	[extant extinct] @mutable]
+  (let [[_ mutable] (.state this)]
     ;; N.B. does not check to see if View is already Registered
     (debug ["REGISTER VIEW   ->" view (@mutable 2)])
-    (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)
-    (debug ["REGISTER VIEW   <-" (@mutable 2)])
-    (Data. (vals extant) (vals extinct))
-    )
-  )
+    (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)]
+      (debug ["REGISTER VIEW   <-" views])
+      (Data. (vals extant) (vals extinct)))))
 
 (defn #^Data -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
-  (let [[_ mutable] (.state this)
-	[extant extinct] @mutable]
+  (let [[_ mutable] (.state this)]
     (debug ["DEREGISTER VIEW ->" view (@mutable 2)])
-    (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)
-    (debug ["DEREGISTER VIEW <-" (@mutable 2)])
-    (Data. (vals extant) (vals extinct))
-    ))
+    (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)]
+      (debug ["DEREGISTER VIEW <-" views])
+      (Data. (vals extant) (vals extinct)))))
 
 (defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]
   (let [[_ mutable] (.state this)
 	[_ _ views] @mutable]
-    (trace ["NOTIFY ->" @mutable])
+    (trace ["NOTIFY ->" views])
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
       (warn "empty event raised" (.getStackTrace (Exception.)))
       (dorun (map (fn [#^View view]	;dirty - side-effects
@@ -185,7 +172,6 @@
 
 (defn -update [#^org.dada.core.SimpleModelView this & inputs]
   (let [[[_ _ update-fn] mutable] (.state this)
-	[_ _ views] @mutable
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))
       (-notifyUpdate this i a d))
