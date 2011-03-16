@@ -3,7 +3,7 @@
   (:use
    [clojure.contrib logging]
    [org.dada core]
-   [org.dada.swt utils])
+   )
   (:import
    [java.util ArrayList Collection HashMap List Map]
    [org.eclipse.swt SWT]
@@ -35,6 +35,16 @@
    [org.dada.swt Mutable]
    ))
 
+(defn register [#^Model model #^View view]
+  (let [data (.registerView model view)]
+    (.update
+     view
+     (map (fn [datum] (Update. nil datum)) (.getExtant data))
+     '()
+     (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
+    data))
+
+;;--------------------------------------------------------------------------------
 ;; (defn handle-layer-event [^EventList event-list ^NatTable nattable ^ILayerEvent event ^ILayer layer & [drilldown-fn]]
 ;;   (if (instance? CellSelectionEvent event)
 ;;     (try

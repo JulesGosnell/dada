@@ -4,7 +4,7 @@
   [clojure.contrib logging]  
   [org.dada core]  
   [org.dada.core dql]
-  [org.dada.swt nattable tab utils])
+  [org.dada.swt nattable tab shell])
  (:import
   [java.util Collection]
   [org.eclipse.swt.widgets Composite Display Shell]

@@ -1,5 +1,5 @@
 (ns
- org.dada.swt.utils
+ org.dada.swt.shell
  (:import
   [java.util.concurrent CountDownLatch]
   [java.util.concurrent.locks Lock ReentrantLock]
@@ -80,16 +80,3 @@
       (.pack)
       (.open))
     shell))
-
-;;--------------------------------------------------------------------------------
-
-(defn register [#^Model model #^View view]
-  (let [data (.registerView model view)]
-    (.update
-     view
-     (map (fn [datum] (Update. nil datum)) (.getExtant data))
-     '()
-     (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
-    data))
-
-;;--------------------------------------------------------------------------------

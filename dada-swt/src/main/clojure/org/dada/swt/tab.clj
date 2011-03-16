@@ -2,7 +2,7 @@
  org.dada.swt.tab
  (:use [clojure.contrib logging]
        [org.dada core]
-       [org.dada.swt utils])
+       )
  (:import
   [java.util Collection Comparator Timer TimerTask]
   [org.dada.core Attribute Getter Metadata Model ModelView SessionManager SimpleModelView ServiceFactory Update View]
