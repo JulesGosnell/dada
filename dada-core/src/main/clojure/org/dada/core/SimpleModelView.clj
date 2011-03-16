@@ -138,20 +138,17 @@
 
 (defn #^Data -registerView [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)]
-    ;; N.B. does not check to see if View is already Registered
-    (debug ["REGISTER VIEW   ->" view (@mutable 2)])
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)]
-      (debug ["REGISTER VIEW   <-" views])
+      (debug ["REGISTER VIEW   " view views])
       (Data. (vals extant) (vals extinct)))))
 
 (defn #^Data -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)]
-    (debug ["DEREGISTER VIEW ->" view (@mutable 2)])
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)]
-      (debug ["DEREGISTER VIEW <-" views])
+      (debug ["DEREGISTER VIEW" view views])
       (Data. (vals extant) (vals extinct)))))
 
-(defn -notifyUpdate [#^org.dada.core.SimpleModelView this insertions alterations deletions]
+(defn notifyUpdate [^org.dada.core.SimpleModelView this insertions alterations deletions]
   (let [[_ mutable] (.state this)
 	[_ _ views] @mutable]
     (trace ["NOTIFY ->" views])
@@ -174,7 +171,7 @@
   (let [[[_ _ update-fn] mutable] (.state this)
 	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))
-      (-notifyUpdate this i a d))
+      (notifyUpdate this i a d))
     ))
 
 ;;--------------------------------------------------------------------------------

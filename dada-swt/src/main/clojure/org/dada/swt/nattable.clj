@@ -44,13 +44,19 @@
 ;; 	   (drilldown-fn datum))))
 ;;      (catch Exception e (error e)))))
 
-(defn handle-select-cell [^NatTable nattable ^SelectCellCommand command ^ILayer target-layer ^EventList event-list & [drilldown-fn]]
+(defn handle-select-cell [^Metadata metadata ^NatTable nattable ^SelectCellCommand command ^ILayer target-layer ^EventList event-list & [drilldown-fn]]
   (if (.convertToTargetLayer command target-layer)
     (if (and (not (.isShiftMask command)) drilldown-fn)
       (let [row (.getRowPosition command)
 	    datum (.getDatum (.get event-list row))]
-	(if (and datum (instance? Model datum))
-	  (drilldown-fn datum))))))
+	(if datum
+	  ;; if row contains model...
+	  (if (instance? Model datum)
+	    (drilldown-fn datum)
+	    ;; if cell contains model...
+	    (let [datum (.get (.getGetter (nth (.getAttributes metadata) (.getColumnPosition command))) datum)]
+	      (if (instance? Model datum)
+		(drilldown-fn datum)))))))))
 
 ;;--------------------------------------------------------------------------------
 ;; see http://nattable.org/drupal/docs/basicgrid
@@ -219,7 +225,7 @@
 	 (proxy [ILayerCommandHandler] []
 		(^Class getCommandClass [] ILayerCommand)
 		(^Boolean doCommand [^ILayer targetLayer ^ILayerCommand command]
-			  (if (instance? SelectCellCommand command) (handle-select-cell nattable command data-layer sorted-list drilldown-fn))
+			  (if (instance? SelectCellCommand command) (handle-select-cell metadata nattable command data-layer sorted-list drilldown-fn))
 			  (if (instance? DisposeResourcesCommand command) (.deregisterView model view))
 			  false)))
 

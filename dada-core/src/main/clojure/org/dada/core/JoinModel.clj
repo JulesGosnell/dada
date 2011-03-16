@@ -2,21 +2,20 @@
   (:use
    [clojure.contrib logging]
    [org.dada core]
+   [org.dada.core counted-set]
    )
   (:import
    [java.util Collection LinkedHashMap Map]
-   [org.dada.core AbstractModel Attribute Data Getter Metadata Metadata$VersionComparator Model RemoteModel Tuple Update View]
+   [org.dada.core Attribute Data Getter Metadata Metadata$VersionComparator Model RemoteModel Tuple Update View]
    )
   (:gen-class
-   :extends org.dada.core.AbstractModel
-   :implements [org.dada.core.ModelView java.io.Serializable]
-   :constructors {[String org.dada.core.Metadata org.dada.core.Model java.util.Map clojure.lang.IFn] [String org.dada.core.Metadata]}
+   :implements [org.dada.core.Model java.io.Serializable]
+   :constructors {[String org.dada.core.Metadata org.dada.core.Model java.util.Map clojure.lang.IFn] []}
    :methods [[writeReplace [] Object]]
    :init init
    :state state
    :post-init post-init)
   )
-
 
 ;; these types should really be created on-the-fly to match lhs/rhs relationships
 (defrecord LHSEntry [extant version lhs rhs-refs datum]) ;; rhs-refs - resolution of lhs fks to rhs references
@@ -50,12 +49,13 @@
 	     rhses
 	     join-fn]
   [ ;; super ctor args
-   [model-name model-metadata]
+   []
    ;; instance state [atom(mutable) immutable]
    (let [lhs-metadata (.getMetadata lhs-model)
+	 views nil
 	 lhs-mutable {}
 	 rhs-mutables (apply vector (repeatedly (count (invert-map rhses)) hash-map))]
-     [(atom [lhs-mutable rhs-mutables]) model-name model-metadata])])
+     [(atom [views lhs-mutable rhs-mutables]) model-name model-metadata])])
 
 ;;--------------------------------------------------------------------------------
 
@@ -143,8 +143,9 @@
 
 (defn update-lhs
   "return new mutable state and events in response to notifications from the left hand side model"
-  [[old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn initial-rhs-refs]
+  [[views old-lhs-index old-rhs-indeces] insertions alterations deletions ^Getter lhs-pk-getter ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn initial-rhs-refs]
   (trace ["update-lhs" rhs-i-to-lhs-getters])
+  (apply vector views
   (reduce-lhs     
    (reduce-lhs     
     [old-lhs-index old-rhs-indeces nil nil nil]
@@ -161,7 +162,7 @@
    lhs-version-comparator
    rhs-i-to-lhs-getters
    join-fn
-   true))
+   true)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -188,7 +189,7 @@
 
 (defn update-rhs
   "return new mutable state and events in response to notifications from a right hand side model"
-  [[old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$VersionComparator rhs-version-comparator lhs-getters join-fn]
+  [[views old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$VersionComparator rhs-version-comparator lhs-getters join-fn]
   (let [initial-lhs-pks (apply vector (repeatedly (count lhs-getters) hash-set)) ;TODO - do not rebuild each time...
 	old-rhs-index (nth old-rhs-indeces i)]
     (trace ["update-rhs" i lhs-getters old-rhs-index])
@@ -218,11 +219,70 @@
 	   [old-lhs-index old-rhs-index nil nil nil]
 	   (concat insertions alterations))
 	  new-rhs-indeces (assoc old-rhs-indeces i new-rhs-index)]
-      [new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions])
+      [views new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions])
     
     ;; deletions - TO DO
     
     ))
+
+(defn extract-data [^Map lhs]
+  (let [[extant extinct]
+	(reduce
+	 (fn [[extant extinct] ^LHSEntry entry]
+	     (if (.extant entry) [(conj extant (.datum entry)) extinct] [extant (conj extinct (.datum entry))]))
+	 [nil nil]
+	 (.values lhs))]
+    (Data. extant extinct)))
+
+(defn -getName [^org.dada.core.JoinModel this]
+  (second (.state this)))
+
+(defn -getMetadata [^org.dada.core.JoinModel this]
+  (nth (.state this) 2))
+
+(defn -find [^org.dada.core.JoinModel this key]
+  (if-let [^LHSEntry entry ((second @(first (.state this))) key)]
+    (if (.extant entry)
+      (.datum entry))))
+
+;;------------------------------------------------------------------------------
+;; TODO - how can we better share this code with SimpleModelView ?
+
+(defn #^Data -registerView [^org.dada.core.JoinModel this ^View view]
+  (let [[mutable] (.state this)]
+    (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-inc (m 0) view))) view)]
+      (debug ["REGISTER VIEW   " view views])
+      (extract-data lhs))))
+
+(defn #^Data -deregisterView [^org.dada.core.JoinModel this ^View view]
+  (let [[mutable] (.state this)]
+    (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-dec (m 0) view))) view)]
+      (debug ["DEREGISTER VIEW " view views])
+      (extract-data lhs))))
+
+(defn notifyUpdate [^org.dada.core.JoinModel this insertions alterations deletions]
+  (let [[mutable] (.state this)
+	[views] @mutable]
+    (trace ["NOTIFY ->" @mutable])
+    (if (and (empty? insertions) (empty? alterations) (empty? deletions))
+      (warn "empty event raised" (.getStackTrace (Exception.)))
+      (dorun (map (fn [#^View view]	;dirty - side-effects
+		      (try (.update view insertions alterations deletions)
+			   (catch Throwable t
+				  (error "View notification failure" t)
+				  (.printStackTrace t))))
+		  (counted-set-vals views))))))
+
+;;------------------------------------------------------------------------------
+
+(defn -getData [^org.dada.core.JoinModel this]
+  (extract-data (second @(first (.state this)))))
+
+;;------------------------------------------------------------------------------
+
+(defn #^{:private true} -writeReplace [#^org.dada.core.JoinModel this]
+  (let [[_mutable name metadata] (.state this)]
+      (RemoteModel. name metadata)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -235,7 +295,7 @@
 					(sorted-map)
 					(map
 					 (fn [i [^Model model keys]]
-					   [i [model (map get-lhs-getter keys)]])
+					     [i [model (map get-lhs-getter keys)]])
 					 (range)
 					 rhs-model-to-lhs-fks))
 	i-to-lhs-getters (into (sorted-map) (map (fn [[i [model getters]]] [i getters]) i-to-rhs-model-and-lhs-getters))]
@@ -243,22 +303,22 @@
     (dorun
      (map
       (fn [[i [^Model rhs-model lhs-getters]]]
-	(trace ["post-init: watching rhs:" i rhs-model])
-	(let [^Metadata rhs-metadata (.getMetadata rhs-model)
-	      rhs-pk-getter (.getPrimaryGetter rhs-metadata)
-	      rhs-version-comparator (.getVersionComparator rhs-metadata)
-	      ^Data data
-	      (.registerView
-	       rhs-model
-	       (proxy [View] []
-		 (update [insertions alterations deletions]
-			 (let [[_ _ insertions alterations deletions]
-			       (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
-			   (if (or insertions alterations deletions)
-			     (.notifyUpdate self insertions alterations deletions))))))]
-	  (swap! mutable update-rhs
-		 (map (fn [extant] (Update. nil extant))(.getExtant data))
-		 nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
+	  (trace ["post-init: watching rhs:" i rhs-model])
+	  (let [^Metadata rhs-metadata (.getMetadata rhs-model)
+		rhs-pk-getter (.getPrimaryGetter rhs-metadata)
+		rhs-version-comparator (.getVersionComparator rhs-metadata)
+		^Data data
+		(.registerView
+		 rhs-model
+		 (proxy [View] []
+			(update [insertions alterations deletions]
+				(let [[_ _ _ insertions alterations deletions]
+				      (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
+				  (if (or insertions alterations deletions)
+				    (notifyUpdate self insertions alterations deletions))))))]
+	    (swap! mutable update-rhs
+		   (map (fn [extant] (Update. nil extant))(.getExtant data))
+		   nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
       i-to-rhs-model-and-lhs-getters))
 
     (trace ["post-init: watching lhs:" lhs-model])
@@ -270,29 +330,17 @@
 	  (.registerView
 	   lhs-model
 	   (proxy [View] []
-	     (update [insertions alterations deletions]
-		     (let [[_ _ insertions alterations deletions]
-			   (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
-		       (if (or insertions alterations deletions)
-			 (.notifyUpdate self insertions alterations deletions))))))]
+		  (update [insertions alterations deletions]
+			  (let [[_ _ _ insertions alterations deletions]
+				(swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
+			    (if (or insertions alterations deletions)
+			      (notifyUpdate self insertions alterations deletions))))))]
       (swap! mutable update-lhs
 	     (map (fn [extant] (Update. nil extant))(.getExtant data))
 	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs) ;; TODO - deletions/extinct
       )))
 
-(defn -getData [^org.dada.core.JoinModel this]
-  (let [[extant extinct]
-	(reduce
-	 (fn [[extant extinct] ^LHSEntry entry] (if (.extant entry) [(conj extant (.datum entry)) extinct] [extant (conj extinct (.datum entry))]))
-	 [nil nil]
-	 (.values ^Map (first @(first (.state this)))))]
-    (Data. extant extinct)))
-
-(defn -find [^org.dada.core.JoinModel this key]
-  (if-let [^LHSEntry entry ((first @(first (.state this))) key)]
-    (if (.extant entry)
-      (.datum entry))))  
-
+;;------------------------------------------------------------------------------
 ;; TODO
 ;; deletion
 ;; abstract out Index interface and provide eager and lazy implementations
@@ -312,6 +360,3 @@
 ;; make whole thing a macro which generates inline code specific to each individual join
 ;; compound key join ?
 
-(defn #^{:private true} -writeReplace [#^org.dada.core.JoinModel this]
-  (let [[_mutable name metadata] (.state this)]
-      (RemoteModel. name metadata)))

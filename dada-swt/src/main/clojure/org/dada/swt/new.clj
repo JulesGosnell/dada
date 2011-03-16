@@ -7,8 +7,7 @@
   [org.dada.swt swt nattable tab table utils])
  (:import
   [java.util Collection]
-  [java.util.concurrent Executors]
-  [org.eclipse.swt.widgets Button Composite Control Display Shell Text Listener Widget]
+  [org.eclipse.swt.widgets Composite Display Shell]
   [org.eclipse.swt SWT]
   [org.dada.core Model ModelView Result SessionManagerNameGetter SimpleModelView Update View ViewNameGetter]
   ))
@@ -23,36 +22,17 @@
 
 ;;--------------------------------------------------------------------------------
 
-(let [display (atom nil)]
-  (defn ensure-display []
-    (swap! display (fn [d] (or d (Display.))))))
+(defn inspect-model [^Model model & [drilldown-fn close-fn]]
+  (let [display (inc-display)]
+    (.asyncExec
+     display
+     (fn []
+	 (let [^Composite shell (create-shell display (.getName model) (fn [_] (if (not (dec-display)) (close-fn))))
+	       ^Composite component (nattable-make model shell drilldown-fn)]
+	   (.pack component)
+	   (.pack shell))))))
 
-(if (not *compile-files*)
-  (.start
-   (Thread.
-    (fn []
-      (swt-loop (ensure-display))))))
-
-;; TODO - detach View on closing
 (defn inspect [query & [drilldown-fn]]
-  (.asyncExec
-   (ensure-display)
-   (fn []
-       (let [[metadata-fn data-fn] query
-	     results (data-fn)
-	     [^Model metamodel] results
-	     ^Composite shell (create-shell (ensure-display) (.getName metamodel))
-	     ^Composite component (create results shell drilldown-fn)]
-	 (trace results)
-	 (.pack component)
-	 (.pack shell)))))
-
-
-(defn inspect-model [^Model model & [drilldown-fn]]
-  (.asyncExec
-   (ensure-display)
-   (fn []
-     (let [^Composite shell (create-shell (ensure-display) (.getName model))
-	   ^Composite component (nattable-make model shell drilldown-fn)]
-       (.pack component)
-       (.pack shell)))))
+  (let [[metadata-fn data-fn] query
+	[^Model metamodel] (data-fn)]
+    (inspect-model metamodel drilldown-fn)))
