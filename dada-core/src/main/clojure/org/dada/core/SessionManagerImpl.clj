@@ -71,9 +71,7 @@
 (defn ^Data -deregisterView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
   (let [model-name (.getName model)
 	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
-	dummy (println metamodel (if metamodel (.getExtant (.getData metamodel))))
 	^Model model (.find metamodel model-name)]
-    (println "LocalSessionManager: deregisterView " model view)
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
       (let [[_ _view]
@@ -86,7 +84,7 @@
 		       (if (= count 1)
 			 [(dissoc exports model-name) view]
 			 [(assoc exports model-name [(dec count) view])]))
-		     [exports]))))]
+n		     [exports]))))]
 	(if view
 	  (.deregisterView model view)
 	  (.getData model)
