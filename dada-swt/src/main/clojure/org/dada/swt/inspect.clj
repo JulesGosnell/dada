@@ -1,10 +1,10 @@
 (ns
- org.dada.swt.new
+ org.dada.swt.inspect
  (:use 
   [clojure.contrib logging]  
   [org.dada core]  
   [org.dada.core dql]
-  [org.dada.swt swt nattable tab table utils])
+  [org.dada.swt swt nattable tab utils])
  (:import
   [java.util Collection]
   [org.eclipse.swt.widgets Composite Display Shell]

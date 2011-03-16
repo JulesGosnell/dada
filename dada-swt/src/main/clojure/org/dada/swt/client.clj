@@ -1,7 +1,7 @@
 (ns #^{:author "Jules Gosnell" :doc "Simple Client for DADA"} org.dada.swt.client
     (:gen-class)
     (:use
-     [org.dada.swt new])
+     [org.dada.swt inspect])
     (:import
      [org.springframework.context.support
       ClassPathXmlApplicationContext]
