@@ -25,7 +25,7 @@
 
 (defn detect-client-death [mutable]
   (let [threshold (- (System/currentTimeMillis) 10000)]
-    (println "sweeping clients" @mutable threshold)))
+    (println "sweeping clients" threshold (split (fn [[k v]] (> v threshold)) (first @mutable)))))
 
 (defn -init [^String name ^Model metamodel ^ServiceFactory service-factory]
   (println "WTF!!!")
