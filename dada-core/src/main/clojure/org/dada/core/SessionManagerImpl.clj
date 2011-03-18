@@ -2,7 +2,7 @@
  org.dada.core.SessionManagerImpl
  (:use [clojure.contrib logging])
  (:import
-  [java.util Collection]
+  [java.util Collection Timer TimerTask]
   [org.dada.core Data Metadata Model ServiceFactory View]
   )
  (:gen-class
@@ -14,23 +14,46 @@
   )
  )
 
+(defn split [f s]
+  (reduce
+   (fn [[y n] e]
+     (if (f e)
+       [(conj y e) n]
+       [y (conj n e)]))
+   [{} {}]
+   s))
+
+(defn detect-client-death [mutable]
+  (let [threshold (- (System/currentTimeMillis) 10000)]
+    (println "sweeping clients" @mutable threshold)))
+
 (defn -init [^String name ^Model metamodel ^ServiceFactory service-factory]
+  (println "WTF!!!")
   [ ;; super ctor args
    []
    ;; instance state
-   (let [exports {}]
-     [[name metamodel service-factory]
-      (atom [exports])])])
+   (let [mutable (atom [{}])
+	 ^Timer death-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (detect-client-death mutable))) 0 10000))
+	 close-fn (fn [] (.cancel death-timer))]
+     
+     [[name metamodel service-factory close-fn]	;immutable
+      mutable])])			;mutable
 
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (println "LOCAL SESSION MANAGER - CLOSE")
-  ;; TODO - garbage all exsiting clients ?
+  (let [[[_ _ _ close-fn]] (.state this)]
+    (close-fn))
   )
 
 (defn -ping [^org.dada.core.SessionManagerImpl this ^String client-id]
   (println "LOCAL SESSION MANAGER - PING" client-id)
-  ;; refresh clients timestamp
-  true)
+  ;; refresh client's timestamp
+  (let [[_ mutable] (.state this)]
+    (swap!
+     mutable
+     (fn [[clients]]
+       [(assoc clients client-id (System/currentTimeMillis))]))
+    true))
 
 (defn ^String -getName [^org.dada.core.SessionManagerImpl this]
   (let [[[name ^Model metamodel]] (.state this)]
@@ -67,16 +90,7 @@
 	^Model model (.find metamodel model-name)]
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
-      (let [[_ _view]
-	    (swap!
-	     mutable
-	     (fn [[exports]]
-		 (let [[count view] (or (exports model-name) [0 view])]
-		   [(assoc exports model-name [(inc count) view]) (if (zero? count) view)])))]
-	(if view
-	  (.registerView model view)
-	  (.getData model)
-	  )))))
+      (.registerView model view))))			     ;TODO - add resource to clients map
 
 (defn ^Data -deregisterView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
   (let [model-name (.getName model)
@@ -84,21 +98,7 @@
 	^Model model (.find metamodel model-name)]
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
-      (let [[_ _view]
-	    (swap!
-	     mutable
-	     (fn [[exports]]
-		 (let [entry (exports model-name)]
-		   (if entry
-		     (let [[count view] entry]
-		       (if (= count 1)
-			 [(dissoc exports model-name) view]
-			 [(assoc exports model-name [(dec count) view])]))
-		     [exports]))))]
-	(if view
-	  (.deregisterView model view)
-	  (.getData model)
-	  )))))
+      (.deregisterView model view)))) ;TODO - remove resource from clients map
 
 ;; need contrib with-ns - only contrib dependency so far...
 ;; (defmacro with-temp-ns-inherited [ns & body]

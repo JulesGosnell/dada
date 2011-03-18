@@ -159,8 +159,6 @@
 (defn ^String -getName [^org.dada.core.RemoteSessionManager this]
   (throw (UnsupportedOperationException. "NYI")))
 
-
-
 (defn ^Model -getModel [^org.dada.core.RemoteSessionManager this ^String name]
   (throw (UnsupportedOperationException. "NYI")))
 
