@@ -36,7 +36,7 @@
    )
   (:gen-class
    :implements [org.dada.core.SessionManager]
-   :constructors {[javax.jms.ConnectionFactory String String Integer] []}
+   :constructors {[String javax.jms.ConnectionFactory String Integer] []}
    :methods []
    :init init
    :post-init post-init
@@ -47,13 +47,13 @@
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
 
-(defn -init [^ConnectionFactory connection-factory ^String classes-url ^String protocol ^Integer num-threads]
+(defn -init [^String name ^ConnectionFactory connection-factory ^String classes-url ^Integer num-threads]
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
 	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
 	^RemotingFactory session-manager-remoting-factory (RemotingFactory. session SessionManager 10000)
-	^Queue session-manager-queue (.createQueue session "SessionManager.POJO")
+	^Queue session-manager-queue (.createQueue session name)
 	^SessionManager peer (.createSynchronousClient session-manager-remoting-factory session-manager-queue true)
 	^RemotingFactory view-remoting-factory (RemotingFactory. session View 10000)
 

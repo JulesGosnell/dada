@@ -20,9 +20,9 @@
   </bean>
 
   <bean id="sessionManager" class="org.dada.core.RemoteSessionManager">
+    <constructor-arg><value>SessionManager.POJO</value></constructor-arg>
     <constructor-arg ref="connectionFactory"></constructor-arg>
     <constructor-arg ref="classesURL"></constructor-arg>
-    <constructor-arg><value>POJO</value></constructor-arg>
     <constructor-arg><value>2</value></constructor-arg>
   </bean>
 
