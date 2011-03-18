@@ -27,6 +27,11 @@
   ;; TODO - garbage all exsiting clients ?
   )
 
+(defn -ping [^org.dada.core.SessionManagerImpl this ^String client-id]
+  (println "LOCAL SESSION MANAGER - PING" client-id)
+  ;; refresh clients timestamp
+  true)
+
 (defn ^String -getName [^org.dada.core.SessionManagerImpl this]
   (let [[[name ^Model metamodel]] (.state this)]
     name))

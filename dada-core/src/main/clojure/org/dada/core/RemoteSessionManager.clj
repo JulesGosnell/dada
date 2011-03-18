@@ -11,11 +11,12 @@
     URL
     URLClassLoader]
    [java.util
-    Collection]
+    Collection
+    Timer
+    TimerTask]
    [java.util.concurrent
-    Executors]
-   [java.util.concurrent.locks
-    ReentrantLock]
+    Executors
+    ExecutorService]
    [javax.jms
     Connection
     ConnectionFactory
@@ -39,6 +40,8 @@
     DestinationFactory
     QueueFactory
     RemotingFactory
+    RemotingFactory$Server
+    SynchronousClient
     TopicFactory
     SimpleMethodMapper]
    )
@@ -51,11 +54,6 @@
    :state state
    )
   )
-
-(defmacro with-lock [lock & body]
-  `(let [lock# ~lock]
-     (.lock lock#)
-     (try ~@body (finally (.unlock lock#)))))
 
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
@@ -72,7 +70,7 @@
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
-	^Executors thread-pool (Executors/newFixedThreadPool num-threads)
+	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
 	
 	^ServiceFactory session-manager-service-factory (JMSServiceFactory.
 							 session
@@ -86,9 +84,12 @@
 							 protocol)
 	^SessionManager peer (.client session-manager-service-factory "SessionManager")
 
+	ping-period 5000
+	client-id "JULES"
+	^Timer ping-timer (doto (Timer.) (.schedule (proxy [TimerTask][] (run [] (.ping peer client-id))) 0 ping-period))
+	
 	^RemotingFactory remoting-factory (RemotingFactory. session View 10000)
 
-	lock (ReentrantLock.)
 	view-map (atom {})
 	;; TOOD - these fns need rethinking to take a properly atomic approach - there are race conditions in these impls
 	register-view-fn (fn [^RemoteModel model ^View view]
@@ -100,16 +101,17 @@
 			       ))
 	
 	deregister-view-fn (fn [^RemoteModel model ^View view]
-			     (if-let [[^Topic topic ^Proxy client server] (@view-map view)]
+			     (if-let [[^Topic topic ^Proxy client ^RemotingFactory$Server server] (@view-map view)]
 			       (let [data (.deregisterView peer model client)]
 				 (.close server)
-				 (.close (Proxy/getInvocationHandler client))
+				 (.close ^SynchronousClient (Proxy/getInvocationHandler client))
 				 (swap! view-map dissoc view)
 				 data)))
 
 	close-fn (fn []
 		   ;; TODO - close or warn about any outstanding Views
-		   (.close (Proxy/getInvocationHandler peer))
+		   (.cancel ping-timer)
+		   (.close ^SynchronousClient (Proxy/getInvocationHandler peer))
 		   (.shutdown thread-pool)
 		   (.close session)
 		   (.stop connection)
@@ -120,23 +122,27 @@
      ;; instance state
      [peer register-view-fn deregister-view-fn close-fn]]))
 
-(defn -post-init [this & _]
+(defn -post-init [^org.dada.core.RemoteSessionManager this & _]
   (SessionManagerHelper/setCurrentSessionManager this))
 
-(defn -close [this]
+(defn -close [^org.dada.core.RemoteSessionManager this]
   (let [[_ _ _ close-fn] (.state this)]
     (close-fn)))
 
-(defn ^Model -find [this ^Model model key]
+(defn -ping [^org.dada.core.RemoteSessionManager this ^String client-id]
+  (println "SHOULD NOT BE CALLED - REMOTE SESSION MANAGER - PING" client-id)
+  true)
+
+(defn ^Model -find [^org.dada.core.RemoteSessionManager this ^Model model key]
   (let [[^SessionManager peer] (.state this)]
     (.find peer model key)))
 
-(defn ^Data -registerView [this ^Model model ^View view]
+(defn ^Data -registerView [^org.dada.core.RemoteSessionManager this ^Model model ^View view]
   (println "RemoteSessionManager: registerView " model view)
   (let [[^SessionManager peer register-view-fn] (.state this)]
     (register-view-fn model view)))
 
-(defn ^Data -deregisterView [this ^Model model ^View view]
+(defn ^Data -deregisterView [^org.dada.core.RemoteSessionManager this ^Model model ^View view]
   (println "RemoteSessionManager: deregisterView " model view)
   (let [[^SessionManager peer _ deregister-view-fn] (.state this)]
     (deregister-view-fn model view)))
