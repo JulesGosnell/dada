@@ -6,6 +6,20 @@
 		       http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd"
    >
   
+  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="systemPropertiesMode">
+      <bean id="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.SYSTEM_PROPERTIES_MODE_OVERRIDE"
+	    class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+      </bean>
+    </property>
+    <property name="properties">
+      <props>
+	<prop key="dada.broker.name">DADA</prop>
+	<prop key="dada.broker.uri">tcp://0.0.0.0:61616</prop>
+	<prop key="dada.client.uri">tcp://localhost:61616</prop>
+      </props>
+    </property>
+  </bean>
   <amq:broker useJmx="true" persistent="false" brokerName="${dada.broker.name}" advisorySupport="false">
 
     <amq:destinationPolicy>
@@ -34,5 +48,14 @@
     <property name="objectMessageSerializationDefered"><value>true</value></property>
     <property name="watchTopicAdvisories"><value>false</value></property> <!-- avoid "Cannot publish to a deleted Detination" on temporary Queues-->
   </bean>
+
+<!-- can't define this here yet as it needs access to MetaModel (not yet created) -->
+<!--
+  <bean id="sessionManager" class="org.dada.core.SessionManagerImpl">
+    <constructor-arg><value>SessionManager.POJO</value></constructor-arg>
+    <constructor-arg ref="connectionFactory"></constructor-arg>
+    METAMODEL
+  </bean>
+-->
 
 </beans>

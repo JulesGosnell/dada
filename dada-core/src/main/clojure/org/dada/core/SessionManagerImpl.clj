@@ -4,14 +4,17 @@
  (:require [org.dada.core SessionImpl])
  (:import
   [java.util Collection Timer TimerTask]
-  [org.dada.core Data Metadata Model ServiceFactory Session SessionImpl View]
+  [java.util.concurrent Executors ExecutorService]
+  [org.dada.core Data Metadata Model Session SessionManager SessionImpl View]
+  [org.dada.jms RemotingFactory]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[String org.dada.core.Model org.dada.core.ServiceFactory] []}
+  :constructors {[String javax.jms.ConnectionFactory org.dada.core.Model] []}
   :methods []
   :init init
   :state state
+  :post-init post-init
   )
  )
 
@@ -34,18 +37,27 @@
 
 ;;------------------------------------------------------------------------------
 
-(defn -init [^String name ^Model metamodel ^ServiceFactory service-factory]
-  (println "WTF!!!" service-factory)
-  [ ;; super ctor args
-   []
-   ;; instance state
-   (let [mutable (atom [{}])
-	 ;;^Timer death-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (detect-client-death mutable))) 0 10000))
-	 ;;close-fn (fn [] (.cancel death-timer))
-	 close-fn (fn [])
-	 immutable [name metamodel service-factory close-fn]]
-     
-     [immutable mutable])])
+(defn -init [^String name ^javax.jms.ConnectionFactory connection-factory ^Model metamodel]
+  (let [^javax.jms.Connection connection (doto (.createConnection connection-factory) (.start))
+	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
+	num-threads 16
+	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
+	^RemotingFactory session-manager-remoting-factory (RemotingFactory. jms-session SessionManager 10000)
+	^Queue session-manager-queue (.createQueue jms-session name)
+	^RemotingFactory view-remoting-factory (RemotingFactory. jms-session Session 10000)
+	mutable (atom [{}])
+	;;^Timer death-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (detect-client-death mutable))) 0 10000))
+	start-fn (fn [this] (.createServer2 session-manager-remoting-factory this session-manager-queue thread-pool)) ;TODO: this server should be stashed in our mutable state...
+	;;close-fn (fn [] (.cancel death-timer))
+	close-fn (fn []) ;TODO - retrieve server from mutable state and close it
+	immutable [name metamodel close-fn start-fn]]
+    [ ;; super ctor args
+     []
+     ;; instance state
+     [immutable mutable]]))
+
+(defn -post-init [^org.dada.core.SessionManagerImpl this & _]
+  (let [[[_ _ _ start-fn]] (.state this)] (start-fn this)))
 
 (defn remove-session [manager session]
   (println "REMOVE SESSION" manager session))
@@ -62,7 +74,7 @@
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (println "LOCAL SESSION MANAGER - CLOSE")
   ;; TODO - close all sessions
-  (let [[[_ _ _ close-fn]] (.state this)]
+  (let [[[_ _ close-fn]] (.state this)]
     (close-fn))
   )
 
@@ -109,7 +121,7 @@
 
 (defn ^Data -registerView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
   (let [model-name (.getName model)
-	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+	[[_ ^Model metamodel] mutable] (.state this)
 	^Model model (.find metamodel model-name)]
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
@@ -117,7 +129,7 @@
 
 (defn ^Data -deregisterView [^org.dada.core.SessionManagerImpl this ^Model model ^View view]
   (let [model-name (.getName model)
-	[[_ ^Model metamodel ^ServiceFactory service-factory] mutable] (.state this)
+	[[_ ^Model metamodel] mutable] (.state this)
 	^Model model (.find metamodel model-name)]
     (if (nil? model)
       (do (warn (str "no Model for name: " model-name)) nil) ;should throw Exception
@@ -133,7 +145,7 @@
   (info (str "QUERY: " query-string))
   (use (symbol namespace-name))		;TODO - query should be evaluated in temporary namespace
   (let [;;target-namespace (symbol namespace-name) ;TODO - should be part of SessionManager's state
-	[[_ target-metamodel ^ServiceFactory service-factory] mutable] (.state this)
+	[[_ target-metamodel] mutable] (.state this)
 	;; TODO: involve target-metamodel - how can we thread this through the chain ?
 	;;[_ data-fn] (with-temp-ns-inherited target-namespace (eval (read-string query-string)))
 	[metadata-fn data-fn] (let [query (read-string query-string)] (prn "EVALUATING:" query) (eval query))]

@@ -5,6 +5,12 @@
   [org.dada web]
   [org.dada core])
  (:import
+  [javax.jms
+   ConnectionFactory]
+  [org.springframework.context.support
+   ClassPathXmlApplicationContext]
+  [org.springframework.beans.factory
+   BeanFactory]
   [org.dada.core
    ServiceFactory
    SessionManager
@@ -23,38 +29,10 @@
 
 (if (not *compile-files*)
   (do
+
+    (def ^ConnectionFactory connection-factory (.getBean #^BeanFactory (ClassPathXmlApplicationContext. "server.xml") "connectionFactory"))
+    (def ^SessionManager session-manager (SessionManagerImpl. "SessionManager.POJO" connection-factory *metamodel*))
     
-    (start-server)
-  
+    ;; move this into SessionManagerImpl
     (def jetty (start-jetty 8888))
-  
-    (def ^ServiceFactory *pojo-view-service-factory*
-	 (JMSServiceFactory.
-	  (.getBean ^BeanFactory *spring-context* "session")
-	  View
-	  (.getBean ^BeanFactory *spring-context* "executorService")
-	  true
-	  10000
-	  (ViewNameGetter.)
-	  (.getBean ^BeanFactory *spring-context* "topicFactory")
-	  (POJOInvoker. (SimpleMethodMapper. View))
-	  "POJO"))
-      
-    (def ^SessionManager *pojo-session-manager*
-	 (SessionManagerImpl. "SessionManager" *metamodel* *pojo-view-service-factory*))
-
-    (def ^ServiceFactory *pojo-session-manager-service-factory*
-	 (JMSServiceFactory.
-	  (.getBean ^BeanFactory *spring-context* "session") 
-	  SessionManager
-	  (.getBean ^BeanFactory *spring-context* "executorService")
-	  true
-	  10000
-	  (SessionManagerNameGetter.)
-	  (.getBean ^BeanFactory *spring-context* "queueFactory")
-	  (POJOInvoker. (SimpleMethodMapper. SessionManager))
-	  "POJO"))
-
-    (.server ^JMSServiceFactory *pojo-session-manager-service-factory* *pojo-session-manager* "SessionManager")
-
     ))

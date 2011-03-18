@@ -431,34 +431,10 @@
 			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
 			 [(Attribute. :name String false (proxy [Getter][] (get [#^Model model] (.getName model))))])) ;attributes
 
-(do
-  (def #^ServiceFactory *external-session-manager-service-factory* (SynchronousServiceFactory.))
-  (def #^ServiceFactory *external-view-service-factory* (SynchronousServiceFactory.))
-  (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
-  (def #^Lock *exclusive-lock* (DummyLock.))
-  (def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
-  (insert *metamodel* *metamodel*)
-  (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*)))
+(def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
+(insert *metamodel* *metamodel*)
 
-(defn start-server []
-
-  (do
-    (def #^ClassPathXmlApplicationContext *spring-context* (ClassPathXmlApplicationContext. "application-context.xml"))
-    (def #^ServiceFactory *external-session-manager-service-factory* (.getBean #^BeanFactory *spring-context* "externalSessionManagerServiceFactory"))
-    (def #^ServiceFactory *external-view-service-factory* (.getBean #^BeanFactory *spring-context* "externalViewServiceFactory"))
-    (def #^ServiceFactory *internal-view-service-factory* (.getBean #^BeanFactory *spring-context* "internalViewServiceFactory"))
-    (def #^Lock *exclusive-lock* (.getBean #^BeanFactory *spring-context* "writeLock"))
-
-    (def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
-    (insert *metamodel* *metamodel*)
-    (def #^SessionManager *session-manager* (SessionManagerImpl. *session-manager-name* *metamodel* *external-view-service-factory*))
-    )
-
-  ;;(.start *metamodel*)
-    (info (str "Server: " *session-manager-name*))
-    (.server *external-session-manager-service-factory* *session-manager* *session-manager-name*))
-
-(defn start-client []
-  (Client/main (into-array String (list *dada-broker-name*))))
+;; TODO - this could be ASYNC - should be loaded from SPRING CONFIG
+(def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
 
 ;;--------------------------------------------------------------------------------
