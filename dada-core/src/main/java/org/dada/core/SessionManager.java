@@ -4,7 +4,9 @@ import java.util.Collection;
 
 public interface SessionManager {
 
-    void close() throws Exception;
+	Session createSession();
+	
+	void close() throws Exception;
     boolean ping(String clientId);
 
 	@Deprecated

@@ -2,8 +2,6 @@
   (:use
    [clojure.contrib logging]
    )
-  (:require
-   [org.dada.core.jms JMSServiceFactory POJOInvoker])
   (:import
    [java.lang.reflect
     Proxy]
@@ -21,6 +19,7 @@
     Connection
     ConnectionFactory
     Session
+    Queue
     Topic]
    [org.dada.core
     Data
@@ -29,21 +28,11 @@
     RemoteModel
     SessionManager
     SessionManagerHelper
-    SessionManagerNameGetter
-    ServiceFactory
-    View
-    ViewNameGetter]
-   [org.dada.core.jms
-    JMSServiceFactory
-    POJOInvoker]
+    View]
    [org.dada.jms
-    DestinationFactory
-    QueueFactory
     RemotingFactory
     RemotingFactory$Server
-    SynchronousClient
-    TopicFactory
-    SimpleMethodMapper]
+    SynchronousClient]
    )
   (:gen-class
    :implements [org.dada.core.SessionManager]
@@ -60,42 +49,24 @@
 
 (defn -init [^ConnectionFactory connection-factory ^String classes-url ^String protocol ^Integer num-threads]
 
-  ;; install our class-loader in hierarchy
-  ;; (let [current-thread (Thread/currentThread)]
-  ;;   (.setContextClassLoader
-  ;;    current-thread
-  ;;    (URLClassLoader.
-  ;;     (into-array [(URL. classes-url)])
-  ;;     (.getContextClassLoader current-thread))))
-
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^Session  session (.createSession connection false (Session/DUPS_OK_ACKNOWLEDGE))
 	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
-	
-	^ServiceFactory session-manager-service-factory (JMSServiceFactory.
-							 session
-							 SessionManager
-							 thread-pool
-							 true
-							 10000
-							 (SessionManagerNameGetter.)
-							 (QueueFactory.)
-							 (POJOInvoker. (SimpleMethodMapper. SessionManager))
-							 protocol)
-	^SessionManager peer (.client session-manager-service-factory "SessionManager")
+	^RemotingFactory session-manager-remoting-factory (RemotingFactory. session SessionManager 10000)
+	^Queue session-manager-queue (.createQueue session "SessionManager.POJO")
+	^SessionManager peer (.createSynchronousClient session-manager-remoting-factory session-manager-queue true)
+	^RemotingFactory view-remoting-factory (RemotingFactory. session View 10000)
 
 	ping-period 5000
 	client-id "JULES"
 	^Timer ping-timer (doto (Timer.) (.schedule (proxy [TimerTask][] (run [] (.ping peer client-id))) 0 ping-period))
-	
-	^RemotingFactory remoting-factory (RemotingFactory. session View 10000)
 
 	view-map (atom {})
 	;; TOOD - these fns need rethinking to take a properly atomic approach - there are race conditions in these impls
 	register-view-fn (fn [^RemoteModel model ^View view]
 			     (let [topic (.createTopic session (str "DADA." (.getName model)))
-				   server (.createServer2 remoting-factory view topic thread-pool)
-				   client (.createSynchronousClient remoting-factory topic true)]
+				   server (.createServer2 view-remoting-factory view topic thread-pool)
+				   client (.createSynchronousClient view-remoting-factory topic true)]
 			       (swap! view-map assoc view [topic client server])
 			       (.registerView peer model client)
 			       ))

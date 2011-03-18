@@ -1,9 +1,10 @@
 (ns
  org.dada.core.SessionManagerImpl
  (:use [clojure.contrib logging])
+ (:require [org.dada.core SessionImpl])
  (:import
   [java.util Collection Timer TimerTask]
-  [org.dada.core Data Metadata Model ServiceFactory View]
+  [org.dada.core Data Metadata Model ServiceFactory Session SessionImpl View]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
@@ -13,6 +14,10 @@
   :state state
   )
  )
+
+;; TODO - why are 3 session-managers being created when we only need one ?
+
+;;------------------------------------------------------------------------------
 
 (defn split [f s]
   (reduce
@@ -27,23 +32,41 @@
   (let [threshold (- (System/currentTimeMillis) 10000)]
     (println "sweeping clients" threshold (split (fn [[k v]] (> v threshold)) (first @mutable)))))
 
+;;------------------------------------------------------------------------------
+
 (defn -init [^String name ^Model metamodel ^ServiceFactory service-factory]
-  (println "WTF!!!")
+  (println "WTF!!!" service-factory)
   [ ;; super ctor args
    []
    ;; instance state
    (let [mutable (atom [{}])
-	 ^Timer death-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (detect-client-death mutable))) 0 10000))
-	 close-fn (fn [] (.cancel death-timer))]
+	 ;;^Timer death-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (detect-client-death mutable))) 0 10000))
+	 ;;close-fn (fn [] (.cancel death-timer))
+	 close-fn (fn [])
+	 immutable [name metamodel service-factory close-fn]]
      
-     [[name metamodel service-factory close-fn]	;immutable
-      mutable])])			;mutable
+     [immutable mutable])])
+
+(defn remove-session [manager session]
+  (println "REMOVE SESSION" manager session))
+
+(defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
+  (let [[[_ metamodel]] (.state this)
+	session (SessionImpl. metamodel (fn [session] (remove-session this session)))]
+    ;; need a service-factory to start up a server and return a client proxy
+    ;; close session needs to shut these down :-(
+    ;; need to stash this session along with server and client
+  nil)
+  )
 
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (println "LOCAL SESSION MANAGER - CLOSE")
+  ;; TODO - close all sessions
   (let [[[_ _ _ close-fn]] (.state this)]
     (close-fn))
   )
+
+;; should be able to lose most methods below here...
 
 (defn -ping [^org.dada.core.SessionManagerImpl this ^String client-id]
   (println "LOCAL SESSION MANAGER - PING" client-id)
@@ -76,7 +99,7 @@
     (.getMetadata ^Model (.find metamodel name))))
 
 ;; TODO: modification of our data model should be encapsulated in a fn
-;; and handed of to Model so that it is all done within the scope of
+;; and handed off to Model so that it is all done within the scope of
 ;; the Model's single spin lock. This will resolve possible race and
 ;; ordering issues. Fn will probably need to implement a Strategy i/f
 ;; so that it plays ball with Java API
