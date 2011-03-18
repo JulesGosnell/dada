@@ -22,6 +22,11 @@
      [[name metamodel service-factory]
       (atom [exports])])])
 
+(defn -close [^org.dada.core.SessionManagerImpl this]
+  (println "LOCAL SESSION MANAGER - CLOSE")
+  ;; TODO - garbage all exsiting clients ?
+  )
+
 (defn ^String -getName [^org.dada.core.SessionManagerImpl this]
   (let [[[name ^Model metamodel]] (.state this)]
     name))

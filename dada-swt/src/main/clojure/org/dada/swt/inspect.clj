@@ -19,10 +19,10 @@
     (.asyncExec
      display
      (fn []
-	 (let [^Composite shell (create-shell display (.getName model) (fn [_] (if (not (dec-display)) (close-fn))))
-	       ^Composite component (nattable-make model shell drilldown-fn)]
-	   (.pack component)
-	   (.pack shell))))))
+       (let [^Composite shell (create-shell display (.getName model) (fn [_] (if (and (not (dec-display)) close-fn) (close-fn))))
+	     ^Composite component (nattable-make model shell drilldown-fn)]
+	 (.pack component)
+	 (.pack shell))))))
 
 (defn inspect [query & [drilldown-fn]]
   (let [[metadata-fn data-fn] query

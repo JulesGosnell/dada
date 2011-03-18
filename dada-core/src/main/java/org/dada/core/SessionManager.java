@@ -4,6 +4,8 @@ import java.util.Collection;
 
 public interface SessionManager {
 
+    void close() throws Exception;
+
 	@Deprecated
 	String getName();
 	@Deprecated

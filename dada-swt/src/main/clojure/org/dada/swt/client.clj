@@ -23,11 +23,9 @@
   
   (def ^Model *remote-metamodel*  (.find session-manager (RemoteModel. "MetaModel" nil) "MetaModel"))
 
-  (defn inspect-model-with-drilldown [^Model model]
-    (inspect-model model inspect-model-with-drilldown))
+  (defn inspect-model-with-drilldown-and-shutdown [^Model model]
+    (inspect-model model inspect-model-with-drilldown-and-shutdown (fn [] (.close session-manager))))
 
-  (inspect-model *remote-metamodel*
-		 inspect-model-with-drilldown
-		 (fn [] (System/exit 0))) ;TODO: this should close session-manager, rather than calling exit...
+  (inspect-model-with-drilldown-and-shutdown *remote-metamodel*)
     
   )

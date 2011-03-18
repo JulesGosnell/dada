@@ -106,14 +106,26 @@
 				 (.close (Proxy/getInvocationHandler client))
 				 (swap! view-map dissoc view)
 				 data)))
+
+	close-fn (fn []
+		   ;; TODO - close or warn about any outstanding Views
+		   (.close (Proxy/getInvocationHandler peer))
+		   (.shutdown thread-pool)
+		   (.close session)
+		   (.stop connection)
+		   (.close connection))		   
 	]
     [ ;; super ctor args
      []
      ;; instance state
-     [peer register-view-fn deregister-view-fn]]))
+     [peer register-view-fn deregister-view-fn close-fn]]))
 
 (defn -post-init [this & _]
   (SessionManagerHelper/setCurrentSessionManager this))
+
+(defn -close [this]
+  (let [[_ _ _ close-fn] (.state this)]
+    (close-fn)))
 
 (defn ^Model -find [this ^Model model key]
   (let [[^SessionManager peer] (.state this)]
