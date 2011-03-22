@@ -149,7 +149,7 @@
 	;; store list of immutable data as list of mutable singleton arrays of immutable data
 	;; now we can hand off a mutable ref containing immutable data...
 	;; this index only to be used inside the event-list's lock
-	^Map index (reduce (fn [^Map reduction datum] (doto reduction (.put (.get pk-getter datum) (Mutable. datum)))) (HashMap.) (.getExtant (.getData model)))
+	^Map index (HashMap.)
 	event-list (GlazedLists/eventList (.values index))
 	sorted-list (SortedList. event-list nil)
       
@@ -203,9 +203,22 @@
 		       display
 		       (fn []
 			 (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
+	data (register model view)
 	]
-      
-    (register model view)
+    ;; initial update
+    (apply-updates
+     pk-getter
+     version-comparator
+     event-list
+     index
+     glazed-lists-event-layer
+     property-names
+     getters
+     (map (fn [insertion] (Update. nil insertion)) (.getExtant data))
+     nil
+     (map (fn [deletion] (Update. deletion nil)) (.getExtinct data)))
+
+    
 
     (.setUnderlyingLayer column-header-layer-stack (SortHeaderLayer. column-header-layer (GlazedListsSortModel. sorted-list column-property-accessor config-registry column-header-data-layer) false))
 

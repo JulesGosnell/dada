@@ -9,13 +9,13 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 	private final String name;
 	private final String endPoint;
 	
-	private transient SessionManager sessionManager;
+	private transient Session session;
 	
 	public RemoteModel(String name, Metadata<K, V> metadata) throws Exception {
 		this.metadata = metadata;
 		this.name = name;
 		this.endPoint = name;// TODO pull from localSessionManager - name of tmp Topic
-		this.sessionManager = null; // peer should never be needed this side of the wire
+		this.session = null; // peer should never be needed this side of the wire
 		// TODO: we need to start a server for our host Model
 	}
 	
@@ -25,8 +25,8 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-		sessionManager = SessionManagerHelper.getCurrentSessionManager();
-		//if (sessionManager == null) new Exception("SessionManagerHelper has no current SessionManager").printStackTrace();
+		session = SessionManagerHelper.getCurrentSession();
+		//if (session == null) new Exception("SessionManagerHelper has no current Session").printStackTrace();
 	}
 	 
 	@Override
@@ -49,12 +49,12 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 	// TODO - SessionManager should be a template as well
 	@Override
 	public Data<V> registerView(View<V> view) {
-		return (Data<V>) sessionManager.registerView((Model<Object, Object>)this, (View<Object>)view);
+		return (Data<V>) session.registerView((Model<Object, Object>)this, (View<Object>)view);
 	}
 
 	@Override
 	public Data<V> deregisterView(View<V> view) {
-		return (Data<V>) sessionManager.deregisterView((Model<Object, Object>)this, (View<Object>) view);
+		return (Data<V>) session.deregisterView((Model<Object, Object>)this, (View<Object>) view);
 	}
 
 	@Override
@@ -64,7 +64,8 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 
 	@Override
 	public Data<V> getData() {
-		return (Data<V>) sessionManager.getData(name);
+	    throw new UnsupportedOperationException("NYI");
+	    //return (Data<V>) sessionManager.getData(name);
 	}
 
 	public String toString() {
@@ -73,7 +74,7 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 
 	@Override
 	public V find(K key) {
-		return (V)sessionManager.find((Model<Object, Object>)this, key);
+		return (V)session.find((Model<Object, Object>)this, key);
 	}
 	
 	// RemoteModel

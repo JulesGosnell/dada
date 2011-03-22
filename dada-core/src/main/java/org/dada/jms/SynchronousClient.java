@@ -74,6 +74,7 @@ public class SynchronousClient extends AbstractClient implements InvocationHandl
 				LOGGER.warn("{}: no exchanger for message: {}", System.identityHashCode(this), message);
 			} else {
 				BytesMessage response = (BytesMessage) message;
+				setCurrentSession(session);
 				Results results = (Results) Utils.readObject(response);
 				LOGGER.trace("RECEIVING: {} <- {}", results, message.getJMSDestination());
 				exchanger.exchange(results, timeout, TimeUnit.MILLISECONDS);

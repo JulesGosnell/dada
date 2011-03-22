@@ -41,7 +41,7 @@
 	^String path-info (if (.startsWith path-info "/") (.substring path-info 1) path-info)]
     (if-let [[class-type ^"[B" bytes] (or (dynamic-class-bytes path-info) (static-class-bytes path-info))]
 	(let [size (count bytes)]
-	  (info (str "Serving " class-type " : " path-info " (" size " bytes)"))
+	  (debug (str "Serving " class-type " : " path-info " (" size " bytes)"))
 	  (doto response
 	    (.setContentType "application/binary")
 	    (.setContentLength (count bytes))
@@ -49,7 +49,7 @@
 	  (with-open [^OutputStream stream (.getOutputStream response)]
 	      (doseq [byte bytes] (.write stream (int byte)))))
       (do
-	(info (str "Not Serving: " path-info))
+	(trace (str "Not Serving: " path-info))
 	(doto response
 	  (.setContentLength 0)
 	  (.setStatus 404)))))

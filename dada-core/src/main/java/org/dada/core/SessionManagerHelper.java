@@ -1,20 +1,17 @@
 package org.dada.core;
 
+// TODO - collapse into SessionManager
+
 public class SessionManagerHelper {
 
-	private static final ThreadLocal<SessionManager> CURRENT_SESSION_MANAGER = new ThreadLocal<SessionManager>();
+	public static Session SESSION = null; // TODO - HACK!
 
-	public static void setCurrentSessionManager(SessionManager sessionManager) {
-		//System.out.println("SETTING SM on " + Thread.currentThread().getId() + "to " + sessionManager);
-		//CURRENT_SESSION_MANAGER.set(sessionManager);
-		SESSION_MANAGER = sessionManager;
+	public static void setCurrentSession(Session session) {
+		SESSION = session;
 	}
 
-	public static SessionManager getCurrentSessionManager() {
-		//SessionManager sessionManager = CURRENT_SESSION_MANAGER.get();
-		//System.out.println("GETTING SM from " + Thread.currentThread().getId() + "= " + sessionManager);
-		return SESSION_MANAGER;
+	public static Session getCurrentSession() {
+		return SESSION;
 	}
 
-	public static SessionManager SESSION_MANAGER = null; // TODO - HACK!
 }
