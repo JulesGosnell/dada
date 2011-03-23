@@ -21,6 +21,8 @@
    ConnectionFactory
    Queue
    Topic]
+  [clojure.lang
+   Atom]
   [org.dada.core
    Data
    Metadata
