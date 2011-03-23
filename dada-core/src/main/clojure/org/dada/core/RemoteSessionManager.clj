@@ -44,7 +44,12 @@
   )
  )
 
-(defrecord ImmutableState [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer])
+(defrecord ImmutableState
+  [^Connection connection
+   ^javax.jms.Session jms-session
+   ^ExecutorService thread-pool
+   ^SessionManager peer
+   ^Atom sessions])
 
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
@@ -57,22 +62,24 @@
 	^RemotingFactory session-manager-remoting-factory (RemotingFactory. jms-session SessionManager 10000) ;TODO - hardwired
 	^Queue session-manager-queue (.createQueue jms-session name)
 	^SessionManager peer (.createSynchronousClient session-manager-remoting-factory session-manager-queue true)
-	^RemotingFactory view-remoting-factory (RemotingFactory. jms-session View 10000) ;TODO - hardwired
-	immutable (ImmutableState. connection jms-session thread-pool peer)
-	mutable nil]
+	^RemotingFactory view-remoting-factory (RemotingFactory. jms-session View 10000)] ;TODO - hardwired
     [ ;; super ctor args
      []
      ;; instance state
-     [immutable mutable]]))
+     (ImmutableState. connection jms-session thread-pool peer (atom nil))]))
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSessionManager this]
-  (first (.state this)))
+  (.state this))
+
+(defn destroy-session [^Atom sessions ^Session session]
+  (swap! sessions (fn [sessions] (remove (fn [s] (= s session)) sessions)))
+  (.close session))
 
 (defn -close [^org.dada.core.RemoteSessionManager this]
   (with-record
    (immutable this)
-   [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer]
-   ;; TODO - close all Sessions
+   [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer sessions]
+   (doseq [^Session session @sessions] (.destroy session))
    (.close ^SynchronousClient (Proxy/getInvocationHandler peer))
    (.shutdown thread-pool)		;TODO: should we be responsible for this ?
    (.close jms-session)
@@ -80,11 +87,12 @@
    (.close connection)))
 
 (defn ^Session -createSession [^org.dada.core.RemoteSessionManager this]
-  ;; TODO - remember session so closing SessionManager can close all Sessions
-  ;; TODO - temporary hack
   (with-record
    (immutable this)
-   [^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer]
+   [^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer sessions]
    (let [session (doto (.createSession peer) (.hack jms-session thread-pool))]
-     (SessionManagerHelper/setCurrentSession session)
+     (swap! sessions conj session)
+     (SessionManagerHelper/setCurrentSession session) ;; TODO - temporary hack
+     ;; TODO : aargh! - we need to wrap session in a proxy that will remove it from our list on closing
+     ;; we could reuse this pattern in Local SessionManager and Session ?
      session)))
