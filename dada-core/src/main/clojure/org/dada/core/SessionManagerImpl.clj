@@ -53,14 +53,14 @@
      ;; instance state
      [immutable mutable]]))
 
-(defn immutable  [^org.dada.core.SessionManagerImpl this]
+(defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
   (first (.state this)))
 
 (defn mutable [^org.dada.core.SessionManagerImpl this]
   (second (.state this)))
 
 (defn -post-init [^org.dada.core.SessionManagerImpl this & _]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^RemotingFactory session-manager-remoting-factory ^javax.jms.Session jms-session name thread-pool]
@@ -80,7 +80,7 @@
     (.delete queue)))
 
 (defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [metamodel ^javax.jms.Session jms-session ^RemotingFactory session-remoting-factory thread-pool]
@@ -95,13 +95,13 @@
 
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (debug "close")
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
-     [^Timer session-timer close-fn]
+     [^Timer session-timer]
      (.cancel session-timer)
      (with-record
-      @mutable
+      ^MutableState @mutable
       [sessions ^RemotingFactory$Server server]
       (doseq [[^Session session] sessions](.close session))
       (.close server)))))

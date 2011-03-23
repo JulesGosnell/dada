@@ -65,7 +65,7 @@
      ;; instance state
      [immutable mutable]]))
 
-(defn immutable [^org.dada.core.RemoteSessionManager this]
+(defn ^ImmutableState immutable [^org.dada.core.RemoteSessionManager this]
   (first (.state this)))
 
 (defn -close [^org.dada.core.RemoteSessionManager this]

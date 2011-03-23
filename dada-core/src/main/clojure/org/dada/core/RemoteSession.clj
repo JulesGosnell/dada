@@ -50,7 +50,7 @@
    ;; instance state
    (ArrayList. ^Collection [(ImmutableState. queue async nil nil nil nil nil) nil])])
 
-(defn immutable [^org.dada.core.RemoteSession this]
+(defn ^ImmutableState immutable [^org.dada.core.RemoteSession this]
   (first (.state this)))
 
 (defn mutable [^org.dada.core.RemoteSession this]
@@ -60,7 +60,7 @@
   (with-record (immutable this) [^Session peer] (trace "ping: " peer) (.ping peer)))
 
 (defn -close [^org.dada.core.RemoteSession this]
-  (let [[immutable mutable] (.state this)
+  (let [[^ImmutableState immutable mutable] (.state this)
 	{views :views} @mutable]
     (with-record
      immutable
@@ -75,7 +75,7 @@
 ;; be a problem if someone uses API wrongly
 
 (defn ^Data -registerView [^org.dada.core.RemoteSession this ^Model model ^View view]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^Session peer ^RemotingFactory remoting-factory ^javax.jms.Session jms-session thread-pool]
@@ -90,7 +90,7 @@
        (.registerView peer model client)))))
 
 (defn ^Data -deregisterView [^org.dada.core.RemoteSession this ^Model model ^View view]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^Session peer]
@@ -113,7 +113,7 @@
 (defn -hack [^org.dada.core.RemoteSession this ^javax.jms.Session jms-session ^java.util.concurrent.ExecutorService thread-pool]
   (debug "hacking: " this)
   (let [^List mutable-list (.state this)
-	[immutable mutable] mutable-list]
+	[^ImmutableState immutable mutable] mutable-list]
     (with-record
      immutable
      [^Queue queue ^Boolean async]

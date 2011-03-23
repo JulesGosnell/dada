@@ -30,7 +30,7 @@
 	 immutable (ImmutableState. metamodel close-hook)]
      [immutable (atom mutable)])])
 
-(defn immutable [^org.dada.core.SessionImpl this]
+(defn ^ImmutableState immutable [^org.dada.core.SessionImpl this]
   (first (.state this)))
 
 (defn mutable [^org.dada.core.SessionImpl this]
@@ -42,10 +42,10 @@
   true)
 
 (defn -getLastPingTime [^org.dada.core.SessionImpl this]
-  (with-record @(mutable this) [lastPing] lastPing))
+  (with-record ^MutableState @(mutable this) [lastPing] lastPing))
 
 (defn -close [^org.dada.core.SessionImpl this]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [close-hook]
@@ -56,7 +56,7 @@
 
 (defn ^Data -registerView [^org.dada.core.SessionImpl this ^Model model ^View view]
   (debug "registerView")
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^Model metamodel]
@@ -70,7 +70,7 @@
 
 (defn ^Data -deregisterView [^org.dada.core.SessionImpl this ^Model model ^View view]
   (debug "deregisterView")
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^Model metamodel]
@@ -83,7 +83,7 @@
 	   data))))))
 
 (defn ^Data -find [^org.dada.core.SessionImpl this ^Model model key]
-  (let [[immutable mutable] (.state this)]
+  (let [[^ImmutableState immutable mutable] (.state this)]
     (with-record
      immutable
      [^Model metamodel]
