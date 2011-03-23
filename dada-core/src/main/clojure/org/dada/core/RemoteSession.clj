@@ -102,7 +102,7 @@
 		(let [views (:views state)
 		      old-view (views [view model])]
 		  [(assoc state :views (dissoc views [view model])) old-view])))
-	   data (.deregisterView peer model view)]
+	   data (.deregisterView peer model client)]
        (.close server)
        (.close ^SynchronousClient (Proxy/getInvocationHandler client))
        data))))

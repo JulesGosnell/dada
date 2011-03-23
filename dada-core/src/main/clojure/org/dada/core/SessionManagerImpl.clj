@@ -69,7 +69,7 @@
 
 (defn destroy-session [^org.dada.core.SessionManagerImpl this ^org.dada.core.SessionImpl session]
   (let [[immutable mutable] (.state this)
-	[_ [^TemporaryQueue queue ^SessionManager server]]
+	[_ [^TemporaryQueue queue ^RemotingFactory$Server server]]
 	(swap2!				;N.B. NOT swap!
 	 mutable
 	 (fn [state]
