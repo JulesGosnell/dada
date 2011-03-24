@@ -17,8 +17,6 @@
    SessionManagerImpl
    View
    ViewNameGetter]
-  [org.dada.core.jms
-   POJOInvoker]
   [org.dada.jms
    SimpleMethodMapper]
   [org.springframework.beans.factory
