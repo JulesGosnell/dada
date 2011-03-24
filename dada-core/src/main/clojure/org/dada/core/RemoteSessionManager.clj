@@ -74,6 +74,7 @@
   (.state this))
 
 (defn destroy-session [^Atom sessions ^Session session]
+  ;; TODO - should split sessions into to-keep and to-dstroy and use swap2!
   (swap! sessions (fn [sessions] (remove (fn [s] (= s session)) sessions)))
   (.close session))
 
@@ -81,7 +82,7 @@
   (with-record
    (immutable this)
    [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer sessions]
-   (doseq [^Session session @sessions] (.destroy session))
+   (doseq [^Session session @sessions] (destroy-session sessions session))
    (.close ^SynchronousClient (Proxy/getInvocationHandler peer))
    (.shutdown thread-pool)		;TODO: should we be responsible for this ?
    (.close jms-session)
