@@ -28,24 +28,21 @@
  */
 package org.dada.jms;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ExecutorService;
 
+import javax.jms.BytesMessage;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
-import javax.jms.BytesMessage;
 import javax.jms.Session;
 
-import org.apache.activemq.util.ClassLoadingAwareObjectInputStream;
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
 

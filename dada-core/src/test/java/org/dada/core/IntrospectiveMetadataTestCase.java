@@ -1,6 +1,5 @@
 package org.dada.core;
 
-import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class IntrospectiveMetadataTestCase extends MockObjectTestCase {

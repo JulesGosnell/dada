@@ -28,11 +28,6 @@
  */
 package org.dada.core;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-
-import org.jmock.Expectations;
 import org.jmock.integration.junit3.MockObjectTestCase;
 
 public class SessionManagerImplTestCase extends MockObjectTestCase {
