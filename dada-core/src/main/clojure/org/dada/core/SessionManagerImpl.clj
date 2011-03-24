@@ -6,6 +6,7 @@
  (:require
   [org.dada.core SessionImpl RemoteSession])
  (:import
+  [clojure.lang Atom]
   [java.util Collection Timer TimerTask]
   [java.util.concurrent Executors ExecutorService]
   [javax.jms TemporaryQueue Queue]
@@ -22,8 +23,9 @@
   )
  )
 
-(defrecord MutableState [sessions server])
-(defrecord ImmutableState [^String name ^Model metamodel ^RemotingFactory session-manager-remoting-factory ^javax.jms.Session jms-session ^ExecutorService thread-pool ^RemotingFactory session-remoting-factory ^Timer session-timer])
+(defrecord MutableState [sessions ^RemotingFactory$Server server])
+
+(defrecord ImmutableState [^String name ^Model metamodel ^RemotingFactory session-manager-remoting-factory ^javax.jms.Session jms-session ^ExecutorService thread-pool ^RemotingFactory session-remoting-factory ^Timer session-timer ^Atom mutable])
 
 ;;------------------------------------------------------------------------------
 
@@ -47,64 +49,60 @@
 	^RemotingFactory session-remoting-factory (RemotingFactory. jms-session Session 10000) ;TODO - hardwired
 	mutable (atom (MutableState. {} nil))
 	^Timer session-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions mutable))) 0 10000)) ;TODO - hardwired
-	immutable (ImmutableState. name metamodel session-manager-remoting-factory jms-session thread-pool session-remoting-factory session-timer)]
+	]
     [ ;; super ctor args
      []
      ;; instance state
-     [immutable mutable]]))
+     (ImmutableState. name metamodel session-manager-remoting-factory jms-session thread-pool session-remoting-factory session-timer mutable)]))
 
-(defn immutable  [^org.dada.core.SessionManagerImpl this]
-  (first (.state this)))
-
-(defn mutable [^org.dada.core.SessionManagerImpl this]
-  (second (.state this)))
+(defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
+  (.state this))
 
 (defn -post-init [^org.dada.core.SessionManagerImpl this & _]
-  (let [[immutable mutable] (.state this)]
-    (with-record
-     immutable
-     [^RemotingFactory session-manager-remoting-factory ^javax.jms.Session jms-session name thread-pool]
-     (let [server (.createServer2 session-manager-remoting-factory this (.createQueue jms-session name) thread-pool)]
-       (swap! mutable assoc :server server)))))
+  (with-record
+   (immutable this)
+   [^RemotingFactory session-manager-remoting-factory ^javax.jms.Session jms-session name thread-pool mutable]
+   (let [server (.createServer2 session-manager-remoting-factory this (.createQueue jms-session name) thread-pool)]
+     (swap! mutable assoc :server server))))
 
 (defn destroy-session [^org.dada.core.SessionManagerImpl this ^org.dada.core.SessionImpl session]
-  (let [[immutable mutable] (.state this)
-	[_ [^TemporaryQueue queue ^RemotingFactory$Server server]]
-	(swap2!				;N.B. NOT swap!
-	 mutable
-	 (fn [state]
-	     (let [sessions (:sessions state)
-		   details (sessions session)]
-	       [(assoc state :sessions (dissoc sessions session)) details])))]
-    (.close server)
-    (.delete queue)))
+  (with-record
+   (immutable this)
+   [mutable]
+   (let [[_ [^TemporaryQueue queue ^RemotingFactory$Server server]]
+	 (swap2!			;N.B. NOT swap!
+	  mutable
+	  (fn [state]
+	      (let [sessions (:sessions state)
+		    details (sessions session)]
+		[(assoc state :sessions (dissoc sessions session)) details])))]
+     (.close server)
+     (.delete queue))))
 
 (defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
-  (let [[immutable mutable] (.state this)]
-    (with-record
-     immutable
-     [metamodel ^javax.jms.Session jms-session ^RemotingFactory session-remoting-factory thread-pool]
-     (let [close-fn (fn [session] (destroy-session this session))
-	   session (SessionImpl. metamodel close-fn)
-	   queue (.createTemporaryQueue jms-session)
-	   server (.createServer2 session-remoting-factory session queue thread-pool)
-	   client (RemoteSession. queue true)]
-       (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
-       (debug "createSession" client)
-       client))))
+  (with-record
+   (immutable this)
+   [metamodel ^javax.jms.Session jms-session ^RemotingFactory session-remoting-factory thread-pool mutable]
+   (let [close-fn (fn [session] (destroy-session this session))
+	 session (SessionImpl. metamodel close-fn)
+	 queue (.createTemporaryQueue jms-session)
+	 server (.createServer2 session-remoting-factory session queue thread-pool)
+	 client (RemoteSession. queue true)]
+     (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
+     (debug "createSession" client)
+     client)))
 
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (debug "close")
-  (let [[immutable mutable] (.state this)]
-    (with-record
-     immutable
-     [^Timer session-timer close-fn]
-     (.cancel session-timer)
-     (with-record
-      @mutable
-      [sessions ^RemotingFactory$Server server]
-      (doseq [[^Session session] sessions](.close session))
-      (.close server)))))
+  (with-record
+   (immutable this)
+   [^Timer session-timer mutable]
+   (.cancel session-timer)
+   (with-record
+    ^MutableState @mutable
+    [sessions ^RemotingFactory$Server server]
+    (doseq [[^Session session] sessions](.close session))
+    (.close server))))
 
 (defn ^String -getName [^org.dada.core.SessionManagerImpl this]
   (with-record (immutable this) [name] name))

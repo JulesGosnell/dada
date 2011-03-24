@@ -6,8 +6,13 @@
 
 ;; simplifies syntax for the destructuring of a record
 
+;; (defmacro with-record [record fields & body]
+;;   `(let [~(reduce (fn [m field] (conj m [field (keyword field)])) (array-map) fields) ~record]
+;;      ~@body))
+
+;; 2nd attempt - uses method instead of keyword
 (defmacro with-record [record fields & body]
-  `(let [~(reduce (fn [m field] (conj m [field (keyword field)])) (array-map) fields) ~record]
+  `(let ~(apply vector 'r# record (mapcat (fn [field] [field (list '. 'r# field)]) fields))
      ~@body))
 
 ;; so why is this useful ?:
