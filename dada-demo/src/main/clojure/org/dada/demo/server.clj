@@ -12,14 +12,12 @@
   [org.springframework.beans.factory
    BeanFactory]
   [org.dada.core
-   ServiceFactory
    SessionManager
    SessionManagerNameGetter
    SessionManagerImpl
    View
    ViewNameGetter]
   [org.dada.core.jms
-   JMSServiceFactory
    POJOInvoker]
   [org.dada.jms
    SimpleMethodMapper]
