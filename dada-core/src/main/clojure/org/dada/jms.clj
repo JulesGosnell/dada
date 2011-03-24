@@ -12,7 +12,7 @@
 (deftype BytesMessageStrategy []
   MessageStrategy
   (createMessage [_ session]
-		 (.createBytesMessage session))
+		 (.createBytesMessage ^Session session))
   (readMessage [_ message]
 	       (let [buffer (byte-array (.getBodyLength ^BytesMessage message))]
 		 (.readBytes ^BytesMessage message buffer)
@@ -23,7 +23,7 @@
 (deftype TextMessageStrategy []
   MessageStrategy
   (createMessage [_ session]
-		 (.createTextMessage session))
+		 (.createTextMessage ^Session session))
   (readMessage [_ message]
 	       (.getText ^TextMessage message))
   (writeMessage [_ message text]
