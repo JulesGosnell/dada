@@ -74,7 +74,7 @@
 	     (if (and correlation-id reply-to)
 	       (let [^Message response (.createMessage message-strategy session)]
 		 (.setJMSCorrelationID response correlation-id)
-		 (.writeMessage message-strategy response (.foreign-to-native translator results))
+		 (.writeMessage message-strategy response (.native-to-foreign translator results))
 		 (.send producer reply-to response)))))
 
   )
