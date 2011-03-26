@@ -66,8 +66,8 @@
 		 results
 		 (try
 		   ;; TODO - (AbstractClient/setCurrentSession session) ;; TODO - hacky - we should own this ThreadLocally
-		   (let [[func args] (.foreign-to-native translator (.readMessage message-strategy request))]
-		     [true (apply func target args)])
+		   (let [func (.foreign-to-native translator (.readMessage message-strategy request))]
+		     [true (apply func target)])
 		   (catch Throwable t
 		     [false t]))]
 
@@ -78,65 +78,3 @@
 		 (.send producer reply-to response)))))
 
   )
-	 
-;; we also need a MessageClient - which should be wrapped in a proxy ?
-;; it will receive a Method and args[]
-;; can we expand these using a macro, build a lambda and the send that - or is a proxy the wrong approach ?
-;; I guess MessageClient needs to be a macro which expands a protocol/interface with bodies that just post closures to a MessageProducer...
-;; should be fun :-)
-;; maybe the invocation should be : [(fn [target & args]) args] - then we can reuse the same function class for evey invocation...
-
-;; returns a fn that can be used to create proxies - but no reflection is used - all code is generated and compiled into classes on-the-fly
-
-;; (import java.lang.reflect.Method)
-
-;; (defn make-proxy-method [^Class interface ^Method method]
-;;   (let [method-name (.getName method)
-;; 	params (map (fn [i] (symbol (str "arg" i))) (range (count (.getParameterTypes method))))]
-;;     (list
-;;      (symbol method-name) (apply vector 'this params)
-;;      (list 'invoker (list 'fn '[target] (apply list (symbol (str "." method-name)) 'target params)))
-;;      )))
-
-;; (defmacro defproxy-type [name & interfaces]
-;;   `(deftype ~name [invoker]
-;;      ~@(mapcat
-;; 	  (fn [interface]
-;; 	    (concat
-;; 	     [interface]
-;; 	     (map
-;; 	      (fn [^Method method]
-;; 		(make-proxy-method interface method))
-;; 	      (.getMethods (eval interface)))))
-;; 	  interfaces)
-;;     ))
-
-;; ;; not quite right - needs a function that is applied to target [args]
-;; (deftype Jules [invoker]
-;;   org.dada.core.View
-;;   (update [this arg0 arg1 arg2] (invoker (fn [target] (.update target arg0 arg1 arg2)))))
-
-;; ;; macro should do this :
-
-;; ;; create a unique namespace
-;; ;; within this create a unique function for each method taking an object (target) type hinted with respective interface
-;; ;; also create a deftype which implements all interfaces each method calling 'invoker' with the relevant fn defined above, a vector/array of its args
-;; ;; creating an instance of this type with the relevant invoker then calling a method on it will do the following :
-;; ;; e.g. invoker receives [the same] function [each time] long with seq of params and sends these to the remote peer
-;; ;; it receives results indicating that it should either throw the enclosed exception or return the enclosed value back up through the proxy :-)
-
-;; ;; TODO - handle method param overloading - I'll leave that one for later :-)
-
-;; ;; this is better tahn using a java.lang.proxy and there is no
-;; ;; introspection needed to invoke said method on other side - we just
-;; ;; pull the class that implements the fn over (only the first time)
-;; ;; then execute the function's bytecode every time we receive the
-;; ;; invocation - no further compilation, introspection or anything :-)
-
-;; we should be able to implement a similar proxy/interceptor that
-;; passes the method id through so that ut can be used to compose and
-;; XML message
-
-;; at the other end the XML xould be unpacked and the method looked up
-;; through synbol evaluation or introspectin - i should do some
-;; timings to see which is fastest.
