@@ -2,31 +2,34 @@
  org.dada.core.SessionImpl
  (:use
   [clojure.contrib logging]
-  [org.dada.core utils])
+  [org.dada.core utils]
+  [org.dada jms])
  (:require
-  [org.dada.core RemoteSession])
+  [org.dada.core RemoteView]
+  [org.dada.jms ServiceFactory])
  (:import
   [clojure.lang Atom IFn]
   [java.util Map]
-  [org.dada.core Data Model RemoteSession View]
+  [org.dada.core Data Model RemoteView View]
+  [org.dada.jms ServiceFactory]
   )
  (:gen-class
   :implements [org.dada.core.Session]
-  :constructors {[org.dada.core.Model clojure.lang.IFn] []}
+  :constructors {[org.dada.core.Model clojure.lang.IFn org.dada.jms.ServiceFactory] []}
   :init init
   :state state
   )
  )
 
 (defrecord MutableState [^Long lastPing ^Map views])
-(defrecord ImmutableState [^Model metamodel ^IFn close-hook ^Atom mutable])
+(defrecord ImmutableState [^Model metamodel ^IFn close-hook ^ServiceFactory service-factory ^Atom mutable])
 
-(defn -init [^Model metamodel ^IFn close-hook]
+(defn -init [^Model metamodel ^IFn close-hook ^ServiceFactory service-factory]
   (debug "init")
   [ ;; super ctor args
    []
    ;; instance state
-   (ImmutableState. metamodel close-hook (atom (MutableState. (System/currentTimeMillis) {})))])
+   (ImmutableState. metamodel close-hook service-factory (atom (MutableState. (System/currentTimeMillis) {})))])
 
 (defn ^ImmutableState immutable [^org.dada.core.SessionImpl this]
    (.state this))
@@ -55,7 +58,9 @@
   (debug "registerView")
   (with-record
    (immutable this)
-   [^Model metamodel mutable]
+   [^Model metamodel mutable ^ServiceFactory service-factory]
+   ;; TODO - temporary hack
+   (if (instance? RemoteView view) (.hack view service-factory))
    (let [model-name (.getName model)
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)
@@ -77,9 +82,23 @@
 	 (swap! mutable (fn [state] (assoc (dissoc2m state :views view model) :lastPing (System/currentTimeMillis))))
 	 data)))))
 
-(defn ^Data -find [^org.dada.core.SessionImpl this ^Model model key]
+(defn ^Model -find [^org.dada.core.SessionImpl this ^Model model key]
   (with-record
    (immutable this)
    [^Model metamodel mutable]
    (swap! mutable assoc :lastPing (System/currentTimeMillis))
    (.find ^Model (.find metamodel (.getName model)) key)))
+
+(defn ^Data -getData [^org.dada.core.SessionImpl this ^Model model]
+  (with-record
+   (immutable this)
+   [^Model metamodel mutable]
+   (swap! mutable assoc :lastPing (System/currentTimeMillis))
+   (.getData ^Model (.find metamodel (.getName model)))))
+
+(defn ^Model -query [^org.dada.core.SessionImpl this ^String query]
+  (with-record
+   (immutable this)
+   [^Model metamodel mutable]
+   (swap! mutable assoc :lastPing (System/currentTimeMillis))
+   (throw (UnsupportedOperationException. "QUERY - NYI"))))

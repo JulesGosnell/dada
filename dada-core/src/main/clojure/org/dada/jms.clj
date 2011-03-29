@@ -1,14 +1,50 @@
 (ns org.dada.jms
-  (:import
-   [java.util.concurrent ExecutorService]
-   [javax.jms BytesMessage Message MessageConsumer MessageProducer MessageListener Session TextMessage]
-   )
-  )
+    (:use
+     [clojure.contrib logging]
+     [org.dada core]
+     [org.dada.core utils]
+     )
+    (:import
+     [java.util.concurrent Exchanger ExecutorService TimeUnit]
+     [java.io ByteArrayInputStream ByteArrayOutputStream ObjectOutputStream]
+     [javax.jms BytesMessage Destination Message MessageConsumer MessageProducer MessageListener Session TemporaryQueue TextMessage Topic Queue]
+     [clojure.lang Atom]
+     [org.dada.core ClassLoadingAwareObjectInputStream]
+     )
+    )
 
-(defprotocol MessageStrategy
-  (createMessage [this ^Session session])
-  (readMessage [this ^Message message])
-  (writeMessage [this ^Message message body]))
+;;--------------------------------------------------------------------------------
+
+(definterface Translator
+  (^Object nativeToForeign [^Object object])
+  (^Object foreignToNative [^Object object]))
+
+(deftype SerializeTranslator []
+  Translator
+  (nativeToForeign [_ object]
+		   (let [baos (ByteArrayOutputStream.)
+			 oos (ObjectOutputStream. baos)]
+		     (try
+		      (.writeObject oos object)
+		      (finally
+		       (.close oos)
+		       (.close baos)))
+		     (.toByteArray baos)))
+  (foreignToNative [_ buffer]
+		   (let [bais (ByteArrayInputStream. buffer)
+			 ois (ClassLoadingAwareObjectInputStream. bais)]
+		     (try
+		      (.readObject ois)
+		      (finally
+		       (.close ois)
+		       (.close bais))))))
+
+;;------------------------------------------------------------------------------
+
+(definterface MessageStrategy
+  (^javax.jms.Message createMessage [^javax.jms.Session session])
+  (^Object readMessage [^javax.jms.Message message])
+  (^void writeMessage [^javax.jms.Message message body]))
 
 (deftype BytesMessageStrategy []
   MessageStrategy
@@ -30,126 +66,190 @@
   (writeMessage [_ message text]
 		(.setText ^TextMessage message text) nil))
 
-;; ;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
 
-;; (defprotocol MessageServer
-;;   (open [this])
-;;   (close [this])
-;;   (receive-send [this message]))
+(definterface MessageServer
+  (^void open [])
+  (^void close [])
+  (^void receive [^javax.jms.Message message]))
 
-;; (deftype JMSMessageServer [target ^Session session message-strategy ^MessageProducer producer translator ^String end-point ^ExecutorService threads]
+(deftype JMSMessageServer [target
+			   ^Session session
+			   ^MessageStrategy strategy
+			   ^MessageProducer producer
+			   ^Translator translator
+			   ^MessageConsumer consumer
+			   ^ExecutorService threads]
   
-;;   MessageListener
+  MessageListener
   
-;;   (^void onMessage [this ^Message message]
-;; 	 (.execute threads (fn [] (.process this message))))
+  (onMessage [this message]
+	     (.execute threads (fn [] (.receive this message))))
   
-;;   MessageServer
+  MessageServer
   
-;;   (open [this]
-;; 	(let [ ;; we should be creatng our own thread pool here
-;; 	      ^Destination destination (if end-point (.createQueue session end-point) (.createTemporaryQueue session))
-;; 	      ^MessageConsumer consumer (.createConsumer session destination)]
-;; 	  ;; we need to stash consumer and destination for later
-;; 	  (.setMessageListener consumer this)))
+  (open [this]
+	(.setMessageListener consumer this))
   
-;;   (close [this]
-;; 	 ;; shutdown our threads
-;; 	 ;; close our consumer
-;; 	 ;; if we are using a temporary queue - delete it
-;; 	 )
+  (close [this]
+	 (.setMessageListener consumer nil)
+	 (.close consumer)
+	 ;;(.close producer);; TODO - closing a session is closing the producer before the results are sent back
+	 )
 
-;;   (receive [_ message]
-;; 	   (let [^Message request message
-;; 		 correlation-id (.getJMSCorrelationID request)
-;; 		 reply-to (.getJMSReplyTo request)
-;; 		 results
-;; 		 (try
-;; 		   ;; TODO - (AbstractClient/setCurrentSession session) ;; TODO - hacky - we should own this ThreadLocally
-;; 		   (let [func (.foreign-to-native translator (.readMessage message-strategy request))]
-;; 		     [true (apply func target)])
-;; 		   (catch Throwable t
-;; 		     [false t]))]
+  (receive [_ message]
+	   (let [^Message request message
+		 correlation-id (.getJMSCorrelationID request)
+		 reply-to (.getJMSReplyTo request)
+		 results
+		 (try
+		  (let [func (.foreignToNative translator (.readMessage strategy request))]
+		    [true (func target)])
+		  (catch Throwable t
+			 (warn "unexpected problem handling incoming message" t)
+			 (.printStackTrace t)
+			 [false t]))]
+	     (if (and correlation-id reply-to)
+	       (let [^Message response (.createMessage strategy session)]
+		 (.setJMSCorrelationID response correlation-id)
+		 (.writeMessage strategy response (.nativeToForeign translator results))
+		 (.send producer reply-to response)))))
 
-;; 	     (if (and correlation-id reply-to)
-;; 	       (let [^Message response (.createMessage message-strategy session)]
-;; 		 (.setJMSCorrelationID response correlation-id)
-;; 		 (.writeMessage message-strategy response (.native-to-foreign translator results))
-;; 		 (.send producer reply-to response)))))
+  )
 
-;;   )
-;; ;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
 
-;; (defprotocol MessageClient
-;;   (open [this])
-;;   (close [this])
-;;   (receive [this])
-;;   (send [this]))
+(definterface AsyncMessageClient
+  (^void open [])
+  (^void close [])
+  (^void sendAsync [invocation]))
 
+(deftype JMSAsyncMessageClient [^MessageStrategy strategy
+				^Translator translator
+				^Session session
+				^MessageProducer producer]
+  AsyncMessageClient
 
-;; ;; we should be able to abstract just client bits into an async client
-;; ;; from which a sync client could inherit and add exchange and
-;; ;; server-side resources
-
-;; (deftype JMSMessageClient [ ;;server
-;; 			   threads exchangers translator message-strategy
-;; 			   reply-to
-;; 			   ;; client
-;; 			   producer ;with implicit send-to destination
-;; 			   send-to
-;; 			   ids
-;; 			   timeout	;millis
-;; 			   ]
-  
-
-;;   MessageListener
-
-;;   (^void onMessage [this ^Message message]
-;; 	 (.execute thread (fn [] (.receive this message))))
-  
-;;   MessageClient
-
-;;   (open [this]
-;; 	;; create a temporary queue - reply-to
-;; 	;; or use a permanent topic
-;; 	(.setMessageListener reply-to this))
+  (open [this]
+	)
 	
-;;   (close [this]
-;; 	 (.setMessageListener reply-to nil)
-;; 	 ;;if using a temporary queue, delete it
-;; 	 )
+  (close [this]
+	 (.close producer))
   
-;;   (receive [this ^Message message]
-;; 	   (let [id (.getJMSCorrelationID message)]
-;; 	     (if-let [^Exchanger exchanger (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
-;; 	       (do
-;; 		 ;; TODO - (AbstractClient/setCurrentSession session) ;; TODO - hacky - we should own this ThreadLocally
-;; 		 (.exchange exchanger (.foreign-to-native translator (.readMessage message-strategy message))))
-;; 	       (warn "no exchanger for message: " id))))
+  (sendAsync [_ invocation]
+	     (let [^Message message (.createMessage strategy session)]
+	       (.writeMessage strategy message (.nativeToForeign translator invocation))
+	       (.send producer message)))
+  )
 
-;;   (send-async [_ invocation]
-;; 	      (let [^Message message (.createMessage strategy session)]
-;; 		(.writeMessage strategy message (.native-to-foreign translator invocation))
-;; 		(.send producer message)))
+(defn ^AsyncMessageClient init-jms-async-message-client
+  ([^MessageStrategy strategy ^Translator translator ^Session session ^MessageProducer producer ^Topic send-to]
+   (doto (JMSAsyncMessageClient. strategy translator session producer) (.open)))
+  ([^MessageStrategy strategy ^Translator translator ^Session session ^String send-to]
+   (let [send-to (.createTopic session send-to)
+	 producer (.createProducer session send-to)]
+     (init-jms-async-message-client strategy translator session producer))))
+
+;;------------------------------------------------------------------------------
+
+(definterface SyncMessageClient
+  (^void open [])
+  (^void close [])
+  (^void receive [^javax.jms.Message message])
+  (^Object sendSync [invocation])
+  (^void sendAsync [invocation]))
+
+(deftype JMSSyncMessageClient [^MessageStrategy strategy
+			       ^Translator translator
+			       ^Atom exchangers
+			       ^Atom ids
+			       ^Long timeout
+			       ^Session session
+			       ^ExecutorService threads
+			       ^MessageConsumer consumer
+			       ^TemporaryQueue reply-to
+			       ^MessageProducer producer
+			       ^Queue send-to]
+  MessageListener
   
-;;   (send-sync [_ invocation]
-;; 	     (let [^Message message (.createMessage strategy session)
-;; 		   id (swap! ids inc)
-;; 		   exchanger (Exchanger.)]
-;; 	       (.setJMSCorrelationId message id)
-;; 	       (.setJMSReplyTo message reply-to)
-;; 	       (.writeMessage strategy message (.native-to-foreign translator invocation))
-;; 	       (swap! exchangers assoc id exchanger)
-;; 	       (.send producer message)
-;; 	       (let [[is-exception results]
-;; 		     (try
-;; 		       (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
-;; 		       (catch Throwable t
-;; 			 (swap! exchanger dissoc id)
-;; 			 (throw t)))]
-;; 		 (if is-exception
-;; 		   (throw results)
-;; 		   results))))
-;;   )
+  (^void onMessage [this ^Message message]
+	 (.execute threads (fn [] (.receive this message))))
 
-;; ;;------------------------------------------------------------------------------
+  SyncMessageClient
+
+  (open [this]
+	(.setMessageListener consumer this))
+	
+  (close [this]
+	 (.setMessageListener consumer nil)
+	 (.delete reply-to)
+	 (.close consumer)
+	 (.close producer))
+  
+  (receive [this message]
+	   (let [id (.getJMSCorrelationID ^Message message)]
+	     (if-let [[_ ^Exchanger exchanger] (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
+		 (try
+		  (.exchange exchanger (.foreignToNative translator (.readMessage strategy message) 0 (TimeUnit/MILLISECONDS)))
+		  (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
+	       (warn "no exchanger for message: " id))))
+
+  (sendAsync [_ invocation]
+	     (let [^Message message (.createMessage strategy session)]
+	       (.writeMessage strategy message (.nativeToForeign translator invocation))
+	       (.send producer message)))
+
+  (sendSync [_ invocation]
+	    (let [^Message message (.createMessage strategy session)
+		  id (str (swap! ids inc))
+		  exchanger (Exchanger.)]
+	      (.setJMSCorrelationId message id)
+	      (.setJMSReplyTo message reply-to)
+	      (.writeMessage strategy message (.nativeToForeign translator invocation))
+	      (swap! exchangers assoc id exchanger)
+	      (.send producer message)
+	      (let [[succeeded results]
+		    (try
+		     (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
+		     (catch Throwable t
+			    (swap! exchanger dissoc id)
+			    (throw t)))]
+		(if succeeded
+		  results
+		  (throw results))))))
+
+(defn ^SsyncMessageClient init-jms-sync-message-client
+  ([^MessageStrategy strategy ^Translator translator ^Atom exchangers ^Atom ids ^Long timeout ^Session session ^ExecutorService threads ^MessageConsumer consumer ^TemporaryQueue reply-to ^MessageProducer producer ^Queue send-to]
+   (doto (JMSSyncMessageClient. strategy translator exchangers ids timeout session threads consumer reply-to producer send-to) (.open)))
+  ([^MessageStrategy strategy ^Translator translator ^Long timeout ^ExecutorService threads ^Session session ^Destination send-to]
+   (let [exchangers (atom {})
+	 ids (atom 0)
+	 ^TemporaryQueue reply-to (.createTemporaryQueue session)
+	 ^MessageConsumer consumer (.createConsumer session reply-to)
+	 ^MessageProducer producer (.createProducer session send-to)]
+     (init-jms-sync-message-client strategy translator exchangers ids timeout session threads consumer reply-to producer send-to))))
+
+;;------------------------------------------------------------------------------
+
+(definterface ServiceFactory
+
+  (server [target reply-to])
+
+  (asyncClient [endpoint])
+
+  (endPoint [name]))
+
+(deftype JMSServiceFactory [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^Long timeout]
+  ServiceFactory
+  
+  (server [this target reply-to]
+	  (init-jms-message-server target session strategy translator reply-to threads))
+
+  (syncClient [this send-to]
+	      (init-jms-sync-message-client strategy translator timeout threads session send-to))
+
+  (endPoint [this name]
+	    (.createTopic session name))
+  )
+
+;; TODO - syncClient needs to handle async calls

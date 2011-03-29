@@ -441,31 +441,3 @@
 
 ;; TODO - this could be ASYNC - should be loaded from SPRING CONFIG
 (def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
-
-;;--------------------------------------------------------------------------------
-
-(defprotocol Translator
-  (native-to-foreign [this object])
-  (foreign-to-native [this object]))
-
-(deftype SerializeTranslator []
-  Translator
-  (native-to-foreign [_ object]
-		     (let [baos (ByteArrayOutputStream.)
-			   oos (ObjectOutputStream. baos)]
-		       (try
-			 (.writeObject oos object)
-			 (finally
-			  (.close oos)
-			  (.close baos)))
-		       (.toByteArray baos)))
-  (foreign-to-native [_ buffer]
-		     (let [bais (ByteArrayInputStream. buffer)
-			   ois (ClassLoadingAwareObjectInputStream. bais)]
-		       (try
-			 (.readObject ois)
-			 (finally
-			  (.close ois)
-			  (.close bais))))))
-
-  

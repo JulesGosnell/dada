@@ -64,8 +64,7 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 
 	@Override
 	public Data<V> getData() {
-	    throw new UnsupportedOperationException("NYI");
-	    //return (Data<V>) sessionManager.getData(name);
+	    return (Data<V>) session.getData((Model<Object, Object>) this);
 	}
 
 	public String toString() {

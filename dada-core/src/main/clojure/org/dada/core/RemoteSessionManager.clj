@@ -2,6 +2,8 @@
  (:use
   [clojure.contrib logging]
   [org.dada.core utils]
+  [org.dada.core proxy]
+  [org.dada jms]
   )
  (:import
   [java.lang.reflect
@@ -16,11 +18,6 @@
   [java.util.concurrent
    Executors
    ExecutorService]
-  [javax.jms
-   Connection
-   ConnectionFactory
-   Queue
-   Topic]
   [clojure.lang
    Atom]
   [org.dada.core
@@ -32,10 +29,20 @@
    SessionManager
    SessionManagerHelper
    View]
+  ;; TODO - lose jms references
+  [javax.jms
+   Connection
+   ConnectionFactory
+   Queue
+   Topic]
   [org.dada.jms
-   RemotingFactory
-   RemotingFactory$Server
-   SynchronousClient]
+   Translator
+   SerializeTranslator
+   MessageStrategy
+   BytesMessageStrategy
+   SyncMessageClient
+   ServiceFactory
+   JMSServiceFactory]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
@@ -50,25 +57,32 @@
   [^Connection connection
    ^javax.jms.Session jms-session
    ^ExecutorService thread-pool
+   ^ServiceFactory service-factory
+   ^SyncMessaageClient client
    ^SessionManager peer
    ^Atom sessions])
 
 ;; proxy for a remote session manager
 ;; intercept outward bound local Views and replace with proxies
 
+(defproxy-type SessionManagerProxy SessionManager)
+
+(def ^MessageStrategy strategy (BytesMessageStrategy.))
+(def ^Translator translator (SerializeTranslator.))
+
 (defn -init [^String name ^ConnectionFactory connection-factory ^String classes-url ^Integer num-threads]
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
 	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
-	^RemotingFactory session-manager-remoting-factory (RemotingFactory. jms-session SessionManager 10000) ;TODO - hardwired
-	^Queue session-manager-queue (.createQueue jms-session name)
-	^SessionManager peer (.createSynchronousClient session-manager-remoting-factory session-manager-queue true)
-	^RemotingFactory view-remoting-factory (RemotingFactory. jms-session View 10000)] ;TODO - hardwired
+	^ServiceFactory service-factory (JMSServiceFactory. jms-session thread-pool strategy translator 10000) ;TODO - hardwired
+	^Queue send-to (.createQueue jms-session name)
+	^SyncMessageClient client (.syncClient service-factory send-to)
+	^SessionManager peer (SessionManagerProxy. (fn [invocation] (.sendSync client invocation)))]
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. connection jms-session thread-pool peer (atom nil))]))
+     (ImmutableState. connection jms-session thread-pool service-factory client peer (atom nil))]))
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSessionManager this]
   (.state this))
@@ -81,9 +95,9 @@
 (defn -close [^org.dada.core.RemoteSessionManager this]
   (with-record
    (immutable this)
-   [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer sessions]
+   [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SyncMessageClient client ^SessionManager peer sessions]
    (doseq [^Session session @sessions] (destroy-session sessions session))
-   (.close ^SynchronousClient (Proxy/getInvocationHandler peer))
+   (.close client)
    (.shutdown thread-pool)		;TODO: should we be responsible for this ?
    (.close jms-session)
    (.stop connection)
@@ -92,8 +106,8 @@
 (defn ^Session -createSession [^org.dada.core.RemoteSessionManager this]
   (with-record
    (immutable this)
-   [^javax.jms.Session jms-session ^ExecutorService thread-pool ^SessionManager peer sessions]
-   (let [session (doto (.createSession peer) (.hack jms-session thread-pool))]
+   [^ServiceFactory service-factory ^SessionManager peer sessions]
+   (let [session (doto (.createSession peer) (.hack service-factory))]
      (swap! sessions conj session)
      (SessionManagerHelper/setCurrentSession session) ;; TODO - temporary hack
      ;; TODO : aargh! - we need to wrap session in a proxy that will remove it from our list on closing

@@ -9,4 +9,7 @@ public interface Session extends SessionManager {
     Data<Object> registerView(Model<Object, Object> model, View<Object> view);
     Data<Object> deregisterView(Model<Object, Object> model, View<Object> view);
     Model<Object, Object> find(Model<Object, Object> model, Object key);
+    Data<Object> getData(Model<Object, Object> model);
+
+    Model<Object, Object> query(String query);
 }

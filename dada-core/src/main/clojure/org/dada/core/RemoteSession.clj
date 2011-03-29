@@ -2,21 +2,18 @@
  (:use
   [clojure.contrib logging]
   [org.dada.core utils]
-  )
+  [org.dada.core proxy]
+  [org.dada jms])
+ (:require
+  [org.dada.core RemoteView])
  (:import
-  [java.lang.reflect
-   Proxy]
   [java.util
-   ArrayList
-   Collection
-   List
    Timer
    TimerTask]
   [java.util.concurrent
    ExecutorService]
-  [javax.jms
-   Queue
-   TemporaryQueue]
+  [java.util.concurrent.atomic
+   AtomicReference]
   [clojure.lang
    Atom]
   [org.dada.core
@@ -24,35 +21,45 @@
    Model
    Session
    SessionManager
-   View]
+   View
+   RemoteView]
+  ;; TODO - this should not be here - everything required should be injected via ServiceFactory
   [org.dada.jms
-   RemotingFactory
-   RemotingFactory$Server
-   SynchronousClient]
+   MessageServer
+   MessageStrategy
+   BytesMessageStrategy
+   Translator
+   SerializeTranslator
+   ServiceFactory
+   AsyncMessageClient
+   JMSServiceFactory]
   )
  (:gen-class
   :implements [org.dada.core.Session java.io.Serializable]
-  :constructors {[javax.jms.TemporaryQueue Boolean] []}
-  :methods [[hack [javax.jms.Session java.util.concurrent.ExecutorService] void]]
+  :constructors {[Object] []}
+  :methods [[hack [org.dada.jms.ServiceFactory] void]]
   :init init
   :state state
   )
  )
 
-(defrecord ImmutableState [^TemporaryQueue queue ^Boolean async ^Session peer ^javax.jms.Session jms-session ^ExecutorService thread-pool ^RemotingFactory remoting-factory ^Timer timer ^Atom views])
+(defrecord ImmutableState [^Object send-to ^AsyncMessageClient client ^Session peer ^ServiceFactory service-factory ^Timer timer ^Atom views])
 
 ;; proxy for a server-side Session
 ;; intercept outward-bound local Views and replace with proxies
 
-(defn -init [^javax.jms.TemporaryQueue queue ^Boolean async]
-  (debug "init: " queue async)
+(defproxy-type SessionProxy Session)
+(defproxy-type ViewProxy View)
+
+(defn -init [^Object send-to]
+  (debug "init: " send-to)
   [ ;; super ctor args
    []
    ;; instance state - held in an ArrayList so we can change it (an Atom will not serialise)
-   (ArrayList. ^Collection [(ImmutableState. queue async nil nil nil nil nil nil)])])
+   (AtomicReference. (ImmutableState. queue nil nil nil nil nil))])
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSession this]
-  (first (.state this)))
+  (.get ^AtomicReference (.state this)))
 
 (defn -ping [^org.dada.core.RemoteSession this]
   (with-record (immutable this) [^Session peer] (trace "ping: " peer) (.ping peer)))
@@ -73,11 +80,11 @@
 (defn ^Data -registerView [^org.dada.core.RemoteSession this ^Model model ^View view]
     (with-record
      (immutable this)
-     [^Session peer ^RemotingFactory remoting-factory ^javax.jms.Session jms-session thread-pool views]
+     [^Session peer ^ServiceFactory service-factory views]
      (debug "registerView" model view)
-     (let [topic (.createTopic jms-session (str "DADA." (.getName model))) ;TODO - hardwired prefix and Destination type
-	   server (.createServer2 remoting-factory view topic thread-pool)
-	   ^View client (.createSynchronousClient remoting-factory topic true)]
+     (let [topic (.endPoint service-factory (str "DADA." (.getName model))) ;TODO - hardwired prefix and Destination type
+	   ^AsyncMessageServer server (.server service-factory view topic)
+	   ^View client (RemoteVIew. topic)]
        (swap! views (fn [views] (assoc views [view model] [topic server client])))
        (.registerView peer model client))))
 
@@ -86,28 +93,32 @@
    (immutable this)
    [^Session peer views]
    (debug "deregisterView" model view)
-   (let [[_ [^Topic topic ^RemotingFactory$Server server ^Proxy client]]
+   (let [[_ [^Topic topic ^MessageServer server ^View client]]
 	 (swap2! views (fn [views] (let [key [view model] old-view (views key)] [(dissoc views key) old-view])))
 	 data (.deregisterView peer model client)]
      (.close server)
-     (.close ^SynchronousClient (Proxy/getInvocationHandler client))
+     ;;(.close ^SynchronousClient (Proxy/getInvocationHandler client)) ;; TODO - we need to remember the client
      data)))
 
 (defn ^Model -find [^org.dada.core.RemoteSession this ^Model model key]
   (with-record (immutable this) [^Session peer] (.find peer model key)))
 
-(defn -hack [^org.dada.core.RemoteSession this ^javax.jms.Session jms-session ^java.util.concurrent.ExecutorService thread-pool]
+(defn ^Data -getData [^org.dada.core.RemoteSession this ^Model model]
+  (with-record (immutable this) [^Session peer] (.getData peer model)))
+
+(defn ^Model -query [^org.dada.core.RemoteSession this ^String query]
+  (with-record (immutable this) [^Session peer] (.query peer query)))
+
+(defn -hack [^org.dada.core.RemoteSession this ^ServiceFactory service-factory]
   (debug "hacking: " this)
   (with-record
    (immutable this)
-   [^Queue queue ^Boolean async]
+   [send-to]
    (let [ping-period 5000		;TODO - hardwired
-	 remoting-timeout 10000		;TODO - hardwired
-	 ^RemotingFactory session-remoting-factory (RemotingFactory. jms-session Session remoting-timeout)
-	 ^RemotingFactory view-remoting-factory (RemotingFactory. jms-session View remoting-timeout)
-	 ^Session peer (.createSynchronousClient session-remoting-factory queue async)
-	 ^Timer session-timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (.ping peer))) 0 ping-period))
+	 client (.syncClient service-factory send-to)
+	 ^Session peer (SessionProxy (fn [invocation] (.sendSync client invocation)))
+	 ^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (.ping peer))) 0 ping-period))
 	 ^Atom views (atom nil)]
-     (.set ^List (.state this) 0
-	   (ImmutableState. queue async peer jms-session thread-pool view-remoting-factory session-timer views))))
+     (.set ^AtomicReference (.state this)
+	   (ImmutableState. send-to client peer service-factory timer views))))
   (debug "hacked: " (first (.state this))))
