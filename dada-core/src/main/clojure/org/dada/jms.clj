@@ -193,13 +193,10 @@
   
   (receive [this message]
 	   (let [id (.getJMSCorrelationID ^Message message)]
-	     (println "LOOKING UP: " id)
 	     (if-let [[_ ^Exchanger exchanger] (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
-		 (try
-		  (let [results (.foreignToNative translator (.readMessage strategy message))]
-		    (println "RETURNING: " id results)
-		    (.exchange exchanger results 10000 (TimeUnit/MILLISECONDS)))
-		  (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
+	       (try
+		 (.exchange exchanger (.foreignToNative translator (.readMessage strategy message)) 0 (TimeUnit/MILLISECONDS))
+		 (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
 	       (warn "message arrived - but no one waiting for it: " id))))
 
   (sendAsync [_ invocation]
@@ -214,16 +211,14 @@
 	      (.setJMSCorrelationID message id)
 	      (.setJMSReplyTo message reply-to)
 	      (.writeMessage strategy message (.nativeToForeign translator invocation))
-	      (println "WAITING ON: " id)
 	      (swap! exchangers assoc id exchanger)
 	      (.send producer message)
 	      (let [[succeeded results]
 		    (try
-		     (.exchange exchanger nil 10000 (TimeUnit/MILLISECONDS))
+		     (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
 		     (catch Throwable t
 			    (swap! exchangers dissoc id)
 			    (throw t)))]
-		(println "RETURNED: " id [succeeded results])
 		(if succeeded
 		  results
 		  (throw results))))))
