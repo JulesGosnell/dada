@@ -58,7 +58,7 @@
    (immutable this)
    [^Model metamodel mutable ^ServiceFactory service-factory]
    ;; TODO - temporary hack
-   (if (instance? RemoteView view) (.hack view service-factory))
+   (if (instance? RemoteView view) (.hack ^RemoteView view service-factory))
    (let [model-name (.getName model)
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)

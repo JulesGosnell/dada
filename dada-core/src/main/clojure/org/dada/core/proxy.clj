@@ -42,7 +42,7 @@
  	params (map (fn [i] (symbol (str "arg" i))) (range (count (.getParameterTypes method))))]
      (list
       (symbol method-name) (apply vector 'this params)
-      (list 'invoker (list 'fn '[target] (apply list (symbol (str "." method-name)) 'target params)))
+      (list 'invoker (list 'fn (vector (with-meta 'target {:tag (.getName ^Class (eval interface))})) (apply list (symbol (str "." method-name)) 'target params)))
       )))
 
 (defmacro defproxy-type [name & interfaces]

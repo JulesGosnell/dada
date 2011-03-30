@@ -25,6 +25,7 @@
    Metadata
    Model
    RemoteModel
+   RemoteSession
    Session
    SessionManager
    SessionManagerHelper
@@ -107,7 +108,7 @@
   (with-record
    (immutable this)
    [^ServiceFactory service-factory ^SessionManager peer sessions]
-   (let [session (doto (.createSession peer) (.hack service-factory))]
+   (let [session (doto ^RemoteSession (.createSession peer) (.hack service-factory))]
      (swap! sessions conj session)
      (SessionManagerHelper/setCurrentSession session) ;; TODO - temporary hack
      ;; TODO : aargh! - we need to wrap session in a proxy that will remove it from our list on closing

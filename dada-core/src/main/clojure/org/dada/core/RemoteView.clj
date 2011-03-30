@@ -42,7 +42,7 @@
 (defn -update [^org.dada.core.RemoteView this insertions alterations deletions]
   (with-record
    (immutable this)
-   [peer]
+   [^View peer]
    (.update peer insertions alterations deletions)))
 
 (defn -hack [^org.dada.core.RemoteView this ^ServiceFactory service-factory]

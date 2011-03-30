@@ -238,11 +238,11 @@
 
 (definterface ServiceFactory
 
-  (server [target reply-to])
+  (^org.dada.jms.MessageServer server [target reply-to])
 
-  (asyncClient [endpoint])
+  (^org.dada.jms.AsyncMessageClient asyncClient [endpoint])
 
-  (syncClient [endpoint])
+  (^org.dada.jms.SyncMessageClient syncClient [endpoint])
 
   (endPoint [])				;temporary queue
 
