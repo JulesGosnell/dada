@@ -46,6 +46,10 @@ import org.jmock.integration.junit3.MockObjectTestCase;
 public class JMSServiceFactoryTestCase extends MockObjectTestCase {
 
 	public static interface Target {};
+    
+    public void test() throws Exception {
+	assertTrue(true);
+    }
 	
 	// public void test() throws Exception {
 		
