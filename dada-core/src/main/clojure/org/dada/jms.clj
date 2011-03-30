@@ -196,11 +196,11 @@
 	     (println "LOOKING UP: " id)
 	     (if-let [[_ ^Exchanger exchanger] (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
 		 (try
-		  (let  [results (.foreignToNative translator (.readMessage strategy message))]
+		  (let [results (.foreignToNative translator (.readMessage strategy message))]
 		    (println "RETURNING: " id results)
 		    (.exchange exchanger results 10000 (TimeUnit/MILLISECONDS)))
 		  (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
-	       (warn "message arrived but no one waiting for it: " id))))
+	       (warn "message arrived - but no one waiting for it: " id))))
 
   (sendAsync [_ invocation]
 	     (let [^Message message (.createMessage strategy session)]
@@ -250,7 +250,7 @@
   (syncClient [endpoint])
 
   (endPoint [])				;temporary queue
-  
+
   (endPoint [name])			;named queue
 
   (endPoint [name one-to-many])	;named topic - varargs does not seem to work in definterface
