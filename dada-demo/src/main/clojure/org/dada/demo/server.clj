@@ -38,10 +38,10 @@
 	  ^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
 	  num-threads 16		;TODO - hardwired
 	  timeout 10000			;TODO - hardwired
-	  ^ExecutorService thread (Executors/newFixedThreadPool num-threads)
+	  ^ExecutorService threads (Executors/newFixedThreadPool num-threads)
 	  ^MessageStrategy strategy (BytesMessageStrategy.)
 	  ^Translator translator (SerializeTranslator.)
-	  ^ServiceFactory service-factory (JMSServiceFactory. jms-session thread strategy translator timeout)]
+	  ^ServiceFactory service-factory (JMSServiceFactory. jms-session threads strategy translator timeout)]
       (def ^SessionManager session-manager (SessionManagerImpl. "SessionManager.POJO" service-factory *metamodel*)))
 
     ;; move this into SessionManagerImpl
