@@ -2,11 +2,9 @@
  org.dada.core.SessionImpl
  (:use
   [clojure.contrib logging]
-  [org.dada.core utils]
-  [org.dada jms])
+  [org.dada.core utils])
  (:require
-  [org.dada.core RemoteView]
-  [org.dada.jms ServiceFactory])
+  [org.dada.core RemoteView])
  (:import
   [clojure.lang Atom IFn]
   [java.util Map]
@@ -94,7 +92,7 @@
    (immutable this)
    [^Model metamodel mutable]
    (swap! mutable assoc :lastPing (System/currentTimeMillis))
-   (.getData ^Model (.find metamodel (.getName model)))))
+   (.getData (.find metamodel (.getName model)))))
 
 (defn ^Model -query [^org.dada.core.SessionImpl this ^String query]
   (with-record

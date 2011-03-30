@@ -59,7 +59,7 @@
 	  interfaces)
        )))
 
-;; ;; TODO - handle method param overloading - I'll leave that one for later :-)
+;; TODO - handle method param overloading - I'll leave that one for later :-)
 
 ;; this should be better than using a java.lang.proxy as there is no
 ;; introspection needed to invoke said method on other side - we just

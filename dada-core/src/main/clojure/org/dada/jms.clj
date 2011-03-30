@@ -117,6 +117,11 @@
 
   )
 
+(defn ^MessageServer init-jms-message-server [target ^Session session ^MessageStrategy strategy ^Translator translator ^Destination reply-to ^ExecutorService threads]
+  (let [consumer (.createConsumer session reply-to)
+	producer (.createProducer session nil)]
+    (doto (JMSMessageServer. target session strategy producer translator consumer threads) (.open))))
+
 ;;------------------------------------------------------------------------------
 
 (definterface AsyncMessageClient
@@ -188,11 +193,14 @@
   
   (receive [this message]
 	   (let [id (.getJMSCorrelationID ^Message message)]
+	     (println "LOOKING UP: " id)
 	     (if-let [[_ ^Exchanger exchanger] (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
 		 (try
-		  (.exchange exchanger (.foreignToNative translator (.readMessage strategy message) 0 (TimeUnit/MILLISECONDS)))
+		  (let  [results (.foreignToNative translator (.readMessage strategy message))]
+		    (println "RETURNING: " id results)
+		    (.exchange exchanger results 10000 (TimeUnit/MILLISECONDS)))
 		  (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
-	       (warn "no exchanger for message: " id))))
+	       (warn "message arrived but no one waiting for it: " id))))
 
   (sendAsync [_ invocation]
 	     (let [^Message message (.createMessage strategy session)]
@@ -203,22 +211,24 @@
 	    (let [^Message message (.createMessage strategy session)
 		  id (str (swap! ids inc))
 		  exchanger (Exchanger.)]
-	      (.setJMSCorrelationId message id)
+	      (.setJMSCorrelationID message id)
 	      (.setJMSReplyTo message reply-to)
 	      (.writeMessage strategy message (.nativeToForeign translator invocation))
+	      (println "WAITING ON: " id)
 	      (swap! exchangers assoc id exchanger)
 	      (.send producer message)
 	      (let [[succeeded results]
 		    (try
-		     (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
+		     (.exchange exchanger nil 10000 (TimeUnit/MILLISECONDS))
 		     (catch Throwable t
-			    (swap! exchanger dissoc id)
+			    (swap! exchangers dissoc id)
 			    (throw t)))]
+		(println "RETURNED: " id [succeeded results])
 		(if succeeded
 		  results
 		  (throw results))))))
 
-(defn ^SsyncMessageClient init-jms-sync-message-client
+(defn ^SyncMessageClient init-jms-sync-message-client
   ([^MessageStrategy strategy ^Translator translator ^Atom exchangers ^Atom ids ^Long timeout ^Session session ^ExecutorService threads ^MessageConsumer consumer ^TemporaryQueue reply-to ^MessageProducer producer ^Queue send-to]
    (doto (JMSSyncMessageClient. strategy translator exchangers ids timeout session threads consumer reply-to producer send-to) (.open)))
   ([^MessageStrategy strategy ^Translator translator ^Long timeout ^ExecutorService threads ^Session session ^Destination send-to]
@@ -237,7 +247,15 @@
 
   (asyncClient [endpoint])
 
-  (endPoint [name]))
+  (syncClient [endpoint])
+
+  (endPoint [])				;temporary queue
+  
+  (endPoint [name])			;named queue
+
+  (endPoint [name one-to-many])	;named topic - varargs does not seem to work in definterface
+
+  )
 
 (deftype JMSServiceFactory [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^Long timeout]
   ServiceFactory
@@ -249,7 +267,13 @@
 	      (init-jms-sync-message-client strategy translator timeout threads session send-to))
 
   (endPoint [this name]
+	    (.createQueue session name))
+
+  (endPoint [this name one-to-many]
 	    (.createTopic session name))
+
+  (endPoint [this]
+	    (.createTemporaryQueue session))
   )
 
 ;; TODO - syncClient needs to handle async calls

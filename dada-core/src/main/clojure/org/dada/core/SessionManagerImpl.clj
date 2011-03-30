@@ -2,7 +2,7 @@
  org.dada.core.SessionManagerImpl
  (:use
   [clojure.contrib logging]
-  [org.dada core]  
+  [org.dada core]
   [org.dada.core utils]
   [org.dada jms])
  (:require
@@ -10,14 +10,12 @@
  (:import
   [clojure.lang Atom]
   [java.util Collection Timer TimerTask]
-  [java.util.concurrent Executors ExecutorService]
-  [javax.jms TemporaryQueue Queue]
-  [org.dada.core Data Metadata Model RemoteSession Session SessionManager SessionImpl RemoteSession View]
-  [org.dada.jms MessageServer MessageStrategy BytesMessageStrategy SerializeTranslator Translator ServiceFactory JMSServiceFactory]
+  [org.dada.core Model RemoteSession Session SessionManager SessionImpl View]
+  [org.dada.jms MessageServer ServiceFactory] ;TODO - these two should migrate to core
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[String javax.jms.ConnectionFactory org.dada.core.Model] []}
+  :constructors {[String Object org.dada.core.Model] []} ;TODO - should be ServiceFactory
   :methods []
   :init init
   :state state
@@ -27,7 +25,7 @@
 
 (defrecord MutableState [sessions ^MessageServer server])
 
-(defrecord ImmutableState [^String name ^Model metamodel ^ServiceFactory service-factory ^javax.jms.Session jms-session ^ExecutorService threads ^Timer timer ^Atom mutable])
+(defrecord ImmutableState [^String name ^Model metamodel ^ServiceFactory service-factory ^Timer timer ^Atom mutable])
 
 ;;------------------------------------------------------------------------------
 
@@ -42,23 +40,13 @@
 
 ;;------------------------------------------------------------------------------
 
-(def ^MessageStrategy strategy (BytesMessageStrategy.))
-(def ^Translator translator (SerializeTranslator.))
-
-(defn -init [^String name ^javax.jms.ConnectionFactory connection-factory ^Model metamodel]
-  (let [^javax.jms.Connection connection (doto (.createConnection connection-factory) (.start))
-	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
-	num-threads 16			;TODO - hardwired
-	timeout 10000			;TODO - hardwired
-	^ExecutorService threads (Executors/newFixedThreadPool num-threads)
-	^ServiceFactory service-factory (ServiceFactory. jms-session threads strategy translator timeout)
-	mutable (atom (MutableState. {} nil))
-	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions mutable))) 0 10000)) ;TODO - hardwired
-	]
+(defn -init [^String name ^ServiceFactory service-factory ^Model metamodel]
+  (let [mutable (atom (MutableState. {} nil))
+	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions mutable))) 0 10000))] ;TODO - hardwired
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. name metamodel service-factory jms-session threads timer mutable)]))
+     (ImmutableState. name metamodel service-factory timer mutable)]))
 
 (defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
   (.state this))
@@ -66,8 +54,8 @@
 (defn -post-init [^org.dada.core.SessionManagerImpl this & _]
   (with-record
    (immutable this)
-   [^ServiceFactory service-factory ^javax.jms.Session jms-session name threads mutable]
-   (let [server (.server service-factory this (.createQueue jms-session name))]
+   [^ServiceFactory service-factory name mutable]
+   (let [server (.server service-factory this (.endPoint service-factory name))]
      ;; TODO - should not need jms session here
      (swap! mutable assoc :server server))))
 
@@ -75,7 +63,7 @@
   (with-record
    (immutable this)
    [mutable]
-   (let [[_ [^TemporaryQueue queue ^MessageServer server]]
+   (let [[_ [queue ^MessageServer server]]
 	 (swap2!			;N.B. NOT swap!
 	  mutable
 	  (fn [state]
@@ -83,16 +71,16 @@
 		    details (sessions session)]
 		[(assoc state :sessions (dissoc sessions session)) details])))]
      (.close server)
-     (.delete queue))))
+     (.delete queue))))			;TODO - service-factory should look after this
 
 (defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
   (with-record
    (immutable this)
-   [metamodel ^javax.jms.Session jms-session ^ServiceFactory service-factory threads mutable]
+   [metamodel ^ServiceFactory service-factory mutable]
    (let [close-fn (fn [session] (destroy-session this session))
 	 session (SessionImpl. metamodel close-fn service-factory)
-	 queue (.createTemporaryQueue jms-session)
-	 server (.server factory session queue)
+	 queue (.endPoint service-factory) ;TODO - should not need jms-session here
+	 server (.server service-factory session queue)
 	 client (RemoteSession. queue)]
      (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
      (debug "createSession" client)

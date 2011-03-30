@@ -46,7 +46,7 @@
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[String javax.jms.ConnectionFactory String Integer] []}
+  :constructors {[String javax.jms.ConnectionFactory Integer] []}
   :methods []
   :init init
   :state state
@@ -58,7 +58,7 @@
    ^javax.jms.Session jms-session
    ^ExecutorService thread-pool
    ^ServiceFactory service-factory
-   ^SyncMessaageClient client
+   ^SyncMessageClient client
    ^SessionManager peer
    ^Atom sessions])
 
@@ -70,7 +70,7 @@
 (def ^MessageStrategy strategy (BytesMessageStrategy.))
 (def ^Translator translator (SerializeTranslator.))
 
-(defn -init [^String name ^ConnectionFactory connection-factory ^String classes-url ^Integer num-threads]
+(defn -init [^String name ^ConnectionFactory connection-factory ^Integer num-threads]
 
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))

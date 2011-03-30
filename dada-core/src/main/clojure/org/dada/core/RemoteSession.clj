@@ -49,14 +49,13 @@
 ;; intercept outward-bound local Views and replace with proxies
 
 (defproxy-type SessionProxy Session)
-(defproxy-type ViewProxy View)
 
 (defn -init [^Object send-to]
   (debug "init: " send-to)
   [ ;; super ctor args
    []
-   ;; instance state - held in an ArrayList so we can change it (an Atom will not serialise)
-   (AtomicReference. (ImmutableState. queue nil nil nil nil nil))])
+   ;; instance state - held in an AtomicReference so we can change it (a Clojure Atom will not serialise)
+   (AtomicReference. (ImmutableState. send-to nil nil nil nil nil))])
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSession this]
   (.get ^AtomicReference (.state this)))
@@ -82,9 +81,9 @@
      (immutable this)
      [^Session peer ^ServiceFactory service-factory views]
      (debug "registerView" model view)
-     (let [topic (.endPoint service-factory (str "DADA." (.getName model))) ;TODO - hardwired prefix and Destination type
+     (let [topic (.endPoint service-factory (str "DADA." (.getName model)) true) ;TODO - hardwired prefix and Destination type
 	   ^AsyncMessageServer server (.server service-factory view topic)
-	   ^View client (RemoteVIew. topic)]
+	   ^View client (RemoteView. topic)]
        (swap! views (fn [views] (assoc views [view model] [topic server client])))
        (.registerView peer model client))))
 
@@ -116,9 +115,9 @@
    [send-to]
    (let [ping-period 5000		;TODO - hardwired
 	 client (.syncClient service-factory send-to)
-	 ^Session peer (SessionProxy (fn [invocation] (.sendSync client invocation)))
+	 ^Session peer (SessionProxy. (fn [invocation] (.sendSync client invocation)))
 	 ^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (.ping peer))) 0 ping-period))
 	 ^Atom views (atom nil)]
      (.set ^AtomicReference (.state this)
 	   (ImmutableState. send-to client peer service-factory timer views))))
-  (debug "hacked: " (first (.state this))))
+  (debug "hacked: " this))
