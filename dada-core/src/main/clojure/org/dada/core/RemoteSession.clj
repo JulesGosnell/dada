@@ -115,7 +115,7 @@
    [send-to]
    (let [ping-period 5000		;TODO - hardwired
 	 client (.syncClient service-factory send-to)
-	 ^Session peer (SessionProxy. (fn [invocation] (.sendSync client invocation)))
+	 ^Session peer (SessionProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))
 	 ^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (.ping peer))) 0 ping-period))
 	 ^Atom views (atom nil)]
      (.set ^AtomicReference (.state this)

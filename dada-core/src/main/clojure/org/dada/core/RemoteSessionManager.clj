@@ -79,7 +79,7 @@
 	^ServiceFactory service-factory (JMSServiceFactory. jms-session thread-pool strategy translator 10000) ;TODO - hardwired
 	^Queue send-to (.createQueue jms-session name)
 	^SyncMessageClient client (.syncClient service-factory send-to)
-	^SessionManager peer (SessionManagerProxy. (fn [invocation] (.sendSync client invocation)))]
+	^SessionManager peer (SessionManagerProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))]
     [ ;; super ctor args
      []
      ;; instance state

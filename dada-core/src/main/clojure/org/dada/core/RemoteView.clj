@@ -52,7 +52,7 @@
    [send-to]
    (let [client (.syncClient service-factory send-to)
 	 ;; TODO - this should be sendSync ultimately (when syncClient supports async interaction)
-	 ^View peer (ViewProxy. (fn [invocation] (.sendAsync client invocation)))]
+	 ^View peer (ViewProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))]
      (.set ^AtomicReference (.state this)
 	   (ImmutableState. send-to peer))))
   (debug "hacked: " this))
