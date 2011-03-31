@@ -195,7 +195,7 @@
 	   (let [id (.getJMSCorrelationID ^Message message)]
 	     (if-let [[_ ^Exchanger exchanger] (swap2! exchangers (fn [old id] [(dissoc old id)(old id)]) id)]
 	       (try
-		 (.exchange exchanger (.foreignToNative translator (.readMessage strategy message)) 0 (TimeUnit/MILLISECONDS))
+		 (.exchange exchanger message 0 (TimeUnit/MILLISECONDS))
 		 (catch Throwable t (warn "message arrived - but just missed rendez-vous")))
 	       (warn "message arrived - but no one waiting for it: " id))))
 
@@ -214,11 +214,16 @@
 	      (swap! exchangers assoc id exchanger)
 	      (.send producer message)
 	      (let [[succeeded results]
-		    (try
-		     (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
-		     (catch Throwable t
-			    (swap! exchangers dissoc id)
-			    (throw t)))]
+		    ;; decode message this side of the exchanger so that large messages do not time out...
+		    (.foreignToNative
+		     translator
+		     (.readMessage
+		      strategy
+		      (try
+		       (.exchange exchanger nil timeout (TimeUnit/MILLISECONDS))
+		       (catch Throwable t
+			      (swap! exchangers dissoc id)
+			      (throw t)))))]
 		(if succeeded
 		  results
 		  (throw results))))))
