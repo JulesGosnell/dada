@@ -37,16 +37,20 @@
 ;; nil
 ;; org.dada.core.proxy=> 
 
+(defn async? [^Method m]
+  (and (= (Void/TYPE) (.getReturnType m))
+       (empty? (.getExceptionTypes m))))
+
 (defn make-proxy-method [^Class interface ^Method method]
-   (let [method-name (.getName method)
+  (let [method-name (.getName method)
  	params (map (fn [i] (symbol (str "arg" i))) (range (count (.getParameterTypes method))))]
-     (list
-      (symbol method-name) (apply vector 'this params)
-      (list 'invoker (list 'fn (vector (with-meta 'target {:tag (.getName ^Class (eval interface))})) (apply list (symbol (str "." method-name)) 'target params)))
-      )))
+    (list
+     (symbol method-name) (apply vector 'this params)
+     (list (if (async? method) 'async-invoker 'sync-invoker) (list 'fn (vector (with-meta 'target {:tag (.getName ^Class (eval interface))})) (apply list (symbol (str "." method-name)) 'target params)))
+     )))
 
 (defmacro defproxy-type [name & interfaces]
-  (let [fields '[invoker]]
+  (let [fields '[sync-invoker async-invoker]]
     `(deftype ~name ~fields
        ~@(mapcat
 	  (fn [interface]
