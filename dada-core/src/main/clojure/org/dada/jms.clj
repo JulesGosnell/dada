@@ -193,7 +193,7 @@
 
 ;;------------------------------------------------------------------------------
 
-(deftype JMSRemoter [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^Long timeout]
+(deftype JMSRemoter [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^long timeout]
   Remoter
   
   (server [this target reply-to]
@@ -210,4 +210,9 @@
 
   (endPoint [this]
 	    (.createTemporaryQueue session))
+
+  (close [this]
+	 (.close session)
+	 (.shutdown threads))
+
   )

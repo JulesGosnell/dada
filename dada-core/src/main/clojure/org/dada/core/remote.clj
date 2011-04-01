@@ -10,7 +10,7 @@
   (^Object nativeToForeign [^Object object])
   (^Object foreignToNative [^Object object]))
 
-(deftype SerializeTranslator []
+(deftype SerialiseTranslator []
   Translator
   (nativeToForeign [_ object]
 		   (let [baos (ByteArrayOutputStream.)
@@ -60,5 +60,6 @@
   (^org.dada.core.remote.SyncMessageClient syncClient [endpoint])
   (endPoint [])				;temporary queue
   (endPoint [name])			;named queue
-  (endPoint [name one-to-many]))
-					;named topic - varargs does not seem to work in definterface
+  (endPoint [name one-to-many])	;named topic - varargs does not seem to work in definterface
+  (close []))
+					

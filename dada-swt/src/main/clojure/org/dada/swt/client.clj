@@ -1,8 +1,11 @@
 (ns #^{:author "Jules Gosnell" :doc "Simple Client for DADA"} org.dada.swt.client
     (:gen-class)
     (:use
+     [org.dada jms]
      [org.dada.swt inspect])
     (:import
+     [java.util.concurrent
+      Executors ExecutorService]
      [org.springframework.context.support
       ClassPathXmlApplicationContext]
      [org.springframework.beans.factory
@@ -12,6 +15,11 @@
       RemoteModel
       Session
       SessionManager
+      ]
+     [org.dada.core.remote
+      MessageStrategy
+      Remoter
+      Translator
       ]
      )
     )

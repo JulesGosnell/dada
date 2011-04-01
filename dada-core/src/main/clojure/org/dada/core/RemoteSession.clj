@@ -28,7 +28,6 @@
    MessageServer
    MessageStrategy
    Remoter
-   SerializeTranslator
    Translator
    ]
   )

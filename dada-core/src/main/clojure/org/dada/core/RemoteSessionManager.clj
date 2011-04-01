@@ -33,23 +33,13 @@
    [org.dada.core.remote
     MessageStrategy
     Remoter
-    SerializeTranslator
     SyncMessageClient
     Translator
     ]
-   ;; TODO - lose jms references
-   [javax.jms
-    Connection
-    ConnectionFactory
-    Queue
-    Topic]
-   [org.dada.jms
-    BytesMessageStrategy
-    JMSRemoter]
    )
   (:gen-class
    :implements [org.dada.core.SessionManager]
-   :constructors {[String javax.jms.ConnectionFactory Integer] []}
+   :constructors {[String org.dada.core.remote.Remoter] []}
    :methods []
    :init init
    :state state
@@ -57,10 +47,7 @@
   )
 
 (defrecord ImmutableState
-  [^Connection connection
-   ^javax.jms.Session jms-session
-   ^ExecutorService thread-pool
-   ^Remoter remoter
+  [^Remoter remoter
    ^SyncMessageClient client
    ^SessionManager peer
    ^Atom sessions])
@@ -70,22 +57,15 @@
 
 (defproxy-type SessionManagerProxy SessionManager)
 
-(def ^MessageStrategy strategy (BytesMessageStrategy.))
-(def ^Translator translator (SerializeTranslator.))
+(defn -init [^String name ^Remoter remoter]
 
-(defn -init [^String name ^ConnectionFactory connection-factory ^Integer num-threads]
-
-  (let [^Connection connection (doto (.createConnection connection-factory) (.start))
-	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
-	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
-	^Remoter remoter (JMSRemoter. jms-session thread-pool strategy translator 10000) ;TODO - hardwired
-	^Queue send-to (.createQueue jms-session name)
+  (let [send-to (.endPoint remoter name)
 	^SyncMessageClient client (.syncClient remoter send-to)
 	^SessionManager peer (SessionManagerProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))]
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. connection jms-session thread-pool remoter client peer (atom nil))]))
+     (ImmutableState. remoter client peer (atom nil))]))
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSessionManager this]
   (.state this))
@@ -97,14 +77,11 @@
 
 (defn -close [^org.dada.core.RemoteSessionManager this]
   (with-record
-   (immutable this)
-   [^Connection connection ^javax.jms.Session jms-session ^ExecutorService thread-pool ^SyncMessageClient client ^SessionManager peer sessions]
-   (doseq [^Session session @sessions] (destroy-session sessions session))
-   (.close client)
-   (.shutdown thread-pool)		;TODO: should we be responsible for this ?
-   (.close jms-session)
-   (.stop connection)
-   (.close connection)))
+    (immutable this)
+    [^Remoter remoter ^SyncMessageClient client ^SessionManager peer sessions]
+    (doseq [^Session session @sessions] (destroy-session sessions session))
+    (.close client)
+    (.close remoter)))
 
 (defn ^Session -createSession [^org.dada.core.RemoteSessionManager this]
   (with-record

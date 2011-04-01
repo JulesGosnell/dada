@@ -15,15 +15,48 @@
     <property name="watchTopicAdvisories"><value>false</value></property> <!-- avoid "Cannot publish to a deleted Detination" on temporary Queues-->
   </bean>
 
+  <bean id="connection" factory-bean="connectionFactory" factory-method="createConnection"/>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetClass"><value>javax.jms.Connection</value></property>
+    <property name="targetObject"><ref bean="connection"/></property>
+    <property name="targetMethod"><value>start</value></property>
+  </bean>
+
+  <bean id="session" class="javax.jms.Session" factory-method="createSession" factory-bean="connection">
+    <constructor-arg><value>false</value></constructor-arg>
+    <constructor-arg>
+      <bean id="javax.jms.Session.DUPS_OK_ACKNOWLEDGE"
+	    class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+      </bean>
+    </constructor-arg>
+  </bean>
+
+  <bean id="executorService" class="java.util.concurrent.Executors" factory-method="newFixedThreadPool">
+    <constructor-arg><value>4</value></constructor-arg> <!-- TODO: should size dynamically according to h/w -->
+  </bean>
+
+  <bean id="messageStrategy" class="org.dada.jms.BytesMessageStrategy">
+  </bean>
+
+  <bean id="translator" class="org.dada.core.remote.SerialiseTranslator">
+  </bean>
+
+  <bean id="remoter" class="org.dada.jms.JMSRemoter">
+    <constructor-arg ref="session"></constructor-arg>
+    <constructor-arg ref="executorService"></constructor-arg>
+    <constructor-arg ref="messageStrategy"></constructor-arg>
+    <constructor-arg ref="translator"></constructor-arg>
+    <constructor-arg><value>10000</value></constructor-arg>
+  </bean>
+
   <bean id="classesURL" class="java.lang.String">
     <constructor-arg><value>http://localhost:8888/</value></constructor-arg>
   </bean>
 
   <bean id="sessionManager" class="org.dada.core.RemoteSessionManager">
     <constructor-arg><value>SessionManager.POJO</value></constructor-arg>
-    <constructor-arg ref="connectionFactory"></constructor-arg>
-    <constructor-arg><value>2</value></constructor-arg>
+    <constructor-arg ref="remoter"></constructor-arg>
   </bean>
-
 
 </beans>

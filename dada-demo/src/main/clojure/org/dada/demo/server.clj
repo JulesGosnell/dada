@@ -4,7 +4,8 @@
   (:use
    [org.dada web]
    [org.dada core]
-   [org.dada.core remote])
+   [org.dada.core remote]
+   [org.dada jms])
   (:import
    [java.util.concurrent
     Executors
@@ -24,7 +25,7 @@
    [org.dada.core.remote
     MessageStrategy
     Remoter
-    SerializeTranslator
+    SerialiseTranslator
     Translator
     ]
    [org.dada.jms
@@ -42,7 +43,7 @@
 	  timeout 10000			;TODO - hardwired
 	  ^ExecutorService threads (Executors/newFixedThreadPool num-threads)
 	  ^MessageStrategy strategy (BytesMessageStrategy.)
-	  ^Translator translator (SerializeTranslator.)
+	  ^Translator translator (SerialiseTranslator.)
 	  ^Remoter remoter (JMSRemoter. jms-session threads strategy translator timeout)]
       (def ^SessionManager session-manager (SessionManagerImpl. "SessionManager.POJO" remoter *metamodel*)))
 
