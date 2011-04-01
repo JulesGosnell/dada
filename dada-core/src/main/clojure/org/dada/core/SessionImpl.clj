@@ -2,32 +2,33 @@
  org.dada.core.SessionImpl
  (:use
   [clojure.contrib logging]
-  [org.dada.core utils])
+  [org.dada.core utils]
+  [org.dada.core remote])
  (:require
   [org.dada.core RemoteView])
  (:import
   [clojure.lang Atom IFn]
   [java.util Map]
   [org.dada.core Data Model RemoteView View]
-  [org.dada.jms ServiceFactory]
+  [org.dada.core.remote Remoter]
   )
  (:gen-class
   :implements [org.dada.core.Session]
-  :constructors {[org.dada.core.Model clojure.lang.IFn org.dada.jms.ServiceFactory] []}
+  :constructors {[org.dada.core.Model clojure.lang.IFn org.dada.core.remote.Remoter] []}
   :init init
   :state state
   )
  )
 
 (defrecord MutableState [^Long lastPing ^Map views])
-(defrecord ImmutableState [^Model metamodel ^IFn close-hook ^ServiceFactory service-factory ^Atom mutable])
+(defrecord ImmutableState [^Model metamodel ^IFn close-hook ^Remoter remoter ^Atom mutable])
 
-(defn -init [^Model metamodel ^IFn close-hook ^ServiceFactory service-factory]
+(defn -init [^Model metamodel ^IFn close-hook ^Remoter remoter]
   (debug "init")
   [ ;; super ctor args
    []
    ;; instance state
-   (ImmutableState. metamodel close-hook service-factory (atom (MutableState. (System/currentTimeMillis) {})))])
+   (ImmutableState. metamodel close-hook remoter (atom (MutableState. (System/currentTimeMillis) {})))])
 
 (defn ^ImmutableState immutable [^org.dada.core.SessionImpl this]
    (.state this))
@@ -56,9 +57,9 @@
   (debug "registerView")
   (with-record
    (immutable this)
-   [^Model metamodel mutable ^ServiceFactory service-factory]
+   [^Model metamodel mutable ^Remoter remoter]
    ;; TODO - temporary hack
-   (if (instance? RemoteView view) (.hack ^RemoteView view service-factory))
+   (if (instance? RemoteView view) (.hack ^RemoteView view remoter))
    (let [model-name (.getName model)
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)

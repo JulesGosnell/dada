@@ -3,6 +3,7 @@
   [clojure.contrib logging]
   [org.dada.core utils]
   [org.dada.core proxy]
+  [org.dada.core remote]
   [org.dada jms])
  (:import
   [java.util
@@ -11,14 +12,13 @@
    AtomicReference]
   [org.dada.core
    View]
-  ;; TODO - lose dep on JMS
-  [org.dada.jms
-   ServiceFactory]
+  [org.dada.core.remote
+   Remoter]
   )
  (:gen-class
   :implements [org.dada.core.View java.io.Serializable]
   :constructors {[Object] []}
-  :methods [[hack [org.dada.jms.ServiceFactory] void]]
+  :methods [[hack [org.dada.core.remote.Remoter] void]]
   :init init
   :state state
   )
@@ -45,12 +45,12 @@
    [^View peer]
    (.update peer insertions alterations deletions)))
 
-(defn -hack [^org.dada.core.RemoteView this ^ServiceFactory service-factory]
+(defn -hack [^org.dada.core.RemoteView this ^Remoter remoter]
   (debug "hacking: " this)
   (with-record
    (immutable this)
    [send-to]
-   (let [client (.syncClient service-factory send-to)
+   (let [client (.syncClient remoter send-to)
 	 ;; TODO - this should be sendSync ultimately (when syncClient supports async interaction)
 	 ^View peer (ViewProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))]
      (.set ^AtomicReference (.state this)

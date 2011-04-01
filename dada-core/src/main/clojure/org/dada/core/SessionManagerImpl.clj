@@ -4,18 +4,18 @@
   [clojure.contrib logging]
   [org.dada core]
   [org.dada.core utils]
-  [org.dada jms])
+  [org.dada.core remote])
  (:require
   [org.dada.core SessionImpl RemoteSession])
  (:import
   [clojure.lang Atom]
   [java.util Collection Timer TimerTask]
   [org.dada.core Model RemoteSession Session SessionManager SessionImpl View]
-  [org.dada.jms MessageServer ServiceFactory] ;TODO - these two should migrate to core
+  [org.dada.core.remote MessageServer Remoter]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[String Object org.dada.core.Model] []} ;TODO - should be ServiceFactory
+  :constructors {[String Object org.dada.core.Model] []} ;TODO - should be Remoter
   :methods []
   :init init
   :state state
@@ -25,7 +25,7 @@
 
 (defrecord MutableState [sessions ^MessageServer server])
 
-(defrecord ImmutableState [^String name ^Model metamodel ^ServiceFactory service-factory ^Timer timer ^Atom mutable])
+(defrecord ImmutableState [^String name ^Model metamodel ^Remoter remoter ^Timer timer ^Atom mutable])
 
 ;;------------------------------------------------------------------------------
 
@@ -40,13 +40,13 @@
 
 ;;------------------------------------------------------------------------------
 
-(defn -init [^String name ^ServiceFactory service-factory ^Model metamodel]
+(defn -init [^String name ^Remoter remoter ^Model metamodel]
   (let [mutable (atom (MutableState. {} nil))
 	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions mutable))) 0 10000))] ;TODO - hardwired
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. name metamodel service-factory timer mutable)]))
+     (ImmutableState. name metamodel remoter timer mutable)]))
 
 (defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
   (.state this))
@@ -54,8 +54,8 @@
 (defn -post-init [^org.dada.core.SessionManagerImpl this & _]
   (with-record
    (immutable this)
-   [^ServiceFactory service-factory name mutable]
-   (let [server (.server service-factory this (.endPoint service-factory name))]
+   [^Remoter remoter name mutable]
+   (let [server (.server remoter this (.endPoint remoter name))]
      ;; TODO - should not need jms session here
      (swap! mutable assoc :server server))))
 
@@ -71,16 +71,16 @@
 		    details (sessions session)]
 		[(assoc state :sessions (dissoc sessions session)) details])))]
      (.close server)
-     (.delete queue))))			;TODO - service-factory should look after this
+     (.delete queue))))			;TODO - remoter should look after this
 
 (defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
   (with-record
    (immutable this)
-   [metamodel ^ServiceFactory service-factory mutable]
+   [metamodel ^Remoter remoter mutable]
    (let [close-fn (fn [session] (destroy-session this session))
-	 session (SessionImpl. metamodel close-fn service-factory)
-	 queue (.endPoint service-factory) ;TODO - should not need jms-session here
-	 server (.server service-factory session queue)
+	 session (SessionImpl. metamodel close-fn remoter)
+	 queue (.endPoint remoter) ;TODO - should not need jms-session here
+	 server (.server remoter session queue)
 	 client (RemoteSession. queue)]
      (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
      (debug "createSession" client)

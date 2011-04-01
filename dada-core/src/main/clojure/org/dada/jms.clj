@@ -3,6 +3,7 @@
      [clojure.contrib logging]
      [org.dada core]
      [org.dada.core utils]
+     [org.dada.core remote]
      )
     (:import
      [java.util.concurrent Exchanger ExecutorService TimeUnit]
@@ -10,6 +11,7 @@
      [javax.jms BytesMessage Destination Message MessageConsumer MessageProducer MessageListener Session TemporaryQueue TextMessage Topic Queue]
      [clojure.lang Atom]
      [org.dada.core ClassLoadingAwareObjectInputStream]
+     [org.dada.core.remote MessageStrategy MessageServer AsyncMessageClient SyncMessageClient Remoter]
      )
     )
 
@@ -41,11 +43,6 @@
 
 ;;------------------------------------------------------------------------------
 
-(definterface MessageStrategy
-  (^javax.jms.Message createMessage [^javax.jms.Session session])
-  (^Object readMessage [^javax.jms.Message message])
-  (^void writeMessage [^javax.jms.Message message body]))
-
 (deftype BytesMessageStrategy []
   MessageStrategy
   (createMessage [_ session]
@@ -67,11 +64,6 @@
 		(.setText ^TextMessage message text) nil))
 
 ;;------------------------------------------------------------------------------
-
-(definterface MessageServer
-  (^void open [])
-  (^void close [])
-  (^void receive [^javax.jms.Message message]))
 
 (deftype JMSMessageServer [target
 			   ^Session session
@@ -124,11 +116,6 @@
 
 ;;------------------------------------------------------------------------------
 
-(definterface AsyncMessageClient
-  (^void open [])
-  (^void close [])
-  (^void sendAsync [invocation]))
-
 (deftype JMSAsyncMessageClient [^MessageStrategy strategy
 				^Translator translator
 				^Session session
@@ -156,13 +143,6 @@
      (init-jms-async-message-client strategy translator session producer))))
 
 ;;------------------------------------------------------------------------------
-
-(definterface SyncMessageClient
-  (^void open [])
-  (^void close [])
-  (^void receive [^javax.jms.Message message])
-  (^Object sendSync [invocation])
-  (^void sendAsync [invocation]))
 
 (deftype JMSSyncMessageClient [^MessageStrategy strategy
 			       ^Translator translator
@@ -241,24 +221,8 @@
 
 ;;------------------------------------------------------------------------------
 
-(definterface ServiceFactory
-
-  (^org.dada.jms.MessageServer server [target reply-to])
-
-  (^org.dada.jms.AsyncMessageClient asyncClient [endpoint])
-
-  (^org.dada.jms.SyncMessageClient syncClient [endpoint])
-
-  (endPoint [])				;temporary queue
-
-  (endPoint [name])			;named queue
-
-  (endPoint [name one-to-many])	;named topic - varargs does not seem to work in definterface
-
-  )
-
-(deftype JMSServiceFactory [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^Long timeout]
-  ServiceFactory
+(deftype JMSRemoter [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^Long timeout]
+  Remoter
   
   (server [this target reply-to]
 	  (init-jms-message-server target session strategy translator reply-to threads))
@@ -275,5 +239,3 @@
   (endPoint [this]
 	    (.createTemporaryQueue session))
   )
-
-;; TODO - syncClient needs to handle async calls

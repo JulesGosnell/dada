@@ -1,64 +1,66 @@
 (ns org.dada.core.RemoteSessionManager
- (:use
-  [clojure.contrib logging]
-  [org.dada.core utils]
-  [org.dada.core proxy]
-  [org.dada jms]
+  (:use
+   [clojure.contrib logging]
+   [org.dada.core utils]
+   [org.dada.core proxy]
+   [org.dada.core remote]
+   )
+  (:import
+   [java.lang.reflect
+    Proxy]
+   [java.net
+    URL
+    URLClassLoader]
+   [java.util
+    Collection
+    Timer
+    TimerTask]
+   [java.util.concurrent
+    Executors
+    ExecutorService]
+   [clojure.lang
+    Atom]
+   [org.dada.core
+    Data
+    Metadata
+    Model
+    RemoteModel
+    RemoteSession
+    Session
+    SessionManager
+    SessionManagerHelper
+    View]
+   [org.dada.core.remote
+    MessageStrategy
+    SyncMessageClient
+    Remoter
+    ]
+   ;; TODO - lose jms references
+   [javax.jms
+    Connection
+    ConnectionFactory
+    Queue
+    Topic]
+   [org.dada.jms
+    Translator
+    SerializeTranslator
+    BytesMessageStrategy
+    JMSRemoter]
+   )
+  (:gen-class
+   :implements [org.dada.core.SessionManager]
+   :constructors {[String javax.jms.ConnectionFactory Integer] []}
+   :methods []
+   :init init
+   :state state
+   )
   )
- (:import
-  [java.lang.reflect
-   Proxy]
-  [java.net
-   URL
-   URLClassLoader]
-  [java.util
-   Collection
-   Timer
-   TimerTask]
-  [java.util.concurrent
-   Executors
-   ExecutorService]
-  [clojure.lang
-   Atom]
-  [org.dada.core
-   Data
-   Metadata
-   Model
-   RemoteModel
-   RemoteSession
-   Session
-   SessionManager
-   SessionManagerHelper
-   View]
-  ;; TODO - lose jms references
-  [javax.jms
-   Connection
-   ConnectionFactory
-   Queue
-   Topic]
-  [org.dada.jms
-   Translator
-   SerializeTranslator
-   MessageStrategy
-   BytesMessageStrategy
-   SyncMessageClient
-   ServiceFactory
-   JMSServiceFactory]
-  )
- (:gen-class
-  :implements [org.dada.core.SessionManager]
-  :constructors {[String javax.jms.ConnectionFactory Integer] []}
-  :methods []
-  :init init
-  :state state
-  )
- )
 
 (defrecord ImmutableState
   [^Connection connection
    ^javax.jms.Session jms-session
    ^ExecutorService thread-pool
-   ^ServiceFactory service-factory
+   ^Remoter remoter
    ^SyncMessageClient client
    ^SessionManager peer
    ^Atom sessions])
@@ -76,14 +78,14 @@
   (let [^Connection connection (doto (.createConnection connection-factory) (.start))
 	^javax.jms.Session jms-session (.createSession connection false (javax.jms.Session/DUPS_OK_ACKNOWLEDGE))
 	^ExecutorService thread-pool (Executors/newFixedThreadPool num-threads)
-	^ServiceFactory service-factory (JMSServiceFactory. jms-session thread-pool strategy translator 10000) ;TODO - hardwired
+	^Remoter remoter (JMSRemoter. jms-session thread-pool strategy translator 10000) ;TODO - hardwired
 	^Queue send-to (.createQueue jms-session name)
-	^SyncMessageClient client (.syncClient service-factory send-to)
+	^SyncMessageClient client (.syncClient remoter send-to)
 	^SessionManager peer (SessionManagerProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))]
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. connection jms-session thread-pool service-factory client peer (atom nil))]))
+     (ImmutableState. connection jms-session thread-pool remoter client peer (atom nil))]))
 
 (defn ^ImmutableState immutable [^org.dada.core.RemoteSessionManager this]
   (.state this))
@@ -107,8 +109,8 @@
 (defn ^Session -createSession [^org.dada.core.RemoteSessionManager this]
   (with-record
    (immutable this)
-   [^ServiceFactory service-factory ^SessionManager peer sessions]
-   (let [session (doto ^RemoteSession (.createSession peer) (.hack service-factory))]
+   [^Remoter remoter ^SessionManager peer sessions]
+   (let [session (doto ^RemoteSession (.createSession peer) (.hack remoter))]
      (swap! sessions conj session)
      (SessionManagerHelper/setCurrentSession session) ;; TODO - temporary hack
      ;; TODO : aargh! - we need to wrap session in a proxy that will remove it from our list on closing

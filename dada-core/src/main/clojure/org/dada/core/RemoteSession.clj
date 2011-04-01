@@ -3,7 +3,7 @@
   [clojure.contrib logging]
   [org.dada.core utils]
   [org.dada.core proxy]
-  [org.dada jms])
+  [org.dada.core.remote])
  (:require
   [org.dada.core RemoteView])
  (:import
@@ -23,27 +23,30 @@
    SessionManager
    View
    RemoteView]
-  ;; TODO - this should not be here - everything required should be injected via ServiceFactory
-  [org.dada.jms
+  [org.dada.core.remote
+   AsyncMessageClient
    MessageServer
    MessageStrategy
+   Remoter
+   ]
+  ;; TODO - this should not be here - everything required should be injected via Remoter
+  [org.dada.jms
    BytesMessageStrategy
-   Translator
+   JMSRemoter
    SerializeTranslator
-   ServiceFactory
-   AsyncMessageClient
-   JMSServiceFactory]
+   Translator
+   ]
   )
  (:gen-class
   :implements [org.dada.core.Session java.io.Serializable]
   :constructors {[Object] []}
-  :methods [[hack [org.dada.jms.ServiceFactory] void]]
+  :methods [[hack [org.dada.core.remote.Remoter] void]]
   :init init
   :state state
   )
  )
 
-(defrecord ImmutableState [^Object send-to ^AsyncMessageClient client ^Session peer ^ServiceFactory service-factory ^Timer timer ^Atom views])
+(defrecord ImmutableState [^Object send-to ^AsyncMessageClient client ^Session peer ^Remoter remoter ^Timer timer ^Atom views])
 
 ;; proxy for a server-side Session
 ;; intercept outward-bound local Views and replace with proxies
@@ -79,10 +82,10 @@
 (defn ^Data -registerView [^org.dada.core.RemoteSession this ^Model model ^View view]
     (with-record
      (immutable this)
-     [^Session peer ^ServiceFactory service-factory views]
+     [^Session peer ^Remoter remoter views]
      (debug "registerView" model view)
-     (let [topic (.endPoint service-factory (str "DADA." (.getName model)) true) ;TODO - hardwired prefix and Destination type
-	   ^AsyncMessageServer server (.server service-factory view topic)
+     (let [topic (.endPoint remoter (str "DADA." (.getName model)) true) ;TODO - hardwired prefix and Destination type
+	   ^AsyncMessageServer server (.server remoter view topic)
 	   ^View client (RemoteView. topic)]
        (swap! views (fn [views] (assoc views [view model] [topic server client])))
        (.registerView peer model client))))
@@ -108,16 +111,16 @@
 (defn ^Model -query [^org.dada.core.RemoteSession this ^String query]
   (with-record (immutable this) [^Session peer] (.query peer query)))
 
-(defn -hack [^org.dada.core.RemoteSession this ^ServiceFactory service-factory]
+(defn -hack [^org.dada.core.RemoteSession this ^Remoter remoter]
   (debug "hacking: " this)
   (with-record
    (immutable this)
    [send-to]
    (let [ping-period 5000		;TODO - hardwired
-	 client (.syncClient service-factory send-to)
+	 client (.syncClient remoter send-to)
 	 ^Session peer (SessionProxy. (fn [i] (.sendSync client i)) (fn [i] (.sendAsync client i)))
 	 ^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (.ping peer))) 0 ping-period))
 	 ^Atom views (atom nil)]
      (.set ^AtomicReference (.state this)
-	   (ImmutableState. send-to client peer service-factory timer views))))
+	   (ImmutableState. send-to client peer remoter timer views))))
   (debug "hacked: " this))

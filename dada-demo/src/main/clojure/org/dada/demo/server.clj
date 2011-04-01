@@ -1,35 +1,37 @@
 (ns 
- #^{:author "Jules Gosnell" :doc "Demo Server for DADA"}
- org.dada.demo.server
- (:use
-  [org.dada web]
-  [org.dada core])
- (:import
-  [java.util.concurrent
-   Executors
-   ExecutorService]
-  [javax.jms
-   ConnectionFactory]
-  [org.springframework.context.support
-   ClassPathXmlApplicationContext]
-  [org.springframework.beans.factory
-   BeanFactory]
-  [org.dada.core
-   SessionManager
-   SessionManagerNameGetter
-   SessionManagerImpl
-   View
-   ViewNameGetter]
-  [org.dada.jms
-   MessageStrategy
-   BytesMessageStrategy
-   SerializeTranslator
-   Translator
-   ServiceFactory
-   JMSServiceFactory]
-  [org.springframework.beans.factory
-   BeanFactory])
- )
+    #^{:author "Jules Gosnell" :doc "Demo Server for DADA"}
+  org.dada.demo.server
+  (:use
+   [org.dada web]
+   [org.dada core]
+   [org.dada.core remote])
+  (:import
+   [java.util.concurrent
+    Executors
+    ExecutorService]
+   [javax.jms
+    ConnectionFactory]
+   [org.springframework.context.support
+    ClassPathXmlApplicationContext]
+   [org.springframework.beans.factory
+    BeanFactory]
+   [org.dada.core
+    SessionManager
+    SessionManagerNameGetter
+    SessionManagerImpl
+    View
+    ViewNameGetter]
+   [org.dada.core.remote
+    MessageStrategy
+    Remoter
+    ]
+   [org.dada.jms
+    BytesMessageStrategy
+    SerializeTranslator
+    Translator
+    JMSRemoter]
+   )
+  )
 
 (if (not *compile-files*)
   (do
@@ -41,8 +43,8 @@
 	  ^ExecutorService threads (Executors/newFixedThreadPool num-threads)
 	  ^MessageStrategy strategy (BytesMessageStrategy.)
 	  ^Translator translator (SerializeTranslator.)
-	  ^ServiceFactory service-factory (JMSServiceFactory. jms-session threads strategy translator timeout)]
-      (def ^SessionManager session-manager (SessionManagerImpl. "SessionManager.POJO" service-factory *metamodel*)))
+	  ^Remoter remoter (JMSRemoter. jms-session threads strategy translator timeout)]
+      (def ^SessionManager session-manager (SessionManagerImpl. "SessionManager.POJO" remoter *metamodel*)))
 
     ;; move this into SessionManagerImpl
     (def jetty (start-jetty 8888))
