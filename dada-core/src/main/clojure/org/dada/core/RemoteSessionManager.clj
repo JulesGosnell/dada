@@ -5,6 +5,9 @@
    [org.dada.core proxy]
    [org.dada.core remote]
    )
+  (:require
+   [org.dada.core
+    RemoteSession])
   (:import
    [java.lang.reflect
     Proxy]
@@ -39,7 +42,7 @@
    )
   (:gen-class
    :implements [org.dada.core.SessionManager]
-   :constructors {[String org.dada.core.remote.Remoter] []}
+   :constructors {[String Object] []}	;TODO - should be Remoter
    :methods []
    :init init
    :state state
