@@ -3,8 +3,7 @@
   [clojure.contrib logging]
   [org.dada.core utils]
   [org.dada.core proxy]
-  [org.dada.core remote]
-  [org.dada jms])
+  [org.dada.core remote])
  (:import
   [java.util
    Collection]

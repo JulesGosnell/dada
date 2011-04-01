@@ -56,7 +56,6 @@
    (immutable this)
    [^Remoter remoter name mutable]
    (let [server (.server remoter this (.endPoint remoter name))]
-     ;; TODO - should not need jms session here
      (swap! mutable assoc :server server))))
 
 (defn destroy-session [^org.dada.core.SessionManagerImpl this ^org.dada.core.SessionImpl session]
@@ -79,7 +78,7 @@
    [metamodel ^Remoter remoter mutable]
    (let [close-fn (fn [session] (destroy-session this session))
 	 session (SessionImpl. metamodel close-fn remoter)
-	 queue (.endPoint remoter) ;TODO - should not need jms-session here
+	 queue (.endPoint remoter)
 	 server (.server remoter session queue)
 	 client (RemoteSession. queue)]
      (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
