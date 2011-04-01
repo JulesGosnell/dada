@@ -45,4 +45,81 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>build-helper-maven-plugin</artifactId>
+	<version>1.5</version>
+	<executions>
+	  <execution>
+	    <phase>generate-sources</phase>
+	    <goals>
+	      <goal>add-source</goal>
+	    </goals>
+	    <configuration>
+	      <sources>
+		<source>src/main/clojure</source>
+	      </sources>
+	    </configuration>
+	  </execution>
+	</executions>
+      </plugin>
+      <plugin>
+	<groupId>com.theoryinpractise</groupId>
+	<artifactId>clojure-maven-plugin</artifactId>
+	<version>1.3.2</version>
+	<configuration>
+	  <warnOnReflection>true</warnOnReflection>
+	  <clojureOptions>-Dnet.sourceforge.cobertura.datafile=${cobertura.datafile}</clojureOptions>
+	  <namespaces>
+            <namespace>org.dada.*</namespace>
+            <namespace>!org.dada.xxx.*</namespace>
+	  </namespaces>
+	  <testNamespaces>
+            <namespace>org.dada.*</namespace>
+	  </testNamespaces>
+	  <!-- <testScript>junit_test_script.clj</testScript> --> <!-- script does not find any namespaces -->
+	</configuration>
+	<executions>
+	  <execution>
+            <id>clojure-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+	  </execution>
+	  <execution>
+            <id>clojure-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+	  </execution>
+<!--	  <execution>
+            <id>clojure-gendoc</id>
+            <phase>site</phase>
+	    <configuration>
+	      <outputDirectory>${project.build.directory}/site/clojure</outputDirectory> 
+	      <clojureOptions>-Xmx256m</clojureOptions>
+	      <generateTestDocumentation>false</generateTestDocumentation>
+	    </configuration>
+	    <goals>
+	      <goal>gendoc</goal>
+	    </goals>
+	  </execution>
+-->
+	</executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
 </project>

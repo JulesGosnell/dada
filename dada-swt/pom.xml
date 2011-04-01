@@ -101,6 +101,11 @@
       <artifactId>dada-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.dada</groupId>
+      <artifactId>dada-jms</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 <!--
     <dependency>
       <groupId>org.swtchart</groupId>
