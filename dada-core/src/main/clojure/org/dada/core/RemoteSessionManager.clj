@@ -32,8 +32,10 @@
     View]
    [org.dada.core.remote
     MessageStrategy
-    SyncMessageClient
     Remoter
+    SerializeTranslator
+    SyncMessageClient
+    Translator
     ]
    ;; TODO - lose jms references
    [javax.jms
@@ -42,8 +44,6 @@
     Queue
     Topic]
    [org.dada.jms
-    Translator
-    SerializeTranslator
     BytesMessageStrategy
     JMSRemoter]
    )

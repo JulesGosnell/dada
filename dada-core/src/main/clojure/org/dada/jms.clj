@@ -7,39 +7,11 @@
      )
     (:import
      [java.util.concurrent Exchanger ExecutorService TimeUnit]
-     [java.io ByteArrayInputStream ByteArrayOutputStream ObjectOutputStream]
      [javax.jms BytesMessage Destination Message MessageConsumer MessageProducer MessageListener Session TemporaryQueue TextMessage Topic Queue]
      [clojure.lang Atom]
-     [org.dada.core ClassLoadingAwareObjectInputStream]
-     [org.dada.core.remote MessageStrategy MessageServer AsyncMessageClient SyncMessageClient Remoter]
+     [org.dada.core.remote MessageStrategy MessageServer AsyncMessageClient SyncMessageClient Remoter Translator]
      )
     )
-
-;;--------------------------------------------------------------------------------
-
-(definterface Translator
-  (^Object nativeToForeign [^Object object])
-  (^Object foreignToNative [^Object object]))
-
-(deftype SerializeTranslator []
-  Translator
-  (nativeToForeign [_ object]
-		   (let [baos (ByteArrayOutputStream.)
-			 oos (ObjectOutputStream. baos)]
-		     (try
-		      (.writeObject oos object)
-		      (finally
-		       (.close oos)
-		       (.close baos)))
-		     (.toByteArray baos)))
-  (foreignToNative [_ buffer]
-		   (let [bais (ByteArrayInputStream. buffer)
-			 ois (ClassLoadingAwareObjectInputStream. bais)]
-		     (try
-		      (.readObject ois)
-		      (finally
-		       (.close ois)
-		       (.close bais))))))
 
 ;;------------------------------------------------------------------------------
 

@@ -1,4 +1,36 @@
-(ns org.dada.core.remote)
+(ns org.dada.core.remote
+  (:import
+   [java.io ByteArrayInputStream ByteArrayOutputStream ObjectOutputStream]
+   [org.dada.core ClassLoadingAwareObjectInputStream]
+   ))
+
+;;--------------------------------------------------------------------------------
+
+(definterface Translator
+  (^Object nativeToForeign [^Object object])
+  (^Object foreignToNative [^Object object]))
+
+(deftype SerializeTranslator []
+  Translator
+  (nativeToForeign [_ object]
+		   (let [baos (ByteArrayOutputStream.)
+			 oos (ObjectOutputStream. baos)]
+		     (try
+		      (.writeObject oos object)
+		      (finally
+		       (.close oos)
+		       (.close baos)))
+		     (.toByteArray baos)))
+  (foreignToNative [_ buffer]
+		   (let [bais (ByteArrayInputStream. buffer)
+			 ois (ClassLoadingAwareObjectInputStream. bais)]
+		     (try
+		      (.readObject ois)
+		      (finally
+		       (.close ois)
+		       (.close bais))))))
+
+;;------------------------------------------------------------------------------
 
 (definterface MessageStrategy
   (createMessage [session])

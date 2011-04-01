@@ -28,11 +28,6 @@
    MessageServer
    MessageStrategy
    Remoter
-   ]
-  ;; TODO - this should not be here - everything required should be injected via Remoter
-  [org.dada.jms
-   BytesMessageStrategy
-   JMSRemoter
    SerializeTranslator
    Translator
    ]

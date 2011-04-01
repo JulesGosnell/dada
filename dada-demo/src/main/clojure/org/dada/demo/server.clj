@@ -24,11 +24,11 @@
    [org.dada.core.remote
     MessageStrategy
     Remoter
+    SerializeTranslator
+    Translator
     ]
    [org.dada.jms
     BytesMessageStrategy
-    SerializeTranslator
-    Translator
     JMSRemoter]
    )
   )
