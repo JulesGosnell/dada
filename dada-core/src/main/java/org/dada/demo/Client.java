@@ -39,11 +39,11 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Session;
+// import javax.jms.Connection;
+// import javax.jms.ConnectionFactory;
+// import javax.jms.Destination;
+// import javax.jms.JMSException;
+// import javax.jms.Session;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -58,7 +58,7 @@ import org.dada.core.Metadata;
 import org.dada.core.SessionManager;
 import org.dada.core.Update;
 import org.dada.core.View;
-import org.dada.jms.RemotingFactory;
+//import org.dada.jms.RemotingFactory;
 import org.dada.slf4j.Logger;
 import org.dada.slf4j.LoggerFactory;
 
