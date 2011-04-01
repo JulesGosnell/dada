@@ -18,16 +18,13 @@
     BeanFactory]
    [org.dada.core
     SessionManager
-    SessionManagerNameGetter
     SessionManagerImpl
-    View
-    ViewNameGetter]
+    View]
    [org.dada.core.remote
     MessageStrategy
     Remoter
     SerialiseTranslator
-    Translator
-    ]
+    Translator]
    [org.dada.jms
     BytesMessageStrategy
     JMSRemoter]

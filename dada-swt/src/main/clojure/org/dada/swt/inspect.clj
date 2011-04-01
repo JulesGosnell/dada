@@ -9,7 +9,7 @@
   [java.util Collection]
   [org.eclipse.swt.widgets Composite Display Shell]
   [org.eclipse.swt SWT]
-  [org.dada.core Model ModelView Result SessionManagerNameGetter SimpleModelView Update View ViewNameGetter]
+  [org.dada.core Model ModelView Result SimpleModelView Update View]
   ))
 
 ;;--------------------------------------------------------------------------------
