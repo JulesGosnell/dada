@@ -2,33 +2,30 @@
  org.dada.core.SessionImpl
  (:use
   [clojure.contrib logging]
-  [org.dada.core utils]
-  [org.dada.core remote])
- (:require
-  [org.dada.core RemoteView])
+  [org.dada.core utils])
  (:import
   [clojure.lang Atom IFn]
   [java.util Map]
-  [org.dada.core Data Model RemoteView View]
-  [org.dada.core.remote Remoter]
+  [org.dada.core Data Model View]
   )
  (:gen-class
   :implements [org.dada.core.Session]
-  :constructors {[org.dada.core.Model clojure.lang.IFn org.dada.core.remote.Remoter] []}
+  :constructors {[org.dada.core.Model] []}
+  :methods [[addCloseHook [clojure.lang.IFn]  void]]
   :init init
   :state state
   )
  )
 
-(defrecord MutableState [^Long lastPing ^Map views])
-(defrecord ImmutableState [^Model metamodel ^IFn close-hook ^Remoter remoter ^Atom mutable])
+(defrecord MutableState [^Long lastPing ^Map views close-hooks])
+(defrecord ImmutableState [^Model metamodel ^Atom mutable])
 
-(defn -init [^Model metamodel ^IFn close-hook ^Remoter remoter]
+(defn -init [^Model metamodel]
   (debug "init")
   [ ;; super ctor args
    []
    ;; instance state
-   (ImmutableState. metamodel close-hook remoter (atom (MutableState. (System/currentTimeMillis) {})))])
+   (ImmutableState. metamodel (atom (MutableState. (System/currentTimeMillis) {} [])))])
 
 (defn ^ImmutableState immutable [^org.dada.core.SessionImpl this]
    (.state this))
@@ -47,8 +44,9 @@
 (defn -close [^org.dada.core.SessionImpl this]
   (with-record
    (immutable this)
-   [close-hook mutable]
-   (close-hook this)
+   [mutable]
+   ;; TODO - should all be done as one atomic action...
+   (doseq [close-hook (:close-hooks @mutable)] (close-hook this))
    (debug "close")
    (doseq [[^View view models] (:views @mutable)]
        (doseq [^Model model models] (.deregisterView model view)))))
@@ -57,9 +55,7 @@
   (debug "registerView")
   (with-record
    (immutable this)
-   [^Model metamodel mutable ^Remoter remoter]
-   ;; TODO - temporary hack
-   (if (instance? RemoteView view) (.hack ^RemoteView view remoter))
+   [^Model metamodel mutable]
    (let [model-name (.getName model)
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)
@@ -93,7 +89,7 @@
    (immutable this)
    [^Model metamodel mutable]
    (swap! mutable assoc :lastPing (System/currentTimeMillis))
-   (.getData (.find metamodel (.getName model)))))
+   (.getData ^Model (.find metamodel (.getName model)))))
 
 (defn ^Model -query [^org.dada.core.SessionImpl this ^String query]
   (with-record
@@ -101,3 +97,9 @@
    [^Model metamodel mutable]
    (swap! mutable assoc :lastPing (System/currentTimeMillis))
    (throw (UnsupportedOperationException. "QUERY - NYI"))))
+
+(defn -addCloseHook [^org.dada.core.SessionImpl this ^IFn close-hook]
+  (with-record
+   (immutable this)
+   [mutable]
+   (swap! mutable (fn [mutable close-hook] (assoc mutable :close-hooks (conj (:close-hooks mutable) close-hook))) close-hook)))

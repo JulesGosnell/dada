@@ -3,99 +3,78 @@
  (:use
   [clojure.contrib logging]
   [org.dada core]
-  [org.dada.core utils]
-  [org.dada.core remote])
+  [org.dada.core utils])
  (:require
-  [org.dada.core SessionImpl RemoteSession])
+  [org.dada.core 
+   SessionImpl])
  (:import
-  [clojure.lang Atom]
-  [java.util Collection Timer TimerTask]
-  [org.dada.core Model RemoteSession Session SessionManager SessionImpl View]
-  [org.dada.core.remote MessageServer Remoter]
+  [clojure.lang Atom IFn]
+  [java.util Timer TimerTask]
+  [org.dada.core Model Session SessionManager SessionImpl]
   )
  (:gen-class
   :implements [org.dada.core.SessionManager]
-  :constructors {[String Object org.dada.core.Model] []} ;TODO - should be Remoter
-  :methods []
+  :constructors {[String org.dada.core.Model] []}
+  :methods [[addCloseHook [clojure.lang.IFn] void]]
   :init init
   :state state
-  :post-init post-init
   )
  )
 
-(defrecord MutableState [sessions ^MessageServer server])
-
-(defrecord ImmutableState [^String name ^Model metamodel ^Remoter remoter ^Timer timer ^Atom mutable])
+(defrecord ImmutableState [^String name ^Model metamodel ^Timer timer ^Atom sessions ^Atom close-hooks])
 
 ;;------------------------------------------------------------------------------
 
-(defn sweep-sessions [mutable]
+(defn cleave [s f & i]
+  (reduce (fn [[y n] e] (if (f e) [(conj y e) n] [y (conj n e)])) i s))
+
+(defn sweep-sessions [sessions]
   (trace "sweeping sessions")
-  (let [threshold (- (System/currentTimeMillis) 10000)
-	dead-sessions (keys (filter (fn [[^Session session]] (< (.getLastPingTime session) threshold)) (:sessions @mutable)))] ;TODO - hardwired
-    (if (not (empty? dead-sessions))
+  (let [threshold (- (System/currentTimeMillis) 10000) ;TODO - hardwired
+	[live dead] (swap2! sessions cleave (fn [^Session s] (> (.getLastPingTime s) threshold)) #{})]
+    (if (not (empty? dead))
       (do
-	(debug "dead sessions detected: " dead-sessions)
-	(doseq [^Session session dead-sessions] (.close session))))))
+	(debug "dead sessions detected: " dead)
+	(doseq [^Session session dead] (.close session))))))
 
 ;;------------------------------------------------------------------------------
 
-(defn -init [^String name ^Remoter remoter ^Model metamodel]
-  (let [mutable (atom (MutableState. {} nil))
-	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions mutable))) 0 10000))] ;TODO - hardwired
+(defn -init [^String name ^Model metamodel]
+  (let [sessions (atom #{})
+	close-hooks (atom [])
+	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions sessions))) 0 10000))] ;TODO - hardwired
     [ ;; super ctor args
      []
      ;; instance state
-     (ImmutableState. name metamodel remoter timer mutable)]))
+     (ImmutableState. name metamodel timer sessions close-hooks)]))
 
 (defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
   (.state this))
 
-(defn -post-init [^org.dada.core.SessionManagerImpl this & _]
-  (with-record
-   (immutable this)
-   [^Remoter remoter name mutable]
-   (let [server (.server remoter this (.endPoint remoter name))]
-     (swap! mutable assoc :server server))))
-
-(defn destroy-session [^org.dada.core.SessionManagerImpl this ^org.dada.core.SessionImpl session]
-  (with-record
-   (immutable this)
-   [mutable]
-   (let [[_ [queue ^MessageServer server]]
-	 (swap2!			;N.B. NOT swap!
-	  mutable
-	  (fn [state]
-	      (let [sessions (:sessions state)
-		    details (sessions session)]
-		[(assoc state :sessions (dissoc sessions session)) details])))]
-     (.close server)
-     (.delete queue))))			;TODO - remoter should look after this
-
 (defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
   (with-record
    (immutable this)
-   [metamodel ^Remoter remoter mutable]
-   (let [close-fn (fn [session] (destroy-session this session))
-	 session (SessionImpl. metamodel close-fn remoter)
-	 queue (.endPoint remoter)
-	 server (.server remoter session queue)
-	 client (RemoteSession. queue)]
-     (swap! mutable (fn [state] (assoc state :sessions (conj (:sessions state) [session [queue server]]))))
-     (debug "createSession" client)
-     client)))
+   [metamodel sessions]
+   (let [session (SessionImpl. metamodel)]
+     (.addCloseHook session (fn [session] (swap! sessions disj session)))
+     (swap! sessions conj session)
+     (debug "createSession" session)
+     session)))
 
 (defn -close [^org.dada.core.SessionManagerImpl this]
   (debug "close")
   (with-record
    (immutable this)
-   [^Timer timer mutable]
+   [^Timer timer sessions close-hooks]
    (.cancel timer)
-   (with-record
-    ^MutableState @mutable
-    [sessions ^MessageServer server]
-    (doseq [[^Session session] sessions](.close session))
-    (.close server))))
+   (doseq [^Session session (second (swap2! sessions (fn [sessions] [nil sessions])))] (.close session))
+   (doseq [close-hook @close-hooks] (close-hook this))))
 
 (defn ^String -getName [^org.dada.core.SessionManagerImpl this]
   (with-record (immutable this) [name] name))
+
+(defn -addCloseHook [^org.dada.core.SessionManagerImpl this ^IFn close-hook]
+  (with-record
+   (immutable this)
+   [close-hooks]
+   (swap! close-hooks conj close-hook)))
