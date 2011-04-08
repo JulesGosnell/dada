@@ -3,12 +3,18 @@
      [org.dada core]
      [org.dada.core remote]
      )
+    (:require
+     [org.dada.core
+      RemoteSession
+      RemoteView
+      SessionImpl
+      SessionManagerImpl])
     (:import
      [org.dada.core
       Data
       Model
-      RemoteView
       RemoteSession
+      RemoteView
       Session
       SessionImpl
       SessionManager
