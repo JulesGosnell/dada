@@ -33,7 +33,7 @@
     <java.version>1.6</java.version>
     <clojure.version>1.3.0-alpha4</clojure.version>
     <asm.version>3.2</asm.version>
-    <commons-lang.version>2.5</commons-lang.version>
+    <commons-lang.version>2.6</commons-lang.version>
     <derby.version>10.6.1.0</derby.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
