@@ -1,7 +1,7 @@
 (ns
  org.dada.core.SessionImpl
  (:use
-  [clojure.contrib logging]
+  [clojure.tools logging]
   [org.dada.core utils])
  (:import
   [clojure.lang Atom IFn]

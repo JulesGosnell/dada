@@ -2,7 +2,7 @@
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.dsl
  (:use [org.dada.core])
- (:use clojure.contrib.logging)
+ (:use clojure.tools.logging)
  (:use org.dada.core.PivotModel)
  (:import [clojure.lang
 	   ]

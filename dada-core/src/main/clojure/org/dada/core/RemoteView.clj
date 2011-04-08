@@ -1,6 +1,6 @@
 (ns org.dada.core.RemoteView
  (:use
-  [clojure.contrib logging]
+  [clojure.tools logging]
   [org.dada.core utils]
   [org.dada.core proxy]
   [org.dada.core remote])

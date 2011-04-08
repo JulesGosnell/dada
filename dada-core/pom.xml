@@ -48,6 +48,16 @@
         </exclusion>
       </exclusions>
     </dependency>
+
+    <!-- for clojure gendoc -->
+<!--
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure-contrib</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+-->
+
   </dependencies>
 
   <build>
@@ -108,7 +118,8 @@
               <goal>test</goal>
             </goals>
 	  </execution>
-<!--	  <execution>
+<!--
+	  <execution>
             <id>clojure-gendoc</id>
             <phase>site</phase>
 	    <configuration>

@@ -33,7 +33,7 @@ public class RT{
     static final public String jvmID = System.getProperty("clojure.jvmID");
 
     static public String nextGID(){
-	return jvmID + "_" + nextID();
+	return (jvmID == null ?  "" : (jvmID + "_")) + nextID();
     }
 
 static final public Boolean T = Boolean.TRUE;//Keyword.intern(Symbol.intern(null, "t"));
@@ -1405,9 +1405,32 @@ static public Object seqToTypedArray(ISeq seq) throws Exception{
 }
 
 static public Object seqToTypedArray(Class type, ISeq seq) throws Exception{
-	Object ret = Array.newInstance(type, length(seq));
-	for(int i = 0; seq != null; ++i, seq = seq.next())
-		Array.set(ret, i, seq.first());
+    Object ret = Array.newInstance(type, length(seq));
+    if(type == Integer.TYPE){
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, intCast(seq.first()));
+        }
+    } else if(type == Byte.TYPE) {
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, byteCast(seq.first()));
+        }
+    } else if(type == Float.TYPE) {
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, floatCast(seq.first()));
+        }
+    } else if(type == Short.TYPE) {
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, shortCast(seq.first()));
+        }
+    } else if(type == Character.TYPE) {
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, charCast(seq.first()));
+        }
+    } else {
+        for(int i = 0; seq != null; ++i, seq=seq.next()){
+            Array.set(ret, i, seq.first());
+        }
+    }
 	return ret;
 }
 

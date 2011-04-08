@@ -1,7 +1,7 @@
 (ns 
  #^{:author "Jules Gosnell" :doc "HTTP Class Server for DADA"}
  org.dada.web
- (:use clojure.contrib.logging)
+ (:use clojure.tools.logging)
  (:use [org.dada.core])
  (:import
   [clojure.lang DynamicClassLoader]

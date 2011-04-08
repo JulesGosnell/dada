@@ -1,6 +1,6 @@
 (ns org.dada.core.JoinModel
   (:use
-   [clojure.contrib logging]
+   [clojure.tools logging]
    [org.dada core]
    [org.dada.core counted-set]
    )

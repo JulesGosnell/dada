@@ -1,6 +1,6 @@
 (ns org.dada.jms
     (:use
-     [clojure.contrib logging]
+     [clojure.tools logging]
      [org.dada core]
      [org.dada.core utils]
      [org.dada.core remote]
