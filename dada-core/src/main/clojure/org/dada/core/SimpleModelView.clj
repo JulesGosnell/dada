@@ -1,6 +1,6 @@
 (ns org.dada.core.SimpleModelView
   (:use
-   [clojure.contrib logging]
+   [clojure.tools logging]
    [org.dada.core counted-set]
    )
   (:import

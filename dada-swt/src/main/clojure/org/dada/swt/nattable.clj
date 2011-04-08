@@ -1,7 +1,7 @@
 (ns
     org.dada.swt.nattable
   (:use
-   [clojure.contrib logging]
+   [clojure.tools logging]
    [org.dada core]
    )
   (:import

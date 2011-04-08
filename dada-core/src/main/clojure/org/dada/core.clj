@@ -1,7 +1,7 @@
 (ns
  org.dada.core
- (:require [org.dada.core SessionManagerImpl SimpleModelView])
- (:use [clojure.contrib logging])
+ (:require [org.dada.core SimpleModelView])
+ (:use [clojure.tools logging])
  (:import
   (clojure.lang
    DynamicClassLoader
@@ -37,15 +37,12 @@
    MetadataImpl
    Model
    ServiceFactory
-   SessionManager
-   SessionManagerImpl
    StringMetadata
    SynchronousServiceFactory
    SimpleModelView
    Update
    View
    )
-  (org.dada.demo Client)
   ))
 
 ;;--------------------------------------------------------------------------------

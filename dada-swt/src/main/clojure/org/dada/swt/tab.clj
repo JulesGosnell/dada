@@ -1,6 +1,6 @@
 (ns 
  org.dada.swt.tab
- (:use [clojure.contrib logging]
+ (:use [clojure.tools logging]
        [org.dada core]
        )
  (:import

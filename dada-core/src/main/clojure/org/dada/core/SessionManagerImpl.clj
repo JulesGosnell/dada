@@ -1,7 +1,7 @@
 (ns
  org.dada.core.SessionManagerImpl
  (:use
-  [clojure.contrib logging]
+  [clojure.tools logging]
   [org.dada core]
   [org.dada.core utils])
  (:require

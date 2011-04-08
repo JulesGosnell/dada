@@ -1,7 +1,7 @@
 (ns
  org.dada.swt.inspect
  (:use 
-  [clojure.contrib logging]  
+  [clojure.tools logging]  
   [org.dada core]  
   [org.dada.core dql]
   [org.dada.swt nattable tab shell])

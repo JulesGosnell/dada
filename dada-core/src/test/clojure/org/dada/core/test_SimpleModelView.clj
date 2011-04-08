@@ -1,7 +1,7 @@
 (ns org.dada.core.test-SimpleModelView
   (:use 
    [clojure test]
-   [clojure.contrib logging]
+   [clojure.tools logging]
    [org.dada core]
    )
   (:import

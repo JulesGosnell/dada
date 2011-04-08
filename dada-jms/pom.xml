@@ -27,11 +27,35 @@
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-core</artifactId>
       <version>${activemq.version}</version>
+      <exclusions>
+	<exclusion>
+	  <groupId>org.apache.geronimo.specs</groupId>
+	  <artifactId>geronimo-j2ee-management_1.0_spec</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>org.apache.activemq</groupId>
+	  <artifactId>kahadb</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>org.apache.activemq.protobuf</groupId>
+	  <artifactId>activemq-protobuf</artifactId>
+	</exclusion>
+	<exclusion>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging</artifactId>
+	</exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.xbean</groupId>
       <artifactId>xbean-spring</artifactId>
-      <version>3.6</version>
+      <version>3.7</version>
+      <exclusions>
+	<exclusion>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging</artifactId>
+	</exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
@@ -68,7 +92,7 @@
       <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
-	<version>1.3.2</version>
+	<version>${clojure-maven-plugin.version}</version>
 	<configuration>
 	  <warnOnReflection>true</warnOnReflection>
 	  <clojureOptions>-Dnet.sourceforge.cobertura.datafile=${cobertura.datafile}</clojureOptions>
