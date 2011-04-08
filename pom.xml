@@ -100,10 +100,9 @@
       <module>dada-slf4j</module>
       <module>dada-core</module>
       <module>dada-jms</module>
+      <module>dada-demo</module>
       <!-- <module>dada-cometd</module> -->
       <!-- <module>dada-consensus</module> -->
-      <!-- <module>dada-swt</module> -->
-      <!-- <module>dada-demo</module> -->
     </modules>
   </profile>
 <!--
@@ -124,7 +123,6 @@
     </activation>
     <modules>
       <module>dada-swt</module>
-      <module>dada-demo</module>
     </modules>
   </profile>
 </profiles>

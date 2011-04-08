@@ -35,11 +35,6 @@
       <artifactId>dada-jms</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.dada</groupId>
-      <artifactId>dada-swt</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
