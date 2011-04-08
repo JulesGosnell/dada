@@ -19,21 +19,7 @@
   <name>DADA :: Demonstration</name>
   <description>DADA Demonstration</description>
 
-  <properties> 
-    <activemq.version>5.3.2</activemq.version>
-  </properties>
-  
   <dependencies>
-    <dependency> <!-- scope should be test -->
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-core</artifactId>
-      <version>${activemq.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.xbean</groupId>
-      <artifactId>xbean-spring</artifactId>
-      <version>3.6</version>
-    </dependency>
     <dependency>
       <groupId>org.dada</groupId>
       <artifactId>dada-slf4j</artifactId>
