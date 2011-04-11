@@ -1,15 +1,13 @@
-(ns 
- #^{:author "Jules Gosnell" :doc "HTTP Class Server for DADA"}
- org.dada.web
- (:use clojure.tools.logging)
- (:use [org.dada.core])
- (:import
-  [clojure.lang DynamicClassLoader]
-  [org.eclipse.jetty.server Request Server]
-  [org.eclipse.jetty.server.handler AbstractHandler]
-  [java.io InputStream OutputStream ByteArrayOutputStream]
-  [javax.servlet.http HttpServletResponse])
- )
+(ns ^{:author "Jules Gosnell" :doc "HTTP Class Server for DADA"} org.dada.web
+    (:use clojure.tools.logging)
+    (:use [org.dada.core])
+    (:import
+     [clojure.lang DynamicClassLoader]
+     [org.eclipse.jetty.server Request Server]
+     [org.eclipse.jetty.server.handler AbstractHandler]
+     [java.io InputStream OutputStream ByteArrayOutputStream]
+     [javax.servlet.http HttpServletResponse])
+    )
 
 ;; TODO: we should use a package name filter to avoid serving homonyms with different content...
 
@@ -31,9 +29,14 @@
 	  (.close is)
 	  (.close os))))))
 
+;; delay evaluation of DynamicClassLoader/byteCodeForName until runtime, when our hacks will be in place...
+(def byteCodeForName
+     (delay (eval '(fn [name] (DynamicClassLoader/byteCodeForName name)))))
+
 (defn dynamic-class-bytes [^String path-info]
-  (if-let [bytes (DynamicClassLoader/byteCodeForName (.replace (.substring path-info 0 (- (.length path-info) 6)) \/ \.))]
+  (if-let [bytes (@byteCodeForName (.replace (.substring path-info 0 (- (.length path-info) 6)) \/ \.))]
       ["dynamic class" bytes]))
+
 
 ;; only works when URLClassLoader has been given a URL ending in '/'
 (defn handle-request [^String target ^Request base-request ^Request request ^HttpServletResponse response] 
