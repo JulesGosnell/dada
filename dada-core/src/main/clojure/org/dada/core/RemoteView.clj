@@ -17,7 +17,7 @@
  (:gen-class
   :implements [org.dada.core.View java.io.Serializable]
   :constructors {[Object] []}
-  :methods [[hack [org.dada.core.remote.Remoter] void]]
+  :methods [[hack [Object] void]]	;TODO: should be Remoter
   :init init
   :state state
   )
