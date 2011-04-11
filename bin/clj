@@ -27,7 +27,7 @@ fi
 
 if [ ! -f $file ]
 then
-    mvn -f $root/pom.xml dependency:build-classpath -Dmdep.outputFile=$file
+    mvn -f $root/pom.xml dependency:build-classpath -Dmdep.outputFile=$file -DincludeScope=runtime
 fi
 
 CLASSPATH=\
