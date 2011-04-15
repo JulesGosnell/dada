@@ -31,11 +31,11 @@
    [net.sourceforge.nattable.style CellStyleAttributes DisplayMode Style]
    [net.sourceforge.nattable.sort.config SingleClickSortConfiguration]
    [net.sourceforge.nattable.viewport ViewportLayer]
-   [org.dada.core Attribute Getter Metadata Metadata$VersionComparator Model Update View]
+   [org.dada.core Attribute Data Getter Metadata Metadata$VersionComparator Model Update View]
    [org.dada.swt Mutable]
    ))
 
-(defn register [#^Model model #^View view]
+(defn ^Data register [^Model model ^View view]
   (let [data (.registerView model view)]
     (.update
      view
@@ -58,13 +58,13 @@
   (if (.convertToTargetLayer command target-layer)
     (if (and (not (.isShiftMask command)) drilldown-fn)
       (let [row (.getRowPosition command)
-	    datum (.getDatum (.get event-list row))]
+	    datum (.getDatum ^Mutable (.get event-list row))]
 	(if datum
 	  ;; if row contains model...
 	  (if (instance? Model datum)
 	    (drilldown-fn datum)
 	    ;; if cell contains model...
-	    (let [datum (.get (.getGetter (nth (.getAttributes metadata) (.getColumnPosition command))) datum)]
+	    (let [datum (.get (.getGetter ^Attribute (nth (.getAttributes metadata) (.getColumnPosition command))) datum)]
 	      (if (instance? Model datum)
 		(drilldown-fn datum)))))))))
 

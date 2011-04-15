@@ -3,7 +3,7 @@
  (:import
   [java.util.concurrent CountDownLatch]
   [java.util.concurrent.locks Lock ReentrantLock]
-  [org.eclipse.swt.widgets Display Shell]
+  [org.eclipse.swt.widgets Display Shell Widget]
   [org.eclipse.swt.layout GridLayout]
   [org.eclipse.swt.events ShellAdapter]
   [org.dada.core Model Update View]
@@ -33,7 +33,7 @@
 (let [lock (ReentrantLock.)
       display-state (atom [0 nil])]
   
-  (defn inc-display []
+  (defn ^Display inc-display []
     (with-lock
      lock
      (let [[n display] (swap! display-state (fn [[n display]] [(inc n) display]))]
@@ -53,7 +53,7 @@
   (defn dec-display []
     (with-lock
      lock
-     (let [[n display] (swap! display-state (fn [[n display]] [(dec n) display]))]
+     (let [[n ^Display display] (swap! display-state (fn [[n display]] [(dec n) display]))]
        (if (zero? n)
 	 (do (.syncExec display (fn [] (println "Destroying SWT Display") (.dispose display))) nil)
 	 display))))
@@ -62,7 +62,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn create-shell [#^Display display #^String text & [close-fn]]
+(defn create-shell [^Display display ^String text & [close-fn]]
   (let [shell (Shell. display)
 	layout (GridLayout.)]
     (doto shell
@@ -73,7 +73,7 @@
 	[ShellAdapter] []
 	(shellClosed [evt]
 		     (try
-		      (doseq [child (.getChildren shell)](.dispose child)) ;why is this not done for us ?
+		      (doseq [^Widget child (.getChildren shell)](.dispose child)) ;why is this not done for us ?
 		      (doto shell (.setVisible false) (.dispose))
 		      (close-fn shell)
 		      (catch Throwable t (.printStackTrace t))))))

@@ -1,4 +1,4 @@
-(ns #^{:author "Jules Gosnell" :doc "Simple Client for DADA"} org.dada.swt.client
+(ns ^{:author "Jules Gosnell" :doc "Simple Client for DADA"} org.dada.swt.client
     (:gen-class)
     (:use
      [org.dada jms]
@@ -28,7 +28,7 @@
 
   (.setContextClassLoader (Thread/currentThread) (clojure.lang.RT/makeClassLoader))
   
-  (def ^SessionManager session-manager (.getBean #^BeanFactory (ClassPathXmlApplicationContext. "client.xml") "sessionManager"))
+  (def ^SessionManager session-manager (.getBean ^BeanFactory (ClassPathXmlApplicationContext. "client.xml") "sessionManager"))
 
   (def ^Session session (.createSession session-manager))
   
