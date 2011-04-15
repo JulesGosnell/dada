@@ -426,7 +426,10 @@
 			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
 			 [(Attribute. :name String false (proxy [Getter][] (get [^Model model] (.getName model))))])) ;attributes
 
-(defonce ^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
+;; TODO: I like the earmuffs on this var, but have no intention of
+;; rebinding its root at runtime - hence I need the :dynamic hint to
+;; avoid compiler warnings
+(def ^:dynamic ^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
 (insert *metamodel* *metamodel*)
 
 ;; TODO - this could be ASYNC - should be loaded from SPRING CONFIG
