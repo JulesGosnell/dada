@@ -133,7 +133,7 @@
 			      (let [value (key-to-value key)
 				    view (model (src-name-fn value) src-metadata)]
 				(.decouple
-				 *internal-view-service-factory*
+				 internal-view-service-factory
 				 (view-hook view value))
 				view)
 			      ))

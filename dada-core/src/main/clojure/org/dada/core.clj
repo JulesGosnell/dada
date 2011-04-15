@@ -1,5 +1,4 @@
-(ns
- org.dada.core
+(ns org.dada.core
  (:require [org.dada.core SimpleModelView])
  (:use [clojure.tools logging])
  (:import
@@ -54,29 +53,26 @@
 (if (not (System/getProperty "dada.broker.uri")) (System/setProperty "dada.broker.uri" "tcp://0.0.0.0:61616"))
 (if (not (System/getProperty "dada.client.uri")) (System/setProperty "dada.client.uri" "tcp://localhost:61616"))
 
-(def *dada-broker-name* (System/getProperty "dada.broker.name"))
-(def *session-manager-name* "SessionManager")
-
-(defn insert [#^View view item]
+(defn insert [^View view item]
   (.update view (list (Update. nil item)) '() '())
   item)
 
-(defn insert-n [#^View view #^ISeq items]
+(defn insert-n [^View view ^ISeq items]
   (.update view (map (fn [item] (Update. nil item)) items) '() '()))
 
-(defn update [#^View view oldValue newValue]
+(defn update [^View view oldValue newValue]
   (.update view '() (list (Update. oldValue newValue)) '()))
 
-(defn delete [#^View view value]
+(defn delete [^View view value]
   (.update view '() '() (list (Update. value nil))))
 
-(defn delete-n [#^View view #^ISeq items]
+(defn delete-n [^View view ^ISeq items]
   (.update view '() '() (map (fn [item] (Update. item nil)) items)))
 
 ;;--------------------------------------------------------------------------------
 
 ;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?
-(defn connect [#^Model model #^View view]
+(defn connect [^Model model ^View view]
   (let [[extant extinct] (.registerView model view)
 	additions (map #(Update. nil %) extant)
 	subtractions (map #(Update. nil %) extinct)]
@@ -84,7 +80,7 @@
       (.update view additions '() subtractions)))
   view)
 
-(defn disconnect [#^Model model #^View view]
+(defn disconnect [^Model model ^View view]
   (let [[extant extinct] (.registerView model view)
 	additions (map #(Update. nil %) extant)
 	subtractions (map #(Update. nil %) extinct)]
@@ -93,9 +89,9 @@
   view)
 
 (defmulti attribute-key (fn [arg] (class arg)))
-(defmethod attribute-key Date [#^Date date] (attribute-key (str "attribute" date)))
-(defmethod attribute-key Integer [#^Integer i] (attribute-key (str "attribute" i)))
-(defmethod attribute-key clojure.lang.Keyword [#^Keyword keyword] (attribute-key (name keyword)))
+(defmethod attribute-key Date [^Date date] (attribute-key (str "attribute" date)))
+(defmethod attribute-key Integer [^Integer i] (attribute-key (str "attribute" i)))
+(defmethod attribute-key clojure.lang.Keyword [^Keyword keyword] (attribute-key (name keyword)))
 
 (def string-replacements
      (array-map
@@ -111,8 +107,8 @@
      ")" "_closeroundbracket_"
      ))
 
-(defmethod attribute-key String [#^String string] 
-  (reduce (fn [#^String string [#^String key #^String value]] (.replace string key value))
+(defmethod attribute-key String [^String string] 
+  (reduce (fn [^String string [^String key ^String value]] (.replace string key value))
 	  string
 	  string-replacements))
 
@@ -123,20 +119,16 @@
 ;; new on a symbol... What I really want to do is come up with
 ;; something that compiles down to bytecode that calls the correct
 ;; ctor for the given args directly... - TODO - more thought...
-(defn make-instance [#^Class class & args]
+(defn make-instance [^Class class & args]
   (clojure.lang.Reflector/invokeConstructor class (to-array args)))
 
 ;;--------------------------------------------------------------------------------
 ;; handle custom engineered classes
 
-(def #^ClassFactory *custom-class-factory* (new ClassFactory))
-
-(def *custom-classloader* (deref clojure.lang.Compiler/LOADER))
-
-(defn #^DynamicClassLoader custom-classloader []
+(defn ^DynamicClassLoader custom-classloader []
   (try
-   (deref clojure.lang.Compiler/LOADER)
-   (catch IllegalStateException _ (warn "could not retrieve ClassLoader") *custom-classloader*)))
+    (deref clojure.lang.Compiler/LOADER)
+    (catch IllegalStateException _ (warn "could not retrieve ClassLoader") (deref clojure.lang.Compiler/LOADER))))
 
 ;; e.g.
 ;;(make-class
@@ -148,23 +140,24 @@
   (if (empty? attribute-key-types)
     nil
     (into-array (map 
-		 (fn [[key #^Class type]]
+		 (fn [[key ^Class type]]
 		     (into-array (list (.getCanonicalName type) (attribute-key key))))
 		 (apply array-map attribute-key-types)))))
 
 ;;(def *exported-classes* (atom {}))
 
-(defn custom-class [#^String class-name #^Class superclass #^ISeq & attribute-key-types]
-  (let [bytes (.create
-	       *custom-class-factory*
-	       class-name
-	       superclass
-	       (apply custom-attribute-array attribute-key-types))]
-    ;;(swap! *exported-classes*  (fn [classes] (assoc classes class-name bytes)))
-    (.
-     (custom-classloader)
-     (defineClass class-name bytes :TODO)
-     )))
+(let [^ClassFactory custom-class-factory (new ClassFactory)]
+  (defn custom-class [^String class-name ^Class superclass ^ISeq & attribute-key-types]
+    (let [bytes (.create
+		 custom-class-factory
+		 class-name
+		 superclass
+		 (apply custom-attribute-array attribute-key-types))]
+      ;;(swap! *exported-classes*  (fn [classes] (assoc classes class-name bytes)))
+      (.
+       (custom-classloader)
+       (defineClass class-name bytes :TODO)
+       ))))
   
 ;; fields => [model field]
 
@@ -172,27 +165,27 @@
 ;; TODO: how do we confirm that with-meta is doing the right thing for
 ;; both input and output types...
 
-(defn custom-getter-name [#^String property-name]
+(defn custom-getter-name [^String property-name]
   (str "get" (.toUpperCase (.substring property-name 0 1)) (.substring property-name 1 (.length property-name))))
 
-(defn custom-getter2 [#^Class input-type #^Class output-type #^String method-name]
+(defn custom-getter2 [^Class input-type ^Class output-type ^String method-name]
   (let [method-symbol (symbol (str "." method-name))
 	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
     (eval `(proxy [Getter] [] 
-		  (#^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol))))))
+		  (^{:tag ~output-type} get [~arg-symbol] (~method-symbol ~arg-symbol))))))
 
-(defn custom-getter [#^Class input-type #^Class output-type key]
+(defn custom-getter [^Class input-type ^Class output-type key]
   "return a Getter taking input-type returning output-type and calling get<Key>"
   (custom-getter2 input-type output-type (custom-getter-name (attribute-key key))))
 
-(defn custom-creator [#^Class class]
+(defn custom-creator [^Class class]
   "make a Creator for the given Class"
   (proxy [Creator] [] 
-	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args]
+	 (^{:tag class} create [^{:tag (type (into-array Object []))} args]
 		  ;;(println "CREATOR" class (map identity args))
 		  (apply make-instance class args))))
 
-(defn #^Metadata custom-metadata3 [#^Class class primary-keys version-keys version-comparator attribute-specs]
+(defn ^Metadata custom-metadata3 [^Class class primary-keys version-keys version-comparator attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
        (custom-creator class)
@@ -203,17 +196,17 @@
 	(fn [[key type mutable]] (Attribute. key type mutable (custom-getter class type key)))
 	attribute-specs)))
 
-(defn #^Metadata custom-metadata2
+(defn ^Metadata custom-metadata2
   "create metadata for a Model containing instances of a Class"
-  [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$VersionComparator version-comparator #^Collection attributes]
+  [^String class-name ^Class superclass ^Collection primary-keys ^Collection version-keys ^Metadata$VersionComparator version-comparator ^Collection attributes]
   (let [class-attributes (mapcat (fn [[key type _]] [key type]) attributes)]
     (custom-metadata3 (apply custom-class class-name superclass class-attributes) primary-keys version-keys version-comparator attributes)))
 
 (let [custom-metadata-cache (atom {})]
 
-  (defn #^Metadata custom-metadata
+  (defn ^Metadata custom-metadata
     "create metadata for a Model containing instances of a Class"
-    [#^String class-name #^Class superclass #^Collection primary-keys #^Collection version-keys #^Metadata$VersionComparator version-comparator #^Collection attributes]
+    [^String class-name ^Class superclass ^Collection primary-keys ^Collection version-keys ^Metadata$VersionComparator version-comparator ^Collection attributes]
     (let [cache-key [superclass primary-keys version-keys attributes]]
       ((swap!
 	custom-metadata-cache 
@@ -229,7 +222,7 @@
 ;;--------------------------------------------------------------------------------
 ;; handle sequences
 
-(defn #^Metadata seq-metadata [length]
+(defn ^Metadata seq-metadata [length]
   (new MetadataImpl
        (proxy [Creator] [] (create [args] args))
        [0]
@@ -243,33 +236,33 @@
 ;;--------------------------------------------------------------------------------
 ;; handle records
 
-(defn #^Class record-class [attributes]
+(defn ^Class record-class [attributes]
   "make an anonymous record Class"
   (let [sym (gensym "Record")
 	keys (map (fn [[key type]] (symbol (attribute-key key))) attributes)]
     (eval `(do (defrecord ~sym ~keys) ~sym)))) ; TODO: put type hints on fields
 
-(defn #^Class named-record-class [class-name attributes]
+(defn ^Class named-record-class [class-name attributes]
   "make an anonymous record Class"
   (let [sym (symbol class-name)
 	keys (map (fn [[key type]] (symbol (attribute-key key))) attributes)]
     (eval `(do (defrecord ~sym ~keys) ~sym))))
 
-(defn #^Creator record-creator [#^Class class]
+(defn ^Creator record-creator [^Class class]
   "make a Creator for the given Class"
   (proxy [Creator] [] 
-	 (#^{:tag class} create [#^{:tag (type (into-array Object []))} args] ;TODO: why does creator insist on an array ?
+	 (^{:tag class} create [^{:tag (type (into-array Object []))} args] ;TODO: why does creator insist on an array ?
 		  (apply make-instance class args))))
 
-(defn #^Getter record-getter [#^Class input-type #^Class output-type name]
+(defn ^Getter record-getter [^Class input-type ^Class output-type name]
   "make a Getter for the named attribute of the given Class"
   (let [key (keyword (attribute-key name))
 	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
     (eval `(proxy [Getter] [] 
-		  (#^{:tag ~output-type} get [~arg-symbol] (~key ~arg-symbol))))))
+		  (^{:tag ~output-type} get [~arg-symbol] (~key ~arg-symbol))))))
 
 
-(defn #^Metadata record-metadata2 [primary-keys version-keys version-comparator attributes]
+(defn ^Metadata record-metadata2 [primary-keys version-keys version-comparator attributes]
   "make a record-based Metadata instance"
   (let [class (record-class attributes)]
     (new MetadataImpl
@@ -279,7 +272,7 @@
 	 version-comparator
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
 
-(defn #^Metadata named-record-metadata2 [class-name primary-keys version-keys version-comparator attributes]
+(defn ^Metadata named-record-metadata2 [class-name primary-keys version-keys version-comparator attributes]
   "make a record-based Metadata instance"
   (let [class (named-record-class class-name attributes)]
     (new MetadataImpl
@@ -291,7 +284,7 @@
 
 (let [record-metadata-cache (atom {})]
 
-  (defn #^Metadata record-metadata
+  (defn ^Metadata record-metadata
     "return memoized record-metadata"
     [primary-keys version-keys version-comparator attributes]
     (let [cache-key [primary-keys version-keys version-comparator attributes]]
@@ -302,7 +295,7 @@
 	cache-key)
        cache-key)))
 
-  (defn #^Metadata named-record-metadata
+  (defn ^Metadata named-record-metadata
     "return memoized record-metadata"
     [class-name primary-keys version-keys version-comparator attributes]
     (let [cache-key [primary-keys version-keys version-comparator attributes]]
@@ -318,7 +311,7 @@
 ;; TODO - creator should take a collection OR an array ?
 (defmacro make-record-creator [class-name field-names]
   `(proxy [Creator] []
-     (^{:tag ~class-name} create [#^{:tag (type (into-array Object []))} args#]
+     (^{:tag ~class-name} create [^{:tag (type (into-array Object []))} args#]
       (let [~(apply vector field-names) args#] (~(symbol (str (name class-name) "." )) ~@field-names)))
      ))
 
@@ -363,7 +356,7 @@
 
 (defn sql-attributes 
   "Derive a sequence of MetaData attributes from an SQL ResultSet"
-  [#^ResultSetMetaData sql-metadata type-translations]
+  [^ResultSetMetaData sql-metadata type-translations]
   (map
    (fn [column]
        (let [key (keyword (.getColumnName sql-metadata column))]
@@ -375,13 +368,13 @@
 
 (defn sql-data
   "Create a sequence from some MetaData and a SQL ResultSet"
-  [#^Metadata metadata #^ResultSet result-set type-translations]
+  [^Metadata metadata ^ResultSet result-set type-translations]
   (let [creator (.getCreator metadata)
 	readers (map
-		 (fn [#^Attribute attribute]
+		 (fn [^Attribute attribute]
 		     (let [[_ translator] (type-translations (.getKey attribute))]
 		       (or translator
-			   (fn [#^ResultSet result-set #^Integer column-index] (.getObject result-set column-index)))))
+			   (fn [^ResultSet result-set ^Integer column-index] (.getObject result-set column-index)))))
 		 (.getAttributes metadata))]
     (loop [output nil]
       (if (.next result-set)
@@ -392,7 +385,7 @@
 	   (into-array
 	    Object
 	    (map 
-	     (fn [reader #^Integer column-index] (reader result-set column-index))
+	     (fn [reader ^Integer column-index] (reader result-set column-index))
 	     readers
 	     (iterate inc 1))))
 	  output))
@@ -400,16 +393,16 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn model [#^String model-name #^Metadata metadata]
+(defn model [^String model-name ^Metadata metadata]
   (SimpleModelView. model-name metadata))
 
 ;; this should really be collapsed into (model) above - but arity overloading is not sufficient...
-(defn clone-model [#^Model model #^String name]
+(defn clone-model [^Model model ^String name]
   (SimpleModelView. name (.getMetadata model)))
 
 (defn sql-model
   "make a SQL query and return the ResultSet as a Model"
-  [model-name #^Connection connection #^String sql primary-keys version-keys version-comparator & [type-translations]]
+  [model-name ^Connection connection ^String sql primary-keys version-keys version-comparator & [type-translations]]
   (let [result-set (.executeQuery (.prepareStatement connection sql))
 	metadata (custom-metadata 
 		  (name (gensym "org.dada.core.SQLModel"))
@@ -431,10 +424,10 @@
 			 [:name]	;primary-keys
 			 []		;version-keys
 			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
-			 [(Attribute. :name String false (proxy [Getter][] (get [#^Model model] (.getName model))))])) ;attributes
+			 [(Attribute. :name String false (proxy [Getter][] (get [^Model model] (.getName model))))])) ;attributes
 
-(def #^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
+(defonce ^Model *metamodel* (SimpleModelView. "MetaModel" metamodel-metadata))
 (insert *metamodel* *metamodel*)
 
 ;; TODO - this could be ASYNC - should be loaded from SPRING CONFIG
-(def #^ServiceFactory *internal-view-service-factory* (SynchronousServiceFactory.))
+(def ^ServiceFactory internal-view-service-factory (SynchronousServiceFactory.))
