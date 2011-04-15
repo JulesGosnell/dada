@@ -51,6 +51,13 @@
    (doseq [[^View view models] (:views @mutable)]
        (doseq [^Model model models] (.deregisterView model view)))))
 
+;; drill into v1 with k1 then k2 and add v4 to the resulting vector, rebuilding structure on way out
+
+(defn assoc2m [^Map v1 k1 k2 v4]
+  (let [^Map v2 (or (.get v1 k1) {})
+	v3 (or (.get v2 k2) [])]
+    (assoc v1 k1 (assoc v2 k2 (conj v3 v4)))))
+
 (defn ^Data -registerView [^org.dada.core.SessionImpl this ^Model model ^View view]
   (debug "registerView")
   (with-record
@@ -63,6 +70,13 @@
        (let [data (.registerView model view)]
 	 (swap! mutable (fn [state] (assoc (assoc2m state :views view model) :lastPing (System/currentTimeMillis))))
 	 data)))))
+
+;; drill into v1 with k1 then k2 and remove v4 to the resulting vector, rebuilding structure on way out
+
+(defn dissoc2m [^Map v1 k1 k2 v4]
+  (let [^Map v2 (or (.get v1 k1) {})
+	v3 (or (.get v2 k2) [])]
+    (assoc v1 k1 (assoc v2 k2 (remove (fn [v] (= v v4)) v3)))))
 
 (defn ^Data -deregisterView [^org.dada.core.SessionImpl this ^Model model ^View view]
   (debug "deregisterView")
