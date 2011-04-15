@@ -3,7 +3,6 @@
  (:use 
   [clojure.tools logging]  
   [org.dada core]  
-  [org.dada.core dql]
   [org.dada.swt nattable tab shell])
  (:import
   [java.util Collection]
