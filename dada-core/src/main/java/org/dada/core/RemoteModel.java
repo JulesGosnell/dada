@@ -48,13 +48,13 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 
 	// TODO - SessionManager should be a template as well
 	@Override
-	public Data<V> registerView(View<V> view) {
-		return (Data<V>) session.registerView((Model<Object, Object>)this, (View<Object>)view);
+	public Data<V> attach(View<V> view) {
+		return (Data<V>) session.attach((Model<Object, Object>)this, (View<Object>)view);
 	}
 
 	@Override
-	public Data<V> deregisterView(View<V> view) {
-		return (Data<V>) session.deregisterView((Model<Object, Object>)this, (View<Object>) view);
+	public Data<V> detach(View<V> view) {
+		return (Data<V>) session.detach((Model<Object, Object>)this, (View<Object>) view);
 	}
 
 	@Override

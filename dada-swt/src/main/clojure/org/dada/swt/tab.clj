@@ -23,7 +23,7 @@
 ;;   ;; 	model (first datum)
 ;;   ;; 	[old] (swap! selection (fn [[old current] new](trace "SELECTION" current "->" new) [current new]) model)]
 ;;   ;;   (trace "OLD" old)
-;;   ;;   ;;(if old (.deregisterView model view))
+;;   ;;   ;;(if old (.detach model view))
 ;;   ;;   (if datum (.setControl item (.getControl (drill-down-fn folder datum))))
 ;;   ;;   (.pack folder))
 ;;   (trace "SELECT" item)
@@ -54,13 +54,13 @@
 ;;      folder
 ;;      ;; attach
 ;;      (fn [#^Model model #^View view]
-;; 	 (let [data (.registerView model view)]
+;; 	 (let [data (.attach model view)]
 ;; 	   (.update view (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data)))
 ;; 	   (.setSelection folder 0)))
 ;;      ;; detach
 ;;      (fn [#^Model model #^View view]
-;; 	 (let [data (.registerView model view)]
-;; 	   (trace "DEREGISTER - NYI:" data)))
+;; 	 (let [data (.attach model view)]
+;; 	   (trace "DETACH - NYI:" data)))
 ;;      ;; update
 ;;      (fn [insertions alterations deletions]
 ;; 	 (.asyncExec

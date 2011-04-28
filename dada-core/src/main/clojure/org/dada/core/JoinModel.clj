@@ -248,16 +248,16 @@
 ;;------------------------------------------------------------------------------
 ;; TODO - how can we better share this code with SimpleModelView ?
 
-(defn #^Data -registerView [^org.dada.core.JoinModel this ^View view]
+(defn #^Data -attach [^org.dada.core.JoinModel this ^View view]
   (let [[mutable] (.state this)]
     (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-inc (m 0) view))) view)]
-      (debug ["REGISTER VIEW   " view views])
+      (debug ["ATTACH VIEW   " view views])
       (extract-data lhs))))
 
-(defn #^Data -deregisterView [^org.dada.core.JoinModel this ^View view]
+(defn #^Data -detach [^org.dada.core.JoinModel this ^View view]
   (let [[mutable] (.state this)]
     (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-dec (m 0) view))) view)]
-      (debug ["DEREGISTER VIEW " view views])
+      (debug ["DETACH VIEW " view views])
       (extract-data lhs))))
 
 (defn notifyUpdate [^org.dada.core.JoinModel this insertions alterations deletions]
@@ -308,7 +308,7 @@
 		rhs-pk-getter (.getPrimaryGetter rhs-metadata)
 		rhs-version-comparator (.getVersionComparator rhs-metadata)
 		^Data data
-		(.registerView
+		(.attach
 		 rhs-model
 		 (proxy [View] []
 			(update [insertions alterations deletions]
@@ -327,7 +327,7 @@
 	  lhs-pk-getter (.getPrimaryGetter lhs-metadata)
 	  lhs-version-comparator (.getVersionComparator lhs-metadata)
 	  ^Data data
-	  (.registerView
+	  (.attach
 	   lhs-model
 	   (proxy [View] []
 		  (update [insertions alterations deletions]

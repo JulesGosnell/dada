@@ -74,43 +74,43 @@ public class SessionManagerImplTestCase extends MockObjectTestCase {
         // 	will(throwException(new UnsupportedOperationException()));
         // }});
         
-        // assertTrue(sessionManager.registerView(modelName, view) == null);
+        // assertTrue(sessionManager.attach(modelName, view) == null);
         
         // // register a view - successfully
 
         // checking(new Expectations(){{
         // 	one(serviceFactory).server(model, modelName);
         // 	will(returnValue(null));
-        //     one(model).registerView(view);
+        //     one(model).attach(view);
         //     will(returnValue(data));
         // }});
         
-        // assertTrue(sessionManager.registerView(modelName, view) == data);
+        // assertTrue(sessionManager.attach(modelName, view) == data);
         
         // // deregister view
         
         // checking(new Expectations(){{
-        //     one(model).deregisterView(view);
+        //     one(model).detach(view);
         //     will(returnValue(null));
         // }});
 
-        // assertTrue(sessionManager.deregisterView(modelName, view) == null);
+        // assertTrue(sessionManager.detach(modelName, view) == null);
 
         // // register/deregister 2nd view on MODEL - exercises slightly different code path...
 
         // checking(new Expectations(){{
-        //     one(model).registerView(view);
+        //     one(model).attach(view);
         //     will(returnValue(data));
         // }});
         
-        // assertTrue(sessionManager.registerView(modelName, view) == data);
+        // assertTrue(sessionManager.attach(modelName, view) == data);
 
         // checking(new Expectations(){{
-        //     one(model).deregisterView(view);
+        //     one(model).detach(view);
         //     will(returnValue(null));
         // }});
 
-        // assertTrue(sessionManager.deregisterView(modelName, view) == null);
+        // assertTrue(sessionManager.detach(modelName, view) == null);
 
         // // update metamodel - update
 

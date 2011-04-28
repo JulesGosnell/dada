@@ -107,7 +107,7 @@ public class Client {
 		
 	// 	// pass the client over to the server to attach as a listener..
 	// 	Metadata<Object, Object> metadata = this.sessionManager.getMetadata(modelName);
-	// 	Data<Object> data = this.sessionManager.registerView(null, /*modelName, */ clientServer);
+	// 	Data<Object> data = this.sessionManager.attach(null, /*modelName, */ clientServer);
 	// 	Collection<Object> models = data.getExtant();
 	// 	if (models != null) {
 	// 		guiModel.setMetadata(metadata);
@@ -184,7 +184,7 @@ public class Client {
 	// 		@Override
 	// 		public void windowClosing(WindowEvent event) {
 	// 			LOG.info("Closing: " + Client.this.modelName);
-	// 			Client.this.sessionManager.deregisterView(null, // TODO - resuscitate this code ?
+	// 			Client.this.sessionManager.detach(null, // TODO - resuscitate this code ?
 	// 					//Client.this.modelName,
 	// 					clientServer);
 	// 			if (Client.this.topLevel)

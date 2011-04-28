@@ -33,8 +33,8 @@ public interface Model<K, V> extends Lifecycle {
 
 	String getName();
 
-	Data<V> registerView(View<V> view);
-	Data<V> deregisterView(View<V> view);
+	Data<V> attach(View<V> view);
+	Data<V> detach(View<V> view);
 	
 	Metadata<K, V> getMetadata();
 	Data<V> getData();

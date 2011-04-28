@@ -35,13 +35,13 @@
   (^long getLastPingTime [this]
 	 (.getLastPingTime local))
   
-  (^Data registerView [this ^Model model ^View view]
+  (^Data attach [this ^Model model ^View view]
 	 (if (instance? RemoteView view) (.hack ^RemoteView view remoter))
-	 (.registerView local model view))
+	 (.attach local model view))
 
-  (^Data deregisterView [this ^Model model ^View view]
+  (^Data detach [this ^Model model ^View view]
 	 (if (instance? RemoteView view) (.hack ^RemoteView view remoter))
-	 (.deregisterView local model view))
+	 (.detach local model view))
 
   (^Model find [this ^Model model key]
 	 (.find local model key))

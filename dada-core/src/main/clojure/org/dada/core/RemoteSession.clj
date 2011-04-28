@@ -66,32 +66,32 @@
    [^Session peer ^Timer timer views]
    (debug "close: " peer)
    ;; close outstanding Views
-   (doseq [[view model] (keys @views)] (.deregisterView this model view))
+   (doseq [[view model] (keys @views)] (.detach this model view))
    (.cancel timer)
    (.close peer)))
 
 ;; TODO - only supports one registration per model/view pair - could
 ;; be a problem if someone uses API wrongly
 
-(defn ^Data -registerView [^org.dada.core.RemoteSession this ^Model model ^View view]
+(defn ^Data -attach [^org.dada.core.RemoteSession this ^Model model ^View view]
     (with-record
      (immutable this)
      [^Session peer ^Remoter remoter views]
-     (debug "registerView" model view)
+     (debug "attach" model view)
      (let [topic (.endPoint remoter (str "DADA." (.getName model)) true) ;TODO - hardwired prefix and Destination type
 	   ^AsyncMessageServer server (.server remoter view topic)
 	   ^View client (RemoteView. topic)]
        (swap! views (fn [views] (assoc views [view model] [topic server client])))
-       (.registerView peer model client))))
+       (.attach peer model client))))
 
-(defn ^Data -deregisterView [^org.dada.core.RemoteSession this ^Model model ^View view]
+(defn ^Data -detach [^org.dada.core.RemoteSession this ^Model model ^View view]
   (with-record
    (immutable this)
    [^Session peer views]
-   (debug "deregisterView" model view)
+   (debug "detach" model view)
    (let [[_ [^Topic topic ^MessageServer server ^View client]]
 	 (swap2! views (fn [views] (let [key [view model] old-view (views key)] [(dissoc views key) old-view])))
-	 data (.deregisterView peer model client)]
+	 data (.detach peer model client)]
      (.close server)
      ;;(.close ^SynchronousClient (Proxy/getInvocationHandler client)) ;; TODO - we need to remember the client
      data)))

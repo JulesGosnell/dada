@@ -73,7 +73,7 @@
 
 ;; TODO: should we register before reading data or vice versa... - can we do this without a lock ?
 (defn connect [^Model model ^View view]
-  (let [[extant extinct] (.registerView model view)
+  (let [[extant extinct] (.attach model view)
 	additions (map #(Update. nil %) extant)
 	subtractions (map #(Update. nil %) extinct)]
     (if (or (not (empty? additions)) (not (empty? subtractions)))
@@ -81,7 +81,7 @@
   view)
 
 (defn disconnect [^Model model ^View view]
-  (let [[extant extinct] (.registerView model view)
+  (let [[extant extinct] (.attach model view)
 	additions (map #(Update. nil %) extant)
 	subtractions (map #(Update. nil %) extinct)]
     (if (or (not (empty? additions)) (not (empty? subtractions)))

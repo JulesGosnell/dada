@@ -72,7 +72,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	// nice and fast...
 	
 	@Override
-	public Data<V> registerView(View<V> view) {
+	public Data<V> attach(View<V> view) {
 		Collection<View<V>> oldViews;
 		Collection<View<V>> newViews;
 		do {
@@ -85,7 +85,7 @@ public abstract class AbstractModel<K, V> implements Model<K, V> {
 	}
 
 	@Override
-	public Data<V> deregisterView(View<V> view) {
+	public Data<V> detach(View<V> view) {
 		Collection<View<V>> oldViews;
 		Collection<View<V>> newViews;
 		do {

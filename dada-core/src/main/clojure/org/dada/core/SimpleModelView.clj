@@ -136,16 +136,16 @@
 	[extant] @mutable]
     (extant key)))
 
-(defn #^Data -registerView [#^org.dada.core.SimpleModelView this #^View view]
+(defn #^Data -attach [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)]
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)]
-      (debug ["REGISTER VIEW   " view views])
+      (debug ["ATTACH VIEW   " view views])
       (Data. (vals extant) (vals extinct)))))
 
-(defn #^Data -deregisterView [#^org.dada.core.SimpleModelView this #^View view]
+(defn #^Data -detach [#^org.dada.core.SimpleModelView this #^View view]
   (let [[_ mutable] (.state this)]
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)]
-      (debug ["DEREGISTER VIEW" view views])
+      (debug ["DETACH VIEW" view views])
       (Data. (vals extant) (vals extinct)))))
 
 (defn notifyUpdate [^org.dada.core.SimpleModelView this insertions alterations deletions]

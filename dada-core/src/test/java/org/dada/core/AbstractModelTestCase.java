@@ -69,7 +69,7 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 		assertTrue(model.getMetadata() == metadata);
 
 		// deregistration of non-existant view
-		model.deregisterView(null);
+		model.detach(null);
 
 		final Collection<Update<Datum<Integer>>> empty = Collections.emptyList();
 
@@ -85,13 +85,13 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 
 		};
 
-		Data<Datum<Integer>> data2 = model.registerView(goodView);
+		Data<Datum<Integer>> data2 = model.attach(goodView);
 		assertTrue(data2.getExtant().size() == 1);
 		assertTrue(data2.getExtant().contains(datum));
 
 		model.notifyUpdate(empty, empty, empty);
 
-		model.deregisterView(goodView);
+		model.detach(goodView);
 
 		// badly behaved view
 		View<Datum<Integer>> badView = new View<Datum<Integer>>() {
@@ -103,9 +103,9 @@ public class AbstractModelTestCase extends MockObjectTestCase {
 
 		};
 
-		model.registerView(badView);
+		model.attach(badView);
 		model.notifyUpdate(empty, empty, empty);
-		model.deregisterView(badView);
+		model.detach(badView);
 
 		// TODO: demonstrate that badly behaved view does not prevent updates being received by well behaved view...
 	}

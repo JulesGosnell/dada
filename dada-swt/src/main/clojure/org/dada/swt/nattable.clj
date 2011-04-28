@@ -36,7 +36,7 @@
    ))
 
 (defn ^Data register [^Model model ^View view]
-  (let [data (.registerView model view)]
+  (let [data (.attach model view)]
     (.update
      view
      (map (fn [datum] (Update. nil datum)) (.getExtant data))
@@ -249,7 +249,7 @@
 		(^Class getCommandClass [] ILayerCommand)
 		(^Boolean doCommand [^ILayer targetLayer ^ILayerCommand command]
 			  (if (instance? SelectCellCommand command) (handle-select-cell metadata nattable command data-layer sorted-list drilldown-fn))
-			  (if (instance? DisposeResourcesCommand command) (.deregisterView model view))
+			  (if (instance? DisposeResourcesCommand command) (.detach model view))
 			  false)))
 
 	(doto nattable

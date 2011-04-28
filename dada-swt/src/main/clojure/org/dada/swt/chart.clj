@@ -51,12 +51,12 @@
 ;;      chart
 ;;      ;; attach
 ;;      (fn [#^Model model #^View view]
-;; 	 (let [data (.registerView model view)]
+;; 	 (let [data (.attach model view)]
 ;; 	   (.update view (map (fn [datum] (Update. nil datum)) (.getExtant data)) '() (map (fn [datum] (Update. datum nil)) (.getExtinct data)))))
 ;;      ;; detach
 ;;      (fn [#^Model model #^View view]
-;; 	 (let [data (.registerView model view)]
-;; 	   (println "DEREGISTER - NYI:" data)))
+;; 	 (let [data (.attach model view)]
+;; 	   (println "DETACH - NYI:" data)))
 ;;      ;; update
 ;;      (fn [insertions alterations deletions]
 ;; 	 (println "UPDATES" insertions alterations deletions)

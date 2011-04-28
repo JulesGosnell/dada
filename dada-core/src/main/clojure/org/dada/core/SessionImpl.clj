@@ -49,7 +49,7 @@
    (doseq [close-hook (:close-hooks @mutable)] (close-hook this))
    (debug "close")
    (doseq [[^View view models] (:views @mutable)]
-       (doseq [^Model model models] (.deregisterView model view)))))
+       (doseq [^Model model models] (.detach model view)))))
 
 ;; drill into v1 with k1 then k2 and add v4 to the resulting vector, rebuilding structure on way out
 
@@ -58,8 +58,8 @@
 	v3 (or (.get v2 k2) [])]
     (assoc v1 k1 (assoc v2 k2 (conj v3 v4)))))
 
-(defn ^Data -registerView [^org.dada.core.SessionImpl this ^Model model ^View view]
-  (debug "registerView")
+(defn ^Data -attach [^org.dada.core.SessionImpl this ^Model model ^View view]
+  (debug "attach")
   (with-record
    (immutable this)
    [^Model metamodel mutable]
@@ -67,7 +67,7 @@
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)
        (throw (IllegalArgumentException. (str "no Model for name: " model-name)))
-       (let [data (.registerView model view)]
+       (let [data (.attach model view)]
 	 (swap! mutable (fn [state] (assoc (assoc2m state :views view model) :lastPing (System/currentTimeMillis))))
 	 data)))))
 
@@ -78,8 +78,8 @@
 	v3 (or (.get v2 k2) [])]
     (assoc v1 k1 (assoc v2 k2 (remove (fn [v] (= v v4)) v3)))))
 
-(defn ^Data -deregisterView [^org.dada.core.SessionImpl this ^Model model ^View view]
-  (debug "deregisterView")
+(defn ^Data -detach [^org.dada.core.SessionImpl this ^Model model ^View view]
+  (debug "detach")
   (with-record
    (immutable this)
    [^Model metamodel mutable]
@@ -87,7 +87,7 @@
 	 ^Model model (.find metamodel model-name)]
      (if (nil? model)
        (throw (IllegalArgumentException. (str "no Model for name: " model-name)))
-       (let [data (.deregisterView model view)]
+       (let [data (.detach model view)]
 	 (swap! mutable (fn [state] (assoc (dissoc2m state :views view model) :lastPing (System/currentTimeMillis))))
 	 data)))))
 
