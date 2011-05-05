@@ -86,11 +86,12 @@
     (.close client)
     (.close remoter)))
 
-(defn ^Session -createSession [^org.dada.core.RemoteSessionManager this]
+(defn ^Session -createSession [^org.dada.core.RemoteSessionManager this ^String user-name ^String application-name ^String application-version]
   (with-record
    (immutable this)
    [^Remoter remoter ^SessionManager peer sessions]
-   (let [session (doto ^RemoteSession (.createSession peer) (.hack remoter))]
+   (let [session (doto ^RemoteSession (.createSession peer user-name application-name application-version)
+		       (.hack remoter))]
      (swap! sessions conj session)
      (SessionManagerHelper/setCurrentSession session) ;; TODO - temporary hack
      ;; TODO : aargh! - we need to wrap session in a proxy that will remove it from our list on closing

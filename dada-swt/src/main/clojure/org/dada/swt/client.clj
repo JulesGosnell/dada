@@ -29,7 +29,7 @@
   (.setContextClassLoader (Thread/currentThread) (clojure.lang.RT/makeClassLoader))
 
   (let [^SessionManager session-manager (.getBean ^BeanFactory (ClassPathXmlApplicationContext. "client.xml") "sessionManager")
-	^Session session (.createSession session-manager)
+	^Session session (.createSession session-manager "guest" "swt-client" "1.0-SNAPSHOT")
 	^Model remote-metamodel  (.find session (RemoteModel. "MetaModel" nil) "MetaModel")]
     
     (defn inspect-model-with-drilldown-and-shutdown [^Model model]

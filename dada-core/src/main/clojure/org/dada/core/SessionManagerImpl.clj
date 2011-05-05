@@ -55,11 +55,11 @@
 (defn ^ImmutableState immutable  [^org.dada.core.SessionManagerImpl this]
   (.state this))
 
-(defn ^Session -createSession [^org.dada.core.SessionManagerImpl this]
+(defn ^Session -createSession [^org.dada.core.SessionManagerImpl this ^String user-name ^String application-name ^String application-version]
   (with-record
    (immutable this)
    [metamodel sessions]
-   (let [session (SessionImpl. metamodel)]
+   (let [session (SessionImpl. metamodel user-name application-name application-version)]
      (.addCloseHook session (fn [session] (swap! sessions disj session)))
      (swap! sessions conj session)
      (debug "createSession" session)

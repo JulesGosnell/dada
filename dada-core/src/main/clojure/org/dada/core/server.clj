@@ -29,8 +29,8 @@
 
   Session
 
-  (^boolean ping [this]
-	    (.ping local))
+  (^int ping [this]
+	(.ping local))
   
   (^long getLastPingTime [this]
 	 (.getLastPingTime local))
@@ -44,7 +44,7 @@
 	 (.detach local model view))
 
   (^Model find [this ^Model model key]
-	 (.find local model key))
+	  (.find local model key))
 
   (^Data getData [this ^Model model]
 	 (.getData local model))
@@ -67,11 +67,11 @@
 
   SessionManager
 
-  (getName [this]
+  (^String getName [this]
 	   (.getName local))
 
-  (^Session createSession [this]
-	    (session-server (.createSession local) remoter))
+  (createSession [this user-name application-name application-version]
+		 (session-server (.createSession local user-name application-name application-version) remoter))
   
   (^void close [this]
 	 (.close local)))

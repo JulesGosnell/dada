@@ -10,7 +10,7 @@
   )
  (:gen-class
   :implements [org.dada.core.Session]
-  :constructors {[org.dada.core.Model] []}
+  :constructors {[org.dada.core.Model String String String] []}
   :methods [[addCloseHook [clojure.lang.IFn]  void]]
   :init init
   :state state
@@ -18,14 +18,15 @@
  )
 
 (defrecord MutableState [^Long lastPing ^Map views close-hooks])
-(defrecord ImmutableState [^Model metamodel ^Atom mutable])
+(defrecord ImmutableState [^Model metamodel ^String user-name ^String application-name ^String application-version ^Atom mutable])
 
-(defn -init [^Model metamodel]
+(defn -init [^Model metamodel ^String user-name ^String application-name ^String application-version]
   (debug "init")
   [ ;; super ctor args
    []
    ;; instance state
-   (ImmutableState. metamodel (atom (MutableState. (System/currentTimeMillis) {} [])))])
+   (ImmutableState. metamodel user-name application-name application-version
+		    (atom (MutableState. (System/currentTimeMillis) {} [])))])
 
 (defn ^ImmutableState immutable [^org.dada.core.SessionImpl this]
    (.state this))
@@ -36,7 +37,7 @@
 (defn -ping [^org.dada.core.SessionImpl this]
   (trace "ping")
   (swap! (mutable this) assoc :lastPing (System/currentTimeMillis))
-  true)
+  (* 5 60 1000))			;TODO - should be session-ttl
 
 (defn -getLastPingTime [^org.dada.core.SessionImpl this]
   (with-record ^MutableState @(mutable this) [lastPing] lastPing))

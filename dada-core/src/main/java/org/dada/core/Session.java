@@ -2,9 +2,13 @@ package org.dada.core;
 
 public interface Session extends SessionManager {
 
-    boolean ping();
+    int ping();
     long getLastPingTime();
     void close() throws Exception;
+
+    String getUserName();
+    String getApplicationName();
+    String getApplicationVersion();
  
     Data<Object> attach(Model<Object, Object> model, View<Object> view);
     Data<Object> detach(Model<Object, Object> model, View<Object> view);
