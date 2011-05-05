@@ -106,13 +106,15 @@
 	       (.send producer message)))
   )
 
+(defn ^AsyncMessageClient init-jms-async-message-client-2
+  [^MessageStrategy strategy ^Translator translator ^Session session ^MessageProducer producer]
+  (doto (JMSAsyncMessageClient. strategy translator session producer) (.open)))
+
 (defn ^AsyncMessageClient init-jms-async-message-client
-  ([^MessageStrategy strategy ^Translator translator ^Session session ^MessageProducer producer ^Topic send-to]
-   (doto (JMSAsyncMessageClient. strategy translator session producer) (.open)))
-  ([^MessageStrategy strategy ^Translator translator ^Session session ^String send-to]
-   (let [send-to (.createTopic session send-to)
-	 producer (.createProducer session send-to)]
-     (init-jms-async-message-client strategy translator session producer))))
+  [^MessageStrategy strategy ^Translator translator ^Session session ^String send-to-name]
+  (let [send-to (.createTopic session send-to-name)
+	producer (.createProducer session send-to)]
+    (init-jms-async-message-client-2 strategy translator session producer)))
 
 ;;------------------------------------------------------------------------------
 
@@ -201,6 +203,9 @@
 
   (syncClient [this send-to]
 	      (init-jms-sync-message-client strategy translator timeout threads session send-to))
+
+  (asyncClient [this send-to]
+	       (init-jms-async-message-client strategy translator session send-to))
 
   (endPoint [this name]
 	    (.createQueue session name))
