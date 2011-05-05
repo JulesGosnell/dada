@@ -48,20 +48,11 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- for clojure gendoc -->
-<!--
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>clojure-contrib</artifactId>
-      <version>1.2.0</version>
-    </dependency>
--->
-
   </dependencies>
 
   <build>
     <plugins>
+<!--
       <plugin>
 	<groupId>org.codehaus.mojo</groupId>
 	<artifactId>build-helper-maven-plugin</artifactId>
@@ -80,6 +71,7 @@
 	  </execution>
 	</executions>
       </plugin>
+-->
       <plugin>
 	<groupId>com.theoryinpractise</groupId>
 	<artifactId>clojure-maven-plugin</artifactId>
@@ -118,7 +110,6 @@
               <goal>test</goal>
             </goals>
 	  </execution>
-<!--
 	  <execution>
             <id>clojure-gendoc</id>
             <phase>site</phase>
@@ -131,8 +122,19 @@
 	      <goal>gendoc</goal>
 	    </goals>
 	  </execution>
--->
 	</executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.clojure</groupId>
+            <artifactId>clojure</artifactId>
+            <version>1.2.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.clojure</groupId>
+            <artifactId>clojure-contrib</artifactId>
+            <version>1.2.0</version>
+          </dependency>
+        </dependencies>
       </plugin>
 
       <plugin>
