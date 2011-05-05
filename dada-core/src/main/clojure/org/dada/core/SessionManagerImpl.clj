@@ -28,9 +28,9 @@
 (defn cleave [s f & i]
   (reduce (fn [[y n] e] (if (f e) [(conj y e) n] [y (conj n e)])) i s))
 
-(defn sweep-sessions [sessions]
+(defn sweep-sessions [sessions time-to-live]
   (trace "sweeping sessions")
-  (let [threshold (- (System/currentTimeMillis) 10000) ;TODO - hardwired
+  (let [threshold (- (System/currentTimeMillis) time-to-live)
 	[live dead] (swap2! sessions cleave (fn [^Session s] (> (.getLastPingTime s) threshold)) #{})]
     (if (not (empty? dead))
       (do
@@ -40,9 +40,13 @@
 ;;------------------------------------------------------------------------------
 
 (defn -init [^String name ^Model metamodel]
-  (let [sessions (atom #{})
+  (let [session-time-to-live (* 5 60 1000) ;TODO - hardwired
+	sessions (atom #{})
 	close-hooks (atom [])
-	^Timer timer (doto (Timer.) (.schedule (proxy [TimerTask][](run [] (sweep-sessions sessions))) 0 10000))] ;TODO - hardwired
+	^Timer timer (doto (Timer.)
+		       (.schedule
+			(proxy [TimerTask][](run [] (sweep-sessions sessions session-time-to-live)))
+			0 session-time-to-live))]
     [ ;; super ctor args
      []
      ;; instance state
