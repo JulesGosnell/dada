@@ -31,6 +31,7 @@ import java.io.*;
 import java.util.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.util.regex.Pattern;
 
 public class Compiler implements Opcodes{
 
@@ -411,7 +412,12 @@ static class DefExpr implements Expr{
 		if(initProvided)
 			{
 			gen.dup();
-			init.emit(C.EXPRESSION, objx, gen);
+			if(init instanceof FnExpr)
+				{
+				((FnExpr)init).emitForDefn(objx, gen);
+				}
+			else
+				init.emit(C.EXPRESSION, objx, gen);
 			gen.invokeVirtual(VAR_TYPE, bindRootMethod);
 			}
 
@@ -476,7 +482,15 @@ static class DefExpr implements Expr{
             mm = (IPersistentMap) RT.assoc(mm, RT.LINE_KEY, LINE.get()).assoc(RT.FILE_KEY, source_path);
 			if (docstring != null)
 			  mm = (IPersistentMap) RT.assoc(mm, RT.DOC_KEY, docstring);
-			Expr meta = analyze(context == C.EVAL ? context : C.EXPRESSION, mm);
+//			mm = mm.without(RT.DOC_KEY)
+//					.without(Keyword.intern(null, "arglists"))
+//					.without(RT.FILE_KEY)
+//					.without(RT.LINE_KEY)
+//					.without(Keyword.intern(null, "ns"))
+//					.without(Keyword.intern(null, "name"))
+//					.without(Keyword.intern(null, "added"))
+//					.without(Keyword.intern(null, "static"));
+			Expr meta = mm.count()==0 ? null:analyze(context == C.EVAL ? context : C.EXPRESSION, mm);
 			return new DefExpr((String) SOURCE.deref(), (Integer) LINE.deref(),
 			                   v, analyze(context == C.EVAL ? context : C.EXPRESSION, RT.third(form), v.sym.name),
 			                   meta, RT.count(form) == 3, isDynamic);
@@ -3221,7 +3235,7 @@ static class InvokeExpr implements Expr{
 			PersistentVector argvs = PersistentVector.EMPTY;
 			for(int i = 0; i < args.count(); i++)
 				argvs = argvs.cons(((Expr) args.nth(i)).eval());
-			return fn.applyTo(RT.seq(argvs));
+			return fn.applyTo(RT.seq( Util.ret1(argvs, argvs = null) ));
 			}
 		catch(Throwable e)
 			{
@@ -3414,6 +3428,8 @@ static public class FnExpr extends ObjExpr{
 	//if there is a variadic overload (there can only be one) it is stored here
 	FnMethod variadicMethod = null;
 	IPersistentCollection methods;
+	private boolean hasPrimSigs;
+	private boolean hasMeta;
 	//	String superName = null;
 
 	public FnExpr(Object tag){
@@ -3422,6 +3438,10 @@ static public class FnExpr extends ObjExpr{
 
 	public boolean hasJavaClass() throws Exception{
 		return true;
+	}
+
+	boolean supportsMeta(){
+		return hasMeta;
 	}
 
 	public Class getJavaClass() throws Exception{
@@ -3556,6 +3576,13 @@ static public class FnExpr extends ObjExpr{
 			{
 			Var.popThreadBindings();
 			}
+		fn.hasPrimSigs = prims.size() > 0;
+		IPersistentMap fmeta = RT.meta(origForm);
+		if(fmeta != null)
+			fmeta = fmeta.without(RT.LINE_KEY).without(RT.FILE_KEY);
+
+		fn.hasMeta = RT.count(fmeta) > 0;
+
 		fn.compile(fn.isVariadic() ? "clojure/lang/RestFn" : "clojure/lang/AFunction",
 		           (prims.size() == 0)?
 		            null
@@ -3563,9 +3590,12 @@ static public class FnExpr extends ObjExpr{
 		            fn.onceOnly);
 		fn.getCompiledClass();
 
-		if(origForm instanceof IObj && ((IObj) origForm).meta() != null)
+		if(fn.supportsMeta())
+			{
+			//System.err.println(name + " supports meta");
 			return new MetaExpr(fn, MapExpr
-					.parse(context == C.EVAL ? context : C.EXPRESSION, ((IObj) origForm).meta()));
+					.parse(context == C.EVAL ? context : C.EXPRESSION, fmeta));
+			}
 		else
 			return fn;
 	}
@@ -3580,6 +3610,22 @@ static public class FnExpr extends ObjExpr{
 
 	public final IPersistentCollection methods(){
 		return methods;
+	}
+
+	public void emitForDefn(ObjExpr objx, GeneratorAdapter gen){
+		if(!hasPrimSigs && closes.count() == 0)
+			{
+			Type thunkType = Type.getType(FnLoaderThunk.class);
+			//presumes var on stack
+			gen.dup();
+			gen.newInstance(thunkType);
+			gen.dupX1();
+			gen.swap();
+			gen.push(internalName.replace('/','.'));
+			gen.invokeConstructor(thunkType,Method.getMethod("void <init>(clojure.lang.Var,String)"));
+			}
+		else
+			emit(C.EXPRESSION,objx,gen);
 	}
 }
 
@@ -3699,7 +3745,7 @@ static public class ObjExpr implements Expr{
 
 
 	Type[] ctorTypes(){
-		IPersistentVector tv = isDeftype()?PersistentVector.EMPTY:RT.vector(IPERSISTENTMAP_TYPE);
+		IPersistentVector tv = !supportsMeta()?PersistentVector.EMPTY:RT.vector(IPERSISTENTMAP_TYPE);
 		for(ISeq s = RT.keys(closes); s != null; s = s.next())
 			{
 			LocalBinding lb = (LocalBinding) s.first();
@@ -3822,7 +3868,7 @@ static public class ObjExpr implements Expr{
 		clinitgen.returnValue();
 
 		clinitgen.endMethod();
-		if(!isDeftype())
+		if(supportsMeta())
 			{
 			cv.visitField(ACC_FINAL, "__meta", IPERSISTENTMAP_TYPE.getDescriptor(), null, null);
 			}
@@ -3899,14 +3945,14 @@ static public class ObjExpr implements Expr{
 //			ctorgen.putField(objtype, "__varrev__", Type.INT_TYPE);
 //			}
 
-		if(!isDeftype())
+		if(supportsMeta())
 			{
 			ctorgen.loadThis();
 			ctorgen.visitVarInsn(IPERSISTENTMAP_TYPE.getOpcode(Opcodes.ILOAD), 1);
 			ctorgen.putField(objtype, "__meta", IPERSISTENTMAP_TYPE);
 			}
 
-		int a = isDeftype()?1:2;
+		int a = supportsMeta()?2:1;
 		for(ISeq s = RT.keys(closes); s != null; s = s.next(), ++a)
 			{
 			LocalBinding lb = (LocalBinding) s.first();
@@ -3959,7 +4005,7 @@ static public class ObjExpr implements Expr{
 			ctorgen.endMethod();
 			}
 
-		if(!isDeftype())
+		if(supportsMeta())
 			{
 					//ctor that takes closed-overs but not meta
 			Type[] ctorTypes = ctorTypes();
@@ -4111,9 +4157,18 @@ static public class ObjExpr implements Expr{
 		boolean partial = true;
 		//System.out.println(value.getClass().toString());
 
-		if(value instanceof String)
+		if(value == null)
+			gen.visitInsn(Opcodes.ACONST_NULL);
+		else if(value instanceof String)
 			{
 			gen.push((String) value);
+			}
+		else if(value instanceof Boolean)
+			{
+			if(((Boolean) value).booleanValue())
+				gen.getStatic(BOOLEAN_OBJECT_TYPE, "TRUE", BOOLEAN_OBJECT_TYPE);
+			else
+				gen.getStatic(BOOLEAN_OBJECT_TYPE,"FALSE",BOOLEAN_OBJECT_TYPE);
 			}
 		else if(value instanceof Integer)
 			{
@@ -4168,9 +4223,10 @@ static public class ObjExpr implements Expr{
 			}
 		else if(value instanceof Keyword)
 			{
-			emitValue(((Keyword) value).sym, gen);
-			gen.invokeStatic(Type.getType(Keyword.class),
-							 Method.getMethod("clojure.lang.Keyword intern(clojure.lang.Symbol)"));
+			gen.push(((Keyword) value).sym.ns);
+			gen.push(((Keyword) value).sym.name);
+			gen.invokeStatic(RT_TYPE,
+							 Method.getMethod("clojure.lang.Keyword keyword(String,String)"));
 			}
 //						else if(value instanceof KeywordCallSite)
 //								{
@@ -4203,6 +4259,18 @@ static public class ObjExpr implements Expr{
 			gen.invokeStatic(RT_TYPE, Method.getMethod(
 					"clojure.lang.IPersistentVector vector(Object[])"));
 			}
+		else if(value instanceof PersistentHashSet)
+			{
+			ISeq vs = RT.seq(value);
+			if(vs == null)
+				gen.getStatic(Type.getType(PersistentHashSet.class),"EMPTY",Type.getType(PersistentHashSet.class));
+			else
+				{
+				emitListAsObjectArray(vs, gen);
+				gen.invokeStatic(Type.getType(PersistentHashSet.class), Method.getMethod(
+					"clojure.lang.PersistentHashSet create(Object[])"));
+				}
+			}
 		else if(value instanceof ISeq || value instanceof IPersistentList)
 			{
 			emitListAsObjectArray(value, gen);
@@ -4212,13 +4280,19 @@ static public class ObjExpr implements Expr{
 							 Method.getMethod(
 									 "clojure.lang.IPersistentList create(java.util.List)"));
 			}
+		else if(value instanceof Pattern)
+			{
+			emitValue(value.toString(), gen);
+			gen.invokeStatic(Type.getType(Pattern.class),
+							 Method.getMethod("java.util.regex.Pattern compile(String)"));
+			}
 		else
 			{
 			String cs = null;
 			try
 				{
 				cs = RT.printString(value);
-				//System.out.println("WARNING SLOW CODE: " + value.getClass() + " -> " + cs);
+//				System.out.println("WARNING SLOW CODE: " + Util.classOf(value) + " -> " + cs);
 				}
 			catch(Exception e)
 				{
@@ -4286,6 +4360,9 @@ static public class ObjExpr implements Expr{
 		return fields != null;
 	}
 
+	boolean supportsMeta(){
+		return !isDeftype();
+	}
 	void emitClearCloses(GeneratorAdapter gen){
 //		int a = 1;
 //		for(ISeq s = RT.keys(closes); s != null; s = s.next(), ++a)
@@ -4365,7 +4442,8 @@ static public class ObjExpr implements Expr{
 			{
 			gen.newInstance(objtype);
 			gen.dup();
-			gen.visitInsn(Opcodes.ACONST_NULL);				
+			if(supportsMeta())
+				gen.visitInsn(Opcodes.ACONST_NULL);
 			for(ISeq s = RT.seq(closesExprs); s != null; s = s.next())
 				{
                 LocalBindingExpr lbe = (LocalBindingExpr) s.first();
@@ -4571,8 +4649,8 @@ static public class ObjExpr implements Expr{
 
 	Type constantType(int id){
 		Object o = constants.nth(id);
-		Class c = o.getClass();
-		if(Modifier.isPublic(c.getModifiers()))
+		Class c = clojure.lang.Util.classOf(o);
+		if(c!= null && Modifier.isPublic(c.getModifiers()))
 			{
 			//can't emit derived fn types due to visibility
 			if(LazySeq.class.isAssignableFrom(c))
@@ -5677,6 +5755,7 @@ public static class LetExpr implements Expr, MaybePrimitiveExpr{
 
 
 	public void doEmit(C context, ObjExpr objx, GeneratorAdapter gen, boolean emitUnboxed){
+		HashMap<BindingInit, Label> bindingLabels = new HashMap();
 		for(int i = 0; i < bindingInits.count(); i++)
 			{
 			BindingInit bi = (BindingInit) bindingInits.nth(i);
@@ -5691,6 +5770,7 @@ public static class LetExpr implements Expr, MaybePrimitiveExpr{
 				bi.init.emit(C.EXPRESSION, objx, gen);
 				gen.visitVarInsn(OBJECT_TYPE.getOpcode(Opcodes.ISTORE), bi.binding.idx);
 				}
+			bindingLabels.put(bi, gen.mark());
 			}
 		Label loopLabel = gen.mark();
 		if(isLoop)
@@ -5725,10 +5805,10 @@ public static class LetExpr implements Expr, MaybePrimitiveExpr{
 				lname += RT.nextGID();
 			Class primc = maybePrimitiveType(bi.init);
 			if(primc != null)
-				gen.visitLocalVariable(lname, Type.getDescriptor(primc), null, loopLabel, end,
+				gen.visitLocalVariable(lname, Type.getDescriptor(primc), null, bindingLabels.get(bi), end,
 				                       bi.binding.idx);
 			else
-				gen.visitLocalVariable(lname, "Ljava/lang/Object;", null, loopLabel, end, bi.binding.idx);
+				gen.visitLocalVariable(lname, "Ljava/lang/Object;", null, bindingLabels.get(bi), end, bi.binding.idx);
 			}
 	}
 
@@ -6702,6 +6782,13 @@ public static void pushNS(){
 	                                                           Symbol.intern("*ns*")).setDynamic(), null));
 }
 
+public static void pushNSandLoader(ClassLoader loader){
+	Var.pushThreadBindings(RT.map(Var.intern(Symbol.intern("clojure.core"),
+	                                         Symbol.intern("*ns*")).setDynamic(),
+	                              null,
+	                              RT.FN_LOADER_VAR, loader));
+}
+
 public static ILookupThunk getLookupThunk(Object target, Keyword k){
 	return null;  //To change body of created methods use File | Settings | File Templates.
 }
@@ -6857,7 +6944,10 @@ public static Object compile(Reader rdr, String sourcePath, String sourceName) t
 		for(int n = 0;n<numInits;n++)
 			clinitgen.invokeStatic(objx.objtype, Method.getMethod("void __init" + n + "()"));
 
-		clinitgen.invokeStatic(Type.getType(Compiler.class), Method.getMethod("void pushNS()"));
+		clinitgen.push(objx.internalName.replace('/','.'));
+		clinitgen.invokeStatic(CLASS_TYPE, Method.getMethod("Class forName(String)"));
+		clinitgen.invokeVirtual(CLASS_TYPE,Method.getMethod("ClassLoader getClassLoader()"));
+		clinitgen.invokeStatic(Type.getType(Compiler.class), Method.getMethod("void pushNSandLoader(ClassLoader)"));
 		clinitgen.mark(startTry);
 		clinitgen.invokeStatic(objx.objtype, Method.getMethod("void load()"));
 		clinitgen.mark(endTry);
