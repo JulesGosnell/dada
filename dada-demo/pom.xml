@@ -22,6 +22,11 @@
   <dependencies>
     <dependency>
       <groupId>org.dada</groupId>
+      <artifactId>dada-clojure</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.dada</groupId>
       <artifactId>dada-slf4j</artifactId>
       <version>${project.version}</version>
     </dependency>

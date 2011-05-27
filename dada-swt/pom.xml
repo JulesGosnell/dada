@@ -98,6 +98,11 @@
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>
+      <artifactId>dada-clojure</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.dada</groupId>
       <artifactId>dada-core</artifactId>
       <version>${project.version}</version>
     </dependency>
