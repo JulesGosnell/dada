@@ -1,6 +1,6 @@
 (ns ^{:author "Jules Gosnell" :doc "Server for DADA Demo"} org.dada.demo.server
     (:use
-     [org.dada web]
+     [org.dada.clojure web]
      [org.dada core]
      [org.dada.core remote]
      [org.dada.core server]

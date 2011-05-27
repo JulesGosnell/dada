@@ -1,6 +1,5 @@
-(ns ^{:author "Jules Gosnell" :doc "HTTP Class Server for DADA"} org.dada.web
+(ns ^{:author "Jules Gosnell" :doc "HTTP Class Server for Clojure classes"} org.dada.clojure.web
     (:use clojure.tools.logging)
-    (:use [org.dada.core])
     (:import
      [clojure.lang DynamicClassLoader]
      [org.eclipse.jetty.server Request Server]
