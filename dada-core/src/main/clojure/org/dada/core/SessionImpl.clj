@@ -21,7 +21,6 @@
 (defrecord ImmutableState [^Model metamodel ^String user-name ^String application-name ^String application-version ^Atom mutable])
 
 (defn -init [^Model metamodel ^String user-name ^String application-name ^String application-version]
-  (debug "init")
   [ ;; super ctor args
    []
    ;; instance state
@@ -44,13 +43,13 @@
 
 (defn -close [^org.dada.core.SessionImpl this]
   (with-record
-   (immutable this)
-   [mutable]
-   ;; TODO - should all be done as one atomic action...
-   (doseq [close-hook (:close-hooks @mutable)] (close-hook this))
-   (debug "close")
-   (doseq [[^View view models] (:views @mutable)]
-       (doseq [^Model model models] (.detach model view)))))
+    (immutable this)
+    [mutable]
+    ;; TODO - should all be done as one atomic action...
+    (doseq [close-hook (:close-hooks @mutable)] (close-hook this))
+    (info (str this ": close"))
+    (doseq [[^View view models] (:views @mutable)]
+      (doseq [^Model model models] (.detach model view)))))
 
 ;; drill into v1 with k1 then k2 and add v4 to the resulting vector, rebuilding structure on way out
 
@@ -60,7 +59,7 @@
     (assoc v1 k1 (assoc v2 k2 (conj v3 v4)))))
 
 (defn ^Data -attach [^org.dada.core.SessionImpl this ^Model model ^View view]
-  (debug "attach")
+  (info (str this ": attach " view " to " model))
   (with-record
    (immutable this)
    [^Model metamodel mutable]
@@ -80,7 +79,7 @@
     (assoc v1 k1 (assoc v2 k2 (remove (fn [v] (= v v4)) v3)))))
 
 (defn ^Data -detach [^org.dada.core.SessionImpl this ^Model model ^View view]
-  (debug "detach")
+  (info (str this ": detach " view " from " model))
   (with-record
    (immutable this)
    [^Model metamodel mutable]
@@ -118,3 +117,7 @@
    (immutable this)
    [mutable]
    (swap! mutable (fn [mutable close-hook] (assoc mutable :close-hooks (conj (:close-hooks mutable) close-hook))) close-hook)))
+
+(defn ^String -toString [^org.dada.core.SessionImpl this]
+  (let [{user-name :user-name} (immutable this)]
+    (print-object this user-name)))

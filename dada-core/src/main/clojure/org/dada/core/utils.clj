@@ -26,3 +26,9 @@
       (if (compare-and-set! atom old-val (first results))
 	results
 	(recur)))))
+
+(defn ^String print-object
+  ([^Object object ^String internals]
+     (str "#<" (.getSimpleName ^Class (.getClass object)) "@" (Integer/toHexString (System/identityHashCode object)) " " internals ">"))
+  ([object]
+     (print-object object "")))

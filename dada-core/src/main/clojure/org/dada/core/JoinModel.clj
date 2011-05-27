@@ -2,7 +2,7 @@
   (:use
    [clojure.tools logging]
    [org.dada core]
-   [org.dada.core counted-set]
+   [org.dada.core counted-set utils]
    )
   (:import
    [java.util Collection LinkedHashMap Map]
@@ -248,16 +248,16 @@
 ;;------------------------------------------------------------------------------
 ;; TODO - how can we better share this code with SimpleModelView ?
 
-(defn #^Data -attach [^org.dada.core.JoinModel this ^View view]
+(defn ^Data -attach [^org.dada.core.JoinModel this ^View view]
   (let [[mutable] (.state this)]
     (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-inc (m 0) view))) view)]
-      (debug ["ATTACH VIEW   " view views])
+      (debug ["ATTACH VIEW: " view views])
       (extract-data lhs))))
 
-(defn #^Data -detach [^org.dada.core.JoinModel this ^View view]
+(defn ^Data -detach [^org.dada.core.JoinModel this ^View view]
   (let [[mutable] (.state this)]
     (let [[views lhs] (swap! mutable (fn [m view] (assoc m 0 (counted-set-dec (m 0) view))) view)]
-      (debug ["DETACH VIEW " view views])
+      (debug ["DETACH VIEW: " view views])
       (extract-data lhs))))
 
 (defn notifyUpdate [^org.dada.core.JoinModel this insertions alterations deletions]
@@ -266,7 +266,7 @@
     (trace ["NOTIFY ->" @mutable])
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
       (warn "empty event raised" (.getStackTrace (Exception.)))
-      (dorun (map (fn [#^View view]	;dirty - side-effects
+      (dorun (map (fn [^View view]	;dirty - side-effects
 		      (try (.update view insertions alterations deletions)
 			   (catch Throwable t
 				  (error "View notification failure" t)
@@ -280,13 +280,13 @@
 
 ;;------------------------------------------------------------------------------
 
-(defn #^{:private true} -writeReplace [#^org.dada.core.JoinModel this]
+(defn ^{:private true} -writeReplace [^org.dada.core.JoinModel this]
   (let [[_mutable name metadata] (.state this)]
       (RemoteModel. name metadata)))
 
 ;;--------------------------------------------------------------------------------
 
-(defn -post-init [^org.dada.core.JoinModel self _ _ ^Model lhs-model rhses join-fn]
+(defn -post-init [^org.dada.core.JoinModel self ^String model-name _ ^Model lhs-model rhses join-fn]
   (let [[mutable immutable] (.state self)
 	rhs-model-to-lhs-fks (invert-map rhses)
 	lhs-metadata (.getMetadata lhs-model)
@@ -295,7 +295,7 @@
 					(sorted-map)
 					(map
 					 (fn [i [^Model model keys]]
-					     [i [model (map get-lhs-getter keys)]])
+                                           [i [model (map get-lhs-getter keys)]])
 					 (range)
 					 rhs-model-to-lhs-fks))
 	i-to-lhs-getters (into (sorted-map) (map (fn [[i [model getters]]] [i getters]) i-to-rhs-model-and-lhs-getters))]
@@ -303,22 +303,23 @@
     (dorun
      (map
       (fn [[i [^Model rhs-model lhs-getters]]]
-	  (trace ["post-init: watching rhs:" i rhs-model])
-	  (let [^Metadata rhs-metadata (.getMetadata rhs-model)
-		rhs-pk-getter (.getPrimaryGetter rhs-metadata)
-		rhs-version-comparator (.getVersionComparator rhs-metadata)
-		^Data data
-		(.attach
-		 rhs-model
-		 (proxy [View] []
-			(update [insertions alterations deletions]
-				(let [[_ _ _ insertions alterations deletions]
-				      (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
-				  (if (or insertions alterations deletions)
-				    (notifyUpdate self insertions alterations deletions))))))]
-	    (swap! mutable update-rhs
-		   (map (fn [extant] (Update. nil extant))(.getExtant data))
-		   nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
+        (trace ["post-init: watching rhs:" i rhs-model])
+        (let [^Metadata rhs-metadata (.getMetadata rhs-model)
+              rhs-pk-getter (.getPrimaryGetter rhs-metadata)
+              rhs-version-comparator (.getVersionComparator rhs-metadata)
+              ^Data data
+              (.attach
+               rhs-model
+               (proxy [View] []
+                 (update [insertions alterations deletions]
+                   (let [[_ _ _ insertions alterations deletions]
+                         (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
+                     (if (or insertions alterations deletions)
+                       (notifyUpdate self insertions alterations deletions))))
+                 (toString [] (print-object this (str "Proxy:" model-name)))))]
+          (swap! mutable update-rhs
+                 (map (fn [extant] (Update. nil extant))(.getExtant data))
+                 nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
       i-to-rhs-model-and-lhs-getters))
 
     (trace ["post-init: watching lhs:" lhs-model])
@@ -330,15 +331,19 @@
 	  (.attach
 	   lhs-model
 	   (proxy [View] []
-		  (update [insertions alterations deletions]
-			  (let [[_ _ _ insertions alterations deletions]
-				(swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
-			    (if (or insertions alterations deletions)
-			      (notifyUpdate self insertions alterations deletions))))))]
+             (update [insertions alterations deletions]
+               (let [[_ _ _ insertions alterations deletions]
+                     (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
+                 (if (or insertions alterations deletions)
+                   (notifyUpdate self insertions alterations deletions))))))]
       (swap! mutable update-lhs
 	     (map (fn [extant] (Update. nil extant))(.getExtant data))
 	     nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs) ;; TODO - deletions/extinct
       )))
+
+(defn ^String -toString [^org.dada.core.JoinModel this]
+  (let [[_ name] (.state this)]
+    (print-object this name)))
 
 ;;------------------------------------------------------------------------------
 ;; TODO
@@ -359,4 +364,3 @@
 ;; don't store rhs-refs on lhs, but rhs-entries (or rhs-pks?) - consider
 ;; make whole thing a macro which generates inline code specific to each individual join
 ;; compound key join ?
-

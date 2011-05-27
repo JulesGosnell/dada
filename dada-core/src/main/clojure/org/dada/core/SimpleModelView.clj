@@ -1,7 +1,7 @@
 (ns org.dada.core.SimpleModelView
   (:use
    [clojure.tools logging]
-   [org.dada.core counted-set]
+   [org.dada.core counted-set utils]
    )
   (:import
    [java.util Collection]
@@ -18,7 +18,7 @@
 
 ;; TODO: consider supporting indexing on mutable keys - probably not a good idea ?
 
-(defn -init [#^String name #^Metadata metadata]
+(defn -init [^String name ^Metadata metadata]
 
   [ ;; super ctor args
    []
@@ -28,7 +28,7 @@
 	 key-fn (fn [value] (.get key-getter value))
 
 	 process-addition
-	 (fn [[extant extinct views i a d] #^Update addition]
+	 (fn [[extant extinct views i a d] ^Update addition]
 	     (let [new (.getNewValue addition)
 		   key (key-fn new)
 		   current (extant key)]
@@ -44,7 +44,7 @@
 		       [(assoc extant key new) (dissoc extinct key) views (cons (Update. nil new) i) a d]
 		       (do
 			 ;; out of order or duplicate version - ignored
-			 (debug ["out of order insertion" current new])
+			 (trace ["out of order insertion" current new])
 			 [extant extinct views i a d]))
 		     )
 		   )
@@ -54,12 +54,12 @@
 		   [(assoc extant key new) extinct views i (cons (Update. current new) a) d] ;alteration
 		   (do
 		     ;; out of order or duplicate version - ignored
-		     (debug ["out of order update" current new])
+		     (trace ["out of order update" current new])
 		     [extant extinct views i a d]))
 		 )))
 
 	 process-deletion
-	 (fn [[extant extinct views i a d] #^Update deletion]
+	 (fn [[extant extinct views i a d] ^Update deletion]
 	     (let [old (.getOldValue deletion)
 		   new (.getNewValue deletion)
 		   key (key-fn old)
@@ -76,14 +76,14 @@
 		       [extant (assoc extinct key new) views i a (cons (Update. removed new) d)]
 		       (do
 			 ;; earlier version - ignored
-			 (debug ["out of order deletion - ignored" removed latest])
+			 (trace ["out of order deletion - ignored" removed latest])
 			 [extant extinct views i a d]))))
 		 (if (<= (.compareTo version-comparator current old) 0)
 		   ;; deletion of current or later version - accepted
 		   [(dissoc extant key) (assoc extinct key latest) views i a (cons (Update. current new) d)]
 		   (do
 		     ;; earlier version - ignored
-		     (debug ["out of order deletion - ignored" current new])
+		     (trace ["out of order deletion - ignored" current new])
 		     [extant extinct views i a d])))))
 
 	 ;; TODO: perhaps we should raise the granularity at which we
@@ -123,29 +123,29 @@
    ])
 ;;--------------------------------------------------------------------------------
 
-(defn -getName [#^org.dada.core.SimpleModelView this]
+(defn -getName [^org.dada.core.SimpleModelView this]
   (let [[[_name]] (.state this)]
     _name))
 
-(defn -getMetadata [#^org.dada.core.SimpleModelView this]
+(defn -getMetadata [^org.dada.core.SimpleModelView this]
   (let [[[_ metadata]] (.state this)]
     metadata))
 
-(defn -find [#^org.dada.core.SimpleModelView this key]
+(defn -find [^org.dada.core.SimpleModelView this key]
   (let [[_ mutable] (.state this)
 	[extant] @mutable]
     (extant key)))
 
-(defn #^Data -attach [#^org.dada.core.SimpleModelView this #^View view]
+(defn ^Data -attach [^org.dada.core.SimpleModelView this ^View view]
   (let [[_ mutable] (.state this)]
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-inc (state 2) view))) view)]
-      (debug ["ATTACH VIEW   " view views])
+      (debug ["ATTACH VIEW: " view views])
       (Data. (vals extant) (vals extinct)))))
 
-(defn #^Data -detach [#^org.dada.core.SimpleModelView this #^View view]
+(defn ^Data -detach [^org.dada.core.SimpleModelView this ^View view]
   (let [[_ mutable] (.state this)]
     (let [[extant extinct views] (swap! mutable (fn [state view] (assoc state 2 (counted-set-dec (state 2) view))) view)]
-      (debug ["DETACH VIEW" view views])
+      (debug ["DETACH VIEW: " view views])
       (Data. (vals extant) (vals extinct)))))
 
 (defn notifyUpdate [^org.dada.core.SimpleModelView this insertions alterations deletions]
@@ -154,7 +154,7 @@
     (trace ["NOTIFY ->" views])
     (if (and (empty? insertions) (empty? alterations) (empty? deletions))
       (warn "empty event raised" (.getStackTrace (Exception.)))
-      (dorun (map (fn [#^View view]	;dirty - side-effects
+      (dorun (map (fn [^View view]	;dirty - side-effects
 		      (try (.update view insertions alterations deletions)
 			   (catch Throwable t
 				  (error "View notification failure" t)
@@ -163,23 +163,23 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn -getData [#^org.dada.core.SimpleModelView this]
+(defn -getData [^org.dada.core.SimpleModelView this]
   (let [[[_ _ _ getData-fn]] (.state this)]
     (getData-fn)))
 
-(defn -update [#^org.dada.core.SimpleModelView this & inputs]
+(defn -update [^org.dada.core.SimpleModelView this & inputs]
   (let [[[_ _ update-fn] mutable] (.state this)
-	[#^Collection i #^Collection a #^Collection d] (update-fn inputs)]
+	[^Collection i ^Collection a ^Collection d] (update-fn inputs)]
     (if (not (and (empty? i) (empty? a) (empty? d)))
       (notifyUpdate this i a d))
     ))
 
 ;;--------------------------------------------------------------------------------
 
-(defn #^{:private true} -writeReplace [#^org.dada.core.SimpleModelView this]
+(defn ^{:private true} -writeReplace [^org.dada.core.SimpleModelView this]
   (let [[[name metadata]] (.state this)]
       (RemoteModel. name metadata)))
 
-(defn #^String -toString [#^org.dada.core.SimpleModelView this]
-  (let [[[name metadata]] (.state this)]
-    name))
+(defn ^String -toString [^org.dada.core.SimpleModelView this]
+  (let [[[name]] (.state this)]
+    (print-object this name)))
