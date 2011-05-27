@@ -144,12 +144,12 @@
 ;; overhead of dispatching and collating each thread means that you
 ;; need to do a significant amount of work on it before it will pay
 ;; off....
-(deftest map-vs-pmap
-  (let [data (doall (range 1000000))]
-    (is (faster 
-	 1
-	 (doall (map identity data))
-	 (doall (pmap identity data))))))
+;; (deftest map-vs-pmap
+;;   (let [data (doall (range 1000000))]
+;;     (is (faster 
+;; 	 1
+;; 	 (doall (map identity data))
+;; 	 (doall (pmap identity data))))))
 		    
 ;; (import 'java.util.concurrent.Executors)
 ;; (import 'java.util.concurrent.ExecutorService)
