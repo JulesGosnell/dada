@@ -70,6 +70,6 @@
   (with-record (immutable this) [send-to]
 	       (.hashCode send-to)))
 
-(defn ^String -toString [^org.dada.core.SimpleModelView this]
+(defn ^String -toString [^org.dada.core.RemoteView this]
   (let [{send-to :send-to} (immutable this)]
     (print-object this send-to)))
