@@ -78,7 +78,7 @@
      (immutable this)
      [^Session peer ^Remoter remoter views]
      (debug "attach" model view)
-     (let [topic (.endPoint remoter (str "DADA." (.getName model)) true) ;TODO - hardwired prefix and Destination type
+     (let [topic (.endPoint remoter (.getName model) true) ;TODO - hardwired Destination type
 	   ^AsyncMessageServer server (.server remoter view topic)
 	   ^View client (RemoteView. topic)]
        (swap! views (fn [views] (assoc views [view model] [topic server client])))

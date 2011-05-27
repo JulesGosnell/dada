@@ -195,7 +195,7 @@
 
 ;;------------------------------------------------------------------------------
 
-(deftype JMSRemoter [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^long timeout]
+(deftype JMSRemoter [^Session session ^ExecutorService threads ^MessageStrategy strategy ^Translator translator ^long timeout ^String prefix]
   Remoter
   
   (server [this target reply-to]
@@ -208,10 +208,10 @@
 	       (init-jms-async-message-client strategy translator session send-to))
 
   (endPoint [this name]
-	    (.createQueue session name))
+	    (.createQueue session (str prefix "." name)))
 
   (endPoint [this name one-to-many]
-	    (.createTopic session name))
+	    (.createTopic session(str prefix "." name)))
 
   (endPoint [this]
 	    (.createTemporaryQueue session))

@@ -42,9 +42,9 @@
 	  ^ExecutorService threads (Executors/newFixedThreadPool num-threads)
 	  ^MessageStrategy strategy (BytesMessageStrategy.)
 	  ^Translator translator (SerialiseTranslator.)
-	  ^Remoter remoter (JMSRemoter. jms-session threads strategy translator timeout)]
+	  ^Remoter remoter (JMSRemoter. jms-session threads strategy translator timeout "org.dada.POJO")]
       (def ^SessionManager session-manager
-	   (session-manager-server (SessionManagerImpl. "SessionManager.POJO" *metamodel*) remoter)))
+	   (session-manager-server (SessionManagerImpl. "SessionManager" *metamodel*) remoter)))
 
     ;; move this into SessionManagerImpl
     (def jetty (start-jetty 8888))

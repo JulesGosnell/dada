@@ -48,6 +48,7 @@
     <constructor-arg ref="messageStrategy"></constructor-arg>
     <constructor-arg ref="translator"></constructor-arg>
     <constructor-arg><value>10000</value></constructor-arg>
+    <constructor-arg><value>org.dada.POJO</value></constructor-arg>
   </bean>
 
   <bean id="classesURL" class="java.lang.String">
@@ -55,7 +56,7 @@
   </bean>
 
   <bean id="sessionManager" class="org.dada.core.RemoteSessionManager">
-    <constructor-arg><value>SessionManager.POJO</value></constructor-arg>
+    <constructor-arg><value>SessionManager</value></constructor-arg>
     <constructor-arg ref="remoter"></constructor-arg>
   </bean>
 
