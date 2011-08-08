@@ -188,6 +188,7 @@
 (defn ^Metadata custom-metadata3 [^Class class primary-keys version-keys version-comparator attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
+       nil
        (custom-creator class)
        primary-keys
        version-keys
@@ -224,6 +225,7 @@
 
 (defn ^Metadata seq-metadata [length]
   (new MetadataImpl
+       nil
        (proxy [Creator] [] (create [args] args))
        [0]
        [1]
@@ -266,6 +268,7 @@
   "make a record-based Metadata instance"
   (let [class (record-class attributes)]
     (new MetadataImpl
+	 nil
 	 (record-creator class)
 	 primary-keys
 	 version-keys
@@ -276,6 +279,7 @@
   "make a record-based Metadata instance"
   (let [class (named-record-class class-name attributes)]
     (new MetadataImpl
+	 nil
 	 (record-creator class)
 	 primary-keys
 	 version-keys
@@ -349,6 +353,7 @@
        (defrecord ~class-name ~fields)
        (def ^Metadata ~var-name
 	    (MetadataImpl.
+	     (make-record-creator ~key-class-name ~primary-keys)
 	     (make-record-creator ~class-name ~fields)
 	     (list ~@(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
 	     (list ~@(map keyword version-keys))
@@ -436,6 +441,7 @@
 ;;--------------------------------------------------------------------------------
 
 (def metamodel-metadata (MetadataImpl.
+			 nil		;key creator
 			 nil		;creator
 			 [:name]	;primary-keys
 			 []		;version-keys
