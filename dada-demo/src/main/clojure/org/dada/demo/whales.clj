@@ -1,3 +1,7 @@
+;; to use:
+;; load-eval this file using dada/bin/clj
+;; run dada/bin/client
+
 (ns 
  #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
