@@ -230,7 +230,7 @@ public class Tuple<V> implements Collection<V>, Serializable, Indexed, Comparabl
 	
 	@Override
 	public boolean equals(Object that) {
-		return Arrays.deepEquals(values, ((Tuple)that).values);
+	    return (that instanceof Tuple) && Arrays.deepEquals(values, ((Tuple)that).values);
 	}
 
 	@Override
