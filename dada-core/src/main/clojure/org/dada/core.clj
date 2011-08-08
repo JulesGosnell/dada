@@ -328,9 +328,24 @@
      (proxy [Metadata$VersionComparator] []
  	    (compareTo [lhs# rhs#] (~version-comparator (version-fn# lhs#) (version-fn# rhs#))))))
 
+(def prim->ref
+     {'int 'Integer
+     'long 'Long
+     'float 'Float
+     'double 'Double
+     'void 'Void
+     'short 'Short
+     'boolean 'Boolean
+     'byte 'Byte
+     'char 'Character})
+
 (defmacro defrecord-metadata [var-name class-name fields & [version-comparator]]
-  (let [version-keys (filter (fn [field] (:version-key (meta field))) fields)]
+  (let [primary-keys (filter (fn [field] (:primary-key (meta field))) fields)
+	version-keys (filter (fn [field] (:version-key (meta field))) fields)
+	key-class-name (symbol (str (name class-name) "Key"))]
+    
     `(do
+       (defrecord ~key-class-name ~primary-keys)
        (defrecord ~class-name ~fields)
        (def ^Metadata ~var-name
 	    (MetadataImpl.
@@ -342,7 +357,8 @@
 	      ~@(map 
 		 (fn [field]
 		     (let [m (meta field)
-			   tag (or (:tag m) Object)]
+			   tag (:tag m)
+			   tag (get prim->ref tag tag)]
 		       `(Attribute.
 			 ~(keyword field)
 			 ~tag

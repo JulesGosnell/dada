@@ -39,10 +39,10 @@
 (defrecord-metadata
     ocean-metadata
     Ocean
-    [^{:tag String         :primary-key true} id
-     ^{:tag (Integer/TYPE) :version-key true} version
-     ^{:tag (Integer/TYPE)}                   area
-     ^{:tag (Integer/TYPE)}                   max-depth]
+    [^{:tag String :primary-key true} id
+     ^{:tag int    :version-key true} version
+     ^{:tag int}                      area
+     ^{:tag int}                      max-depth]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def ^Model oceans-model (model "Oceans" ocean-metadata))
@@ -65,14 +65,14 @@
 (defrecord-metadata
     whale-metadata
     Whale
-    [^{:tag (Integer/TYPE) :primary-key true} id
-     ^{:tag (Integer/TYPE) :version-key true} version
-     ^{:tag Date}                             time
-     ^{:tag String}                           reporter
-     ^{:tag Keyword :immutable true}          type
-     ^{:tag String}                           ocean
-     ^{:tag (Float/TYPE)}                     length
-     ^{:tag (Float/TYPE)}                     weight]
+    [^{:tag int :primary-key true}   id
+     ^{:tag int :version-key true}   version
+     ^{:tag Date}                    time
+     ^{:tag String}                  reporter
+     ^{:tag Keyword :immutable true} type
+     ^{:tag String}                  ocean
+     ^{:tag float}                   length
+     ^{:tag float}                   weight]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def ^Model whales-model (model "Whales" whale-metadata))
@@ -348,14 +348,14 @@
 (defrecord-metadata
     join-metadata
     Join
-    [^{:tag (Integer/TYPE) :primary-key true} id
-     ^{:tag (Integer/TYPE) :version-key true} version
-     ^{:tag Keyword :immutable true}          type
-     ^{:tag (Float/TYPE)}                     length
-     ^{:tag (Float/TYPE)}                     weight
-     ^{:tag String}                           ocean
-     ^{:tag (Integer/TYPE)}                   ocean-area
-     ^{:tag (Integer/TYPE)}                   ocean-max-depth]
+    [^{:tag int :primary-key true}   id
+     ^{:tag int :version-key true}   version
+     ^{:tag Keyword :immutable true} type
+     ^{:tag float}                   length
+     ^{:tag float}                   weight
+     ^{:tag String}                  ocean
+     ^{:tag int}                     ocean-area
+     ^{:tag int}                     ocean-max-depth]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def joins-model
