@@ -30,7 +30,7 @@
      )
     )
 
-;; TODO - most of this should proobably live in spring...
+;; TODO - most of this should probably live in spring...
 
 (if (not *compile-files*)
   (do
