@@ -139,6 +139,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 		return creator;
 	}
 
+	@Override
 	public Creator<K> getKeyCreator() {
 		return keyCreator;
 	}

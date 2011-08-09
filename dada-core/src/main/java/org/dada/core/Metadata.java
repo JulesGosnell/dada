@@ -38,6 +38,7 @@ public interface Metadata<K, V> extends Serializable {
 		int compareTo(V oldValue, V newValue);
 	}
 
+	Creator<K> getKeyCreator();
 	Creator<V> getCreator();
 
 	// keys

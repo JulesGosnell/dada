@@ -23,7 +23,7 @@ public class IntrospectiveMetadataTestCase extends MockObjectTestCase {
 			}
 		};
 		
-		IntrospectiveMetadata<Integer, Test> metadata = new IntrospectiveMetadata<Integer, Test>(Test.class, creator, "Key");
+		IntrospectiveMetadata<Integer, Test> metadata = new IntrospectiveMetadata<Integer, Test>(Test.class, null, creator, "Key");
 		final Test test = mock(Test.class);
 
 	}

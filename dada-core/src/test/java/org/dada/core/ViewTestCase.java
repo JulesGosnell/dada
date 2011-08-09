@@ -45,7 +45,7 @@ public class ViewTestCase extends TestCase {
 			return new BooleanDatum((Integer)args[0], (Boolean)args[1]);
 			}
 		};
-		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, booleanDatumCreator, "Id");
+		datumMetadata = new IntrospectiveMetadata<Integer, BooleanDatum>(BooleanDatum.class, null, booleanDatumCreator, "Id");
 		
 		Creator<StringDatum> stringDatumCreator = new Creator<StringDatum>(){
 
@@ -54,7 +54,7 @@ public class ViewTestCase extends TestCase {
 				return new StringDatum((Integer)args[0], (Boolean)args[1], (String)args[2]);
 			}
 		};
-		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, stringDatumCreator, "Id");
+		stringDatumMetadata = new IntrospectiveMetadata<Integer, StringDatum>(StringDatum.class, null, stringDatumCreator, "Id");
 	}
 
 	@Override
