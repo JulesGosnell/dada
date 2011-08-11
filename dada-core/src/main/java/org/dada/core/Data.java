@@ -52,4 +52,17 @@ public class Data<V> implements Serializable, Indexed {
 				return notFound;
 			}
 		}
+
+		// TODO - should be in utils class
+
+		private static boolean safeEquals(Object lhs, Object rhs) {
+		    return (lhs == rhs || (lhs != null && rhs != null && lhs.equals(rhs)));
+		}
+
+		public boolean equals(Object that) {
+		    return (that != null &&
+			    that instanceof Data &&
+			    safeEquals(extant, ((Data)that).extant) &&
+			    safeEquals(extinct, ((Data)that).extinct));
+		}
 }
