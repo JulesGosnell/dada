@@ -1,7 +1,9 @@
 (ns
  org.dada.core.utils
  (:import
-  [clojure.lang Atom])
+  [java.util Collection]
+  [clojure.lang Atom]
+  [org.dada.core Creator Getter Metadata])
  )
 
 ;; simplifies syntax for the destructuring of a record
@@ -32,3 +34,73 @@
      (str "#<" (.getSimpleName ^Class (.getClass object)) "@" (Integer/toHexString (System/identityHashCode object)) " " internals ">"))
   ([object]
      (print-object object "")))
+
+;;--------------------------------------------------------------------------------
+
+(defn make-pk-fn [^Metadata metadata]
+  (let [keys (.getPrimaryKeys metadata)
+	^Getter key-getter (.getPrimaryGetter metadata)]
+    (if (= (count keys) 1)
+      (fn [value] (.get key-getter value))
+      (let [^Creator key-creator (.getKeyCreator metadata)]
+	(println (str "KEY CREATOR=" (type key-creator) " : " key-creator))
+	(fn [value]
+	    (let [k (.get key-getter value)]
+	      (println (str "K=" k))
+	      (.create key-creator (into-array Object k))))))))
+
+;;--------------------------------------------------------------------------------
+
+(defmacro make-singleton-key-fn [datum-class key]
+  "return a fn that given a datum of class datum-class returns the value of .key applied to that datum."
+  ;; (let [datum 'datum#
+  ;; 	datum-with-meta (with-meta datum {:tag datum-class})]
+  ;;   `(fn [~datum-with-meta] (. ~datum ~key))
+  ;;   )
+  ;;(list 'fn [(with-meta 'datum {:tag datum-class})] (list '. 'datum key)))
+  `(fn [~(with-meta `datum# {:tag datum-class})] (. `datum# ~key))
+  )
+
+(defmacro make-compound-key-fn [datum-class keys]
+  "return a fn that given a datum of class datum-class and a set of
+keys, creates a key class that references an instance of datum-class
+and implements its hash code and equality in terms of the values
+associated with said keys on referenced instance and returns a fn that
+will manufacture and instance of this class that refers to an instance
+of datum-class. - i,e, creates a minimal footprint compound key."
+  (let [key-class (symbol (str datum-class "Key"))
+	datum (with-meta 'datum {:tag datum-class})
+	that-datum (with-meta 'that-datum {:tag datum-class})
+	that 'that
+	that-with-type (with-meta that {:tag key-class})
+	]
+    (eval
+     `(deftype ~key-class
+	[~datum]
+	Object
+	(^int hashCode [this]
+	      (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
+	(^boolean equals [this ~that]
+		  (and (not (nil? ~that))
+		       (instance? ~key-class ~that)
+		       ~@(map 
+			  (fn [key]
+			      `(= (. ~datum ~key)
+				  (let [~that-datum (.datum ~that-with-type)]
+				    (. ~that-datum ~key))))
+			  keys)))
+;;	(^String toString [this]
+;;		 (str ~keys))
+	))
+    `(fn [datum#]
+     	 (new ~key-class datum#))
+    ))
+
+(defn xxx [x y] x)
+
+;; (defn make-ref-key-fn [data-class keys]
+;;   (if (instance? Collection keys)
+;; ;;    (make-compound-key-fn data-class keys)
+;;     (xxx data-class keys)
+;;     (make-singleton-key-fn data-class keys)
+;;     ))
