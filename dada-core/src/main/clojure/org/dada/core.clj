@@ -372,6 +372,36 @@
 	      ))
 	    )))
 
+
+(defmacro definterface-metadata [var-name class-name fields & [version-comparator]]
+  (let [primary-keys (filter (fn [field] (:primary-key (meta field))) fields)
+	version-keys (filter (fn [field] (:version-key (meta field))) fields)]
+    
+    `(do
+       (definterface
+           ~class-name
+         ~@(map (fn [field] `(~field [])) fields))
+       (def ^Metadata ~var-name
+	    (MetadataImpl.
+	     nil ;; (make-record-creator ~class-name ~fields)
+	     (list ~@(map keyword primary-keys))
+             (make-key-getter ~class-name ~primary-keys)
+	     (list ~@(map keyword version-keys))
+	     (make-version-comparator ~class-name ~version-keys ~version-comparator)
+	     (list
+	      ~@(map 
+		 (fn [field]
+		     (let [m (meta field)
+			   tag (:tag m)
+			   tag (get prim->ref tag tag)]
+		       `(Attribute.
+			 ~(keyword field)
+			 ~tag
+			 ~(not (or (:primary-key m) (:immutable m)))
+			 (make-record-getter ~field ~class-name ~tag))))
+		 fields))
+	      ))
+	    )))
 ;;--------------------------------------------------------------------------------
 
 (defn sql-attributes 

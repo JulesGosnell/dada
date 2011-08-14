@@ -358,6 +358,19 @@
      ^{:tag int}                     ocean-max-depth]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
+(definterface-metadata
+    join3-metadata
+    Join3
+    [^{:tag int :primary-key true}   id
+     ^{:tag int :version-key true}   version
+     ^{:tag Object :immutable true} type2
+     ^{:tag float}                   length
+     ^{:tag float}                   weight
+     ^{:tag String}                  ocean
+     ^{:tag int}                     ocean-area
+     ^{:tag int}                     ocean-max-depth]
+    (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
+
 (def joins-model
      (JoinModel.
       "WhalesAndOceans"
