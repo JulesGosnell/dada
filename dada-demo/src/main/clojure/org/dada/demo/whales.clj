@@ -3,7 +3,7 @@
 ;; run dada/bin/client
 
 (ns 
- #^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
+ ^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
  (:use
   [clojure set]

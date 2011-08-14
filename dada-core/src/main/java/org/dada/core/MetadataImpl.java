@@ -36,7 +36,6 @@ import java.util.Map;
 
 public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> {
 
-	private final Creator<K> keyCreator;
 	private final Creator<V> creator;
 	private final List<Attribute<Object, V>> attributes;
 	private final Collection<Object> primaryKeys;
@@ -49,8 +48,7 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 
 	private final Getter<?, V>[] getters; // for fast lookup
 	
-	public MetadataImpl(Creator<K> keyCreator, Creator<V> creator, Collection<Object> primaryKeys, Collection<Object> versionKeys, VersionComparator<V> versionComparator, Collection<Attribute<Object, V>> attributes) {
-		this.keyCreator = keyCreator;
+	public MetadataImpl(Creator<V> creator, Collection<Object> primaryKeys, Getter<K, V> primaryGetter, Collection<Object> versionKeys, VersionComparator<V> versionComparator, Collection<Attribute<Object, V>> attributes) {
 		this.creator = creator;
 		this.attributes = new ArrayList<Attribute<Object,V>>(attributes);
 		int size = attributes.size();
@@ -68,23 +66,30 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 		this.getters = attributeGetters.toArray(new Getter[size]);
 
 		this.primaryKeys = primaryKeys;
-		if (primaryKeys.size() == 1) {
-			primaryGetter = (Getter<K, V>)keyToGetter.get(primaryKeys.iterator().next());
+		if (primaryGetter == null) {
+			if (primaryKeys.size() == 1) {
+				this.primaryGetter = (Getter<K, V>) keyToGetter.get(primaryKeys
+						.iterator().next());
+			} else {
+				final Getter<Comparable<K>, V>[] getters = new Getter[primaryKeys
+						.size()];
+				int i = 0;
+				for (Object key : primaryKeys)
+					getters[i++] = (Getter<Comparable<K>, V>) keyToGetter
+							.get(key);
+				this.primaryGetter = new Getter<K, V>() {
+					@Override
+					public K get(V value) {
+						Comparable<K>[] args = new Comparable[getters.length];
+						int i = 0;
+						for (Getter<Comparable<K>, V> getter : getters)
+							args[i++] = getter.get(value);
+						return (K) new Tuple(args);
+					}
+				};
+			}
 		} else {
-			final Getter<Comparable<K>, V>[] getters = new Getter[primaryKeys.size()];
-			int i = 0;
-			for (Object key : primaryKeys)
-				getters[i++] = (Getter<Comparable<K>, V>)keyToGetter.get(key);
-			primaryGetter = new Getter<K, V>() {
-				@Override
-				public K get(V value) {
-					Comparable<K>[] args = new Comparable[getters.length];
-					int i = 0;
-					for (Getter<Comparable<K>, V> getter : getters)
-						args[i++] = getter.get(value);
-					return (K)new Tuple(args);
-				}
-			};
+			this.primaryGetter = primaryGetter;
 		}
 		this.versionKeys = versionKeys;	
 		if (versionKeys.size() == 1) {
@@ -137,11 +142,6 @@ public class MetadataImpl<K extends Comparable<K>, V> implements Metadata<K, V> 
 	@Override
 	public Creator<V> getCreator() {
 		return creator;
-	}
-
-	@Override
-	public Creator<K> getKeyCreator() {
-		return keyCreator;
 	}
 
 	@Override

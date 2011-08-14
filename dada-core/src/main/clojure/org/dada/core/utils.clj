@@ -36,21 +36,6 @@
      (print-object object "")))
 
 ;;--------------------------------------------------------------------------------
-
-(defn make-pk-fn [^Metadata metadata]
-  (let [keys (.getPrimaryKeys metadata)
-	^Getter key-getter (.getPrimaryGetter metadata)]
-    (if (= (count keys) 1)
-      (fn [value] (.get key-getter value))
-      (let [^Creator key-creator (.getKeyCreator metadata)]
-	(println (str "KEY CREATOR=" (type key-creator) " : " key-creator))
-	(fn [value]
-	    (let [k (.get key-getter value)]
-	      (println (str "K=" k))
-	      (.create key-creator (into-array Object k))))))))
-
-;;--------------------------------------------------------------------------------
-
 ;; (defmacro make-singleton-key-fn [datum-class key]
 ;;   "return a fn that given a datum of class datum-class returns the value of .key applied to that datum."
 ;;   ;; (let [datum 'datum#

@@ -1,6 +1,7 @@
 (ns org.dada.core
  (:require [org.dada.core SimpleModelView])
  (:use [clojure.tools logging])
+ (:use [org.dada.core utils])
  (:import
   (clojure.lang
    DynamicClassLoader
@@ -188,9 +189,9 @@
 (defn ^Metadata custom-metadata3 [^Class class primary-keys version-keys version-comparator attribute-specs]
   "make Metadata for a given class"
   (new MetadataImpl
-       nil
        (custom-creator class)
        primary-keys
+       nil
        version-keys
        version-comparator
        (map
@@ -225,9 +226,9 @@
 
 (defn ^Metadata seq-metadata [length]
   (new MetadataImpl
-       nil
        (proxy [Creator] [] (create [args] args))
        [0]
+       nil
        [1]
        (proxy [Metadata$VersionComparator][] (compareTo [[_ v1] [_ v2]] (- v1 v2)))
        (map
@@ -268,9 +269,9 @@
   "make a record-based Metadata instance"
   (let [class (record-class attributes)]
     (new MetadataImpl
-	 nil
 	 (record-creator class)
 	 primary-keys
+         nil
 	 version-keys
 	 version-comparator
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
@@ -279,9 +280,9 @@
   "make a record-based Metadata instance"
   (let [class (named-record-class class-name attributes)]
     (new MetadataImpl
-	 nil
 	 (record-creator class)
 	 primary-keys
+         nil
 	 version-keys
 	 version-comparator
 	 (map (fn [[key type mutable]] (Attribute. key type mutable (record-getter class type key))) attributes))))
@@ -345,17 +346,15 @@
 
 (defmacro defrecord-metadata [var-name class-name fields & [version-comparator]]
   (let [primary-keys (filter (fn [field] (:primary-key (meta field))) fields)
-	version-keys (filter (fn [field] (:version-key (meta field))) fields)
-	key-class-name (symbol (str (name class-name) "Key"))]
+	version-keys (filter (fn [field] (:version-key (meta field))) fields)]
     
     `(do
-       (defrecord ~key-class-name ~primary-keys)
        (defrecord ~class-name ~fields)
        (def ^Metadata ~var-name
 	    (MetadataImpl.
-	     (make-record-creator ~key-class-name ~primary-keys)
 	     (make-record-creator ~class-name ~fields)
-	     (list ~@(map keyword (filter (fn [field] (:primary-key (meta field))) fields)))
+	     (list ~@(map keyword primary-keys))
+             (make-key-getter ~class-name ~primary-keys)
 	     (list ~@(map keyword version-keys))
 	     (make-version-comparator ~class-name ~version-keys ~version-comparator)
 	     (list
@@ -441,9 +440,9 @@
 ;;--------------------------------------------------------------------------------
 
 (def metamodel-metadata (MetadataImpl.
-			 nil		;key creator
 			 nil		;creator
 			 [:name]	;primary-keys
+                         nil            ;primary-getter
 			 []		;version-keys
 			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
 			 [(Attribute. :name String false (proxy [Getter][] (get [^Model model] (.getName model))))])) ;attributes

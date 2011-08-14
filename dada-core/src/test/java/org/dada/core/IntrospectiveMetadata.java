@@ -44,15 +44,13 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 	private static final int GET_LENGTH = GET.length();
 	
 	private final Class<?> clazz;
-	private final Creator<K> keyCreator;
 	private final Creator<V> creator;
 	private final Collection<Object> keyAttributeKeys;
 	private final List<Object> attributeKeys;
 	private final int keyIndex;
 
-	public IntrospectiveMetadata(Class<?> clazz, Creator<K> keyCreator, Creator<V> creator, Object key) throws NoSuchMethodException {
+	public IntrospectiveMetadata(Class<?> clazz, Creator<V> creator, Object key) throws NoSuchMethodException {
 		this.clazz = clazz;
-		this.keyCreator = keyCreator;
 		this.creator = creator;
 		this.keyAttributeKeys = Collections.singleton(key);
 		attributeKeys = new ArrayList<Object>();
@@ -78,11 +76,6 @@ public class IntrospectiveMetadata<K, V> implements Metadata<K, V> {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	@Override
-	public Creator<K> getKeyCreator() {
-		return keyCreator;
 	}
 
 	@Override

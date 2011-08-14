@@ -27,6 +27,12 @@
     (if (empty? t)
       (fn [datum] (.get h datum))
       (fn [datum] (map (fn [^Getter getter] (.get getter datum)) getters)))))
+
+;; ;; TODO - we need a new key function to generate ref-based keys
+;; (defn get-key-fn [^Metadata metadata keys]
+;;   (let [keys (map (fn [key] (symbol (name key))) keys)
+;;         getter (make-key-getter (symbol ]
+;;     ))
    
 (defn invert-map [m]
   (reduce (fn [r [k v]] (assoc r v (conj (r v) k))) {} m))
@@ -39,9 +45,7 @@
 	[old-insertions old-alterations (conj old-deletions (Update. old-datum nil))] ;deletion
 	[old-insertions (conj old-alterations (Update. old-datum new-datum)) old-deletions]) ;alteration
       [(conj old-insertions (Update. old-datum new-datum)) old-alterations old-deletions]) ;insertion
-    (if old-datum
-      [old-insertions old-alterations (conj old-deletions (Update. old-datum new-datum))] ;deletion
-      [old-insertions old-alterations old-deletions]))) ;no change
+    [old-insertions old-alterations old-deletions])) ;no change
 
 (defn -init [^String model-name
 	     model-metadata

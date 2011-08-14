@@ -211,3 +211,14 @@
 ;; 	 1
 ;; 	 (reduce (fn [^java.util.Map r i] (doto r (.put i i))) (java.util.HashMap.) (range times))
 ;; 	 (persistent! (reduce (fn [r i] (conj! r [i i])) (transient {}) (range times)))))))  
+
+(defrecord Rec (a b c))
+
+(deftest records
+  ;; is it better to modify a record multiple times or to reconstruct it from scratch ?
+  (let [^Rec rec (Rec. 1 2 3)]
+    (is (faster 
+         1000000
+         (Rec. (.c rec) (.b rec) (.a rec))
+         (assoc (assoc rec :a (.c rec)) :c (.a rec))
+         ))))  

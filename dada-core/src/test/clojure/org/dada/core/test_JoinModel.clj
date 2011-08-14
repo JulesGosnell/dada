@@ -5,7 +5,7 @@
    [org.dada core]
    )
   (:import
-   [org.dada.core Data JoinModel Model Update]
+   [org.dada.core Data JoinModel Model ModelView Update]
    [org.dada.core.JoinModel LHSEntry RHSEntry]
    )
   )
@@ -15,7 +15,6 @@
 ;; problem - rhs indeces will be arranged in an indeterminate order...
 
 (deftest rhs-first
-
   (def transaction-model (model "Transactions" (seq-metadata 6))) ;; id, version, amount, from-account-id, to-account-id, currency-id
   (def account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
   (def currency-model (model "Currencies" (seq-metadata 3))) ;; id, version, name
@@ -151,9 +150,9 @@
 
 (deftest lhs-first
 
-  (def transaction-model (model "Transactions" (seq-metadata 6))) ;; id, version, amount, from-account-id, to-account-id, currency-id
-  (def account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
-  (def currency-model (model "Currencies" (seq-metadata 3))) ;; id, version, name
+  (def ^ModelView transaction-model (model "Transactions" (seq-metadata 6))) ;; id, version, amount, from-account-id, to-account-id, currency-id
+  (def ^ModelView account-model  (model "Accounts" (seq-metadata 3))) ;; id, version, name
+  (def ^ModelView currency-model (model "Currencies" (seq-metadata 3))) ;; id, version, name
   
   (def ^Model join-model (JoinModel.
 			  "Join"
