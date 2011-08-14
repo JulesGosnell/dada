@@ -51,17 +51,111 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defmacro make-singleton-key-fn [datum-class key]
-  "return a fn that given a datum of class datum-class returns the value of .key applied to that datum."
-  ;; (let [datum 'datum#
-  ;; 	datum-with-meta (with-meta datum {:tag datum-class})]
-  ;;   `(fn [~datum-with-meta] (. ~datum ~key))
-  ;;   )
-  ;;(list 'fn [(with-meta 'datum {:tag datum-class})] (list '. 'datum key)))
-  `(fn [~(with-meta `datum# {:tag datum-class})] (. `datum# ~key))
-  )
+;; (defmacro make-singleton-key-fn [datum-class key]
+;;   "return a fn that given a datum of class datum-class returns the value of .key applied to that datum."
+;;   ;; (let [datum 'datum#
+;;   ;; 	datum-with-meta (with-meta datum {:tag datum-class})]
+;;   ;;   `(fn [~datum-with-meta] (. ~datum ~key))
+;;   ;;   )
+;;   ;;(list 'fn [(with-meta 'datum {:tag datum-class})] (list '. 'datum key)))
 
-(defmacro make-compound-key-fn [datum-class keys]
+;;   ;; (let [datum 'datum#]
+;;   ;; `(fn [~(with-meta datum {:tag datum-class})] (. ~datum ~key))
+;;   ;; )
+
+;;   ;;  `(fn [~(with-meta datum# {:tag datum-class})] (. ~datum ~key))
+
+  
+;;   ;;)
+
+;;   ;;(let [datum (gensym 'datum)]
+;;   ;;(list 'fn [(with-meta datum {:tag datum-class})] (list '. datum key)))
+
+;;   (let [datum (gensym 'datum)]
+;;     `(fn [~(with-meta datum {:tag datum-class})]
+;;        (. ~datum ~key)))
+  
+;;   )
+
+;; (defmacro make-singleton-key-creator [datum-class key]
+;;   (let [datum (gensym 'datum)]
+;;     `(reify Creator (create [this [~(with-meta datum {:tag datum-class}) & _#]] (. ~datum ~key)))))
+
+(defmacro make-singleton-key-getter [datum-class key]
+  (let [datum (gensym 'datum)]
+    `(reify Getter (get [this ~datum] (. ~(with-meta datum {:tag datum-class}) ~key)))))
+
+;; (defmacro make-compound-key-fn [datum-class keys]
+;;   "return a fn that given a datum of class datum-class and a set of
+;; keys, creates a key class that references an instance of datum-class
+;; and implements its hash code and equality in terms of the values
+;; associated with said keys on referenced instance and returns a fn that
+;; will manufacture and instance of this class that refers to an instance
+;; of datum-class. - i,e, creates a minimal footprint compound key."
+;;   (let [key-class (symbol (str datum-class "Key"))
+;; 	datum (with-meta 'datum {:tag datum-class})
+;; 	that-datum (with-meta 'that-datum {:tag datum-class})
+;; 	that 'that
+;; 	that-with-type (with-meta that {:tag key-class})
+;; 	]
+;;     (eval
+;;      `(deftype ~key-class
+;; 	[~datum]
+;; 	Object
+;; 	(^int hashCode [this]
+;; 	      (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
+;; 	(^boolean equals [this ~that]
+;; 		  (and (not (nil? ~that))
+;; 		       (instance? ~key-class ~that)
+;; 		       ~@(map 
+;; 			  (fn [key]
+;; 			      `(= (. ~datum ~key)
+;; 				  (let [~that-datum (.datum ~that-with-type)]
+;; 				    (. ~that-datum ~key))))
+;; 			  keys)))
+;; ;;	(^String toString [this]
+;; ;;		 (str ~keys))
+;; 	))
+;;     `(fn [datum#]
+;;      	 (new ~key-class datum#))
+;;     ))
+
+;; (defmacro make-compound-key-creator [datum-class keys]
+;;   "return a fn that given a datum of class datum-class and a set of
+;; keys, creates a key class that references an instance of datum-class
+;; and implements its hash code and equality in terms of the values
+;; associated with said keys on referenced instance and returns a fn that
+;; will manufacture and instance of this class that refers to an instance
+;; of datum-class. - i,e, creates a minimal footprint compound key."
+;;   (let [key-class (symbol (str datum-class "Key"))
+;; 	datum (with-meta 'datum {:tag datum-class})
+;; 	that-datum (with-meta 'that-datum {:tag datum-class})
+;; 	that 'that
+;; 	that-with-type (with-meta that {:tag key-class})
+;; 	]
+;;     (eval
+;;      `(deftype ~key-class
+;;           [~datum]
+;; 	Object
+;; 	(^int hashCode [this]
+;;           (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
+;; 	(^boolean equals [this ~that]
+;;           (and (not (nil? ~that))
+;;                (instance? ~key-class ~that)
+;;                ~@(map 
+;;                   (fn [key]
+;;                     `(= (. ~datum ~key)
+;;                         (let [~that-datum (.datum ~that-with-type)]
+;;                           (. ~that-datum ~key))))
+;;                   keys)))
+;;         ;;	(^String toString [this]
+;;         ;;		 (str ~keys))
+;; 	))
+;;     (let [datum (gensym 'datum)]
+;;       `(reify Creator (create [this [~(with-meta datum {:tag datum-class}) & _#]] (new ~key-class ~datum))))
+;;     ))
+
+(defmacro make-compound-key-getter [datum-class keys]
   "return a fn that given a datum of class datum-class and a set of
 keys, creates a key class that references an instance of datum-class
 and implements its hash code and equality in terms of the values
@@ -76,31 +170,35 @@ of datum-class. - i,e, creates a minimal footprint compound key."
 	]
     (eval
      `(deftype ~key-class
-	[~datum]
+          [~datum]
 	Object
 	(^int hashCode [this]
-	      (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
+          (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
 	(^boolean equals [this ~that]
-		  (and (not (nil? ~that))
-		       (instance? ~key-class ~that)
-		       ~@(map 
-			  (fn [key]
-			      `(= (. ~datum ~key)
-				  (let [~that-datum (.datum ~that-with-type)]
-				    (. ~that-datum ~key))))
-			  keys)))
-;;	(^String toString [this]
-;;		 (str ~keys))
+          (and (not (nil? ~that))
+               (instance? ~key-class ~that)
+               ~@(map 
+                  (fn [key]
+                    `(= (. ~datum ~key)
+                        (let [~that-datum (.datum ~that-with-type)]
+                          (. ~that-datum ~key))))
+                  keys)))
+        ;;	(^String toString [this]
+        ;;		 (str ~keys))
 	))
-    `(fn [datum#]
-     	 (new ~key-class datum#))
+    (let [datum (gensym 'datum)]
+      `(reify Getter (get [this ~datum] (new ~key-class ~(with-meta datum {:tag datum-class})))))
     ))
 
-(defn xxx [x y] x)
-
-;; (defn make-ref-key-fn [data-class keys]
+;; (defmacro make-ref-key-fn [clazz keys]
 ;;   (if (instance? Collection keys)
-;; ;;    (make-compound-key-fn data-class keys)
-;;     (xxx data-class keys)
-;;     (make-singleton-key-fn data-class keys)
-;;     ))
+;;      `(make-compound-key-fn ~clazz ~keys)
+;;      `(make-singleton-key-fn ~clazz ~keys)
+;;      ))
+
+(defmacro make-key-getter [clazz keys]
+  (if (> (count keys) 1)
+    `(make-compound-key-getter ~clazz ~keys)
+    `(make-singleton-key-getter ~clazz ~(first keys))
+    ))
+
