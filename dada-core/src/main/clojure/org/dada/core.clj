@@ -372,6 +372,7 @@
 	      ))
 	    )))
 
+(defn fix-field [s] (with-meta (symbol (.replace (name s) "-" "_")) (meta s)))
 
 (defmacro definterface-metadata [var-name class-name fields & [version-comparator]]
   (let [primary-keys (filter (fn [field] (:primary-key (meta field))) fields)
@@ -380,7 +381,7 @@
     `(do
        (definterface
            ~class-name
-         ~@(map (fn [field] `(~field [])) fields))
+         ~@(map (fn [field] `(~(fix-field field) [])) fields))
        (def ^Metadata ~var-name
 	    (MetadataImpl.
 	     nil ;; (make-record-creator ~class-name ~fields)

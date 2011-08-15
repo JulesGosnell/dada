@@ -69,7 +69,7 @@
      ^{:tag int :version-key true}   version
      ^{:tag Date}                    time
      ^{:tag String}                  reporter
-     ^{:tag Keyword :immutable true} type
+     ^{:tag clojure.lang.Keyword :immutable true} type
      ^{:tag String}                  ocean
      ^{:tag float}                   length
      ^{:tag float}                   weight]
@@ -345,12 +345,13 @@
 ;; A Join
 ;;--------------------------------------------------------------------------------
 
-(defrecord-metadata
+;;(defrecord-metadata
+(definterface-metadata
     join-metadata
     Join
     [^{:tag int :primary-key true}   id
      ^{:tag int :version-key true}   version
-     ^{:tag Keyword :immutable true} type
+     ^{:tag clojure.lang.Keyword :immutable true} type
      ^{:tag float}                   length
      ^{:tag float}                   weight
      ^{:tag String}                  ocean
@@ -358,18 +359,20 @@
      ^{:tag int}                     ocean-max-depth]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
-(definterface-metadata
-    join3-metadata
-    Join3
-    [^{:tag int :primary-key true}   id
-     ^{:tag int :version-key true}   version
-     ^{:tag Object :immutable true} type2
-     ^{:tag float}                   length
-     ^{:tag float}                   weight
-     ^{:tag String}                  ocean
-     ^{:tag int}                     ocean-area
-     ^{:tag int}                     ocean-max-depth]
-    (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
+;; definterface defines method names with '-' in them, but deftype mangles them to '_'
+(deftype
+  JoinImpl
+  [^int id ^int version ^Whale whale ^Ocean ocean]
+  java.io.Serializable
+  Join
+  (^int id [this] id)
+  (^int version [this] version)
+  (^clojure.lang.Keyword type [this] (.type whale))
+  (^float length [this] (.length whale))
+  (^float weight [this] (.weight whale))
+  (^String ocean [this] (.id ocean))
+  (^int ocean-area [this] (.area ocean))
+  (^int ocean-max-depth [this] (.max-depth ocean)))
 
 (def joins-model
      (JoinModel.
@@ -378,10 +381,12 @@
       whales-model
       {:ocean oceans-model}
       (fn [id version ^Whale whale [[^Ocean ocean]]]
-	(let [[type length weight] (if whale [(.type whale)(.length whale)(.weight whale)][nil 0 0])
-	      [ocean ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max-depth ocean)(.area ocean)] [nil 0 0])]
-	  (Join. id version type length weight ocean ocean-area ocean-max-depth)
-	  ))))
+	  (JoinImpl. id version whale ocean)
+	  ;; (let [[type length weight] (if whale [(.type whale)(.length whale)(.weight whale)][nil 0 0])
+	  ;; 	[ocean-id ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max-depth ocean)(.area ocean)] [nil 0 0])]
+	  ;;   (Join. id version type length weight ocean-id ocean-area ocean-max-depth)
+	  ;;   )
+	  )))
 
 (insert *metamodel* joins-model)
 
