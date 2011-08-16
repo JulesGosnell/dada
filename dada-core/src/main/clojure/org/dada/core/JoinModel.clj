@@ -2,10 +2,10 @@
   (:use
    [clojure.tools logging]
    [org.dada core]
-   [org.dada.core counted-set utils]
+   [org.dada.core counted-set utils map]
    )
   (:import
-   [java.util Collection HashMap Map]
+   [java.util Collection Map]
    [org.dada.core Attribute Data Getter Metadata Metadata$VersionComparator Model RemoteModel Tuple Update View]
    )
   (:gen-class
@@ -16,45 +16,6 @@
    :state state
    :post-init post-init)
   )
-
-(do
-
-  ;; let's use persistant maps - slower, bigger footprint, lock-free
-
-  (def map-new hash-map)
-
-  (defmacro map-put [map key val]
-    `(assoc ~map ~key ~val))
-
-  (defmacro map-get [map key]
-    `(~map ~key))
-
-  (defmacro map-count [map]
-    `(count ~map))
-
-  (defmacro map-locking [lockee & body]
-    `(do ~@body))
-  )
-
-;; (do
-
-;;   ;; let's use hashmaps - faster, smaller footprint with locking
-
-;;   (defn map-new [] (HashMap.))
-
-;;   (defmacro map-put [map key val]
-;;     `(do (.put ~(with-meta map {:tag 'HashMap}) ~key ~val) ~map))
-
-;;   (defmacro map-get [map key]
-;;     `(.get ~(with-meta map {:tag 'HashMap}) ~key))
-
-;;   (defmacro map-count [map]
-;;     `(.size ~(with-meta map {:tag 'HashMap})))
-  
-;;   (defmacro map-locking [lockee & body]
-;;     `(locking ~lockee ~@body))
-
-;;   )
 
 ;; these types should really be created on-the-fly to match lhs/rhs relationships
 (defrecord LHSEntry [extant version lhs rhs-refs datum]) ;; rhs-refs - resolution of lhs fks to rhs references

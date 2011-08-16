@@ -1,7 +1,7 @@
 (ns org.dada.core.SimpleModelView
   (:use
    [clojure.tools logging]
-   [org.dada.core counted-set utils]
+   [org.dada.core counted-set utils map]
    )
   (:import
    [java.util Collection]

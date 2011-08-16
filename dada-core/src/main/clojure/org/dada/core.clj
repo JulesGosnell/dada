@@ -19,7 +19,8 @@
    )
   (java.util
    Collection
-   Date)
+   Date
+   HashMap)
   (java.util.concurrent.locks
    Lock)
   (org.springframework.context.support ClassPathXmlApplicationContext)
