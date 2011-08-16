@@ -15,8 +15,14 @@
   (defmacro map-put [map key val]
     `(assoc ~map ~key ~val))
 
+  (defmacro map-rem [map key]
+    `(dissoc ~map ~key))
+
   (defmacro map-get [map key]
     `(~map ~key))
+
+  (defmacro map-vals [map]
+    `(vals ~map))
 
   (defmacro map-count [map]
     `(count ~map))
@@ -34,8 +40,14 @@
 ;;   (defmacro map-put [map key val]
 ;;     `(do (.put ~(with-meta map {:tag 'HashMap}) ~key ~val) ~map))
 
+;;   (defmacro map-rem [map key]
+;;     `(do (.remove ~(with-meta map {:tag 'HashMap}) ~key) ~map))
+
 ;;   (defmacro map-get [map key]
 ;;     `(.get ~(with-meta map {:tag 'HashMap}) ~key))
+
+;;   (defmacro map-vals [map]
+;;     `(into [] (vals ~(with-meta map {:tag 'HashMap}))))
 
 ;;   (defmacro map-count [map]
 ;;     `(.size ~(with-meta map {:tag 'HashMap})))
