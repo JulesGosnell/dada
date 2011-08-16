@@ -1,7 +1,3 @@
-;; to use:
-;; load-eval this file using dada/bin/clj
-;; run dada/bin/client
-
 (ns 
  ^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
  org.dada.demo.whales
@@ -26,6 +22,11 @@
    ]
   )
  )
+
+;; to use:
+;; load-eval this file using dada/bin/clj
+;; run dada/bin/client
+
 
 ;;--------------------------------------------------------------------------------
 ;; utils
@@ -342,10 +343,9 @@
 (do (time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales))) nil)
 
 ;;--------------------------------------------------------------------------------
-;; A Join
+;; A Join - by reference
 ;;--------------------------------------------------------------------------------
 
-;;(defrecord-metadata
 (definterface-metadata
     join-metadata
     Join
@@ -359,7 +359,6 @@
      ^{:tag int}                     ocean-max-depth]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
-;; definterface defines method names with '-' in them, but deftype mangles them to '_'
 (deftype
   JoinImpl
   [^int id ^int version ^Whale whale ^Ocean ocean]
@@ -380,13 +379,7 @@
       join-metadata
       whales-model
       {:ocean oceans-model}
-      (fn [id version ^Whale whale [[^Ocean ocean]]]
-	  (JoinImpl. id version whale ocean)
-	  ;; (let [[type length weight] (if whale [(.type whale)(.length whale)(.weight whale)][nil 0 0])
-	  ;; 	[ocean-id ocean-max-depth ocean-area] (if ocean [(.id ocean)(.max-depth ocean)(.area ocean)] [nil 0 0])]
-	  ;;   (Join. id version type length weight ocean-id ocean-area ocean-max-depth)
-	  ;;   )
-	  )))
+      (fn [id version ^Whale whale [[^Ocean ocean]]] (JoinImpl. id version whale ocean))))
 
 (insert *metamodel* joins-model)
 
