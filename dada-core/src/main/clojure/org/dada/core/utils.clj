@@ -140,6 +140,9 @@
 ;;       `(reify Creator (create [this [~(with-meta datum {:tag datum-class}) & _#]] (new ~key-class ~datum))))
 ;;     ))
 
+(defn hash-code [total value]
+  (+ (* total 31) (if (nil? value) 0 (.hashCode value))))
+
 (defmacro make-compound-key-getter [datum-class keys]
   "return a fn that given a datum of class datum-class and a set of
 keys, creates a key class that references an instance of datum-class
@@ -155,19 +158,19 @@ of datum-class. - i,e, creates a minimal footprint compound key."
 	]
     (eval
      `(deftype ~key-class
-          [~datum]
+	[~datum]
 	Object
 	(^int hashCode [this]
-          (+ ~@(map (fn [key] `(. ~datum ~key)) keys)))
+	      ~(reduce (fn [r k] `(hash-code ~r ~k)) 1 (map (fn [key] `(. ~datum ~key)) keys)))
 	(^boolean equals [this ~that]
-          (and (not (nil? ~that))
-               (instance? ~key-class ~that)
-               ~@(map 
-                  (fn [key]
-                    `(= (. ~datum ~key)
-                        (let [~that-datum (.datum ~that-with-type)]
-                          (. ~that-datum ~key))))
-                  keys)))
+		  (and (not (nil? ~that))
+		       (instance? ~key-class ~that)
+		       ~@(map 
+			  (fn [key]
+			      `(= (. ~datum ~key)
+				  (let [~that-datum (.datum ~that-with-type)]
+				    (. ~that-datum ~key))))
+			  keys)))
         ;;	(^String toString [this]
         ;;		 (str ~keys))
 	))
