@@ -35,7 +35,7 @@
 ;;     ))
    
 (defn invert-map [m]
-  (reduce (fn [r [k v]] (map-put r v (conj (map-get r v) k))) (map-new) m))
+  (reduce (fn [r [k v]] (assoc r v (conj (r v) k))) {} m))
 
 (defn make-notification [old-datum new-datum old-insertions old-alterations old-deletions delete]
   (trace ["make-notification" old-datum new-datum old-insertions old-alterations old-deletions delete])
