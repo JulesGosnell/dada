@@ -3,8 +3,7 @@
  (:import
   [java.util
    Collection
-   Date
-   HashMap]))
+   Date]))
 
 (do
 
@@ -35,25 +34,71 @@
 
 ;;   ;; let's use hashmaps - faster, smaller footprint with locking
 
-;;   (defn map-new [] (HashMap.))
+;;   (defn map-new [] (java.util.HashMap.))
 
 ;;   (defmacro map-put [map key val]
-;;     `(do (.put ~(with-meta map {:tag 'HashMap}) ~key ~val) ~map))
+;;     `(let [^java.util.HashMap map# ~map] (.put map# ~key ~val) map#))
 
 ;;   (defmacro map-rem [map key]
-;;     `(do (.remove ~(with-meta map {:tag 'HashMap}) ~key) ~map))
+;;     `(let [^java.util.Map map# ~map] (.remove map# ~key) map#))
 
 ;;   (defmacro map-get [map key]
-;;     `(.get ~(with-meta map {:tag 'HashMap}) ~key))
+;;     `(let [^java.util.Map map# ~map] (.get map# ~key)))
 
 ;;   (defmacro map-vals [map]
-;;     `(into [] (vals ~(with-meta map {:tag 'HashMap}))))
+;;     `(let [^java.util.Map map# ~map] (into [] (vals map#))))
 
 ;;   (defmacro map-count [map]
-;;     `(.size ~(with-meta map {:tag 'HashMap})))
+;;     `(let [^java.util.Map map# ~map] (.size map#)))
   
 ;;   (defmacro map-locking [lockee & body]
 ;;     `(locking ~lockee ~@body))
 
 ;;   )
 
+;; vector impls
+
+;; (do
+  
+;;   ;; lets use built in vector
+
+;;   (defmacro vec-new [args]
+;;     `(vector ~@args))
+
+;;   (defmacro vec-get [vec i]
+;;     `(nth ~vec ~i))
+
+;;   (defmacro vec-set [vec i val]
+;;     `(assoc ~vec ~i ~val))
+
+;;   )
+
+(do
+  
+  ;; lets use an java array
+
+  ;; (defmacro vec-new [args]
+  ;;   `(into-array ~args))
+
+  ;; (defmacro vec-get [vec i]
+  ;;   `(aget ~vec ~i))
+
+  ;; (defmacro vec-set [vec i val]
+  ;;   `(let [vec# ~vec] (aset vec# ~i ~val) vec#))
+
+  )
+
+;; (do
+
+;;   ;; lets use a java.util.ArrayList
+
+;;   (defmacro vec-new [args]
+;;     `(let [^java.util.Collection args# ~args] (java.util.ArrayList. args#)))
+
+;;   (defmacro vec-get [vec i]
+;;     `(let [^java.util.List vec# ~vec] (.get vec# ~i)))
+  
+;;   (defmacro vec-set [vec i val]
+;;     `(let [^java.util.List vec# ~vec] (.set vec# ~i ~val) vec#))
+
+;;   )
