@@ -4,7 +4,7 @@
    [org.dada.core counted-set utils map]
    )
   (:import
-   [java.util Collection HashMap]
+   [java.util Collection]
    [org.dada.core Data Metadata RemoteModel Update View]
    )
   (:gen-class
