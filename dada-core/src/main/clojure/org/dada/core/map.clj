@@ -32,7 +32,7 @@
 
 ;; (do
 
-;;   ;; let's use hashmaps - faster, smaller footprint with locking
+;;   ;; let's use j.u.HashMap - faster, smaller footprint with locking
 
 ;;   (defn map-new [] (java.util.HashMap.))
 
@@ -58,35 +58,56 @@
 
 ;; vector impls
 
+(do
+  
+  ;; lets use built in vector
+
+  (defmacro vec-new [args]
+    `(apply vector ~args))
+
+  (defmacro vec-get [vec i]
+    `(nth ~vec ~i))
+
+  (defmacro vec-set [vec i val]
+    `(assoc ~vec ~i ~val))
+
+  (defmacro vec-seq [vec]
+    `~vec)
+
+  )
+
 ;; (do
   
 ;;   ;; lets use built in vector
 
-;;   (defmacro vec-new [args]
-;;     `(vector ~@args))
+;;   (defn vec-new [args]
+;;     (apply vector args))
 
-;;   (defmacro vec-get [vec i]
-;;     `(nth ~vec ~i))
+;;   (def vec-get nth)
 
-;;   (defmacro vec-set [vec i val]
-;;     `(assoc ~vec ~i ~val))
+;;   (def vec-set assoc)
+
+;;   (def vec-seq identity)
 
 ;;   )
 
-(do
+;; (do
   
-  ;; lets use an java array
+;;   ;; lets use an java array
 
-  ;; (defmacro vec-new [args]
-  ;;   `(into-array ~args))
+;;   (defmacro vec-new [args]
+;;     `(into-array Object ~args))
 
-  ;; (defmacro vec-get [vec i]
-  ;;   `(aget ~vec ~i))
+;;   (defmacro vec-get [vec i]
+;;     `(let [^"[Ljava.lang.Object;" vec# ~vec] (aget vec# ~i)))
 
-  ;; (defmacro vec-set [vec i val]
-  ;;   `(let [vec# ~vec] (aset vec# ~i ~val) vec#))
+;;   (defmacro vec-set [vec i val]
+;;     `(let [^"[Ljava.lang.Object;" vec# ~vec] (aset vec# ~i ~val) vec#))
 
-  )
+;;   (defmacro vec-seq [vec]
+;;     `~vec)
+
+;;   )
 
 ;; (do
 
@@ -100,5 +121,41 @@
   
 ;;   (defmacro vec-set [vec i val]
 ;;     `(let [^java.util.List vec# ~vec] (.set vec# ~i ~val) vec#))
+
+;;   )
+
+;; (do
+
+;;   ;; lets use a java.util.ArrayList - functions, whilst we debug
+
+;;   (defn vec-new [args]
+;;     (apply vector args))
+  
+;;   (defn vec-get [vec i]
+;;     (vec i))
+  
+;;   (defn vec-set [vec i val]
+;;     (assoc vec i val))
+
+;;   )
+
+;; (do
+
+;;   (deftype Opaque [^java.util.List l])
+
+;;   ;; lets use a java.util.ArrayList - functions, whilst we debug
+
+;;   (defn vec-new [args]
+;;     (Opaque. (java.util.ArrayList. ^java.util.Collection args)))
+  
+;;   (defn vec-get [^Opaque vec i]
+;;     (.get (.l vec) i))
+  
+;;   (defn vec-set [^Opaque vec i val]
+;;     (.set (.l vec) i val)
+;;     vec)
+
+;;   (defn vec-seq [^Opaque vec]
+;;     (.l vec))
 
 ;;   )

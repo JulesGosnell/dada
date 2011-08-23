@@ -58,7 +58,7 @@
    (let [lhs-metadata (.getMetadata lhs-model)
 	 views nil
 	 lhs-mutable (map-new)
-	 rhs-mutables (apply vector (repeatedly (count (invert-map rhses)) map-new))]
+	 rhs-mutables (vec-new (repeatedly (count (invert-map rhses)) map-new))]
      [(atom [views lhs-mutable rhs-mutables]) model-name model-metadata])])
 
 ;;--------------------------------------------------------------------------------
@@ -77,12 +77,12 @@
 	    (do
 	      (trace [" update-lhs-rhs-indeces: unchanged" i old-rhs-pk])
 	      [ old-rhs-refs-2 old-rhs-indeces-2])
-	    (let [old-rhs-index (old-rhs-indeces-2 i)
+	    (let [old-rhs-index (vec-get old-rhs-indeces-2 i)
 		  ;; remove lhs from old-rhs-pks (if necessary) - TODO - tidy up
 		  dummy (trace ["old-rhs-pk" old-rhs-pk old-rhs-index])
 		  tmp-rhs-index (if-let [^RHSEntry old-old-rhs-entry (map-get old-rhs-index old-rhs-pk)]
 				  (let [old-lhs-pks (.lhs-pks old-old-rhs-entry)
-					new-lhs-pks (assoc old-lhs-pks j (disj (old-lhs-pks j) lhs-pk))
+					new-lhs-pks (vec-set old-lhs-pks j (disj (vec-get old-lhs-pks j) lhs-pk))
 					new-old-rhs-entry (RHSEntry. (.rhs old-old-rhs-entry) new-lhs-pks)
 					dummy (trace ["new-old-rhs-entry" new-old-rhs-entry])
 					tmp-rhs-index (map-put old-rhs-index old-rhs-pk new-old-rhs-entry)]
@@ -96,23 +96,23 @@
 								[(.rhs old-new-rhs-entry) (.lhs-pks old-new-rhs-entry)]
 								[nil
 								 ;; TODO - should use templated value
-								 (apply vector (repeatedly (count lhs-getters) hash-set))])
-					    new-lhs-pks (assoc old-lhs-pks j (conj (old-lhs-pks j) lhs-pk))
+								 (vec-new (repeatedly (count lhs-getters) hash-set))])
+					    new-lhs-pks (vec-set old-lhs-pks j (conj (vec-get old-lhs-pks j) lhs-pk))
 					    new-new-rhs-entry (RHSEntry. rhs new-lhs-pks)
 					    dummy (trace ["new-new-rhs-entry" new-new-rhs-entry])
 					    new-rhs-index (map-put tmp-rhs-index new-rhs-pk new-new-rhs-entry)]
 					[rhs new-rhs-index]))
 		  ;; update rhs-indeces
-		  new-rhs-indeces (assoc old-rhs-indeces-2 i new-rhs-index)
+		  new-rhs-indeces (vec-set old-rhs-indeces-2 i new-rhs-index)
 		  ;; update rhs-refs
-		  new-rhs-refs (assoc old-rhs-refs-2 i (assoc (old-rhs-refs-2 i) j rhs))]
+		  new-rhs-refs (vec-set old-rhs-refs-2 i (vec-set (vec-get old-rhs-refs-2 i) j rhs))]
 	      (trace [" update-lhs-rhs-indeces: changed" i old-rhs-pk "->" new-rhs-pk])
 	      [new-rhs-refs new-rhs-indeces]))))
       [old-rhs-refs-1 old-rhs-indeces-1]
       (map (fn [j lhs-getter] [j lhs-getter]) (range) lhs-getters))
      )
    [old-rhs-refs old-rhs-indeces]
-   (map (fn [[i lhs-getter] rhs-index] [i lhs-getter rhs-index]) rhs-i-to-lhs-getters old-rhs-indeces))
+   (map (fn [[i lhs-getter] rhs-index] [i lhs-getter rhs-index]) rhs-i-to-lhs-getters (vec-seq old-rhs-indeces)))
   )
 
 (defn reduce-lhs [reduction updates ^Getter lhs-pk-getter initial-rhs-refs ^Metadata$VersionComparator lhs-version-comparator rhs-i-to-lhs-getters join-fn delete]
@@ -178,7 +178,7 @@
       (fn [[old-lhs-index old-insertions old-alterations old-deletions] lhs-pk]
 	(let [^LHSEntry old-lhs-entry (map-get old-lhs-index lhs-pk)
 	      old-lhs-rhs-refs (.rhs-refs old-lhs-entry)
-	      new-lhs-rhs-refs (assoc old-lhs-rhs-refs i (assoc (old-lhs-rhs-refs i) j new-rhs))
+	      new-lhs-rhs-refs (vec-set old-lhs-rhs-refs i (vec-set (vec-get old-lhs-rhs-refs i) j new-rhs))
 	      new-lhs-version (inc (.version old-lhs-entry))
 	      lhs (.lhs old-lhs-entry)
 	      old-datum (if old-lhs-entry (.datum old-lhs-entry))
@@ -189,13 +189,13 @@
       [old-lhs-index old-insertions old-alterations old-deletions]
       lhs-pks))
    [old-lhs-index old-insertions old-alterations old-deletions]
-   (map (fn [j lhs-pks][j lhs-pks])(range)lhs-pks-list)))
+   (map (fn [j lhs-pks][j lhs-pks]) (range) (vec-seq lhs-pks-list))))
 
 (defn update-rhs
   "return new mutable state and events in response to notifications from a right hand side model"
   [[views old-lhs-index old-rhs-indeces] insertions alterations deletions i ^Getter rhs-pk-getter ^Metadata$VersionComparator rhs-version-comparator lhs-getters join-fn]
-  (let [initial-lhs-pks (apply vector (repeatedly (count lhs-getters) hash-set)) ;TODO - do not rebuild each time...
-	old-rhs-index (nth old-rhs-indeces i)]
+  (let [initial-lhs-pks (fn [] (vec-new (repeatedly (count lhs-getters) hash-set))) ;TODO - do not rebuild each time...
+	old-rhs-index (vec-get old-rhs-indeces i)]
     (trace ["update-rhs" i lhs-getters old-rhs-index])
 
     ;; insertions/alterations
@@ -207,7 +207,7 @@
 	       (if-let [^RHSEntry old-rhs-entry (map-get old-rhs-index rhs-pk)]
 		 (let [old-rhs (.rhs old-rhs-entry)]
 		   (if (or (nil? old-rhs) (< (.compareTo rhs-version-comparator old-rhs new-rhs) 0))
-		     (let [new-rhs-entry (RHSEntry. new-rhs (if old-rhs-entry (.lhs-pks old-rhs-entry) initial-lhs-pks))
+		     (let [new-rhs-entry (RHSEntry. new-rhs (if old-rhs-entry (.lhs-pks old-rhs-entry) (initial-lhs-pks)))
 			   new-rhs-index (map-put old-rhs-index rhs-pk new-rhs-entry)
 			   [new-lhs-index new-insertions new-alterations-new-deletions]
 			   (update-rhs-lhs-index old-lhs-index (.lhs-pks old-rhs-entry) i new-rhs join-fn old-insertions old-alterations old-deletions)]
@@ -216,13 +216,13 @@
 		     (do
 		       (trace ["update-rhs - alteration - rejected" old-rhs new-rhs])
 		       [old-lhs-index old-rhs-index old-insertions old-alterations old-deletions])))
-		 (let [new-rhs-entry (RHSEntry. new-rhs initial-lhs-pks)
+		 (let [new-rhs-entry (RHSEntry. new-rhs (initial-lhs-pks))
 		       new-rhs-index (map-put old-rhs-index rhs-pk new-rhs-entry)]
 		   (trace ["update-rhs - insertion" new-rhs])
 		   [old-lhs-index new-rhs-index old-insertions old-alterations old-deletions]))))
 	   [old-lhs-index old-rhs-index nil nil nil]
 	   (concat insertions alterations))
-	  new-rhs-indeces (assoc old-rhs-indeces i new-rhs-index)]
+	  new-rhs-indeces (vec-set old-rhs-indeces i new-rhs-index)]
       [views new-lhs-index new-rhs-indeces new-insertions new-alterations new-deletions])
     
     ;; deletions - TO DO
@@ -337,7 +337,7 @@
        i-to-rhs-model-and-lhs-getters))
 
      (trace ["post-init: watching lhs:" lhs-model])
-     (let [initial-rhs-refs (apply vector (map (fn [[k vs]] (apply vector (map (fn [v] nil) vs))) rhs-model-to-lhs-fks))
+     (let [initial-rhs-refs (vec-new (map (fn [[k vs]] (vec-new (map (fn [v] nil) vs))) rhs-model-to-lhs-fks))
 	   ^Metadata lhs-metadata (.getMetadata lhs-model)
 	   lhs-pk-getter (.getPrimaryGetter lhs-metadata)
 	   lhs-version-comparator (.getVersionComparator lhs-metadata)
