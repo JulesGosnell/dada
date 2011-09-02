@@ -80,16 +80,6 @@
 
 (insert *metamodel* whales-model)
 
-;; (def some-whales
-;;   [(Whale. 0 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100)
-;;    (Whale. 1 0 (Date. 0 1 1) "jules" "blue whale" "indian" 200 100)
-;;    (Whale. 2 0 (Date. 0 1 1) "jules" "gray whale" "arctic" 100 100)
-;;    (Whale. 3 0 (Date. 0 1 1) "jules" "gray whale" "indian" 200 100)
-;;    (Whale. 4 0 (Date. 1 1 1) "jules" "blue whale" "arctic" 100 100)
-;;    (Whale. 5 0 (Date. 1 1 1) "jules" "blue whale" "indian" 200 100)
-;;    (Whale. 6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100)
-;;    (Whale. 7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100)])
-
 ;; see http://en.wikipedia.org/wiki/Cetacea#Tree
 (def whale-hierarchy
   (let [h (make-hierarchy)
@@ -335,12 +325,21 @@
        (float (/ (rand-int max-weight-x-100) 100)))))
 
 
-  (def num-whales 50)
+;; (def some-whales
+;;   [(Whale. 0 0 (Date. 0 1 1) "jules" "blue whale" "arctic" 100 100)
+;;    (Whale. 1 0 (Date. 0 1 1) "jules" "blue whale" "indian" 200 100)
+;;    (Whale. 2 0 (Date. 0 1 1) "jules" "gray whale" "arctic" 100 100)
+;;    (Whale. 3 0 (Date. 0 1 1) "jules" "gray whale" "indian" 200 100)
+;;    (Whale. 4 0 (Date. 1 1 1) "jules" "blue whale" "arctic" 100 100)
+;;    (Whale. 5 0 (Date. 1 1 1) "jules" "blue whale" "indian" 200 100)
+;;    (Whale. 6 0 (Date. 1 1 1) "jules" "gray whale" "arctic" 100 100)
+;;    (Whale. 7 0 (Date. 1 1 1) "jules" "gray whale" "indian" 200 100)])
 
-  (def some-whales (doall (pmap (fn [id] (random-whale id)) (range num-whales))))
+  (let [num-whales 50
+	some-whales (doall (pmap (fn [id] (random-whale id)) (range num-whales)))]
+    (do (time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales))) nil))
+
   )
-
-(do (time (doall (pmap (fn [whale] (insert whales-model whale)) some-whales))) nil)
 
 ;;--------------------------------------------------------------------------------
 ;; A Join - by reference
