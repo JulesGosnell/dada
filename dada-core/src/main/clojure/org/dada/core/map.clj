@@ -10,6 +10,7 @@
   ;; let's use persistant maps - slower, bigger footprint, lock-free
 
   (def map-new hash-map)
+  (def map-new2 hash-map)
 
   (defmacro map-put [map key val]
     `(assoc ~map ~key ~val))
@@ -34,7 +35,11 @@
 
 ;;   ;; let's use j.u.HashMap - faster, smaller footprint with locking
 
-;;   (defn map-new [] (java.util.HashMap.))
+;;   (defn map-new []
+;;     (java.util.HashMap.))
+
+;;   (defn map-new2 [& args]
+;;     (java.util.HashMap. ^java.util.Map (apply hash-map args)))
 
 ;;   (defmacro map-put [map key val]
 ;;     `(let [^java.util.HashMap map# ~map] (.put map# ~key ~val) map#))
