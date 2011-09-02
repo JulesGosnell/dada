@@ -90,22 +90,23 @@
 	 ;; compare-and-swap, in order to avoid starvation of larger
 	 ;; batches...
 	 swap-state-fn (fn [[extant extinct views] insertions alterations deletions]
-			   (reduce process-deletion
-				   (reduce process-addition
-					   (reduce process-addition
-						   [extant extinct views '() '() '()]
-						   insertions)
-					   alterations)
-				   deletions))
+			   (let [[extant extinct views i a d] (reduce process-deletion
+								      (reduce process-addition
+									      (reduce process-addition
+										      [extant extinct views '() '() '()]
+										      insertions)
+									      alterations)
+								      deletions)]
+			     [[extant extinct views] [i a d]]))
 
 	 mutable-state (atom [(map-new) (map-new) (map-new)]) ;extant, extinct, views
 
 	 update-fn
 	 (fn [inputs]
 	     (trace ["UPDATE ->" @mutable-state])
-	     (let [[_ _ _ i a d] (apply swap! mutable-state swap-state-fn inputs)]
+	     (let [[_ updates] (apply swap2! mutable-state swap-state-fn inputs)]
 	       (trace ["UPDATE <-" @mutable-state])
-	       [i a d]))
+	       updates))
 	 
 	 getData-fn
 	 (fn []
