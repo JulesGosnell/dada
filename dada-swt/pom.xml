@@ -34,7 +34,8 @@
 	<dependency>
 	  <groupId>org.eclipse</groupId>
 	  <artifactId>swt</artifactId>
-	  <version>gtk.linux.x86_3.6.0.v3644b</version>
+<!--	  <version>gtk.linux.x86_3.6.0.v3644b</version> -->
+	  <version>gtk.linux.x86_64_3.6.2.v3659b</version>
 	</dependency>
       </dependencies>
     </profile>
