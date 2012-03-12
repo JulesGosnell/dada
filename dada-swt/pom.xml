@@ -83,19 +83,19 @@
       <version>3.6.0.I20100425-1800</version>
     </dependency>
     <dependency>
-      <groupId>net.sourceforge.nattable</groupId>
-      <artifactId>core</artifactId>
-      <version>2.1.0</version>
-    </dependency>
-    <dependency>
       <groupId>ca.odell</groupId>
       <artifactId>glazedlists</artifactId>
       <version>1.8.0</version>
     </dependency>
     <dependency>
+      <groupId>net.sourceforge.nattable</groupId>
+      <artifactId>core</artifactId>
+      <version>2.3.1.1</version>
+    </dependency>
+    <dependency>
       <groupId>net.sourceforge.nattable.extension</groupId>
       <artifactId>glazedlists</artifactId>
-      <version>2.1.0</version>
+      <version>2.3.1.1</version>
     </dependency>
     <dependency>
       <groupId>org.dada</groupId>

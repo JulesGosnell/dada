@@ -163,7 +163,7 @@
 	  ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
 	  ;;IColumnPropertyResolver 
-	  (^String getColumnProperty [int columnIndex] (nth property-names columnIndex))
+	  (^String getColumnProperty [columnIndex] (nth property-names columnIndex))
 	  (getColumnIndex [^String propertyName] (property-name-to-index propertyName))
 	  )
 
@@ -181,7 +181,10 @@
 	dummy (do
 		(.registerConfigAttribute config-registry 
 					  (BlinkConfigAttributes/BLINK_RESOLVER)
-					  (proxy [IBlinkingCellResolver][] (resolve [oldValue newValue] (into-array String ["up"])))
+					  (proxy [IBlinkingCellResolver][]
+                                            (resolve
+                                              ([cell configRegistry oldValue newValue] (into-array String ["up"]))
+                                              ([oldValue newValue] (into-array String ["up"]))))
 					  (DisplayMode/NORMAL))
 		(.registerConfigAttribute 
 		 config-registry
