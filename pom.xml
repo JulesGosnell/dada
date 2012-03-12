@@ -25,18 +25,18 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <activemq.version>5.5.0</activemq.version>
+    <activemq.version>5.5.1</activemq.version>
     <cobertura.version>1.9.4.1</cobertura.version>
-    <spring.version>3.0.5.RELEASE</spring.version>
-    <slf4j.version>1.6.1</slf4j.version>
-    <jmock.version>2.5.1</jmock.version>
+    <spring.version>3.1.1.RELEASE</spring.version>
+    <slf4j.version>1.6.4</slf4j.version>
+    <jmock.version>2.6.0-RC2</jmock.version>
     <junit.version>3.8.1</junit.version>
     <java.version>1.6</java.version>
     <clojure.version>1.3.0-alpha6</clojure.version>
     <clojure-maven-plugin.version>1.3.7</clojure-maven-plugin.version>
     <asm.version>3.2</asm.version>
     <commons-lang.version>2.6</commons-lang.version>
-    <derby.version>10.6.1.0</derby.version>
+    <derby.version>10.8.2.2</derby.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
     <surefire.lib.path>-Djava.library.path=/usr/local/lib</surefire.lib.path> <!-- migrate to dada-zmq -->
