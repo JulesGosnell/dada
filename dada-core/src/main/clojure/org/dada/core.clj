@@ -227,13 +227,13 @@
 
 (defn ^Metadata seq-metadata [length]
   (new MetadataImpl
-       (proxy [Creator] [] (create [args] args))
+       (reify Creator (create [_ args] args))
        [0]
        nil
        [1]
-       (proxy [Metadata$VersionComparator][] (compareTo [[_ v1] [_ v2]] (- v1 v2)))
+       (reify Metadata$VersionComparator (compareTo [_ [_ v1] [_ v2]] (- v1 v2)))
        (map
-	(fn [i] (Attribute. i Object (= i 0) (proxy [Getter] [] (get [s] (nth s i)))))
+	(fn [i] (Attribute. i Object (= i 0) (reify Getter (get [_ s] (nth s i)))))
 	(range length))))
 
 
@@ -331,8 +331,8 @@
 	
 (defmacro make-version-comparator [input-type version-keys version-comparator]
   `(let [version-fn# (make-key-fn ~input-type ~version-keys)]
-     (proxy [Metadata$VersionComparator] []
- 	    (compareTo [lhs# rhs#] (~version-comparator (version-fn# lhs#) (version-fn# rhs#))))))
+     (reify Metadata$VersionComparator
+ 	    (compareTo [_ lhs# rhs#] (~version-comparator (version-fn# lhs#) (version-fn# rhs#))))))
 
 (def prim->ref
      {'int 'Integer
@@ -476,8 +476,8 @@
 			 [:name]	;primary-keys
                          nil            ;primary-getter
 			 []		;version-keys
-			 (proxy [Metadata$VersionComparator][](compareTo [old new] -1)) ;version-comparator
-			 [(Attribute. :name String false (proxy [Getter][] (get [^Model model] (.getName model))))])) ;attributes
+			 (reify Metadata$VersionComparator (compareTo [_ old new] -1)) ;version-comparator
+			 [(Attribute. :name String false (reify Getter (get [_ model] (.getName ^Model model))))])) ;attributes
 
 ;; TODO: I like the earmuffs on this var, but have no intention of
 ;; rebinding its root at runtime - hence I need the :dynamic hint to
