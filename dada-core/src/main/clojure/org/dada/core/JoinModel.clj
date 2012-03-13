@@ -324,13 +324,14 @@
 		 ^Data data
 		 (.attach
 		  rhs-model
-		  (proxy [View] []
-			 (update [insertions alterations deletions]
-				 (let [[_ _ _ insertions alterations deletions]
-				       (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
-				   (if (or insertions alterations deletions)
-				     (notifyUpdate self insertions alterations deletions))))
-			 (toString [] (print-object this (str "Proxy:" model-name)))))]
+		  (reify
+                    View
+                    (update [_ insertions alterations deletions]
+                      (let [[_ _ _ insertions alterations deletions]
+                            (swap! mutable update-rhs insertions alterations deletions i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)]
+                        (if (or insertions alterations deletions)
+                          (notifyUpdate self insertions alterations deletions))))
+                    (toString [this] (print-object this (str "Proxy:" model-name)))))]
 	     (swap! mutable update-rhs
 		    (map (fn [extant] (Update. nil extant))(.getExtant data))
 		    nil nil i rhs-pk-getter rhs-version-comparator lhs-getters join-fn)))
@@ -344,12 +345,13 @@
 	   ^Data data
 	   (.attach
 	    lhs-model
-	    (proxy [View] []
-		   (update [insertions alterations deletions]
-			   (let [[_ _ _ insertions alterations deletions]
-				 (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
-			     (if (or insertions alterations deletions)
-			       (notifyUpdate self insertions alterations deletions))))))]
+	    (reify
+              View
+              (update [_ insertions alterations deletions]
+                (let [[_ _ _ insertions alterations deletions]
+                      (swap! mutable update-lhs insertions alterations deletions lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs)]
+                  (if (or insertions alterations deletions)
+                    (notifyUpdate self insertions alterations deletions))))))]
        (swap! mutable update-lhs
 	      (map (fn [extant] (Update. nil extant))(.getExtant data))
 	      nil nil lhs-pk-getter lhs-version-comparator i-to-lhs-getters join-fn initial-rhs-refs) ;; TODO - deletions/extinct
