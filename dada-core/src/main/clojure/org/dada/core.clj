@@ -182,10 +182,7 @@
 
 (defn custom-creator [^Class class]
   "make a Creator for the given Class"
-  (proxy [Creator] [] 
-	 (^{:tag class} create [^{:tag (type (into-array Object []))} args]
-		  ;;(println "CREATOR" class (map identity args))
-		  (apply make-instance class args))))
+  (reify Creator (create [_ args] (apply make-instance class args))))
 
 (defn ^Metadata custom-metadata3 [^Class class primary-keys version-keys version-comparator attribute-specs]
   "make Metadata for a given class"
@@ -254,9 +251,7 @@
 
 (defn ^Creator record-creator [^Class class]
   "make a Creator for the given Class"
-  (proxy [Creator] [] 
-	 (^{:tag class} create [^{:tag (type (into-array Object []))} args] ;TODO: why does creator insist on an array ?
-		  (apply make-instance class args))))
+  (reify Creator (create [_ args] (apply make-instance class args))))
 
 (defn ^Getter record-getter [^Class input-type ^Class output-type name]
   "make a Getter for the named attribute of the given Class"
@@ -316,8 +311,8 @@
 
 ;; TODO - creator should take a collection OR an array ?
 (defmacro make-record-creator [class-name field-names]
-  `(proxy [Creator] []
-     (^{:tag ~class-name} create [^{:tag (type (into-array Object []))} args#]
+  `(reify Creator
+     (create [_ args#]
       (let [~(apply vector field-names) args#] (~(symbol (str (name class-name) "." )) ~@field-names)))
      ))
 
