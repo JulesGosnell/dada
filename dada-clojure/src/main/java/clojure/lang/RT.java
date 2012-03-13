@@ -12,6 +12,7 @@
 
 package clojure.lang;
 
+import java.net.MalformedURLException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Callable;
 import java.util.*;
@@ -184,6 +185,7 @@ final static public Var ERR =
 		Var.intern(CLOJURE_NS, Symbol.intern("*err*"),
 		           new PrintWriter(new OutputStreamWriter(System.err), true)).setDynamic();
 final static Keyword TAG_KEY = Keyword.intern(null, "tag");
+final static Keyword CONST_KEY = Keyword.intern(null, "const");
 final static public Var AGENT = Var.intern(CLOJURE_NS, Symbol.intern("*agent*"), null).setDynamic();
 final static public Var READEVAL = Var.intern(CLOJURE_NS, Symbol.intern("*read-eval*"), T).setDynamic();
 final static public Var ASSERT = Var.intern(CLOJURE_NS, Symbol.intern("*assert*"), T).setDynamic();
@@ -194,6 +196,10 @@ static Keyword DECLARED_KEY = Keyword.intern(null, "declared");
 static Keyword DOC_KEY = Keyword.intern(null, "doc");
 final static public Var USE_CONTEXT_CLASSLOADER =
 		Var.intern(CLOJURE_NS, Symbol.intern("*use-context-classloader*"), T).setDynamic();
+//boolean
+static final public Var UNCHECKED_MATH = Var.intern(Namespace.findOrCreate(Symbol.intern("clojure.core")),
+                                                   Symbol.intern("*unchecked-math*"), Boolean.FALSE).setDynamic();
+
 //final static public Var CURRENT_MODULE = Var.intern(Symbol.intern("clojure.core", "current-module"),
 //                                                    Module.findOrCreateModule("clojure/user"));
 
@@ -220,7 +226,7 @@ static final Var PRINT_INITIALIZED = Var.intern(CLOJURE_NS, Symbol.intern("print
 static final Var PR_ON = Var.intern(CLOJURE_NS, Symbol.intern("pr-on"));
 //final static Var IMPORTS = Var.intern(CLOJURE_NS, Symbol.intern("*imports*"), DEFAULT_IMPORTS);
 final static IFn inNamespace = new AFn(){
-	public Object invoke(Object arg1) throws Exception{
+	public Object invoke(Object arg1) {
 		Symbol nsname = (Symbol) arg1;
 		Namespace ns = Namespace.findOrCreate(nsname);
 		CURRENT_NS.set(ns);
@@ -229,7 +235,7 @@ final static IFn inNamespace = new AFn(){
 };
 
 final static IFn bootNamespace = new AFn(){
-	public Object invoke(Object __form, Object __env,Object arg1) throws Exception{
+	public Object invoke(Object __form, Object __env,Object arg1) {
 		Symbol nsname = (Symbol) arg1;
 		Namespace ns = Namespace.findOrCreate(nsname);
 		CURRENT_NS.set(ns);
@@ -274,7 +280,7 @@ private static final class DefaultComparator implements Comparator, Serializable
 
 static AtomicInteger id = new AtomicInteger(1);
 
-static public void addURL(Object url) throws Exception{
+static public void addURL(Object url) throws MalformedURLException{
 	URL u = (url instanceof String) ? (new URL((String) url)) : (URL) url;
 	ClassLoader ccl = Thread.currentThread().getContextClassLoader();
 	if(ccl instanceof DynamicClassLoader)
@@ -299,8 +305,15 @@ static{
 	              arglistskw, list(vector(namesym))));
 	v = Var.intern(CLOJURE_NS, LOAD_FILE,
 	               new AFn(){
-		               public Object invoke(Object arg1) throws Exception{
-			               return Compiler.loadFile((String) arg1);
+		               public Object invoke(Object arg1) {
+			               try
+				               {
+				               return Compiler.loadFile((String) arg1);
+				               }
+			               catch(IOException e)
+				               {
+				               throw Util.runtimeException(e);
+				               }
 		               }
 	               });
 	v.setMeta(map(DOC_KEY, "Sequentially read and evaluate the set of forms contained in the file.",
@@ -309,7 +322,7 @@ static{
 		doInit();
 	}
 	catch(Exception e) {
-		throw new RuntimeException(e);
+		throw Util.runtimeException(e);
 	}
 }
 
@@ -325,26 +338,26 @@ static public Var var(String ns, String name, Object init){
 	return Var.intern(Namespace.findOrCreate(Symbol.intern(null, ns)), Symbol.intern(null, name), init);
 }
 
-public static void loadResourceScript(String name) throws Exception{
+public static void loadResourceScript(String name) throws IOException{
 	loadResourceScript(name, true);
 }
 
-public static void maybeLoadResourceScript(String name) throws Exception{
+public static void maybeLoadResourceScript(String name) throws IOException{
 	loadResourceScript(name, false);
 }
 
-public static void loadResourceScript(String name, boolean failIfNotFound) throws Exception{
+public static void loadResourceScript(String name, boolean failIfNotFound) throws IOException{
 	loadResourceScript(RT.class, name, failIfNotFound);
 }
 
-public static void loadResourceScript(Class c, String name) throws Exception{
+public static void loadResourceScript(Class c, String name) throws IOException{
 	loadResourceScript(c, name, true);
 }
 
-public static void loadResourceScript(Class c, String name, boolean failIfNotFound) throws Exception{
+public static void loadResourceScript(Class c, String name, boolean failIfNotFound) throws IOException{
 	int slash = name.lastIndexOf('/');
 	String file = slash >= 0 ? name.substring(slash + 1) : name;
-	InputStream ins = baseLoader().getResourceAsStream(name);
+	InputStream ins = resourceAsStream(baseLoader(), name);
 	if(ins != null) {
 		try {
 			Compiler.load(new InputStreamReader(ins, UTF8), name, file);
@@ -358,11 +371,11 @@ public static void loadResourceScript(Class c, String name, boolean failIfNotFou
 	}
 }
 
-static public void init() throws Exception{
+static public void init() {
 	RT.errPrintWriter().println("No need to call RT.init() anymore");
 }
 
-static public long lastModified(URL url, String libfile) throws Exception{
+static public long lastModified(URL url, String libfile) throws IOException{
 	if(url.getProtocol().equals("jar")) {
 		return ((JarURLConnection) url.openConnection()).getJarFile().getEntry(libfile).getTime();
 	}
@@ -371,8 +384,8 @@ static public long lastModified(URL url, String libfile) throws Exception{
 	}
 }
 
-static void compile(String cljfile) throws Exception{
-	InputStream ins = baseLoader().getResourceAsStream(cljfile);
+static void compile(String cljfile) throws IOException{
+        InputStream ins = resourceAsStream(baseLoader(), cljfile);
 	if(ins != null) {
 		try {
 			Compiler.compile(new InputStreamReader(ins, UTF8), cljfile,
@@ -387,15 +400,15 @@ static void compile(String cljfile) throws Exception{
 		throw new FileNotFoundException("Could not locate Clojure resource on classpath: " + cljfile);
 }
 
-static public void load(String scriptbase) throws Exception{
+static public void load(String scriptbase) throws IOException, ClassNotFoundException{
 	load(scriptbase, true);
 }
 
-static public void load(String scriptbase, boolean failIfNotFound) throws Exception{
+static public void load(String scriptbase, boolean failIfNotFound) throws IOException, ClassNotFoundException{
 	String classfile = scriptbase + LOADER_SUFFIX + ".class";
 	String cljfile = scriptbase + ".clj";
-	URL classURL = baseLoader().getResource(classfile);
-	URL cljURL = baseLoader().getResource(cljfile);
+	URL classURL = getResource(baseLoader(),classfile);
+	URL cljURL = getResource(baseLoader(), cljfile);
 	boolean loaded = false;
 
 	if((classURL != null &&
@@ -405,7 +418,8 @@ static public void load(String scriptbase, boolean failIfNotFound) throws Except
 		try {
 			Var.pushThreadBindings(
 					RT.map(CURRENT_NS, CURRENT_NS.deref(),
-					       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()));
+					       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
+							,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 			loaded = (loadClassForName(scriptbase.replace('/', '.') + LOADER_SUFFIX) != null);
 		}
 		finally {
@@ -422,12 +436,13 @@ static public void load(String scriptbase, boolean failIfNotFound) throws Except
 		throw new FileNotFoundException(String.format("Could not locate %s or %s on classpath: ", classfile, cljfile));
 }
 
-static void doInit() throws Exception{
+static void doInit() throws ClassNotFoundException, IOException{
 	load("clojure/core");
 
 	Var.pushThreadBindings(
 			RT.map(CURRENT_NS, CURRENT_NS.deref(),
-			       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()));
+			       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
+					,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 	try {
 		Symbol USER = Symbol.intern("user");
 		Symbol CLOJURE = Symbol.intern("clojure.core");
@@ -477,6 +492,10 @@ static ISeq seqFrom(Object coll){
 		Class sc = c.getSuperclass();
 		throw new IllegalArgumentException("Don't know how to create ISeq from: " + c.getName());
 	}
+}
+
+static public Object seqOrElse(Object o) {
+	return seq(o) == null ? null : o;
 }
 
 static public ISeq keys(Object coll){
@@ -705,11 +724,11 @@ static public Object find(Object coll, Object key){
 //takes a seq of key,val,key,val
 
 //returns tail starting at val of matching key if found, else null
-static public ISeq findKey(Keyword key, ISeq keyvals) throws Exception{
+static public ISeq findKey(Keyword key, ISeq keyvals) {
 	while(keyvals != null) {
 		ISeq r = keyvals.next();
 		if(r == null)
-			throw new Exception("Malformed keyword argslist");
+			throw Util.runtimeException("Malformed keyword argslist");
 		if(keyvals.first() == key)
 			return r;
 		keyvals = r.next();
@@ -717,7 +736,7 @@ static public ISeq findKey(Keyword key, ISeq keyvals) throws Exception{
 	return null;
 }
 
-static public Object dissoc(Object coll, Object key) throws Exception{
+static public Object dissoc(Object coll, Object key) {
 	if(coll == null)
 		return null;
 	return ((IPersistentMap) coll).without(key);
@@ -896,6 +915,50 @@ static public char charCast(Object x){
 	return (char) n;
 }
 
+static public char charCast(byte x){
+    char i = (char) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for char: " + x);
+    return i;
+}
+
+static public char charCast(short x){
+    char i = (char) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for char: " + x);
+    return i;
+}
+
+static public char charCast(char x){
+    return x;
+}
+
+static public char charCast(int x){
+    char i = (char) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for char: " + x);
+    return i;
+}
+
+static public char charCast(long x){
+    char i = (char) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for char: " + x);
+    return i;
+}
+
+static public char charCast(float x){
+    if(x >= Character.MIN_VALUE && x <= Character.MAX_VALUE)
+        return (char) x;
+    throw new IllegalArgumentException("Value out of range for char: " + x);
+}
+
+static public char charCast(double x){
+    if(x >= Character.MIN_VALUE && x <= Character.MAX_VALUE)
+        return (char) x;
+    throw new IllegalArgumentException("Value out of range for char: " + x);
+}
+
 static public boolean booleanCast(Object x){
 	if(x instanceof Boolean)
 		return ((Boolean) x).booleanValue();
@@ -916,6 +979,43 @@ static public byte byteCast(Object x){
 	return (byte) n;
 }
 
+static public byte byteCast(byte x){
+    return x;
+}
+
+static public byte byteCast(short x){
+    byte i = (byte) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for byte: " + x);
+    return i;
+}
+
+static public byte byteCast(int x){
+    byte i = (byte) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for byte: " + x);
+    return i;
+}
+
+static public byte byteCast(long x){
+    byte i = (byte) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for byte: " + x);
+    return i;
+}
+
+static public byte byteCast(float x){
+    if(x >= Byte.MIN_VALUE && x <= Byte.MAX_VALUE)
+        return (byte) x;
+    throw new IllegalArgumentException("Value out of range for byte: " + x);
+}
+
+static public byte byteCast(double x){
+    if(x >= Byte.MIN_VALUE && x <= Byte.MAX_VALUE)
+        return (byte) x;
+    throw new IllegalArgumentException("Value out of range for byte: " + x);
+}
+
 static public short shortCast(Object x){
 	if(x instanceof Short)
 		return ((Short) x).shortValue();
@@ -924,6 +1024,40 @@ static public short shortCast(Object x){
 		throw new IllegalArgumentException("Value out of range for short: " + x);
 
 	return (short) n;
+}
+
+static public short shortCast(byte x){
+	return x;
+}
+
+static public short shortCast(short x){
+	return x;
+}
+
+static public short shortCast(int x){
+    short i = (short) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for short: " + x);
+    return i;
+}
+
+static public short shortCast(long x){
+    short i = (short) x;
+    if(i != x)
+        throw new IllegalArgumentException("Value out of range for short: " + x);
+    return i;
+}
+
+static public short shortCast(float x){
+    if(x >= Short.MIN_VALUE && x <= Short.MAX_VALUE)
+        return (short) x;
+    throw new IllegalArgumentException("Value out of range for short: " + x);
+}
+
+static public short shortCast(double x){
+    if(x >= Short.MIN_VALUE && x <= Short.MAX_VALUE)
+        return (short) x;
+    throw new IllegalArgumentException("Value out of range for short: " + x);
 }
 
 static public int intCast(Object x){
@@ -991,7 +1125,20 @@ static public long longCast(Object x){
 		else
 			throw new IllegalArgumentException("Value out of range for long: " + x);
 		}
-	return ((Number) x).longValue();
+	else if (x instanceof Byte || x instanceof Short)
+	    return ((Number) x).longValue();
+	else if (x instanceof Ratio)
+	    return longCast(((Ratio)x).bigIntegerValue());
+	else
+	    return longCast(((Number)x).doubleValue());
+}
+
+static public long longCast(byte x){
+    return x;
+}
+
+static public long longCast(short x){
+    return x;
 }
 
 static public long longCast(int x){
@@ -1026,6 +1173,14 @@ static public float floatCast(Object x){
 
 }
 
+static public float floatCast(byte x){
+    return x;
+}
+
+static public float floatCast(short x){
+    return x;
+}
+
 static public float floatCast(int x){
 	return x;
 }
@@ -1047,6 +1202,14 @@ static public float floatCast(double x){
 
 static public double doubleCast(Object x){
 	return ((Number) x).doubleValue();
+}
+
+static public double doubleCast(byte x){
+    return x;
+}
+
+static public double doubleCast(short x){
+    return x;
 }
 
 static public double doubleCast(int x){
@@ -1346,7 +1509,7 @@ static public ISeq listStar(Object arg1, Object arg2, Object arg3, Object arg4, 
 	return (ISeq) cons(arg1, cons(arg2, cons(arg3, cons(arg4, cons(arg5, rest)))));
 }
 
-static public ISeq arrayToList(Object[] a) throws Exception{
+static public ISeq arrayToList(Object[] a) {
 	ISeq ret = null;
 	for(int i = a.length - 1; i >= 0; --i)
 		ret = (ISeq) cons(a[i], ret);
@@ -1367,7 +1530,7 @@ static public Object[] object_array(Object sizeOrSeq){
 		}
 }
 
-static public Object[] toArray(Object coll) throws Exception{
+static public Object[] toArray(Object coll) {
 	if(coll == null)
 		return EMPTY_ARRAY;
 	else if(coll instanceof Object[])
@@ -1391,7 +1554,7 @@ static public Object[] toArray(Object coll) throws Exception{
 		return ret;
 	}
 	else
-		throw new Exception("Unable to convert: " + coll.getClass() + " to Object[]");
+		throw Util.runtimeException("Unable to convert: " + coll.getClass() + " to Object[]");
 }
 
 static public Object[] seqToArray(ISeq seq){
@@ -1402,12 +1565,12 @@ static public Object[] seqToArray(ISeq seq){
 	return ret;
 }
 
-static public Object seqToTypedArray(ISeq seq) throws Exception{
+static public Object seqToTypedArray(ISeq seq) {
 	Class type = (seq != null) ? seq.first().getClass() : Object.class;
 	return seqToTypedArray(type, seq);
 }
 
-static public Object seqToTypedArray(Class type, ISeq seq) throws Exception{
+static public Object seqToTypedArray(Class type, ISeq seq) {
     Object ret = Array.newInstance(type, length(seq));
     if(type == Integer.TYPE){
         for(int i = 0; seq != null; ++i, seq=seq.next()){
@@ -1445,7 +1608,7 @@ static public int length(ISeq list){
 	return i;
 }
 
-static public int boundedLength(ISeq list, int limit) throws Exception{
+static public int boundedLength(ISeq list, int limit) {
 	int i = 0;
 	for(ISeq c = list; c != null && i <= limit; c = c.next()) {
 		i++;
@@ -1461,12 +1624,12 @@ static Character readRet(int ret){
 	return box((char) ret);
 }
 
-static public Character readChar(Reader r) throws Exception{
+static public Character readChar(Reader r) throws IOException{
 	int ret = r.read();
 	return readRet(ret);
 }
 
-static public Character peekChar(Reader r) throws Exception{
+static public Character peekChar(Reader r) throws IOException{
 	int ret;
 	if(r instanceof PushbackReader) {
 		ret = r.read();
@@ -1514,7 +1677,7 @@ static public String printString(Object x){
 		return sw.toString();
 	}
 	catch(Exception e) {
-		throw new RuntimeException(e);
+		throw Util.runtimeException(e);
 	}
 }
 
@@ -1524,11 +1687,11 @@ static public Object readString(String s){
 		return LispReader.read(r, true, null, false);
 	}
 	catch(Exception e) {
-		throw new RuntimeException(e);
+		throw Util.runtimeException(e);
 	}
 }
 
-static public void print(Object x, Writer w) throws Exception{
+static public void print(Object x, Writer w) throws IOException{
 	//call multimethod
 	if(PRINT_INITIALIZED.isBound() && RT.booleanCast(PRINT_INITIALIZED.deref()))
 		PR_ON.invoke(x, w);
@@ -1684,7 +1847,7 @@ static public void print(Object x, Writer w) throws Exception{
 	//*/
 }
 
-private static void printInnerSeq(ISeq x, Writer w) throws Exception{
+private static void printInnerSeq(ISeq x, Writer w) throws IOException{
 	for(ISeq s = x; s != null; s = s.next()) {
 		print(s.first(), w);
 		if(s.next() != null)
@@ -1734,7 +1897,7 @@ static public void formatStandard(Writer w, Object obj) throws IOException{
 		w.write(obj.toString());
 }
 
-static public Object format(Object o, String s, Object... args) throws Exception{
+static public Object format(Object o, String s, Object... args) throws IOException{
 	Writer w;
 	if(o == null)
 		w = new StringWriter();
@@ -1748,7 +1911,7 @@ static public Object format(Object o, String s, Object... args) throws Exception
 	return null;
 }
 
-static public ISeq doFormat(Writer w, String s, ISeq args) throws Exception{
+static public ISeq doFormat(Writer w, String s, ISeq args) throws IOException{
 	for(int i = 0; i < s.length();) {
 		char c = s.charAt(i++);
 		switch(Character.toLowerCase(c)) {
@@ -1833,9 +1996,32 @@ static public ClassLoader baseLoader(){
 	return Compiler.class.getClassLoader();
 }
 
-static public Class classForName(String name) throws ClassNotFoundException{
+static public InputStream resourceAsStream(ClassLoader loader, String name){
+    if (loader == null) {
+        return ClassLoader.getSystemResourceAsStream(name);
+    } else {
+        return loader.getResourceAsStream(name);
+    }
+}
 
-	return Class.forName(name, true, baseLoader());
+static public URL getResource(ClassLoader loader, String name){
+    if (loader == null) {
+        return ClassLoader.getSystemResource(name);
+    } else {
+        return loader.getResource(name);
+    }
+}
+
+static public Class classForName(String name) {
+
+	try
+		{
+		return Class.forName(name, true, baseLoader());
+		}
+	catch(ClassNotFoundException e)
+		{
+		throw Util.runtimeException(e);
+		}
 }
 
 static public Class loadClassForName(String name) throws ClassNotFoundException{
