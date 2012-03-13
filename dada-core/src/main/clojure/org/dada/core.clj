@@ -257,8 +257,7 @@
   "make a Getter for the named attribute of the given Class"
   (let [key (keyword (attribute-key name))
 	arg-symbol (with-meta 's {:tag (.getCanonicalName input-type)})]
-    (eval `(proxy [Getter] [] 
-		  (^{:tag ~output-type} get [~arg-symbol] (~key ~arg-symbol))))))
+    (eval `(reify Getter (get [_ ~arg-symbol] (~key ~arg-symbol))))))
 
 
 (defn ^Metadata record-metadata2 [primary-keys version-keys version-comparator attributes]
