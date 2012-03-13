@@ -317,7 +317,7 @@
      ))
 
 (defmacro make-record-getter [field-name input-type output-type]
-  `(proxy [Getter] [] (^{:tag ~output-type} get [^{:tag ~input-type} datum#] (~(symbol (str "." field-name)) datum#))))
+  `(reify Getter (get [_ datum#] (~(symbol (str "." field-name)) datum#))))
 
 ;; this can't be right but I cannot figure out a better way to get the same result...
 (defmacro make-key-fn [input-type keys]
