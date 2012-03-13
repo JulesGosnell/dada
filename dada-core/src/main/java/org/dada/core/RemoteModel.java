@@ -67,6 +67,7 @@ public class RemoteModel<K, V> implements Model<K, V>, Serializable {
 	    return (Data<V>) session.getData((Model<Object, Object>) this);
 	}
 
+	@Override
 	public String toString() {
 		return "<0x" + Integer.toHexString(System.identityHashCode(this)) + ":" + getClass().getSimpleName() + " " + name + " " + endPoint + ">";
 	}

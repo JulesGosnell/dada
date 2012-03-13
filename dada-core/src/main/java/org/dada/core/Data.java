@@ -59,6 +59,7 @@ public class Data<V> implements Serializable, Indexed {
 		    return (lhs == rhs || (lhs != null && rhs != null && lhs.equals(rhs)));
 		}
 
+		@Override
 		public boolean equals(Object that) {
 		    return (that != null &&
 			    that instanceof Data &&

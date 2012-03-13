@@ -4,7 +4,7 @@ public interface Session extends SessionManager {
 
     int ping();
     long getLastPingTime();
-    void close() throws Exception;
+    @Override void close() throws Exception;
 
     String getUserName();
     String getApplicationName();
