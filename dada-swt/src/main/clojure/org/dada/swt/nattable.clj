@@ -5,6 +5,7 @@
    [org.dada core]
    )
   (:import
+   [java.io Serializable]
    [java.util ArrayList Collection HashMap List Map]
    [org.eclipse.swt SWT]
    [org.eclipse.swt.layout GridData GridLayout]
@@ -154,18 +155,17 @@
 	sorted-list (SortedList. event-list nil)
       
 	column-property-accessor
-	(proxy 
-	    [IColumnPropertyAccessor]
-	    []
-	  ;; IColumnAccessor<T>
-	  (^Object getDataValue [^Mutable rowObject columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
-	  (getColumnCount [] (count property-names))
-	  ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
+	(reify 
+	 IColumnPropertyAccessor
+	 ;; IColumnAccessor<T>
+	 (getDataValue [_ rowObject columnIndex] (.get ^Getter (nth getters columnIndex) (.getDatum rowObject)))
+	 (getColumnCount [_] (count property-names))
+	 ;; public void setDataValue(T rowObject, int columnIndex, Object newValue);
       
-	  ;;IColumnPropertyResolver 
-	  (^String getColumnProperty [columnIndex] (nth property-names columnIndex))
-	  (getColumnIndex [^String propertyName] (property-name-to-index propertyName))
-	  )
+	 ;;IColumnPropertyResolver 
+	 (getColumnProperty [_ columnIndex] (nth property-names columnIndex))
+	 (^int getColumnIndex [_ ^String propertyName] (property-name-to-index propertyName))
+	 )
 
 	config-registry (ConfigRegistry.)
 	body-data-provider (ListDataProvider. sorted-list column-property-accessor)
@@ -175,17 +175,19 @@
 	blink-layer (BlinkLayer.
 		     glazed-lists-event-layer
 		     body-data-provider
-		     (proxy [IRowIdAccessor][](^Serializable getRowId [^Mutable row] (.get pk-getter (.getDatum row))))
+		     (reify IRowIdAccessor (^Serializable getRowId [_ row] (.get pk-getter (.getDatum row))))
 		     column-property-accessor
 		     config-registry)
 	dummy (do
 		(.registerConfigAttribute config-registry 
 					  (BlinkConfigAttributes/BLINK_RESOLVER)
-					  (proxy [IBlinkingCellResolver][]
-                                            (resolve
-                                              ([cell configRegistry oldValue newValue] (into-array String ["up"]))
-                                              ([oldValue newValue] (into-array String ["up"]))))
+					  (reify
+					   IBlinkingCellResolver
+					   (resolve [_ cell configRegistry oldValue newValue] (into-array String ["up"]))
+					   (resolve [_ oldValue newValue] (into-array String ["up"])))
 					  (DisplayMode/NORMAL))
+
+
 		(.registerConfigAttribute 
 		 config-registry
 		 (CellConfigAttributes/CELL_STYLE)
@@ -200,12 +202,13 @@
 	column-header-layer (ColumnHeaderLayer. column-header-data-layer body-layer-stack (.getSelectionLayer body-layer-stack))
 	column-header-layer-stack (proxy [AbstractLayerTransform] [])
 
-	view (proxy [View][]
-	       (^void update [^Collection insertions ^Collection alterations ^Collection deletions]
-		      (.asyncExec
-		       display
-		       (fn []
-			 (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
+	view (reify
+	      View
+	      (^void update [_ ^Collection insertions ^Collection alterations ^Collection deletions]
+		     (.asyncExec
+		      display
+		      (fn []
+			  (apply-updates pk-getter version-comparator event-list index glazed-lists-event-layer property-names getters insertions alterations deletions)))))
 	data (register model view)
 	]
     ;; initial update
@@ -248,13 +251,13 @@
 	;; deregister view on disposal
 	(.registerCommandHandler 
 	 grid-layer
-	 (proxy [ILayerCommandHandler] []
-		(^Class getCommandClass [] ILayerCommand)
-		(^Boolean doCommand [^ILayer targetLayer ^ILayerCommand command]
-			  (if (instance? SelectCellCommand command) (handle-select-cell metadata nattable command data-layer sorted-list drilldown-fn))
-			  (if (instance? DisposeResourcesCommand command) (.detach model view))
-			  false)))
-
+	 (reify
+	  ILayerCommandHandler
+	  (^Class getCommandClass [_] ILayerCommand)
+	  (^boolean doCommand [_ ^ILayer targetLayer ^ILayerCommand command]
+		    (if (instance? SelectCellCommand command) (handle-select-cell metadata nattable command data-layer sorted-list drilldown-fn))
+		    (if (instance? DisposeResourcesCommand command) (.detach model view))
+		    false)))
 	(doto nattable
 	  (.setConfigRegistry config-registry)
 	  (.addConfiguration (DefaultNatTableStyleConfiguration.))
@@ -266,7 +269,7 @@
 	  (.addConfiguration (DefaultSelectionStyleConfiguration.))
 	  (.configure)
 	  
-	  ;;(.addLayerListener (proxy [ILayerListener][](handleLayerEvent [event] (handle-layer-event sorted-list nattable event data-layer drilldown-fn))))
+	  ;;(.addLayerListener (reify ILayerListener (handleLayerEvent [_ event] (handle-layer-event sorted-list nattable event data-layer drilldown-fn))))
 
 	  (.setLayoutData (GridData. (SWT/FILL) (SWT/FILL) true true))
 	  (.pack))))))
