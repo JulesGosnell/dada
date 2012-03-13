@@ -26,18 +26,34 @@
   
   <profiles>
     <profile>
-      <id>linux</id>
+      <id>linux-i386</id>
       <activation>
-        <os>
-          <family>unix</family>
-        </os>
+	<os>
+	  <name>Linux</name>
+	  <arch>i386</arch>
+	</os>
       </activation>
       <dependencies>
 	<dependency>
 	  <groupId>org.eclipse</groupId>
 	  <artifactId>swt</artifactId>
-<!--	  <version>gtk.linux.x86_3.6.0.v3644b</version> -->
-	  <version>gtk.linux.x86_64_3.6.2.v3659b</version>
+	  <version>gtk.linux.x86_3.6.0.v3644b</version>
+	</dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>linux-x86_64</id>
+      <activation>
+	<os>
+	  <name>Linux</name>
+	  <arch>x86_64</arch>
+	</os>
+      </activation>
+      <dependencies>
+	<dependency>
+	  <groupId>org.eclipse</groupId>
+	  <artifactId>swt</artifactId>
+	  <version>gtk.linux.x86_64_3.6.2.v3659b</version> 
 	</dependency>
       </dependencies>
     </profile>
