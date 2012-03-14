@@ -44,7 +44,7 @@
      (custom-metadata3 org.dada.core.Result
 		       [:model]		;TODO - this is a BAD idea for a PK
 		       [:model]		;TODO - we need a proper version - or code that can handle versionless data
-		       (proxy [Metadata$VersionComparator][](compareTo [lhs rhs] -1))
+		       (reify Metadata$VersionComparator (compareTo [_ lhs rhs] -1))
 		       [[:model org.dada.core.Model false]
 			[:prefix String false]
 			[:pairs java.util.Collection false]
@@ -58,8 +58,7 @@
   (map (fn [#^Getter getter] (.get getter value)) getters))
 
 (def #^Metadata$VersionComparator int-version-comparator
-     (proxy [Metadata$VersionComparator][]
-	    (compareTo [old new] (- (.getVersion old) (.getVersion new)))))
+     (reify Metadata$VersionComparator (compareTo [_ old new] (- (.getVersion old) (.getVersion new)))))
 
 ;;----------------------------------------
 ;; Filtration - should be implemented as a thin wrapper around Splitter
@@ -139,29 +138,27 @@
   (let [src-metadata (.getMetadata src-model)
 	mutable (.getMutable (.getAttribute src-metadata key))
 	map (new ConcurrentHashMap)
-	view-factory (proxy
-		      [Factory]
-		      []
-		      (create [key]
-			      (let [value (key-to-value key)
-				    view (model (src-name-fn value) src-metadata)]
-				(.decouple
-				 internal-view-service-factory
-				 (view-hook view value))
-				view)
-			      ))
-	lazy-factory (proxy [Factory] [] (create [key] (new LazyView map key view-factory)))
+	view-factory (reify
+                       Factory
+                       (create [_ key]
+                         (let [value (key-to-value key)
+                               view (model (src-name-fn value) src-metadata)]
+                           (.decouple
+                            internal-view-service-factory
+                            (view-hook view value))
+                           view)
+                         ))
+	lazy-factory (reify Factory (create [_ key] (new LazyView map key view-factory)))
 	table (new SparseOpenLazyViewTable map lazy-factory)
 	getter (.getGetter (.getAttribute src-metadata key))]
     (new
      Splitter
-     (proxy
-      [Splitter$StatelessStrategy]
-      []
-      (getMutable [] mutable)
-      (getKeys [value] (value-to-keys (.get getter value)))
-      (getViews [key] (list (. table get key)))
-      ))))
+     (reify
+       Splitter$StatelessStrategy
+       (getMutable [_] mutable)
+       (getKeys [_ value] (value-to-keys (.get getter value)))
+       (getViews [_ key] (list (. table get key)))
+       ))))
 
 (defn do-split
   [#^Model src-model key value-to-keys key-to-value view-hook]
@@ -208,25 +205,24 @@
 	new-value (fn [#^Update update] (accessor (.getNewValue update)))
 	old-value (fn [#^Update update] (accessor (.getOldValue update)))
 	creator (.getCreator tgt-metadata)]
-    (proxy
-     [Reducer$Strategy]
-     []
-     (initialValue [] 0)
-     (initialType [type] type)
-     (currentValue [keys version value]
-		   (trace (str "SUM " (pr-str keys) " -  " (type version) " " version " " value))
-		   (.create creator (into-array Object (concat keys [(Integer. version) value])))) ;TODO - inefficient
-     (reduce [insertions alterations deletions]
-	     (-
-	      (+
-	       (reduce #(+ %1 (or (new-value %2) 0)) 0 insertions)
-	       (reduce #(+ %1 (- (or (new-value %2) 0) (or (old-value %2) 0))) 0 alterations))
-	      (reduce #(+ %1 (or (old-value %2))) 0 deletions))
-	     )
-     (apply [currentValue delta]
-	    ;;(trace "SUM:" currentValue delta)
-	    (+ currentValue delta))
-     )))
+    (reify
+      Reducer$Strategy
+      (initialValue [_] 0)
+      (initialType [_ type] type)
+      (currentValue [_ keys version value]
+        (trace (str "SUM " (pr-str keys) " -  " (type version) " " version " " value))
+        (.create creator (into-array Object (concat keys [(Integer. version) value])))) ;TODO - inefficient
+      (reduce [_ insertions alterations deletions]
+        (-
+         (+
+          (reduce #(+ %1 (or (new-value %2) 0)) 0 insertions)
+          (reduce #(+ %1 (- (or (new-value %2) 0) (or (old-value %2) 0))) 0 alterations))
+         (reduce #(+ %1 (or (old-value %2))) 0 deletions))
+        )
+      (apply [_ currentValue delta]
+        ;;(trace "SUM:" currentValue delta)
+        (+ currentValue delta))
+      )))
 
 (defn do-reduce-sum
   [#^String src-name #^Metadata src-metadata #^Metadata tgt-metadata sum-key #^Collection extra-values]
@@ -253,17 +249,16 @@
 (defn make-count-reducer-strategy [#^Metadata src-metadata #^Metadata tgt-metadata & [count-key]]
   ;; TODO - use count-key
   (let [creator (.getCreator tgt-metadata)]
-    (proxy
-     [Reducer$Strategy]
-     []
-     (initialValue [] 0)
-     (initialType [type] Integer)
-     (currentValue [extra-values version value]
-		   (trace (str "COUNT " (pr-str extra-values) " -  " (type version) " " version " " value))
-		   (.create creator (into-array Object (concat extra-values [(Integer. version) value])))) ;TODO - inefficient
-     (reduce [insertions alterations deletions] (- (count insertions) (count deletions)))
-     (apply [currentValue delta] (+ currentValue delta))
-     )
+    (reify
+      Reducer$Strategy
+      (initialValue [_] 0)
+      (initialType [_ type] Integer)
+      (currentValue [_ extra-values version value]
+        (trace (str "COUNT " (pr-str extra-values) " -  " (type version) " " version " " value))
+        (.create creator (into-array Object (concat extra-values [(Integer. version) value])))) ;TODO - inefficient
+      (reduce [_ insertions alterations deletions] (- (count insertions) (count deletions)))
+      (apply [_ currentValue delta] (+ currentValue delta))
+      )
     ))
 
 (defn do-reduce-count
@@ -457,10 +452,10 @@
     ;; view upstream metamodel for arrival of results
     (connect
      src-metamodel
-     (proxy [View] []
-	    (update [insertions alterations deletions]
-		    (doall (map (fn [#^Update insertion]
-				    (f tgt-metamodel (.getNewValue insertion))) insertions)))))
+     (reify View
+       (update [_ insertions alterations deletions]
+         (doall (map (fn [#^Update insertion]
+                       (f tgt-metamodel (.getNewValue insertion))) insertions)))))
     tgt-metamodel))
 
 (defn dunion [& [model-name]]
@@ -546,7 +541,7 @@
   (str "split(" (or key "") ")"))
 
 (defn attach [model update-fn]
-     (connect model (proxy [View] [] (update [insertions alterations deletions] (update-fn insertions alterations deletions)))))
+     (connect model (reify View (update [_ insertions alterations deletions] (update-fn insertions alterations deletions)))))
 
 (defn dsplit2 [split-key split-key-fn]
   (fn [[src-metadata-fn direct-fn]]
