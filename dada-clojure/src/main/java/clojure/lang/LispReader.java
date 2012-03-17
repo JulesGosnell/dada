@@ -123,7 +123,7 @@ static void unread(PushbackReader r, int ch) {
 			}
 		catch(IOException e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 }
 
@@ -143,7 +143,7 @@ static public int read1(Reader r){
 		}
 	catch(IOException e)
 		{
-		throw Util.runtimeException(e);
+		throw Util.sneakyThrow(e);
 		}
 }
 
@@ -209,7 +209,7 @@ static public Object read(PushbackReader r, boolean eofIsError, Object eofValue,
 	catch(Exception e)
 		{
 		if(isRecursive || !(r instanceof LineNumberingPushbackReader))
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 		LineNumberingPushbackReader rdr = (LineNumberingPushbackReader) r;
 		//throw Util.runtimeException(String.format("ReaderError:(%d,1) %s", rdr.getLineNumber(), e.getMessage()), e);
 		throw new ReaderException(rdr.getLineNumber(), e);
@@ -1145,8 +1145,29 @@ public static List readDelimitedList(char delim, PushbackReader r, boolean isRec
 public static class CtorReader extends AFn{
 	public Object invoke(Object reader, Object firstChar){
 		PushbackReader r = (PushbackReader) reader;
+		Object name = read(r, true, null, false);
+                if (!(name instanceof Symbol)) 
+                        throw new RuntimeException("Reader tag must be a symbol");
+		Symbol sym = (Symbol)name;
+		return sym.getName().contains(".") ? readRecord(r, sym) : readTagged(r, sym);
+	}
 
-		Object recordName = read(r, true, null, false);
+	private Object readTagged(PushbackReader reader, Symbol tag){
+		Object o = read(reader, true, null, true);
+
+		ILookup data_readers = (ILookup)RT.DATA_READERS.deref();
+		IFn data_reader = (IFn)RT.get(data_readers, tag);
+		if(data_reader == null){
+                        data_readers = (ILookup)RT.DEFAULT_DATA_READERS.deref();
+                        data_reader = (IFn)RT.get(data_readers, tag);
+                        if(data_reader == null)
+                                throw new RuntimeException("No reader function for tag " + tag.toString());
+                }
+
+                return data_reader.invoke(o);
+	}
+
+        private Object readRecord(PushbackReader r, Symbol recordName){
 		Class recordClass = RT.classForName(recordName.toString());
 		char endch;
 		boolean shortForm = true;

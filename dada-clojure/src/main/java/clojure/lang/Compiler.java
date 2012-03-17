@@ -239,6 +239,29 @@ static final public Var INSTANCE = Var.intern(Namespace.findOrCreate(Symbol.inte
 static final public Var ADD_ANNOTATIONS = Var.intern(Namespace.findOrCreate(Symbol.intern("clojure.core")),
                                             Symbol.intern("add-annotations"));
 
+static final public Keyword disableLocalsClearingKey = Keyword.intern("disable-locals-clearing");
+static final public Keyword elideMetaKey = Keyword.intern("elide-meta");
+
+static final public Var COMPILER_OPTIONS = Var.intern(Namespace.findOrCreate(Symbol.intern("clojure.core")),
+                                                      Symbol.intern("*compiler-options*"), null).setDynamic();
+
+static public Object getCompilerOption(Keyword k){
+	return RT.get(COMPILER_OPTIONS.deref(),k);
+}
+
+static Object elideMeta(Object m){
+        Collection<Object> elides = (Collection<Object>) getCompilerOption(elideMetaKey);
+        if(elides != null)
+            {
+            for(Object k : elides)
+                {
+//                System.out.println("Eliding:" + k + " : " + RT.get(m, k));
+                m = RT.dissoc(m, k);
+                }
+//            System.out.println("Remaining: " + RT.keys(m));
+            }
+        return m;
+    }
 
 //Integer
 static final public Var LINE = Var.create(0).setDynamic();
@@ -461,11 +484,13 @@ static class DefExpr implements Expr{
 				}
 			IPersistentMap mm = sym.meta();
 			boolean isDynamic = RT.booleanCast(RT.get(mm,dynamicKey));
+			if(isDynamic)
+			   v.setDynamic();
             if(!isDynamic && sym.name.startsWith("*") && sym.name.endsWith("*") && sym.name.length() > 1)
                 {
                 RT.errPrintWriter().format("Warning: %1$s not declared dynamic and thus is not dynamically rebindable, "
-                                          +"but its name suggests otherwise. Please either indicate ^:dynamic %1$s or change the name.\n",
-                                           sym);
+                                          +"but its name suggests otherwise. Please either indicate ^:dynamic %1$s or change the name. (%2$s:%3$d)\n",
+                                           sym, SOURCE_PATH.get(), LINE.get());
                 }
 			if(RT.booleanCast(RT.get(mm, arglistsKey)))
 				{
@@ -488,6 +513,7 @@ static class DefExpr implements Expr{
 //					.without(Keyword.intern(null, "name"))
 //					.without(Keyword.intern(null, "added"))
 //					.without(Keyword.intern(null, "static"));
+            mm = (IPersistentMap) elideMeta(mm);
 			Expr meta = mm.count()==0 ? null:analyze(context == C.EVAL ? context : C.EXPRESSION, mm);
 			return new DefExpr((String) SOURCE.deref(), (Integer) LINE.deref(),
 			                   v, analyze(context == C.EVAL ? context : C.EXPRESSION, RT.third(form), v.sym.name),
@@ -769,8 +795,9 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 					{
 					if(returnType == int.class)
 						{
-						gen.visitInsn(I2L);
-						gen.invokeStatic(NUMBERS_TYPE, Method.getMethod("Number num(long)"));
+						gen.invokeStatic(INTEGER_TYPE, intValueOfMethod);
+//						gen.visitInsn(I2L);
+//						gen.invokeStatic(NUMBERS_TYPE, Method.getMethod("Number num(long)"));
 						}
 					else if(returnType == float.class)
 						{
@@ -874,10 +901,10 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 			Expr instance = null;
 			if(c == null)
 				instance = analyze(context == C.EVAL ? context : C.EXPRESSION, RT.second(form));
-			boolean maybeField = RT.length(form) == 3 &&
-			                     (RT.third(form) instanceof Symbol
-									|| RT.third(form) instanceof Keyword);
-			if(maybeField && !(RT.third(form) instanceof Keyword))
+
+			boolean maybeField = RT.length(form) == 3 && (RT.third(form) instanceof Symbol);
+
+			if(maybeField && !(((Symbol)RT.third(form)).name.charAt(0) == '-'))
 				{
 				Symbol sym = (Symbol) RT.third(form);
 				if(c != null)
@@ -885,11 +912,12 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 				else if(instance != null && instance.hasJavaClass() && instance.getJavaClass() != null)
 					maybeField = Reflector.getMethods(instance.getJavaClass(), 0, munge(sym.name), false).size() == 0;
 				}
+
 			if(maybeField)    //field
 				{
-				Symbol sym = (RT.third(form) instanceof Keyword)?
-				             ((Keyword)RT.third(form)).sym
-							:(Symbol) RT.third(form);
+				Symbol sym = (((Symbol)RT.third(form)).name.charAt(0) == '-') ?
+					Symbol.intern(((Symbol)RT.third(form)).name.substring(1))
+						:(Symbol) RT.third(form);
 				Symbol tag = tagOf(form);
 				if(c != null) {
 					return new StaticFieldExpr(line, c, munge(sym.name), tag);
@@ -1136,7 +1164,7 @@ static class StaticFieldExpr extends FieldExpr implements AssignableExpr{
 			}
 		catch(NoSuchFieldException e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		this.tag = tag;
 	}
@@ -1209,7 +1237,7 @@ static Class maybePrimitiveType(Expr e){
 		}
 	catch(Exception ex)
 		{
-		throw Util.runtimeException(ex);
+		throw Util.sneakyThrow(ex);
 		}
 	return null;
 }
@@ -2374,7 +2402,7 @@ public static class NewExpr implements Expr{
 				}
 			catch(Exception e)
 				{
-				throw Util.runtimeException(e);
+				throw Util.sneakyThrow(e);
 				}
 			}
 		return Reflector.invokeConstructor(c, argvals);
@@ -2532,7 +2560,7 @@ public static class IfExpr implements Expr, MaybePrimitiveExpr{
 			}
 		catch(Exception e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		if(emitUnboxed)
 			((MaybePrimitiveExpr)thenExpr).emitUnboxed(context, objx, gen);
@@ -3170,7 +3198,7 @@ static class StaticInvokeExpr implements Expr, MaybePrimitiveExpr{
 					}
 				catch(Exception ex)
 					{
-					throw Util.runtimeException(ex);
+					throw Util.sneakyThrow(ex);
 					}
 				}
 			IPersistentVector restArgs = RT.subvec(args,paramclasses.length - 1,args.count());
@@ -3692,7 +3720,7 @@ static public class FnExpr extends ObjExpr{
 			}
 		catch(IOException e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		fn.getCompiledClass();
 
@@ -4461,7 +4489,8 @@ static public class ObjExpr implements Expr{
 			if(value instanceof IObj && RT.count(((IObj) value).meta()) > 0)
 				{
 				gen.checkCast(IOBJ_TYPE);
-				emitValue(((IObj) value).meta(), gen);
+                Object m = ((IObj) value).meta();
+				emitValue(elideMeta(m), gen);
 				gen.checkCast(IPERSISTENTMAP_TYPE);
 				gen.invokeInterface(IOBJ_TYPE,
 				                    Method.getMethod("clojure.lang.IObj withMeta(clojure.lang.IPersistentMap)"));
@@ -4535,7 +4564,7 @@ static public class ObjExpr implements Expr{
 				}
 			catch(Exception e)
 				{
-				throw Util.runtimeException(e);
+				throw Util.sneakyThrow(e);
 				}
 		return compiledClass;
 	}
@@ -4549,7 +4578,7 @@ static public class ObjExpr implements Expr{
 			}
 		catch(Exception e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 	}
 
@@ -5049,7 +5078,7 @@ public static class FnMethod extends ObjMethod{
 			}
 		catch(Exception e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		finally
 			{
@@ -5113,7 +5142,7 @@ public static class FnMethod extends ObjMethod{
 			}
 		catch(Exception e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		finally
 			{
@@ -5427,7 +5456,7 @@ public static class LocalBinding{
 	public final String name;
 	public final boolean isArg;
     public final PathNode clearPathRoot;
-	public boolean canBeCleared = true;
+	public boolean canBeCleared = !RT.booleanCast(getCompilerOption(disableLocalsClearingKey));
 	public boolean recurMistmatch = false;
 
     public LocalBinding(int num, Symbol sym, Symbol tag, Expr init, boolean isArg,PathNode clearPathRoot)
@@ -6054,7 +6083,7 @@ public static class RecurExpr implements Expr{
 					}
 				catch(Exception e)
 					{
-					throw Util.runtimeException(e);
+					throw Util.sneakyThrow(e);
 					}
 				}
 			else
@@ -6257,7 +6286,7 @@ static public Var isMacro(Object op) {
 		return null;
 	if(op instanceof Symbol || op instanceof Var)
 		{
-		Var v = (op instanceof Var) ? (Var) op : lookupVar((Symbol) op, false);
+                Var v = (op instanceof Var) ? (Var) op : lookupVar((Symbol) op, false, false);
 		if(v != null && v.isMacro())
 			{
 			if(v.ns != currentNS() && !v.isPublic())
@@ -6473,7 +6502,7 @@ public static Object eval(Object form, boolean freshLoader) {
 		catch(Throwable e)
 			{
 			if(!(e instanceof RuntimeException))
-				throw Util.runtimeException(e);
+				throw Util.sneakyThrow(e);
 			throw (RuntimeException)e;
 			}
 		finally
@@ -6579,7 +6608,7 @@ static void addAnnotation(Object visitor, IPersistentMap meta){
 	}
 	catch (Exception e)
 		{
-		throw Util.runtimeException(e);
+		throw Util.sneakyThrow(e);
 		}
 }
 
@@ -6590,7 +6619,7 @@ static void addParameterAnnotation(Object visitor, IPersistentMap meta, int i){
 	}
 	catch (Exception e)
 		{
-		throw Util.runtimeException(e);
+		throw Util.sneakyThrow(e);
 		}
 }
 
@@ -6754,7 +6783,7 @@ static public Object maybeResolveIn(Namespace n, Symbol sym) {
 }
 
 
-static Var lookupVar(Symbol sym, boolean internNew) {
+static Var lookupVar(Symbol sym, boolean internNew, boolean registerMacro) {
 	Var var = null;
 
 	//note - ns-qualified vars in other namespaces must already exist
@@ -6783,7 +6812,7 @@ static Var lookupVar(Symbol sym, boolean internNew) {
 				//introduce a new var in the current ns
 				if(internNew)
 					var = currentNS().intern(Symbol.intern(sym.name));
-				}
+					}
 			else if(o instanceof Var)
 				{
 				var = (Var) o;
@@ -6793,9 +6822,12 @@ static Var lookupVar(Symbol sym, boolean internNew) {
 				throw Util.runtimeException("Expecting var, but " + sym + " is mapped to " + o);
 				}
 			}
-	if(var != null)
+	if(var != null && (!var.isMacro() || registerMacro))
 		registerVar(var);
 	return var;
+}
+static Var lookupVar(Symbol sym, boolean internNew) {
+    return lookupVar(sym, internNew, true);
 }
 
 private static void registerVar(Var var) {
@@ -6891,7 +6923,8 @@ public static Object load(Reader rdr, String sourcePath, String sourceName) {
 			       LINE_AFTER, pushbackReader.getLineNumber()
 			       ,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()
 					,RT.WARN_ON_REFLECTION, RT.WARN_ON_REFLECTION.deref()
-			));
+			       ,RT.DATA_READERS, RT.DATA_READERS.deref()
+                        ));
 
 	try
 		{
@@ -7016,6 +7049,7 @@ public static Object compile(Reader rdr, String sourcePath, String sourceName) t
 			       VARS, PersistentHashMap.EMPTY
 					,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()
 					,RT.WARN_ON_REFLECTION, RT.WARN_ON_REFLECTION.deref()
+					,RT.DATA_READERS, RT.DATA_READERS.deref()
 			   //    ,LOADER, RT.makeClassLoader()
 			));
 
@@ -7241,7 +7275,7 @@ static public class NewInstanceExpr extends ObjExpr{
 			//use array map to preserve ctor order
 			ret.closes = new PersistentArrayMap(closesvec);
 			ret.fields = fmap;
-			for(int i=fieldSyms.count()-1;i >= 0 && ((Symbol)fieldSyms.nth(i)).name.startsWith("__");--i)
+			for(int i=fieldSyms.count()-1;i >= 0 && (((Symbol)fieldSyms.nth(i)).name.equals("__meta") || ((Symbol)fieldSyms.nth(i)).name.equals("__extmap"));--i)
 				ret.altCtorDrops++;
 			}
 		//todo - set up volatiles
@@ -7320,7 +7354,7 @@ static public class NewInstanceExpr extends ObjExpr{
 			}
 		catch(IOException e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		ret.getCompiledClass();
 		return ret;
@@ -7830,7 +7864,7 @@ public static class NewInstanceMethod extends ObjMethod{
 			}
 		catch(Exception e)
 			{
-			throw Util.runtimeException(e);
+			throw Util.sneakyThrow(e);
 			}
 		finally
 			{
