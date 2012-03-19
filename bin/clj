@@ -22,12 +22,16 @@ file=$root/.clojure-classpath.txt
 
 if [ $root/pom.xml -nt $file ]
 then
-    rm -f $file
+    rm -f $file $file.2 $file.1
 fi
 
 if [ ! -f $file ]
 then
-    mvn -f $root/pom.xml dependency:build-classpath -Dmdep.outputFile=$file -DincludeScope=runtime
+    mvn -f $root/pom.xml dependency:build-classpath -Dmdep.outputFile=$file.2 -DincludeScope=runtime
+    cat $file.2 | tr ':' '\n' > $file.1
+    grep    '/dada/' $file.1 > $file
+    grep -v '/dada/' $file.1 >> $file
+    rm $file.[12]
 fi
 
 CLASSPATH=\
@@ -36,12 +40,12 @@ $root/src/main/clojure:\
 $root/src/main/resources:\
 $root/src/test/resources:\
 $root/target/classes:\
-`cat $file`
+`cat $file | tr '\n' ':'`
 
 echo $CLASSPATH | tr : \\n
 
 #JAVA_ARGS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n"
-JAVA_ARGS="-Xmx2048m -Djava.library.path=/usr/local/lib"
+JAVA_ARGS="-Xmx512m -Djava.library.path=/usr/local/lib"
 
 #M2_REPO=$HOME/.m2/repository
 #SPRING_VERSION=3.0.3.RELEASE

@@ -1,12 +1,16 @@
 #!/bin/sh -x
 
+server="$1"
+if [ -z "$server" ]
+then
+    server=localhost
+fi
+
 M2_REPO=$HOME/.m2/repository
 
 nodename=`uname -n`
 name=`basename $nodename .home`
 jvmID=$name"_"$$
-
-server=localhost
 
 cd dada-swt
 
@@ -14,6 +18,6 @@ exec java\
  -Dserver.name=$server \
  -Dclojure.jvmID=$jvmID \
  -Dclojure.class.url=http://$server:8888/ \
- -cp ./target/classes:`cat ./.clojure-classpath.txt` \
+ -cp ./target/classes:`cat ./.clojure-classpath.txt | tr '\n' ':'` \
  org.dada.swt.client \
  $@
