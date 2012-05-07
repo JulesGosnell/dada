@@ -20,7 +20,7 @@
   <description>DADA/SWT Integration</description>
 
   <properties> 
-    <nattable.version>2.3.1.1</nattable.version>
+    <nattable.version>2.3.2</nattable.version>
     <glazedlists.version>1.8.0</glazedlists.version>
   </properties>
   
