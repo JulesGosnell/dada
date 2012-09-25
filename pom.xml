@@ -63,18 +63,18 @@
     <repository>
       <id>ouroboros</id>
       <name>Jules' Home Repository</name>
-      <url>http://ouroboros.dyndns-free.com/maven/libs-snapshots-local</url>
+      <url>http://ouroboros.dyndns-free.com/maven/libs-snapshot-local</url>
     </repository>
   </distributionManagement>
 
   <repositories>
     <repository>
       <id>ouroboros-cache</id>
-      <url>http://ouroboros.dyndns-free.com/maven/repos</url>
+      <url>http://ouroboros.dyndns-free.com/maven/repo</url>
     </repository>
     <repository>
       <id>ouroboros-ext</id>
-      <url>http://ouroboros.dyndns-free.com/maven/ext-releases-local</url>
+      <url>http://ouroboros.dyndns-free.com/maven/ext-release-local</url>
     </repository>
     <repository>  <!-- clojure, clojure-contrib: nightly -->
       <id>clojure-releases</id>
