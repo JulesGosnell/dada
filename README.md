@@ -4,21 +4,27 @@ DADA
 I've tested building on various i386 and x86_64 Java/Linux platforms.
 
 ## build DADA
+<pre>
 git clone https://github.com/JulesGosnell/dada.git
 cd dada
 mvn clean install
+</pre>
 
-## (in one shell) start DADA Whales demo
+## (in one shell) start DADA Whales Demo Server
+<pre>
 cd dada/dada-demo
 ../bin/clj
 (load-file "src/main/clojure/org/dada/demo/whales.clj")
+</pre>
 
 ## (in another shell) start DADA Client GUI
+<pre>
 cd dada/dada-swt
 ../bin/clj
 
 cd ..
 ./bin/client
+</pre>
 
 You should now be looking at DADA's MetaModel - it's Model of Models.
 Click on Whales
