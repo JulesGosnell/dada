@@ -53,11 +53,11 @@
 (if (not *compile-files*)
   (insert-n
    oceans-model
-   [(Ocean. "arctic"   0 0        17880)
+   [(Ocean. "arctic"   0 14060000 17880)
     (Ocean. "atlantic" 0 41100000 28232)
     (Ocean. "indian"   0 28350000 23808)
     (Ocean. "pacific"  0 64100000 35797)
-    (Ocean. "southern" 0 0        23737)]))
+    (Ocean. "southern" 0 20330000 23737)]))
 
 ;;--------------------------------------------------------------------------------
 ;; Whales
