@@ -3,6 +3,13 @@ DADA
 
 I've tested building on various i386 and x86_64 Java/Linux platforms.
 
+For a demo of DADA please follow the instructions below. The demo
+domain is whale sightings (I am fascinated by whales), however DADA is
+generic enough to slice, dice and aggregate pretty much anything in
+realtime. At the bank at which I currently work, it is being used by
+Treasury to project 6 month cash trade settlement ladders and
+highlight late amendments.
+
 ## Build DADA
 <pre>
 git clone https://github.com/JulesGosnell/dada.git
@@ -82,7 +89,7 @@ Click on Whales:ocean.sum(:weight).union()
 
  - This Model carries the final result of the query you have just entered
  - Thw Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
- - As the weights and ocean attributes of Whales change over time, so does his model
+ - As the weights and ocean attributes of Whales change over time, so does this model
 
 Click on Whales.split(:ocean=arctic)
 
