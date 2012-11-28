@@ -1,7 +1,9 @@
 DADA
 ====
 
-I've tested building on various i386 and x86_64 Java/Linux platforms.
+I've tested building on various i386 and x86_64 Java/Linux
+platforms. You will need a recent JDK and Maven (and probably
+JAVA_HOME and MAVEN_HOME set).
 
 For a demo of DADA please follow the instructions below. The demo
 domain is whale sightings (I am fascinated by whales), however DADA is
@@ -92,7 +94,7 @@ Click on WhalesAndOceans
 Click on Whales:ocean.sum(:weight).union()
 
  - This Model carries the final result of the query you have just entered
- - Thw Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
+ - The Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
  - As the weights and ocean attributes of Whales change over time, so does this model
 
 Click on Whales.split(:ocean=arctic)
