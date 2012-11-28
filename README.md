@@ -42,11 +42,21 @@ Click on Oceans
 
 Click on WhalesAndOceans
 
- - This model demonstrates DADA's ability to join to live streams
- - Each Whales is shown joined to its corresponding Ocean
+ - This model demonstrates DADA's ability to join live streams
+ - Each Whale is shown joined to its corresponding Ocean
  - Whale and Ocean attribute changes are reflected in realtime in WhalesAndOceans
 
 If you like what you see, get in touch and I will write some more doc :-)
 
 DADA is a POC, allowing me to learn about Event Stream Processing in
 Clojure from the inside, not (yet) production software.
+
+Clojure is an ideal platform on which to implement ESP - A functional
+approach, sequence comprehension, simple concurrency, persistant
+containers and immutable record types.
+
+The only serious change that I had to make to Clojure was enabling the
+recording of dynamically created classes on the server and their
+on-demand loading into a client. This allows me to create models
+containing new types server-side, and then view them in a running
+client.
