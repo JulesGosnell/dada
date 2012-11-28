@@ -58,5 +58,5 @@ containers and immutable record types.
 The only serious change that I had to make to Clojure was enabling the
 recording of dynamically created classes on the server and their
 on-demand loading into a client. This allows me to create models
-containing new types server-side, and then view them in a running
-client.
+containing new types and functions server-side, and then view them in
+a running client.
