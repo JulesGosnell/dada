@@ -71,8 +71,9 @@ Click on WhalesAndOceans
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhalesAndOceans.gif)
 
 
- - This model demonstrates DADA's ability to join live streams
- - Each Whale is shown joined to its corresponding Ocean
+ - The WhalesAndOceans model is derived from the Whales and Oceans models by a query.
+ - This model demonstrates DADA's ability to join live streams in real time
+ - Each Whale is shown joined to its current Ocean (which may change over time)
  - Whale and Ocean attribute changes are reflected in realtime in WhalesAndOceans
 
 ## In DADA Whales Demo Server shell
@@ -106,6 +107,8 @@ Click on WhalesAndOceans
 </pre>
 
  - You should see a number of new Models leap into existence in the MetaModel
+ - These models are derived from the inital Whales and Ocean models via the query above
+ - Intermediate models are maintained so that they may also be viewed
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/MetaModel2.gif)
@@ -117,7 +120,7 @@ Click on Whales:ocean.sum(:weight).union()
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhaleWeightSummedByOcean.gif)
 
 
- - This Model carries the final result of the query you have just entered
+ - This Model carries the ultimate result of the query you have just entered
  - The Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
  - As the weights and ocean attributes of Whales change over time, so does this model
 
@@ -127,7 +130,7 @@ Click on Whales.split(:ocean=arctic)
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ArcticWhales.gif)
 
 
- - This is a partial result of the above query.
+ - This is a intermediate result contributing to the ultimate result above.
  - It represents the real time set of all Whales currently in the Arctic.
 
 Click on Whales.split(:ocean=arctic).sum(:weight)
@@ -136,7 +139,7 @@ Click on Whales.split(:ocean=arctic).sum(:weight)
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ActicWhalesTotalWeight.gif)
 
 
- - This is a partial result of the above query.
+ - This is a intermediate result drawing upon another intermediate result and contributing to the ultimate result above.
  - It represents the real time sum of the weight of all Whales currently in the Arctic.
 
 If you like what you see, get in touch and I will write some more doc :-)
