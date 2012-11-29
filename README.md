@@ -42,7 +42,7 @@ cd ..
 You should now be looking at DADA's MetaModel - it's Model of Models.
 
 
-![Alt text](images/MetaModel.gif)
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/MetaModel.gif)
 
 
 Click on Whales
