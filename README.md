@@ -107,7 +107,15 @@ Click on WhalesAndOceans
 
  - You should see a number of new Models leap into existence in the MetaModel
 
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/MetaModel2.gif)
+
+
 Click on Whales:ocean.sum(:weight).union()
+
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhaleWeightSummedByOcean.gif)
+
 
  - This Model carries the final result of the query you have just entered
  - The Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
@@ -115,10 +123,18 @@ Click on Whales:ocean.sum(:weight).union()
 
 Click on Whales.split(:ocean=arctic)
 
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ArcticWhales.gif)
+
+
  - This is a partial result of the above query.
  - It represents the real time set of all Whales currently in the Arctic.
 
 Click on Whales.split(:ocean=arctic).sum(:weight)
+
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ActicWhalesTotalWeight.gif)
+
 
  - This is a partial result of the above query.
  - It represents the real time sum of the weight of all Whales currently in the Arctic.
