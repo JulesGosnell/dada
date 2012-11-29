@@ -41,6 +41,10 @@ cd ..
 
 You should now be looking at DADA's MetaModel - it's Model of Models.
 
+
+![Alt text](images/MetaModel.gif)
+
+
 Click on Whales
 
  - The Whales model should open
