@@ -47,17 +47,29 @@ You should now be looking at DADA's MetaModel - it's Model of Models.
 
 Click on Whales
 
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/Whales.gif)
+
+
  - The Whales model should open
  - This demo imitates a live feed of whale sightings
  - A whale's attributes (except type) may vary from sighting to sighting
 
 Click on Oceans
 
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/Oceans.gif)
+
+
  - The Oceans model should open
  - This model imitates a live feed of ocean samplings
  - An ocean's attributes may vary from sample to sample
 
 Click on WhalesAndOceans
+
+
+![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhalesAndOceans.gif)
+
 
  - This model demonstrates DADA's ability to join live streams
  - Each Whale is shown joined to its corresponding Ocean
