@@ -1,7 +1,7 @@
 (ns org.dada.core.test-clojure
     (:use 
      [clojure test]
-     [clojure.contrib math]
+     [clojure.math.numeric-tower]
      )
     )
 
@@ -57,8 +57,8 @@
 ;;       (is (faster 100000000 (Value. 0) (.newInstance c a))))))
 
 ;; is accessing a record attribute using dot notation comparable in speed to dot notation method invocation ?
-(deftest test-record-access-vs-pojo-method
-  (let [^Value r (Value. 0)] (is (similar 100000000 30 (.v r)(.getClass r)))))
+;; (deftest test-record-access-vs-pojo-method
+;;   (let [^Value r (Value. 0)] (is (similar 100000000 30 (.v r)(.getClass r)))))
 
 ;; is accessing a record attribute faster by dot notation than by keyward ?
 ;; looks like it is currently 5x faster...
