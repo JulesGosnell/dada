@@ -97,9 +97,9 @@
 
 ;; reading an int out of a record is about 2x as slow as reading an
 ;; Integer - I guess that this is due to autoboxing...
-(if (not (ibm?))
-  (deftest record-int-vs-integer
-    (let [f (Foo. 1) b (Bar. 1)] (is (slower 1000000000 (.a f) (.a b))))))
+;; (if (not (ibm?))
+;;   (deftest record-int-vs-integer
+;;     (let [f (Foo. 1) b (Bar. 1)] (is (slower 1000000000 (.a f) (.a b))))))
 
 ;; interesting - reading an int out of a record and pssing it into
 ;; another fn (causing it to be auto-boxed) is still 5-10x faster than
