@@ -107,7 +107,7 @@ Click on WhalesAndOceans
 </pre>
 
  - You should see a number of new Models leap into existence in the MetaModel
- - These models are derived from the inital Whales and Ocean models via the query above
+ - These models are derived from the inital Whales and Oceans models via the query above
  - Intermediate models are maintained so that they may also be viewed
 
 
