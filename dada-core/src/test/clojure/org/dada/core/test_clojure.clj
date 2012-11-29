@@ -79,10 +79,10 @@
 
 ;; (deftest assoc-vs-conj
 ;;   (is (let [n 1000000 i (range n)]
-;;         (faster
-;;          1
-;;          (reduce (fn [r i] (assoc r i i)) {} i)
-;;          (reduce (fn [r i] (conj r [i i])) {} i)))))
+;; 	(faster
+;; 	 1
+;; 	 (reduce (fn [r i] (conj r [i i])) {} i)
+;; 	 (reduce (fn [r i] (assoc r i i)) {} i)))))
 
 ;; There does not seem to be much difference between record attribute
 ;; access via dot notation and array access via index. Perhaps rows
@@ -212,9 +212,10 @@
 
 (deftest records
   ;; is it better to modify a record multiple times or to reconstruct it from scratch ?
+  ;; it looks like it can be faster to recreate it (but uses more memory?)
   (let [^Rec rec (Rec. 1 2 3)]
     (is (faster 
          1000000
          (Rec. (.c rec) (.b rec) (.a rec))
-         (assoc (assoc rec :a (.c rec)) :c (.a rec))
+         (assoc rec :a (.c rec) :c (.a rec))
          ))))  
