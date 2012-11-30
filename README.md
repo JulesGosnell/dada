@@ -61,9 +61,9 @@ Click on the Oceans Model.
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/Oceans.gif)
 
 
- - A View of the Oceans model should open (you can open as many as you like)
- - This model contains a live feed of Ocean samplings
- - An ocean's attributes may vary from sample to sample
+ - A View of the Oceans Model should open (you can open as many as you like)
+ - This Model contains a live feed of Ocean samplings
+ - An Ocean's attributes may vary from sample to sample
 
 Click on the WhalesAndOceans Model.
 
