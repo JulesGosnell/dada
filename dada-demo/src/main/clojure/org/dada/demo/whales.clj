@@ -9,6 +9,9 @@
  (:import
   [clojure.lang
    Keyword]
+  [java.math
+   BigDecimal
+   ]
   [java.util
    Collection
    Date
@@ -72,8 +75,8 @@
      ^{:tag String}                  reporter
      ^{:tag clojure.lang.Keyword :immutable true} type
      ^{:tag String}                  ocean
-     ^{:tag float}                   length
-     ^{:tag float}                   weight]
+     ^{:tag int}                     length
+     ^{:tag int}                     weight]
     (fn [^Integer lhs ^Integer rhs] (- (int lhs) (int rhs))))
 
 (def ^Model whales-model (model "Whales" whale-metadata))
@@ -321,8 +324,8 @@
        (rnd reporters)
        (rnd types)
        (rnd oceans)
-       (float (/ (rand-int max-length-x-100) 100))
-       (float (/ (rand-int max-weight-x-100) 100)))))
+       (int (/ (rand-int max-length-x-100) 100))
+       (int (/ (rand-int max-weight-x-100) 100)))))
 
 
 ;; (def some-whales
@@ -351,8 +354,8 @@
     [^{:tag int :primary-key true}   id
      ^{:tag int :version-key true}   version
      ^{:tag clojure.lang.Keyword :immutable true} type
-     ^{:tag float}                   length
-     ^{:tag float}                   weight
+     ^{:tag int}                     length
+     ^{:tag int}                     weight
      ^{:tag String}                  ocean
      ^{:tag int}                     ocean-area
      ^{:tag int}                     ocean-max-depth]
@@ -366,8 +369,8 @@
   (^int id [this] id)
   (^int version [this] version)
   (^clojure.lang.Keyword type [this] (.type whale))
-  (^float length [this] (.length whale))
-  (^float weight [this] (.weight whale))
+  (^int length [this] (.length whale))
+  (^int weight [this] (.weight whale))
   (^String ocean [this] (.id ocean))
   (^int ocean-area [this] (.area ocean))
   (^int ocean-max-depth [this] (.max-depth ocean)))
