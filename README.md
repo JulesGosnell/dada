@@ -78,31 +78,9 @@ Click on WhalesAndOceans
 
 ## In DADA Whales Demo Server shell
 <pre>
-(ns 
- ^{:author "Jules Gosnell" :doc "Demo domain for DADA"}
- org.dada.demo.whales
- (:use
-  [clojure set]
-  [org.dada core]
-  [org.dada.core dql]
-  [org.dada.demo server])
- (:import
-  [clojure.lang
-   Keyword]
-  [java.util
-   Collection
-   Date
-   NavigableSet
-   TreeSet
-   ]
-  [org.dada.core
-   Attribute
-   JoinModel
-   Model
-   ]
-  )
- )
-
+;; select namespace
+(ns org.dada.demo.whales)
+;; run query
 (? (dunion)(dsum :weight)(dsplit :ocean)(dfrom "Whales"))
 </pre>
 
