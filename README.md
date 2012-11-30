@@ -45,38 +45,38 @@ You should now be looking at DADA's MetaModel - it's Model of Models.
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/MetaModel.gif)
 
 
-Click on Whales
+Click on the Whales Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/Whales.gif)
 
 
- - The Whales model should open
- - This demo imitates a live feed of whale sightings
+ - A View of the Whales Model should open (you can open as many as you like)
+ - This Model contains a live feed of whale sightings
  - A whale's attributes (except type) may vary from sighting to sighting
 
-Click on Oceans
+Click on the Oceans Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/Oceans.gif)
 
 
- - The Oceans model should open
- - This model imitates a live feed of ocean samplings
+ - A View of the Oceans model should open (you can open as many as you like)
+ - This model contains a live feed of Ocean samplings
  - An ocean's attributes may vary from sample to sample
 
-Click on WhalesAndOceans
+Click on the WhalesAndOceans Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhalesAndOceans.gif)
 
 
- - The WhalesAndOceans model is derived from the Whales and Oceans models by a query.
- - This model demonstrates DADA's ability to join live streams in real time
+ - The WhalesAndOceans Model is derived from the Whales and Oceans Models by a query
+ - This query demonstrates DADA's ability to join live streams/Models in real time
  - Each Whale is shown joined to its current Ocean (which may change over time)
- - Whale and Ocean attribute changes are reflected in realtime in WhalesAndOceans
+ - Whale and Ocean attribute changes are reflected in realtime in the WhalesAndOceans Model
 
-## In DADA Whales Demo Server shell
+## In DADA Whales Demo Server shell/repl:
 <pre>
 ;; select namespace
 (ns org.dada.demo.whales)
@@ -85,52 +85,52 @@ Click on WhalesAndOceans
 </pre>
 
  - You should see a number of new Models leap into existence in the MetaModel
- - These models are derived from the inital Whales and Oceans models via the query above
- - Intermediate models are maintained so that they may also be viewed
+ - These Models are derived from the inital Whales and Oceans models via the query above
+ - Intermediate Models are maintained so that they may also be viewed
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/MetaModel2.gif)
 
 
-Click on Whales:ocean.sum(:weight).union()
+Click on the Whales:ocean.sum(:weight).union() Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/WhaleWeightSummedByOcean.gif)
 
 
- - This Model carries the ultimate result of the query you have just entered
- - The Whales have been grouped by Ocean and the weight of Whales in each Ocean summed up.
- - As the weights and ocean attributes of Whales change over time, so does this model
+ - This Model maintains the ultimate result of the query that you have just entered
+ - The Whales have been grouped by Ocean and the weight of Whales in each of these groups summed up.
+ - As the weight and ocean attributes of the Whales change over time, so does this Model
 
-Click on Whales.split(:ocean=arctic)
+Click on the Whales.split(:ocean=arctic) Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ArcticWhales.gif)
 
 
- - This is a intermediate result contributing to the ultimate result above.
- - It represents the real time set of all Whales currently in the Arctic.
+ - This is an intermediate Model contributing to the ultimate Model above.
+ - It maintains the real time set of all Whales currently in the Arctic.
 
-Click on Whales.split(:ocean=arctic).sum(:weight)
+Click on the Whales.split(:ocean=arctic).sum(:weight) Model.
 
 
 ![Alt text](https://raw.github.com/JulesGosnell/dada/master/images/ActicWhalesTotalWeight.gif)
 
 
- - This is a intermediate result drawing upon another intermediate result and contributing to the ultimate result above.
+ - This is a intermediate Model drawing upon another intermediate Model and contributing to the ultimate Model above.
  - It represents the real time sum of the weight of all Whales currently in the Arctic.
 
-If you like what you see, get in touch and I will write some more doc :-)
-
-DADA is a POC, allowing me to learn about Event Stream Processing in
-Clojure from the inside, not (yet) production software.
+DADA is a proof of concept, allowing me to learn about Event Stream
+Processing in Clojure from the inside, not (yet) production software.
 
 Clojure is an ideal platform on which to implement ESP - A functional
 approach, sequence comprehension, simple concurrency, persistant
 containers and immutable record types.
 
-The only serious change that I had to make to Clojure was enabling the
-recording of dynamically created classes on the server and their
-on-demand loading into a client. This allows me to create models
-containing new types and functions server-side, and then view them in
-a running client.
+The only serious change that I have had to make to Clojure is enabling
+the recording of dynamically created classes on the server and their
+on-demand loading into a client. This allows me to run queries
+server-side which create new functions and types and then to have
+these pulled into the running client when needed to view the resultant
+Models.
+
