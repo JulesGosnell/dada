@@ -490,3 +490,9 @@
     ;; (? (dsplit :type list [(dunion)(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales"))
 
     ))
+
+;; TODO:
+;; - defmodel
+;; - djoin
+;; - dpivot
+;; - fix remaining broken queries
