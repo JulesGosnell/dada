@@ -219,3 +219,10 @@
          (Rec. (.c rec) (.b rec) (.a rec))
          (assoc rec :a (.c rec) :c (.a rec))
          ))))  
+
+(deftest test-destructure
+  (let [^Rec r (Rec. 1 2 3)]
+    (is (faster
+	 1000000
+	 (let [a (.a r) b (.b r) c (.c r)] (+ a b c))
+	 (let [{a :a b :b c :c} r] (+ a b c))))))
