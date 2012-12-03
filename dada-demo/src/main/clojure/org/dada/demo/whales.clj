@@ -417,241 +417,76 @@
     (animate oceans-model animation-delay)))
 
 ;;--------------------------------------------------------------------------------
-;; Join scratch area
-;;--------------------------------------------------------------------------------
-
-;; (if false
-;;   (do
-
-;;     (inspect (? (dfrom "Whales")))
-;;     (inspect (? (dfrom "Oceans")))
-;;     (inspect (? (dfrom "WhalesAndOceans")))
-
-;;     (insert oceans-model (Ocean. "arctic"   1000000 99999999 17880))
-;;     (insert oceans-model (Ocean. "southern" 1000000  10000000 23737))
-
-;;     (insert whales-model (Whale. 50 3011 (Date. 0 1 1) "jules" "blue whale" "atlantic" 100 100))
-;;     (delete whales-model (Whale. 50 3100 (Date. 0 1 1) "jules" "blue whale" "seaworld" 100 100))
-;;     (.find whales-model 10000)
-
-;;     ))
-
-;;--------------------------------------------------------------------------------
-;; DSL experimentation
-;;--------------------------------------------------------------------------------
-
-;;(? (split :type)(from "Whales"))
-;;(? (split :ocean nil [(ccount)])(from "Whales"))
-;;(? (pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean)(from "Whales"))
-
-
-;; (if false
-;;   (do
-    
-;;     ;; all whales
-;;     (inspect (? (dfrom "Whales")))
-
-;;     ;; count all whales
-;;     (inspect (? (dcount)(dfrom "Whales")))
-
-;;     ;; sum length of all whales
-;;     (inspect (? (dsum :length)(dfrom "Whales")))
-
-;;     ;; we're only interested in toothed whales
-;;     (inspect (? (dsplit :type (fn [type] (if (isa? whale-hierarchy :odontoceti type) [:odontoceti] []))) (dfrom "Whales")))
-
-;;     ;; we're only interested in rorquals
-;;     (inspect (? (dsplit :type (fn [type] (if (isa? whale-hierarchy :balaenopteridae type) [:balaenopteridae] []))) (dfrom "Whales")))
-
-;;     ;; split by suborder
-;;     (do
-;;       (def whale-hierarchy-children
-;; 	(reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
-      
-;;       (def whale-type-to-suborder
-;; 	(reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children (whale-hierarchy-children type))])) {} types))
-      
-;;       (inspect (? (dsplit :type (fn [type] [(whale-type-to-suborder type)])) (dfrom "Whales"))))
-    
-;;     ;; split by family
-;;     (do
-;;       (def whale-hierarchy-children
-;; 	(reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
-      
-;;       (def whale-type-to-family
-;; 	(reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children type)])) {} types))
-      
-;;       (inspect (? (dsplit :type (fn [type] [(whale-type-to-family type)])) (dfrom "Whales"))))
-
-;;     ;; split by ocean
-;;     (inspect (? (dsplit :ocean)(dfrom "Whales")))
-;;     (inspect (? (dsplit :ocean)(dfrom "WhalesAndOceans")))
-
-;;     ;; flat split by type then ocean
-;;     (inspect (? (dsplit :ocean)(dsplit :type)(dfrom "Whales")))
-
-;;     ;; nested split by type then ocean
-;;     (inspect (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales")))
-
-;;     (inspect (? (dsplit :type list [(dunion)(dsplit :ocean)])(dfrom "Whales")))
-
-;;     ;; sum weights per ocean
-;;     (inspect (? (dsum :weight)(dsplit :ocean)(dfrom "Whales")))
-
-;;     ;; summarise weights per ocean
-;;     (inspect (? (dunion)(dsum :weight)(dsplit :ocean)(dfrom "Whales")))
-;;     ;; summarise weights per type
-;;     (inspect (? (dunion)(dsum :weight)(dsplit :type)(dfrom "Whales")))
-
-;;     ;; pivot weights per ocean summary
-;;     (inspect (? (dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean) (dfrom "Whales")))
-
-;;     ;; for each type - pivot weights per ocean summary
-;;     (inspect (? (dsplit :type list [(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales")))
-
-;;     (inspect (? (dsplit :type list [(dunion)(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales")))
-
-;; ;; TODO
-;; ;; split multiple dimensions at same time...
-;; ;; reduce multiple columns at same time...
-;; ;; rethink pivot 
-;; ;; support adding/deleting UI rows
-;; ;; support updating UI rows
-
-;;   ;;(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )]) (from "Whales"))
-;;   ;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )]) (from "Whales"))
-
-;;   ;; weight/ocean/type
-;;   ;;(inspect (? (dsplit :type nil [(dpivot :ocean oceans (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :ocean )])(dfrom "Whales")))
-  
-;;   ;; weight/type/ocean
-;;   ;;(inspect (? (dsplit :ocean nil [(dpivot :type types (keyword (sum-value-key :weight)))(dsum :weight)(dsplit :type )])(dfrom "Whales")))
-
-;;     ))
 
 (if false
   (do
     
-    ;;(start-server)
+    ;; all whales
+    (? (dfrom "Whales"))
 
-    (def ^Collection some-years (map #(Date. % 0 1) (range num-years)))
-    (def ^NavigableSet years (TreeSet. some-years))
+    ;; count all whales
+    (? (dcount)(dfrom "Whales"))
 
-    (defn by-year [^Date time] (list (or (.lower years time) time)))
+    ;; sum length of all whales
+    (? (dsum :length)(dfrom "Whales"))
 
-    ;; (? (from "Whales"))
+    ;; we're only interested in toothed whales
+    (? (dsplit :type (fn [type] (if (isa? whale-hierarchy :odontoceti type) [:odontoceti] []))) (dfrom "Whales"))
 
-    ;; (? (union)(from "Whales"))
-    ;; (? (ccount)(from "Whales"))
-    ;; (? (sum :weight)(from "Whales"))
+    ;; we're only interested in rorquals
+    (? (dsplit :type (fn [type] (if (isa? whale-hierarchy :balaenopteridae type) [:balaenopteridae] []))) (dfrom "Whales"))
 
-    ;; (? (split :type)(from "Whales"))
+    ;; split by suborder
+    (do
+      (def whale-hierarchy-children
+	   (reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
+      
+      (def whale-type-to-suborder
+	   (reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children (whale-hierarchy-children type))])) {} types))
+      
+      (? (dsplit :type (fn [type] [(whale-type-to-suborder type)])) (dfrom "Whales"))
+      )
+    
+    ;; split by family
+    (do
+      (def whale-hierarchy-children
+	   (reduce (fn [reduction [key vals]] (reduce (fn [reduction val] (conj reduction [val key])) reduction vals)) {} (whale-hierarchy :parents)))
+      
+      (def whale-type-to-family
+	   (reduce (fn [reduction type] (conj reduction [type (whale-hierarchy-children type)])) {} types))
+      
+      (? (dsplit :type (fn [type] [(whale-type-to-family type)])) (dfrom "Whales")))
 
-    ;; (? (ccount)(ccount)(from "Whales"))
-    ;; (? (union)(union)(from "Whales"))
-    ;; (? (ccount)(union)(from "Whales"))
-    ;; (? (sum :weight)(union)(from "Whales"))
-    ;; (? (union)(ccount)(from "Whales"))
-    ;; (? (union)(split :type)(from "Whales"))
-    ;; (? (ccount)(split :type)(from "Whales"))
-    ;; (? (split :time)(split :type)(from "Whales"))
+    ;; split by ocean
+    (? (dsplit :ocean)(dfrom "Whales"))
+    
+    ;; TODO - doesn't work...
+    ;; (? (dsplit :ocean)(dfrom "WhalesAndOceans"))
 
-    ;; (? (ccount)(split :time)(split :type)(from "Whales"))
-    ;; (? (union)(split :time)(split :type)(from "Whales"))
-    ;; (? (split :length)(split :time)(split :type)(from "Whales"))
+    ;; flat split by type then ocean
+    (? (dsplit :ocean)(dsplit :type)(dfrom "Whales"))
 
-    ;; (? (split :type nil [(ccount)]) (from "Whales"))
-    ;; (? (split :type nil [(split :time)]) (from "Whales"))
-    ;; (? (split :type nil [(split :time nil [(split :length)])]) (from "Whales"))
+    ;; nested split by type then ocean
+    (? (dsplit :type list [(dsplit :ocean)])(dfrom "Whales"))
 
-    ;; (? (split :type nil [(ccount)(split :time)]) (from "Whales"))
-    ;; (? (split :type nil [(split :time nil)(split :length)]) (from "Whales"))
+    ;; TODO - what is this meant to do ?
+    ;; (? (dsplit :type list [(dunion)(dsplit :ocean)])(dfrom "Whales"))
 
-    ;; (? (split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)]) (from "Whales"))
+    ;; sum weights per ocean
+    (? (dsum :weight)(dsplit :ocean)(dfrom "Whales"))
 
-    ;; (? (union "count/type/year")(split :type nil [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])(from "Whales"))
+    ;; summarise weights per ocean
+    (? (dunion)(dsum :weight)(dsplit :ocean)(dfrom "Whales"))
+    ;; summarise weights per type
+    (? (dunion)(dsum :weight)(dsplit :type)(dfrom "Whales"))
 
-    ;;(? (union "count/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (count-value-key nil)))(ccount)(split :ocean )])(from "Whales"))
+    ;; TODO - pivot broken
 
-    ;; (? (union "sum(weight)/type/ocean")(split :type nil [(pivot :ocean oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )])(from "Whales"))
+    ;; pivot weights per ocean summary
+    ;; (? (dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean) (dfrom "Whales"))
 
-    ;;(? (union "count/ocean/type")(split :ocean nil [(pivot :type types (keyword (count-value-key nil)))(ccount)(split :type )])(from "Whales"))
-
-    ;; (? (union "sum(weight)/ocean/type")(split :ocean nil [(pivot :type types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
-
-    ;; (def subquery [(pivot :time years (keyword (count-value-key nil)))(ccount)(split :time by-year)])
-
-    ;; (? (split :ocean nil [(union)(split :type nil subquery)])(from "Whales"))
-
-    ;; (? (union)(split :ocean nil subquery)(from "Whales"))
-
-    ;; (? 
-    ;;      (pivot :time years (keyword (count-value-key nil)))
-    ;;      (split :time by-year [(ccount)])] (from "Whales"))
-
-    ;; (? (ccount)(from "Whales"))
-
-    ;; these queries seem to just be too big to run with a resonably sized dataset on my home box ...
-
-    ;; (? (split :reporter nil [(split :ocean nil [(union)(split :type nil subquery)])])(from "Whales"))
-
-    ;; (? (split :reporter nil [(union)(split :ocean nil subquery)])(from "Whales"))
-
-    ;; (? (split :reporter nil [
-    ;; 			   (pivot :time years (keyword (count-value-key nil)))
-    ;; 			   (split :time by-year [(ccount)])])] (from "Whales"))
+    ;; for each type - pivot weights per ocean summary
+    ;; (? (dsplit :type list [(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales"))
+    ;; (? (dsplit :type list [(dunion)(dpivot :ocean ["arctic" "atlantic" "indian" "pacific" "southern"] (keyword "sum(:weight)")) (dsum :weight) (dsplit :ocean)]) (dfrom "Whales"))
 
     ))
-
-;; rescued from swt/new.clj
-
-;; (if false
-;;   (do
-;;     ;; set up a test model
-
-;;     (def whale-data
-;; 	 ;;[id, version, type, ocean, length]
-;; 	 [[0 0 :blue :atlantic 100]
-;; 	  [1 0 :blue :pacific  100]
-;; 	  [2 0 :grey :atlantic 50]
-;; 	  [3 0 :grey :pacific  50]])
-
-;;     (def whales (model "Whales" (seq-metadata (count (first whale-data)))))
-;;     (insert *metamodel* whales)
-;;     (insert-n whales whale-data)
-
-;;     (inspect (? (dfrom "Whales")))
-;;     (inspect (? (dcount)(dfrom "Whales")))
-;;     (inspect (? (dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dcount)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dsum 4)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dcount)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-;;     (inspect (? (dunion)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dcount)(dunion)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dcount)(dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-;;     (inspect (? (dsplit 3)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dunion)(dsplit 3)(dsplit 2)(dfrom "Whales")))
-;;     (inspect (? (dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-;;     (inspect (? (dunion)(dsplit 2 list [(dsplit 3)])(dfrom "Whales")))
-;;     (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-    
-;;     ;; needs tidying up...
-;;     (inspect (? (dfrom "Whales")))
-;;     (inspect (? (dunion)(dsplit 2)(dsplit 3)(dfrom "Whales")))
-;;     (inspect (? (dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-
-;;     ;; needs fixing
-;;     ;;(inspect (? (dunion)(dsplit 2 list [(dunion)(dsplit 3)])(dfrom "Whales")))
-
-;;     ;; need a pivot demo...
-;;     ))
-
-;; (? (dunion)(dsplit :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(dsum :weight)(split :type )])(from "Whales"))
-;; (? (dunion)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
-
-;; (? (ccount)(from "Whales"))
-;; (? (split :ocean)(from "Whales"))
-;; (? (split :type)(from "Whales"))
-;; (? (union)(split :ocean nil [(pivot :type org.dada.demo.whales/types (keyword (sum-value-key :weight)))(sum :weight)(split :type )])(from "Whales"))
-;; (? (union)(split :type nil [(pivot :ocean org.dada.demo.whales/oceans (keyword (sum-value-key :weight)))(sum :weight)(split :ocean )]) (from "Whales"))
-;; (? (from "MetaModel"))
