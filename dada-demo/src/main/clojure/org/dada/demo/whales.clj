@@ -496,3 +496,5 @@
 ;; - djoin
 ;; - dpivot
 ;; - fix remaining broken queries
+;; - fix exception on client shutdown
+;; - fix occasional npe on executing summarised sum weight split ocean
