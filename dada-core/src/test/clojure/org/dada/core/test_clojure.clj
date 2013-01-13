@@ -92,8 +92,8 @@
     (let [^Value r (Value. 0) ^objects a (into-array Object [0])] (is (faster 1000000000 (.v r) (aget a 0))))))
 
 
-(defrecord Foo (^int a))
-(defrecord Bar (^Integer a))
+(defrecord Foo [^int a])
+(defrecord Bar [^Integer a])
 
 ;; reading an int out of a record is about 2x as slow as reading an
 ;; Integer - I guess that this is due to autoboxing...
@@ -208,7 +208,7 @@
 ;; 	 (reduce (fn [^java.util.Map r i] (doto r (.put i i))) (java.util.HashMap.) (range times))
 ;; 	 (persistent! (reduce (fn [r i] (conj! r [i i])) (transient {}) (range times)))))))  
 
-(defrecord Rec (a b c))
+(defrecord Rec [a b c])
 
 (deftest records
   ;; is it better to modify a record multiple times or to reconstruct it from scratch ?
