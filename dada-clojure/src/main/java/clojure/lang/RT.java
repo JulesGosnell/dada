@@ -189,10 +189,12 @@ final static Keyword CONST_KEY = Keyword.intern(null, "const");
 final static public Var AGENT = Var.intern(CLOJURE_NS, Symbol.intern("*agent*"), null).setDynamic();
 final static public Var READEVAL = Var.intern(CLOJURE_NS, Symbol.intern("*read-eval*"), T).setDynamic();
 final static public Var DATA_READERS = Var.intern(CLOJURE_NS, Symbol.intern("*data-readers*"), RT.map()).setDynamic();
+final static public Var DEFAULT_DATA_READER_FN = Var.intern(CLOJURE_NS, Symbol.intern("*default-data-reader-fn*"), RT.map()).setDynamic();
 final static public Var DEFAULT_DATA_READERS = Var.intern(CLOJURE_NS, Symbol.intern("default-data-readers"), RT.map());
 final static public Var ASSERT = Var.intern(CLOJURE_NS, Symbol.intern("*assert*"), T).setDynamic();
 final static public Var MATH_CONTEXT = Var.intern(CLOJURE_NS, Symbol.intern("*math-context*"), null).setDynamic();
 static Keyword LINE_KEY = Keyword.intern(null, "line");
+static Keyword COLUMN_KEY = Keyword.intern(null, "column");
 static Keyword FILE_KEY = Keyword.intern(null, "file");
 static Keyword DECLARED_KEY = Keyword.intern(null, "declared");
 static Keyword DOC_KEY = Keyword.intern(null, "doc");
@@ -419,7 +421,7 @@ static public void load(String scriptbase, boolean failIfNotFound) throws IOExce
 	   || classURL == null) {
 		try {
 			Var.pushThreadBindings(
-					RT.map(CURRENT_NS, CURRENT_NS.deref(),
+					RT.mapUniqueKeys(CURRENT_NS, CURRENT_NS.deref(),
 					       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
 							,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 			loaded = (loadClassForName(scriptbase.replace('/', '.') + LOADER_SUFFIX) != null);
@@ -442,7 +444,7 @@ static void doInit() throws ClassNotFoundException, IOException{
 	load("clojure/core");
 
 	Var.pushThreadBindings(
-			RT.map(CURRENT_NS, CURRENT_NS.deref(),
+			RT.mapUniqueKeys(CURRENT_NS, CURRENT_NS.deref(),
 			       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
 					,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 	try {
@@ -716,7 +718,7 @@ static public Object contains(Object coll, Object key){
 		int n = ((Number) key).intValue();
 		return n >= 0 && n < count(coll);
 	}
-	return F;
+	throw new IllegalArgumentException("contains? not supported on type: " + coll.getClass().getName());
 }
 
 static public Object find(Object coll, Object key){
@@ -1140,6 +1142,8 @@ static public long longCast(Object x){
 	    return ((Number) x).longValue();
 	else if (x instanceof Ratio)
 	    return longCast(((Ratio)x).bigIntegerValue());
+	else if (x instanceof Character)
+	    return longCast(((Character) x).charValue());
 	else
 	    return longCast(((Number)x).doubleValue());
 }
@@ -1455,6 +1459,14 @@ static public IPersistentMap map(Object... init){
 	return PersistentHashMap.createWithCheck(init);
 }
 
+static public IPersistentMap mapUniqueKeys(Object... init){
+	if(init == null)
+		return PersistentArrayMap.EMPTY;
+	else if(init.length <= PersistentArrayMap.HASHTABLE_THRESHOLD)
+		return new PersistentArrayMap(init);
+	return PersistentHashMap.create(init);
+}
+
 static public IPersistentSet set(Object... init){
 	return PersistentHashSet.createWithCheck(init);
 }
@@ -1676,6 +1688,12 @@ static public int getLineNumber(Reader r){
 	return 0;
 }
 
+static public int getColumnNumber(Reader r){
+	if(r instanceof LineNumberingPushbackReader)
+		return ((LineNumberingPushbackReader) r).getColumnNumber();
+	return 0;
+}
+
 static public LineNumberingPushbackReader getLineNumberingReader(Reader r){
 	if(isLineNumberingReader(r))
 		return (LineNumberingPushbackReader) r;
@@ -1684,6 +1702,10 @@ static public LineNumberingPushbackReader getLineNumberingReader(Reader r){
 
 static public boolean isLineNumberingReader(Reader r){
 	return r instanceof LineNumberingPushbackReader;
+}
+
+static public boolean isReduced(Object r){
+	return r instanceof Reduced;
 }
 
 static public String resolveClassNameInContext(String className){

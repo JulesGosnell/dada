@@ -129,10 +129,12 @@ static void unread(PushbackReader r, int ch) {
 
 public static class ReaderException extends RuntimeException{
 	final int line;
+	final int column;
 
-	public ReaderException(int line, Throwable cause){
+	public ReaderException(int line, int column, Throwable cause){
 		super(cause);
 		this.line = line;
+		this.column = column;
 	}
 }
 
@@ -212,7 +214,7 @@ static public Object read(PushbackReader r, boolean eofIsError, Object eofValue,
 			throw Util.sneakyThrow(e);
 		LineNumberingPushbackReader rdr = (LineNumberingPushbackReader) r;
 		//throw Util.runtimeException(String.format("ReaderError:(%d,1) %s", rdr.getLineNumber(), e.getMessage()), e);
-		throw new ReaderException(rdr.getLineNumber(), e);
+		throw new ReaderException(rdr.getLineNumber(), rdr.getColumnNumber(), e);
 		}
 }
 
@@ -399,7 +401,10 @@ private static Object matchNumber(String s){
 	m = ratioPat.matcher(s);
 	if(m.matches())
 		{
-		return Numbers.divide(Numbers.reduceBigInt(BigInt.fromBigInteger(new BigInteger(m.group(1)))),
+            String numerator = m.group(1);
+            if (numerator.startsWith("+")) numerator = numerator.substring(1);
+
+            return Numbers.divide(Numbers.reduceBigInt(BigInt.fromBigInteger(new BigInteger(numerator))),
 		                      Numbers.reduceBigInt(BigInt.fromBigInteger(new BigInteger(m.group(2)))));
 		}
 	return null;
@@ -709,8 +714,12 @@ public static class MetaReader extends AFn{
 	public Object invoke(Object reader, Object caret) {
 		PushbackReader r = (PushbackReader) reader;
 		int line = -1;
+		int column = -1;
 		if(r instanceof LineNumberingPushbackReader)
+      {
 			line = ((LineNumberingPushbackReader) r).getLineNumber();
+			column = ((LineNumberingPushbackReader) r).getColumnNumber()-1;
+      }
 		Object meta = read(r, true, null, true);
 		if(meta instanceof Symbol || meta instanceof String)
 			meta = RT.map(RT.TAG_KEY, meta);
@@ -723,7 +732,9 @@ public static class MetaReader extends AFn{
 		if(o instanceof IMeta)
 			{
 			if(line != -1 && o instanceof ISeq)
-				meta = ((IPersistentMap) meta).assoc(RT.LINE_KEY, line);
+        {
+				meta = ((IPersistentMap) meta).assoc(RT.LINE_KEY, line).assoc(RT.COLUMN_KEY, column);
+        }
 			if(o instanceof IReference)
 				{
 				((IReference)o).resetMeta((IPersistentMap) meta);
@@ -811,7 +822,9 @@ public static class SyntaxQuoteReader extends AFn{
 			throw new IllegalStateException("splice not in list");
 		else if(form instanceof IPersistentCollection)
 			{
-			if(form instanceof IPersistentMap)
+			if(form instanceof IRecord)
+				ret = form;
+			else if(form instanceof IPersistentMap)
 				{
 				IPersistentVector keyvals = flattenMap(form);
                 ret = RT.list(APPLY, HASHMAP, RT.list(SEQ, RT.cons(CONCAT, sqExpandList(keyvals.seq()))));
@@ -845,8 +858,8 @@ public static class SyntaxQuoteReader extends AFn{
 
 		if(form instanceof IObj && RT.meta(form) != null)
 			{
-			//filter line numbers
-			IPersistentMap newMeta = ((IObj) form).meta().without(RT.LINE_KEY);
+			//filter line and column numbers
+			IPersistentMap newMeta = ((IObj) form).meta().without(RT.LINE_KEY).without(RT.COLUMN_KEY);
 			if(newMeta.count() > 0)
 				return RT.list(WITH_META, ret, syntaxQuote(((IObj) form).meta()));
 			}
@@ -957,15 +970,21 @@ public static class ListReader extends AFn{
 	public Object invoke(Object reader, Object leftparen) {
 		PushbackReader r = (PushbackReader) reader;
 		int line = -1;
+    int column = -1;
 		if(r instanceof LineNumberingPushbackReader)
+      {
 			line = ((LineNumberingPushbackReader) r).getLineNumber();
+			column = ((LineNumberingPushbackReader) r).getColumnNumber()-1;
+      }
 		List list = readDelimitedList(')', r, true);
 		if(list.isEmpty())
 			return PersistentList.EMPTY;
 		IObj s = (IObj) PersistentList.create(list);
 //		IObj s = (IObj) RT.seq(list);
 		if(line != -1)
-			return s.withMeta(RT.map(RT.LINE_KEY, line));
+      {
+			return s.withMeta(RT.map(RT.LINE_KEY, line, RT.COLUMN_KEY, column));
+      }
 		else
 			return s;
 	}
@@ -1160,8 +1179,13 @@ public static class CtorReader extends AFn{
 		if(data_reader == null){
                         data_readers = (ILookup)RT.DEFAULT_DATA_READERS.deref();
                         data_reader = (IFn)RT.get(data_readers, tag);
-                        if(data_reader == null)
+                        if(data_reader == null){
+                            IFn default_reader = (IFn)RT.DEFAULT_DATA_READER_FN.deref();
+                            if(default_reader != null)
+                                return default_reader.invoke(tag, o);
+                            else
                                 throw new RuntimeException("No reader function for tag " + tag.toString());
+                        }
                 }
 
                 return data_reader.invoke(o);
