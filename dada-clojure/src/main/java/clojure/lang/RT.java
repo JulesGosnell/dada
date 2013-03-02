@@ -174,6 +174,14 @@ Symbol.intern("SuppressWarnings"), SuppressWarnings.class
 // single instance of UTF-8 Charset, so as to avoid catching UnsupportedCharsetExceptions everywhere
 static public Charset UTF8 = Charset.forName("UTF-8");
 
+static Object readTrueFalseUnknown(String s){
+	if(s.equals("true"))
+		return Boolean.TRUE;
+	else if(s.equals("false"))
+		return Boolean.FALSE;
+	return Keyword.intern(null, "unknown");
+}
+
 static public final Namespace CLOJURE_NS = Namespace.findOrCreate(Symbol.intern("clojure.core"));
 //static final Namespace USER_NS = Namespace.findOrCreate(Symbol.intern("user"));
 final static public Var OUT =
@@ -187,7 +195,8 @@ final static public Var ERR =
 final static Keyword TAG_KEY = Keyword.intern(null, "tag");
 final static Keyword CONST_KEY = Keyword.intern(null, "const");
 final static public Var AGENT = Var.intern(CLOJURE_NS, Symbol.intern("*agent*"), null).setDynamic();
-final static public Var READEVAL = Var.intern(CLOJURE_NS, Symbol.intern("*read-eval*"), T).setDynamic();
+static Object readeval = readTrueFalseUnknown(System.getProperty("clojure.read.eval","true"));
+final static public Var READEVAL = Var.intern(CLOJURE_NS, Symbol.intern("*read-eval*"),  readeval).setDynamic();
 final static public Var DATA_READERS = Var.intern(CLOJURE_NS, Symbol.intern("*data-readers*"), RT.map()).setDynamic();
 final static public Var DEFAULT_DATA_READER_FN = Var.intern(CLOJURE_NS, Symbol.intern("*default-data-reader-fn*"), RT.map()).setDynamic();
 final static public Var DEFAULT_DATA_READERS = Var.intern(CLOJURE_NS, Symbol.intern("default-data-readers"), RT.map());
@@ -2065,6 +2074,17 @@ static public Class classForName(String name) {
 	try
 		{
 		return Class.forName(name, true, baseLoader());
+		}
+	catch(ClassNotFoundException e)
+		{
+		throw Util.sneakyThrow(e);
+		}
+}
+
+static Class classForNameNonLoading(String name) {
+	try
+		{
+		return Class.forName(name, false, baseLoader());
 		}
 	catch(ClassNotFoundException e)
 		{
