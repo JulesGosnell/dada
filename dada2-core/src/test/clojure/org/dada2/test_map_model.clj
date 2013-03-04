@@ -110,4 +110,4 @@
 
     (detach model view)
     ))
-   [optimistic-map-model pessimistic-map-model]))
+   [versioned-optimistic-map-model versioned-pessimistic-map-model]))

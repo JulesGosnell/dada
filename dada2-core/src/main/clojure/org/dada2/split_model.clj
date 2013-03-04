@@ -19,18 +19,18 @@
 ;; on-change and on-changes should also be merged and shhared with map-model - hard - should we lose singleton api ?
 
 ;; if the key is already present, we have already inserted the model for this split
-(defn ignore-upsertion? [old-state _ _ _ key _]
+(defn ignore-upsertion? [old-state _ key _]
   (key old-state))
 
 ;; once a split is created we never remove it - TODO: reconsider
-(defn- ignore-deletion? [_ _ _ _ _ _]
+(defn- ignore-deletion? [_ _ _ _]
   true)
 
 (defn- make-upserter [make-model]
   (fn [state key upsertion] (assoc state key (make-model key upsertion))))
 
 (defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn nil nil pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? (make-upserter make-model-fn) nil))
+  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? (make-upserter make-model-fn) nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...
