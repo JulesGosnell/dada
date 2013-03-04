@@ -26,11 +26,8 @@
 (defn- ignore-deletion? [_ _ _ _]
   true)
 
-(defn- make-upserter [make-model]
-  (fn [state key upsertion] (assoc state key (make-model key upsertion))))
-
 (defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? (make-upserter make-model-fn) nil))
+  (map-model key-fn make-model-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...
