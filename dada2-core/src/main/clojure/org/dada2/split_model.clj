@@ -27,7 +27,7 @@
   true)
 
 (defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn make-model-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? assoc nil))
+  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...

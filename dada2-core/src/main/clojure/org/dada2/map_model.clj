@@ -17,32 +17,29 @@
 ;; pessimistic - most of your updates won't result in a change -saves an alloc (change)
 
 ;; OPTIMISTIC -  1 alloc / 1 dehash 
-(defn- optimistic-on-change [old-state change applicator ignore? notifier key-fn change-fn]
+(defn- optimistic-on-change [old-state change applicator ignore? notifier key-fn]
   ;; apply the change optimistically. A second dehash will only
   ;; be needed on an update or successful deletion, but not on insertion...
   (let [key (key-fn change)
-	change (change-fn key change)
 	new-state (applicator old-state key change)]
     (if (ignore? old-state new-state key change)
       [old-state nil]
       [new-state (fn [view] (notifier view change))])))
 
 ;; PESSIMISTIC - 2 dehashes / maybe 1 alloc
-(defn pessimistic-on-change [old-state new-datum applicator ignore? notifier key-fn change-fn]
-  (let [key (key-fn new-datum)
-	new-datum (change-fn key new-datum)]
+(defn pessimistic-on-change [old-state new-datum applicator ignore? notifier key-fn]
+  (let [key (key-fn new-datum)]
     (if (ignore? old-state nil key new-datum)
       [old-state nil]
       [(applicator old-state key new-datum) (fn [view] (notifier view new-datum))])))
 
 ;; optimistic
-(defn- optimistic-on-changes [old-state changes applicator ignore? notifier key-fn change-fn]
+(defn- optimistic-on-changes [old-state changes applicator ignore? notifier key-fn]
   (let [[new-state changes]
 	(reduce
 	 (fn [[old-state changes] change]
 	     ;; this fn is very similar to on-change above...
 	     (let [key (key-fn change)
-		   change (change-fn change)
 		   new-state (applicator old-state key change)]
 	       (if (ignore? old-state new-state key change)
 		 [old-state changes]
@@ -53,13 +50,12 @@
     ))
 
 ;;; pessimistic
-(defn pessimistic-on-changes [old-state changes applicator ignore? notifier key-fn change-fn]
+(defn pessimistic-on-changes [old-state changes applicator ignore? notifier key-fn]
   (let [[new-state changes]
 	(reduce
 	 (fn [[old-state changes] change]
 	     ;; this fn is very similar to on-change above...
-	     (let [key (key-fn change)
-		   change (change-fn key change)]
+	     (let [key (key-fn change)]
 	       (if (ignore? old-state nil key change)
 		 [old-state changes]
 		 [(applicator old-state key change)
@@ -117,41 +113,39 @@
 
 (defn dissoc-deletion [m k v] (dissoc m k))
 
-(defn no-change [key change] change)
-
 (defn ^ModelView map-model
-  [key-fn change-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
+  [key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
   (->ModelView
    (atom [{}])
    ;; on-upsert
    (fn [old-state upsertion]
-       (on-change old-state upsertion assoc-fn ignore-upsertion? on-upsert key-fn change-fn))
+       (on-change old-state upsertion assoc-fn ignore-upsertion? on-upsert key-fn))
    ;; on-delete
    (fn [old-state deletion]
-       (on-change old-state deletion dissoc-fn ignore-deletion? on-delete key-fn change-fn))
+       (on-change old-state deletion dissoc-fn ignore-deletion? on-delete key-fn))
    ;; on-upserts
    (fn [old-state upsertions]
-       (on-changes old-state upsertions assoc-fn ignore-upsertion? on-upserts key-fn change-fn))
+       (on-changes old-state upsertions assoc-fn ignore-upsertion? on-upserts key-fn))
    ;; on-deletes
    (fn [old-state deletions]
-       (on-changes old-state deletions dissoc-fn ignore-deletion? on-deletes key-fn change-fn))
+       (on-changes old-state deletions dissoc-fn ignore-deletion? on-deletes key-fn))
    ))
 
 ;; (more-recent-than? newer older)
 (defn ^ModelView unversioned-optimistic-map-model [key-fn]
-  (map-model key-fn no-change optimistic-on-change optimistic-on-changes unversioned-optimistic-ignore-upsertion? unversioned-optimistic-ignore-deletion? assoc dissoc-deletion))
+  (map-model key-fn optimistic-on-change optimistic-on-changes unversioned-optimistic-ignore-upsertion? unversioned-optimistic-ignore-deletion? assoc dissoc-deletion))
 
 (defn ^ModelView versioned-optimistic-map-model [key-fn version-fn more-recent-than?]
   (let [ignore-upsertion? (make-versioned-optimistic-ignore-upsertion? version-fn more-recent-than?)
 	ignore-deletion? (make-versioned-optimistic-ignore-deletion? version-fn more-recent-than?)]
-    (map-model key-fn no-change optimistic-on-change optimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
+    (map-model key-fn optimistic-on-change optimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
 
 (defn ^ModelView unversioned-pessimistic-map-model [key-fn]
-  (map-model key-fn no-change pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? unversioned-pessimistic-ignore-deletion? assoc dissoc-deletion))
+  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? unversioned-pessimistic-ignore-deletion? assoc dissoc-deletion))
 
 (defn ^ModelView versioned-pessimistic-map-model [key-fn version-fn more-recent-than?]
   (let [ignore-upsertion? (make-versioned-pessimistic-ignore-upsertion? version-fn more-recent-than?)
 	ignore-deletion? (make-versioned-pessimistic-ignore-deletion? version-fn more-recent-than?)]
-  (map-model key-fn no-change pessimistic-on-change pessimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
+  (map-model key-fn pessimistic-on-change pessimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
 
 ;; models should have names
