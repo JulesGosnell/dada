@@ -27,7 +27,7 @@
       [new-state (fn [view] (notifier view change))])))
 
 ;; PESSIMISTIC - 2 dehashes / maybe 1 alloc
-(defn pessimistic-on-change [old-state new-datum applicator ignore? notifier key-fn]
+(defn- pessimistic-on-change [old-state new-datum applicator ignore? notifier key-fn]
   (let [key (key-fn new-datum)]
     (if (ignore? old-state nil key new-datum)
       [old-state nil]
@@ -50,7 +50,7 @@
     ))
 
 ;;; pessimistic
-(defn pessimistic-on-changes [old-state changes applicator ignore? notifier key-fn]
+(defn- pessimistic-on-changes [old-state changes applicator ignore? notifier key-fn]
   (let [[new-state changes]
 	(reduce
 	 (fn [[old-state changes] change]
@@ -89,7 +89,7 @@
 	(and old-datum (not (more-recent-than? (version-fn new-datum) (version-fn old-datum)))))))
 
 ;; unversioned-pessimistic
-(defn unversioned-pessimistic-ignore-upsertion? [old-state new-state key new-datum]
+(defn- unversioned-pessimistic-ignore-upsertion? [old-state new-state key new-datum]
   (= (key old-state) new-datum))
 
 ;; optimistic

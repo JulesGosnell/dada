@@ -26,8 +26,34 @@
 (defn- ignore-deletion? [_ _ _ _]
   true)
 
+(defn make-on-change [change-fn]
+  (fn [old-state new-datum applicator ignore? notifier key-fn]
+      (let [key (key-fn new-datum)]
+	(if (ignore? old-state nil key new-datum)
+	  [old-state nil]
+	  (let [new-datum (change-fn key new-datum)]
+	    [(applicator old-state key new-datum) (fn [view] (notifier view new-datum))])))))
+
+(defn make-on-changes [change-fn]
+  (fn [old-state changes applicator ignore? notifier key-fn]
+      (let [[new-state changes]
+	    (reduce
+	     (fn [[old-state changes] change]
+		 ;; this fn is very similar to on-change above...
+		 (let [key (key-fn change)]
+		   (if (ignore? old-state nil key change)
+		     [old-state changes]
+		     (let [change (change-fn key change)]
+		       [(applicator old-state key change)
+			(conj changes change)
+			]))))
+	     [old-state []]
+	     changes)]
+	[new-state (if changes (fn [view] (notifier view changes)))]
+	)))
+
 (defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? assoc nil))
+  (map-model key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) ignore-upsertion? ignore-deletion? assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...
