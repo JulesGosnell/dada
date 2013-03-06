@@ -4,7 +4,8 @@
    Atom])
  (:use
   [clojure test]
-  [clojure.tools logging])
+  [clojure.tools logging]
+  [org.dada2 utils])
  )
 
 (set! *warn-on-reflection* true)
