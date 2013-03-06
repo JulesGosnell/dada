@@ -117,6 +117,7 @@
   [key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
   (->ModelView
    (atom [{}])
+   (atom [])
    ;; on-upsert
    (fn [old-state upsertion]
        (on-change old-state upsertion assoc-fn ignore-upsertion? on-upsert key-fn))

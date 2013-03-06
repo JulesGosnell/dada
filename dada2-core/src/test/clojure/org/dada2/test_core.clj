@@ -11,6 +11,7 @@
 (defn ^ModelView test-view []
   (->ModelView 
    (atom nil)
+   (atom [])
    (fn [current upsertion] [upsertion upsertion])
    (fn [current deletion] [deletion deletion])
    (fn [current upsertions] [upsertions upsertions])
