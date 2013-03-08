@@ -21,11 +21,11 @@
 (deftest test-model
   (let [model (simple-counting-model)
 	view (test-view)]
-    (is (not ((.getWatches ^Atom (.state model)) view)))
+    (is (empty? @(.views model)))
     (attach model view)
-    ((.getWatches ^Atom (.state model)) view)
+    (is (= [view] @(.views model)))
     (detach model view)
-    (is (not ((.getWatches ^Atom (.state model)) view)))
+    (is (empty? @(.views model)))
     ))
 
 (deftest test-counting-model

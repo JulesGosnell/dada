@@ -116,7 +116,7 @@
 (defn ^ModelView map-model
   [key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
   (->ModelView
-   (atom [{}])
+   (atom {})
    (atom [])
    ;; on-upsert
    (fn [old-state upsertion]

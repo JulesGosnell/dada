@@ -8,11 +8,7 @@
   (let [old-state 1
 	state (atom old-state)
 	old-increment 2
-	[new-state new-increment] (swap*!
-				   state
-				   (fn [state increment] [(+ state increment) increment])
-				   old-increment)]
-    (is (= new-state @state))
-    (is (= new-state (+ old-state old-increment)))
+	new-increment (swap*! state (fn [state increment] [(+ state increment) increment]) old-increment)]
+    (is (= @state (+ old-state old-increment)))
     (is (= new-increment old-increment))
     ))

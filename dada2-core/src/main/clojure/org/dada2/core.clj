@@ -35,27 +35,38 @@
 ;;--------------------------------------------------------------------------------
 ;; "a basic DADA2 Model, supporting Views" - add as metadata somehow
 ;; on-upsert-fn: ([[old-state, old-change] change]) -> [new-state new-change]
+(defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
+
+;; should state and views be stored in the same atom ?
 (deftype ModelView [^Atom state ^Atom views on-upsert-fn on-delete-fn on-upserts-fn on-deletes-fn]
   Model
-  (attach [this view] (add-watch state view (fn [view state old [new delta]] (if delta (delta view)))) this)
-  (detach [this view] (remove-watch state view) this)
-  (data [_] (first @state))
+  (attach [this view] (swap! views conj view) this)
+  (detach [this view] (swap! views without view) this)
+  (data [_] @state)
   View
   (on-upsert [this upsertion]
-	     (swap! state (fn [[current] upsertion] (on-upsert-fn current upsertion)) upsertion) this)
+	     (let [notifier (swap*! state on-upsert-fn upsertion)]
+	       (if notifier (doseq [view @views] (notifier view))))
+	     this)
   (on-delete [this deletion]
-	     (swap! state (fn [[current] deletion] (on-delete-fn current deletion)) deletion) this)
+	     (let [notifier (swap*! state on-delete-fn deletion)]
+	       (if notifier (doseq [view @views](notifier view))))
+	     this)
   (on-upserts [this upsertions]
-	      (swap! state (fn [[current] upsertions] (on-upserts-fn current upsertions)) upsertions) this)
+	      (let [notifier (swap*! state on-upserts-fn upsertions)]
+		(if notifier (doseq [view @views](notifier view))))
+	      this)
   (on-deletes [this deletions]
-	      (swap! state (fn [[current] deletions] (on-deletes-fn current deletions)) deletions) this)
+	      (let [notifier (swap*! state on-deletes-fn deletions)]
+		(if notifier (doseq [view @views](notifier view))))
+	      this)
   )
 
 ;;--------------------------------------------------------------------------------
 
 (defn ^ModelView simple-counting-model []
   (->ModelView
-   (atom [0])
+   (atom 0)
    (atom [])
    (fn [current upsertion] (let [new (inc current)][new (fn [view] (on-upsert view new))]))
    (fn [current deletion] (let [new (dec current)][new (fn [view] (on-delete view new))]))
@@ -67,9 +78,9 @@
 
 (defn ^ModelView simple-sequence-model []
   (->ModelView
+   (atom nil)
    (atom [])
-   (atom [])
-   (fn [current upsertion] [(conj current upsertion) (fn [view] (on-upsert view  upsertion))])
+   (fn [current upsertion] [(conj current upsertion) (fn [view] (on-upsert view upsertion))])
    nil					;TODO
    nil
    nil
@@ -79,7 +90,7 @@
 
 (defn ^ModelView simple-hashset-model []
   (->ModelView
-   (atom [#{}])
+   (atom #{})
    (atom [])
    (fn [current upsertion]
        (let [next (conj current upsertion)]
@@ -95,7 +106,7 @@
 
 (defn ^ModelView simple-hashmap-model [key-fn]
   (->ModelView
-   (atom [{}])
+   (atom {})
    (atom [])
    (fn [current upsertion]
        (let [next (assoc current (key-fn upsertion) upsertion)]

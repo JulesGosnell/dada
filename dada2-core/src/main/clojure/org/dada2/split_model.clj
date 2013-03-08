@@ -2,7 +2,7 @@
     (:use
      [clojure test]
      [clojure.tools logging]
-     [org.dada2 core map-model])
+     [org.dada2 utils core map-model])
     (:import
      [clojure.lang Atom]
      [org.dada2.core ModelView])
@@ -52,50 +52,10 @@
 	[new-state (if changes (fn [view] (notifier view changes)))]
 	)))
 
-(deftype SplitModelView [^Atom state on-upsert-fn on-delete-fn on-upserts-fn on-deletes-fn]
-  Model
-  (attach [this view] (add-watch state view (fn [view state old [new delta]] (if delta (delta view)))) this)
-  (detach [this view] (remove-watch state view) this)
-  (data [_] (first @state))
-  View
-  (on-upsert [this upsertion]
-	     ;; TODO - keep notifications out of atom...
-	     (let [[_ _ foo] (swap! state (fn [[current] upsertion] (on-upsert-fn current upsertion)) upsertion)]
-	       ;; notify interested views
-	       ;; HERE
-	       (foo)
-	     this))
-  (on-delete [this deletion]
-	     (swap! state (fn [[current] deletion] (on-delete-fn current deletion)) deletion)
-	     this)
-  (on-upserts [this upsertions]
-	      (swap! state (fn [[current] upsertions] (on-upserts-fn current upsertions)) upsertions)
-	      this)
-  (on-deletes [this deletions]
-	      (swap! state (fn [[current] deletions] (on-deletes-fn current deletions)) deletions)
-	      this)
-  )
+(defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
 
-(defn ^SplitModelView split-map-model
-  [key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
-  (->SplitModelView
-   (atom [{}])
-   ;; on-upsert
-   (fn [old-state upsertion]
-       (on-change old-state upsertion assoc-fn ignore-upsertion? on-upsert key-fn))
-   ;; on-delete
-   (fn [old-state deletion]
-       (on-change old-state deletion dissoc-fn ignore-deletion? on-delete key-fn))
-   ;; on-upserts
-   (fn [old-state upsertions]
-       (on-changes old-state upsertions assoc-fn ignore-upsertion? on-upserts key-fn))
-   ;; on-deletes
-   (fn [old-state deletions]
-       (on-changes old-state deletions dissoc-fn ignore-deletion? on-deletes key-fn))
-   ))
-
-(defn ^SplitModelView split-model [key-fn make-model-fn]
-  (split-map-model key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
+(defn ^ModelView split-model [key-fn make-model-fn]
+  (map-model key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...
