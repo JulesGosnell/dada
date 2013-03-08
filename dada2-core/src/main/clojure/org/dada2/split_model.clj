@@ -2,8 +2,9 @@
     (:use
      [clojure test]
      [clojure.tools logging]
-     [org.dada2 core map-model])
+     [org.dada2 utils core map-model])
     (:import
+     [clojure.lang Atom]
      [org.dada2.core ModelView])
     )
 
@@ -18,16 +19,43 @@
 ;; applicator needs to return new-state and new-datum (may not be same as change)
 ;; on-change and on-changes should also be merged and shhared with map-model - hard - should we lose singleton api ?
 
-;; if the key is already present, we have already inserted the model for this split
-(defn ignore-upsertion? [old-state _ key _]
-  (key old-state))
+(defn make-on-change [change-fn]
+  (fn [old-state new-datum applicator _ notifier key-fn]
+      (let [key (key-fn new-datum)
+	    ;; HERE
+	    old-datum (key old-state)]
+	(if old-datum
+	  ;; HERE
+	  [old-state nil old-datum]
+	  (let [new-view (change-fn key new-datum)]
+	    [(applicator old-state key new-view) (fn [view] (notifier view new-view)) (fn [] (notifier new-view new-datum))]))
+	;; 
+	)))
 
-;; once a split is created we never remove it - TODO: reconsider
-(defn- ignore-deletion? [_ _ _ _]
-  true)
+(defn make-on-changes [change-fn]
+  (fn [old-state changes applicator _ notifier key-fn]
+      (let [[new-state changes]
+	    (reduce
+	     (fn [[old-state changes] change]
+		 ;; this fn is very similar to on-change above...
+		 (let [key (key-fn change)
+		       ;; HERE
+		       old-datum (key old-state)]
+		   (if old-datum
+		     [old-state changes]
+		     (let [change (change-fn key change)]
+		       [(applicator old-state key change)
+			(conj changes change)
+			]))))
+	     [old-state []]
+	     changes)]
+	[new-state (if changes (fn [view] (notifier view changes)))]
+	)))
+
+(defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
 
 (defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? ignore-deletion? assoc nil))
+  (map-model key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...

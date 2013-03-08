@@ -25,8 +25,9 @@
     (is (= nil (data view)))
 
     (on-upsert model james)
-    ;;(is (identical? (first @models) (data view)))
+    (is (identical? (first @models) (data view)))
     (let [{m :developer} (data model)]
-      ;;(is (identical? m (first @models)))
-;;; now check ms contents...
+      (is (identical? m (first @models)))
+      ;; now check ms contents...
+      ;;(is (= {:james james} (data m)))
       )))
