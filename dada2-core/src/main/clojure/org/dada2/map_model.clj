@@ -23,15 +23,15 @@
   (let [key (key-fn change)
 	new-state (applicator old-state key change)]
     (if (ignore? old-state new-state key change)
-      [old-state nil]
-      [new-state (fn [view] (notifier view change))])))
+      [old-state]
+      [new-state (fn [views] (doseq [view views] (notifier view change)))])))
 
 ;; PESSIMISTIC - 2 dehashes / maybe 1 alloc
 (defn- pessimistic-on-change [old-state new-datum applicator ignore? notifier key-fn]
   (let [key (key-fn new-datum)]
     (if (ignore? old-state nil key new-datum)
-      [old-state nil]
-      [(applicator old-state key new-datum) (fn [view] (notifier view new-datum))])))
+      [old-state]
+      [(applicator old-state key new-datum) (fn [views] (doseq [view views] (notifier view new-datum)))])))
 
 ;; optimistic
 (defn- optimistic-on-changes [old-state changes applicator ignore? notifier key-fn]
@@ -46,7 +46,7 @@
 		 [new-state (conj changes change)])))
 	 [old-state []]
 	 changes)]
-    [new-state (if changes (fn [view] (notifier view changes)))]
+    [new-state (if changes (fn [views] (doseq [view views] (notifier view changes))))]
     ))
 
 ;;; pessimistic
@@ -66,7 +66,7 @@
 		  ])))
 	 [old-state []]
 	 changes)]
-    [new-state (if changes (fn [view] (notifier view changes)))]
+    [new-state (if changes (fn [views] (doseq [view views] (notifier view changes))))]
     ))
 
 ;;--------------------------------------------------------------------------------

@@ -12,10 +12,10 @@
   (->ModelView 
    (atom nil)
    (atom [])
-   (fn [current upsertion] [upsertion upsertion])
-   (fn [current deletion] [deletion deletion])
-   (fn [current upsertions] [upsertions upsertions])
-   (fn [current deletions] [deletions deletions])
+   (fn [current upsertion] [upsertion])
+   (fn [current deletion] [deletion])
+   (fn [current upsertions] [upsertions])
+   (fn [current deletions] [deletions])
    ))
 
 (deftest test-model

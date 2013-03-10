@@ -26,10 +26,15 @@
 	    old-datum (key old-state)]
 	(if old-datum
 	  ;; HERE
-	  [old-state nil old-datum]
-	  (let [new-view (change-fn key new-datum)]
-	    [(applicator old-state key new-view) (fn [view] (notifier view new-view)) (fn [] (notifier new-view new-datum))]))
-	;; 
+	  [old-state]
+	  (let [sub-model (change-fn key new-datum)]
+	    [(applicator old-state key sub-model)
+	     (fn [views]
+		 ;; notify viewers
+		 (doseq [view views] (notifier view sub-model))
+		 ;; notify sub-model
+		 (notifier sub-model new-datum)
+		 )]))
 	)))
 
 (defn make-on-changes [change-fn]
@@ -49,7 +54,7 @@
 			]))))
 	     [old-state []]
 	     changes)]
-	[new-state (if changes (fn [view] (notifier view changes)))]
+	[new-state (if changes (fn [views] (doseq [view views] (notifier view changes))))]
 	)))
 
 (defn- without [coll item] (remove (fn [i] (identical? item i)) coll))

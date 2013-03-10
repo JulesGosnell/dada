@@ -45,20 +45,16 @@
   (data [_] @state)
   View
   (on-upsert [this upsertion]
-	     (let [notifier (swap*! state on-upsert-fn upsertion)]
-	       (if notifier (doseq [view @views] (notifier view))))
+	     (if-let [notifier (swap*! state on-upsert-fn upsertion)] (notifier @views))
 	     this)
   (on-delete [this deletion]
-	     (let [notifier (swap*! state on-delete-fn deletion)]
-	       (if notifier (doseq [view @views](notifier view))))
+	     (if-let [notifier (swap*! state on-delete-fn deletion)] (notifier @views))
 	     this)
   (on-upserts [this upsertions]
-	      (let [notifier (swap*! state on-upserts-fn upsertions)]
-		(if notifier (doseq [view @views](notifier view))))
+	      (if-let [notifier (swap*! state on-upserts-fn upsertions)] (notifier @views))
 	      this)
   (on-deletes [this deletions]
-	      (let [notifier (swap*! state on-deletes-fn deletions)]
-		(if notifier (doseq [view @views](notifier view))))
+	      (if-let [notifier (swap*! state on-deletes-fn deletions)] (notifier @views))
 	      this)
   )
 
@@ -68,8 +64,10 @@
   (->ModelView
    (atom 0)
    (atom [])
-   (fn [current upsertion] (let [new (inc current)][new (fn [view] (on-upsert view new))]))
-   (fn [current deletion] (let [new (dec current)][new (fn [view] (on-delete view new))]))
+   (fn [current upsertion]
+       (let [new (inc current)][new (fn [views] (doseq [view views] (on-upsert view new)))]))
+   (fn [current deletion]
+       (let [new (dec current)][new (fn [views] (doseq [view views] (on-delete view new)))]))
    nil
    nil
    ))
@@ -80,7 +78,8 @@
   (->ModelView
    (atom nil)
    (atom [])
-   (fn [current upsertion] [(conj current upsertion) (fn [view] (on-upsert view upsertion))])
+   (fn [current upsertion]
+       [(conj current upsertion) (fn [views] (doseq [view views] (on-upsert view upsertion)))])
    nil					;TODO
    nil
    nil
@@ -94,10 +93,10 @@
    (atom [])
    (fn [current upsertion]
        (let [next (conj current upsertion)]
-	 [next (if (identical? current next) nil (fn [view] (on-upsert view upsertion)))]))
+	 [next (if (identical? current next) nil (fn [views] (doseq [view views] (on-upsert view upsertion))))]))
    (fn [current deletion]
        (let [next (remove (fn [i] (= i deletion)) current)] ;TODO: is this the best way ?
-	 [next (if (identical? current next) nil (fn [view] (on-delete view deletion)))]))
+	 [next (if (identical? current next) nil (fn [views] (doseq [view views] (on-delete view deletion))))]))
    nil
    nil
    ))
@@ -110,10 +109,10 @@
    (atom [])
    (fn [current upsertion]
        (let [next (assoc current (key-fn upsertion) upsertion)]
-	 [next (if (identical? current next) nil (fn [view] (on-upsert view upsertion)))]))
+	 [next (if (identical? current next) nil (fn [views] (doseq [view views] (on-upsert view upsertion))))]))
    (fn [current deletion]
        (let [next (dissoc current (key-fn deletion))]
-	 [next (if (identical? current next) nil (fn [view] (on-delete view deletion)))]))
+	 [next (if (identical? current next) nil (fn [views] (doseq [view views] (on-delete view deletion))))]))
    nil
    nil
    ))
