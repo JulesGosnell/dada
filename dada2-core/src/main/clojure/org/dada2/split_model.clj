@@ -17,16 +17,19 @@
 ;;; key-fn can become split-key-fn - we don't need a key-fn - are they therefore one and the same ?
 ;; applicator needs to create new entry one the fly - contains new-model-fn
 ;; applicator needs to return new-state and new-datum (may not be same as change)
-;; on-change and on-changes should also be merged and shhared with map-model - hard - should we lose singleton api ?
+;; on-change and on-changes should also be merged and shared with map-model - hard - should we lose singleton api ?
 
 (defn make-on-change [change-fn]
   (fn [old-state new-datum applicator _ notifier key-fn]
       (let [key (key-fn new-datum)
-	    ;; HERE
 	    old-datum (key old-state)]
 	(if old-datum
-	  ;; HERE
-	  [old-state]
+	  [old-state
+	   (fn [views]
+	       ;; no direct change to model, so no viewers to notify
+	       ;; notify sub-model
+	       (notifier old-datum new-datum)
+	       )]
 	  (let [sub-model (change-fn key new-datum)]
 	    [(applicator old-state key sub-model)
 	     (fn [views]
@@ -44,7 +47,6 @@
 	     (fn [[old-state changes] change]
 		 ;; this fn is very similar to on-change above...
 		 (let [key (key-fn change)
-		       ;; HERE
 		       old-datum (key old-state)]
 		   (if old-datum
 		     [old-state changes]

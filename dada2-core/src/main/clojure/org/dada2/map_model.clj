@@ -73,7 +73,7 @@
 ;; ignore function makers
 
 ;; optimistic
-(defn- make-versioned-optimistic-ignore-upsertion? [more-recent-than? version-fn]
+(defn- make-versioned-optimistic-ignore-upsertion? [version-fn more-recent-than?]
   (fn [old-state new-state key upsertion]
       (or (identical? old-state new-state)
 	  (and (= (count old-state) (count new-state))
@@ -83,7 +83,7 @@
   (identical? old-state new-state))
 
 ;; pessimistic
-(defn make-versioned-pessimistic-ignore-upsertion? [more-recent-than? version-fn]
+(defn make-versioned-pessimistic-ignore-upsertion? [version-fn more-recent-than?]
   (fn [old-state new-state key new-datum]
       (let [old-datum (key old-state)]
 	(and old-datum (not (more-recent-than? (version-fn new-datum) (version-fn old-datum)))))))
@@ -93,7 +93,7 @@
   (= (key old-state) new-datum))
 
 ;; optimistic
-(defn- make-versioned-optimistic-ignore-deletion? [more-recent-than? version-fn]
+(defn- make-versioned-optimistic-ignore-deletion? [version-fn more-recent-than?]
   (fn [old-state new-state key deletion]
       (or (identical? old-state new-state)
 	  (more-recent-than? (version-fn (old-state key)) (version-fn deletion)))))
@@ -102,7 +102,7 @@
   (identical? old-state new-state))
 
 ;; pessimistic
-(defn make-versioned-pessimistic-ignore-deletion? [more-recent-than? version-fn]
+(defn make-versioned-pessimistic-ignore-deletion? [version-fn more-recent-than?]
   (fn [old-state new-state key new-datum]
       (let [old-datum (key old-state)]
 	(and old-datum (more-recent-than? (version-fn old-datum) (version-fn new-datum))))))

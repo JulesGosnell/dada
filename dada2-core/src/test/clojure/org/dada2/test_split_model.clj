@@ -27,4 +27,10 @@
     (let [sub-model (data view)]
       (is (= {:developer sub-model} (data model)))
       (is (= {:james james} (data sub-model))))
+
+    (on-delete model james)
+    (let [sub-model (data view)]
+      (is (= {:developer sub-model} (data model)))
+      (is (= {} (data sub-model))))
+
     ))
