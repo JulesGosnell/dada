@@ -40,6 +40,10 @@
 		 )]))
 	)))
 
+(defn- group [map key value]
+  "add [key value] to map as in group-by"
+  (assoc map key (conj (if-let [v (key map)] v []) value)))
+
 (defn make-on-changes [change-fn]
   (fn [old-state changes applicator _ notifier key-fn]
       (let [[new-state changes]
@@ -48,16 +52,26 @@
 		 ;; this fn is very similar to on-change above...
 		 (let [key (key-fn change)
 		       old-datum (key old-state)]
+		   ;; REWORK
+		   ;; Where a model has been added, we could start its changes list with true, otherwise false ???		   
 		   (if old-datum
-		     [old-state changes]
-		     (let [change (change-fn key change)]
-		       [(applicator old-state key change)
-			(conj changes change)
-			]))))
-	     [old-state []]
+		     [old-state (group changes key change)]
+		     (let [sub-model (change-fn key change)]
+		       [(applicator old-state key sub-model) (group changes key change)]))))
+	     [old-state {}]
 	     changes)]
-	[new-state (if changes (fn [views] (doseq [view views] (notifier view changes))))]
-	)))
+	[new-state 
+	 (if changes
+	   (fn [views]
+	       ;; notify views (HOW:?)
+	       (doseq [view views] (on-upserts view (vals new-state)))
+	       ;; notify sub-models..
+	       (doseq [[k v] new-state] (notifier v (k changes))))
+	   (fn [views]
+	       ;; notify sub-models..
+	       (doseq [[k v] new-state] (notifier v (k changes)))
+	       ))]
+	))) 
 
 (defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
 

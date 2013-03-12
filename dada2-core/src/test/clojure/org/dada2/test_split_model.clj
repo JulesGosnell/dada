@@ -24,13 +24,19 @@
     (is (= nil (data view)))
 
     (on-upsert model james)
-    (let [sub-model (data view)]
-      (is (= {:developer sub-model} (data model)))
-      (is (= {:james james} (data sub-model))))
+    (let [developer (data view)]
+      (is (= {:developer developer} (data model)))
+      (is (= {:james james} (data developer))))
 
     (on-delete model james)
-    (let [sub-model (data view)]
-      (is (= {:developer sub-model} (data model)))
-      (is (= {} (data sub-model))))
+    (let [developer (data view)]
+      (is (= {:developer developer} (data model)))
+      (is (= {} (data developer))))
 
+    (on-upserts model [john steve])
+    (let [[manager developer] (data view)] ;;; wrong order - should only be one
+      (is (= {:developer developer :manager manager} (data model)))
+      (is (= {:john john} (data developer)))
+      (is (= {:steve steve} (data manager)))
+      )
     ))
