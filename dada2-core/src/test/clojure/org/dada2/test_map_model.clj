@@ -12,8 +12,8 @@
 (deftest test-unversioned-map-model
   (map
    (fn [make-map-model]
-       (let [model (unversioned-pessimistic-map-model :key)
-	     view (test-view)
+       (let [model (unversioned-pessimistic-map-model "unversioned-map" :key) ;;; TODO
+	     view (test-view "test")
 	     a1 (->Datum :a 1)
 	     a2 (->Datum :a 2)
 	     b4 (->Datum :b 4)
@@ -45,8 +45,8 @@
 (deftest test-versioned-map-model
   (map
    (fn [make-map-model]
-       (let [model (make-map-model :key :version >)
-	view (test-view)
+       (let [model (make-map-model "versioned-map" :key :version >)
+	view (test-view "test")
 	a1 (->VersionedDatum :a 0 1)
 	a2 (->VersionedDatum :a 1 2)
 	a3 (->VersionedDatum :a 2 3)

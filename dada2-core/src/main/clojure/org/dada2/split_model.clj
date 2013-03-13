@@ -45,38 +45,33 @@
   (assoc map key (conj (if-let [v (key map)] v []) value)))
 
 (defn make-on-changes [change-fn]
-  (fn [old-state changes applicator _ notifier key-fn]
-      (let [[new-state changes]
+  (fn [prev-state changes applicator _ notifier key-fn]
+      (let [[next-state view-changes submodel-changes]
 	    (reduce
-	     (fn [[old-state changes] change]
+	     (fn [[old-state old-view-changes old-submodel-changes] change]
 		 ;; this fn is very similar to on-change above...
 		 (let [key (key-fn change)
-		       old-datum (key old-state)]
-		   ;; REWORK
-		   ;; Where a model has been added, we could start its changes list with true, otherwise false ???		   
+		       old-datum (key old-state)
+		       new-submodel-changes (group old-submodel-changes key change)]
 		   (if old-datum
-		     [old-state (group changes key change)]
-		     (let [sub-model (change-fn key change)]
-		       [(applicator old-state key sub-model) (group changes key change)]))))
-	     [old-state {}]
+		     [old-state old-view-changes new-submodel-changes]
+		     (let [submodel (change-fn key change)
+			   new-state (applicator old-state key submodel)
+			   new-view-changes (conj old-view-changes submodel)]
+		       [new-state new-view-changes new-submodel-changes]))))
+	     [prev-state [] {}]
 	     changes)]
-	[new-state 
-	 (if changes
-	   (fn [views]
-	       ;; notify views (HOW:?)
-	       (doseq [view views] (on-upserts view (vals new-state)))
-	       ;; notify sub-models..
-	       (doseq [[k v] new-state] (notifier v (k changes))))
-	   (fn [views]
-	       ;; notify sub-models..
-	       (doseq [[k v] new-state] (notifier v (k changes)))
-	       ))]
-	))) 
+	[next-state 
+	 (fn [views]
+	     (doseq [view views] (on-upserts view view-changes)) ;; notify views
+	     (doseq [[k v] submodel-changes] (notifier (k next-state) v)) ;; notify sub-models..
+	     )]
+	)))
 
 (defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
 
-(defn ^ModelView split-model [key-fn make-model-fn]
-  (map-model key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
+(defn ^ModelView split-model [name key-fn make-model-fn]
+  (map-model name key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
 
 ;; need to test addition of submodels
 ;; need to notify submodel after change...

@@ -114,8 +114,9 @@
 (defn dissoc-deletion [m k v] (dissoc m k))
 
 (defn ^ModelView map-model
-  [key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
+  [name key-fn on-change on-changes ignore-upsertion? ignore-deletion? assoc-fn dissoc-fn]
   (->ModelView
+   name
    (atom {})
    (atom [])
    ;; on-upsert
@@ -133,20 +134,20 @@
    ))
 
 ;; (more-recent-than? newer older)
-(defn ^ModelView unversioned-optimistic-map-model [key-fn]
-  (map-model key-fn optimistic-on-change optimistic-on-changes unversioned-optimistic-ignore-upsertion? unversioned-optimistic-ignore-deletion? assoc dissoc-deletion))
+(defn ^ModelView unversioned-optimistic-map-model [name key-fn]
+  (map-model name key-fn optimistic-on-change optimistic-on-changes unversioned-optimistic-ignore-upsertion? unversioned-optimistic-ignore-deletion? assoc dissoc-deletion))
 
-(defn ^ModelView versioned-optimistic-map-model [key-fn version-fn more-recent-than?]
+(defn ^ModelView versioned-optimistic-map-model [name key-fn version-fn more-recent-than?]
   (let [ignore-upsertion? (make-versioned-optimistic-ignore-upsertion? version-fn more-recent-than?)
 	ignore-deletion? (make-versioned-optimistic-ignore-deletion? version-fn more-recent-than?)]
-    (map-model key-fn optimistic-on-change optimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
+    (map-model name key-fn optimistic-on-change optimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
 
-(defn ^ModelView unversioned-pessimistic-map-model [key-fn]
-  (map-model key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? unversioned-pessimistic-ignore-deletion? assoc dissoc-deletion))
+(defn ^ModelView unversioned-pessimistic-map-model [name key-fn]
+  (map-model name key-fn pessimistic-on-change pessimistic-on-changes unversioned-pessimistic-ignore-upsertion? unversioned-pessimistic-ignore-deletion? assoc dissoc-deletion))
 
-(defn ^ModelView versioned-pessimistic-map-model [key-fn version-fn more-recent-than?]
+(defn ^ModelView versioned-pessimistic-map-model [name key-fn version-fn more-recent-than?]
   (let [ignore-upsertion? (make-versioned-pessimistic-ignore-upsertion? version-fn more-recent-than?)
 	ignore-deletion? (make-versioned-pessimistic-ignore-deletion? version-fn more-recent-than?)]
-  (map-model key-fn pessimistic-on-change pessimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
+  (map-model name key-fn pessimistic-on-change pessimistic-on-changes ignore-upsertion? ignore-deletion? assoc dissoc-deletion)))
 
 ;; models should have names

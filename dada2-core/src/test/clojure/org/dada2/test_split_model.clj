@@ -10,12 +10,14 @@
      [org.dada2.core ModelView])
     )
 
-(defrecord Employee [name ^int version grade salary])
+(defrecord Employee [name ^int version grade salary]
+  Object
+  (^String toString [_] (str name)))
 
 (deftest test-split-model
-  (let [sub-model-fn (fn [grade change] (versioned-optimistic-map-model :name :version >))
-	model (split-model :grade sub-model-fn)
-	view (test-view)
+  (let [sub-model-fn (fn [grade change] (versioned-optimistic-map-model (name grade) :name :version >))
+	model (split-model "split-model" :grade sub-model-fn)
+	view (test-view "test")
 	james (->Employee :james 0 :developer 50)
 	john  (->Employee :john 0 :developer 50)
 	steve  (->Employee :steve 0 :manager 60)]
@@ -34,9 +36,11 @@
       (is (= {} (data developer))))
 
     (on-upserts model [john steve])
-    (let [[manager developer] (data view)] ;;; wrong order - should only be one
-      (is (= {:developer developer :manager manager} (data model)))
-      (is (= {:john john} (data developer)))
-      (is (= {:steve steve} (data manager)))
+    (let [model-data (data model)
+	  {developers :developer managers :manager} model-data]
+      (is (= (count model-data) 2))
+      (is (= [managers] (data view)))
+      (is (= {:john john} (data developers)))
+      (is (= {:steve steve} (data managers)))
       )
     ))

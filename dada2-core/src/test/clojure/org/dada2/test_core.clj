@@ -8,19 +8,20 @@
      [org.dada2.core ModelView])
     )
 
-(defn ^ModelView test-view []
-  (->ModelView 
+(defn ^ModelView test-view [name]
+  (->ModelView
+   name
    (atom nil)
    (atom [])
-   (fn [current upsertion] [upsertion])
-   (fn [current deletion] [deletion])
+   (fn [current upsertion]  [upsertion])
+   (fn [current deletion]   [deletion])
    (fn [current upsertions] [upsertions])
-   (fn [current deletions] [deletions])
+   (fn [current deletions]  [deletions])
    ))
 
 (deftest test-model
   (let [model (simple-counting-model)
-	view (test-view)]
+	view (test-view "test")]
     (is (empty? @(.views model)))
     (attach model view)
     (is (= [view] @(.views model)))
@@ -30,7 +31,7 @@
 
 (deftest test-counting-model
   (let [model (simple-counting-model)
-	view (test-view)]
+	view (test-view "test")]
     (attach model view)
     (is (= 0 (data model)))
     (is (= nil (data view)))
@@ -45,7 +46,7 @@
 
 (deftest test-simple-sequence-model
   (let [model (simple-sequence-model)
-	view (test-view)]
+	view (test-view "test")]
     (attach model view)
     (is (not (data model)))
     (on-upsert model 1)
@@ -62,7 +63,7 @@
 
 (deftest test-simple-hashset-model
   (let [model (simple-hashset-model)
-	view (test-view)]
+	view (test-view "test")]
     (attach model view)
     (is (= #{} (data model)))
     (is (= nil (data view)))
@@ -88,11 +89,14 @@
 (deftest test-overwrite-map-pair-by-value-has-no-effect
   (is (let [m1 {"a" "1"}](identical?  m1 (conj m1 ["a" "1"])))))
 
-(defrecord Datum [key value])
+(defrecord Datum [key value]
+  Object
+  (^String toString [_] (str key))
+  )
 
 (deftest test-simple-hashmap-model
   (let [model (simple-hashmap-model :key)
-	view (test-view)
+	view (test-view "test")
 	a1 (->Datum :a 1)
 	a2 (->Datum :a 2)
 	b4 (->Datum :b 4)
