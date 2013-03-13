@@ -43,4 +43,14 @@
       (is (= {:john john} (data developers)))
       (is (= {:steve steve} (data managers)))
       )
+
+    (on-deletes model [john steve])
+    (let [model-data (data model)
+	  {developers :developer managers :manager} model-data]
+      (is (= (count model-data) 2))
+      (is (= [] (data view)))
+      (is (= {} (data developers)))
+      (is (= {} (data managers)))
+      )
+
     ))
