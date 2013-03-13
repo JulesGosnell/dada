@@ -31,6 +31,13 @@
   Object
   (^String toString [_] (str whale-name)))
 
+(defn- ^WhaleAndOcean join-whale-and-ocean [^Whale whale ^Ocean ocean]
+  (->WhaleAndOcean (:name whale) (+ (:version whale) (:version ocean)) (:area ocean)))
+
+(deftest test-join-whale-and-ocean
+  (is (= (->WhaleAndOcean "flipper" 0 1000000) 
+	 (join-whale-and-ocean (->Whale "flipper" 0 :atlantic)(->Ocean :atlantic 0 1000000)))))
+
 (deftest test-join-model
   (let [model (join-model "join-model")
 	view (test-view "test")
