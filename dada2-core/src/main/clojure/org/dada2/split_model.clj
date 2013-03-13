@@ -14,7 +14,7 @@
 ;; a real-time "group-by"
 
 
-;;; key-fn can become split-key-fn - we don't need a key-fn - are they therefore one and the same ?
+;; key-fn can become split-key-fn - we don't need a key-fn - are they therefore one and the same ?
 ;; applicator needs to create new entry one the fly - contains new-model-fn
 ;; applicator needs to return new-state and new-datum (may not be same as change)
 ;; on-change and on-changes should also be merged and shared with map-model - hard - should we lose singleton api ?
@@ -68,18 +68,11 @@
 	     )]
 	)))
 
-(defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
-
 (defn ^ModelView split-model [name key-fn make-model-fn]
   (map-model name key-fn (make-on-change make-model-fn) (make-on-changes make-model-fn) nil nil assoc nil))
 
-;; need to test addition of submodels
-;; need to notify submodel after change...
-
 ;;--------------------------------------------------------------------------------
-
-;;; need metamodel
+;; need metamodel - split-mode IS a metamodel - consider...
 ;; we need a select-model so we can view this remotely without pulling submodel content over the wire
 
-
-;;; add new-datum-fn - call (new-datum-fn new-datum) to get new-datum
+;; TODO - refactor to share more code with map-model...
