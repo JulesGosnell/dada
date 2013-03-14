@@ -37,26 +37,25 @@
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
 (defn- join-views [[lhs-model lhs-key] & rhses]
-  (log2 :info (str "join-views: " rhses))
-  ;; view lhs
-  ;; ...
-  ;; view rhses
-  (let [indeces (atom [])]
+  (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
+    ;; view lhs
+    (log2 :info (str " lhs: " lhs-model ", " lhs-key))
+    ;; view rhses
     (doseq [[model key] rhses]
-	(log2 :info (str " join-views: " model ", " key))
-	(let [i (count @indeces)]   ; figure out offset for this index
-	  (swap! indeces conj {})   ; add index for this model
-	  ;; view rhs model
-	  (attach 
-	   model
-	   (reify
-	    View
-	    ;; singleton changes
-	    (on-upsert [_ upsertion] (swap! indeces rhs-upsert i key upsertion) nil)
-	    (on-delete [_ deletion]  (swap! indeces rhs-delete i key deletion) nil)
-	    ;; batch changes
-	    (on-upserts [_ upsertions] (swap! indeces rhs-upserts i key upsertions) nil)
-	    (on-deletes [_ deletions]  (swap! indeces rhs-deletes i key deletions) nil)))))
+	(log2 :info (str " rhs: " model ", " key))
+      (let [i (count @indeces)]	    ; figure out offset for this index
+	(swap! indeces conj {})	    ; add index for this model
+	;; view rhs model
+	(attach 
+	 model
+	 (reify
+	  View
+	  ;; singleton changes
+	  (on-upsert [_ upsertion] (swap! indeces rhs-upsert i key upsertion) nil)
+	  (on-delete [_ deletion]  (swap! indeces rhs-delete i key deletion) nil)
+	  ;; batch changes
+	  (on-upserts [_ upsertions] (swap! indeces rhs-upserts i key upsertions) nil)
+	  (on-deletes [_ deletions]  (swap! indeces rhs-deletes i key deletions) nil)))))
     (println "INDECES: " indeces)
     indeces))
 
@@ -75,7 +74,6 @@
 
 ;;--------------------------------------------------------------------------------
 ;; tests
-
 
 (defrecord D [name ^int version e]
   Object
@@ -112,16 +110,16 @@
 	a (->A :a 0 :b :d)
 	b (->B :b 0 :c)
 	d (->D :d 0 :e)]
-    (is (= [{}{}] (data join)))
+    (is (= [[{}{}]{}{}] (data join)))
 
     (attach join view)
     (is (= nil (data view)))
 
     (on-upsert bs b)
-    (is (= [{:b [b]} {}] (data join)))
+    (is (= [[{}{}]{:b [b]} {}] (data join)))
 
     (on-upsert ds d)
-    (is (= [{:b [b]} {:d [d]}] (data join)))
+    (is (= [[{}{}]{:b [b]} {:d [d]}] (data join)))
 
     ;; (on-delete join james)
     ;; (on-upserts join [john steve])
