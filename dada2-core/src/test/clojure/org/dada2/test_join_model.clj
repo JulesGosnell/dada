@@ -5,6 +5,7 @@
      [org.dada2 core]
      [org.dada2 test-core]
      [org.dada2 map-model]
+     [org.dada2 split-model]
      ;;[org.dada2 join-model]
      )
     (:import
@@ -20,6 +21,27 @@
 ;;--------------------------------------------------------------------------------
 ;; impl
 
+(defn- lhs-upsert [old-indeces i ks v]
+  (let [old-index (nth old-indeces i)
+	new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
+	new-indeces (assoc old-indeces i new-index)]
+    new-indeces))
+
+;;; TODO
+(defn- lhs-delete [old-indeces i k v])
+(defn- lhs-upserts [old-indeces i k vs])
+(defn- lhs-deletes [old-indeces i k vs])
+
+(defn- lhs-view [indeces i keys]
+  (reify
+   View
+   ;; singleton changes
+   (on-upsert [_ upsertion] (swap! indeces lhs-upsert i keys upsertion) nil)
+   (on-delete [_ deletion]  (swap! indeces lhs-delete i keys deletion) nil)
+   ;; batch changes
+   (on-upserts [_ upsertions] (swap! indeces lhs-upserts i keys upsertions) nil)
+   (on-deletes [_ deletions]  (swap! indeces lhs-deletes i keys deletions) nil)))
+
 (defn- rhs-upsert [old-indeces i k v]
   (let [old-index (nth old-indeces i)
 	key (k v)
@@ -27,36 +49,38 @@
 	new-value (conj old-value v)
 	new-index (assoc old-index key new-value)
 	new-indeces (assoc old-indeces i new-index)]
-    new-indeces))
+    new-indeces
+    ))
 
 ;;; TODO
-(defn- rhs-delete [old-indeces i k v])
-(defn- rhs-upserts [old-indeces i k vs])
-(defn- rhs-deletes [old-indeces i k vs])
+(defn- rhs-delete [old-indeces i ks v])
+(defn- rhs-upserts [old-indeces i ks vs])
+(defn- rhs-deletes [old-indeces i ks vs])
+
+(defn- rhs-view [indeces i keys]
+  (reify
+   View
+   ;; singleton changes
+   (on-upsert [_ upsertion] (swap! indeces rhs-upsert i keys upsertion) nil)
+   (on-delete [_ deletion]  (swap! indeces rhs-delete i keys deletion) nil)
+   ;; batch changes
+   (on-upserts [_ upsertions] (swap! indeces rhs-upserts i keys upsertions) nil)
+   (on-deletes [_ deletions]  (swap! indeces rhs-deletes i keys deletions) nil)))
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [[lhs-model lhs-key] & rhses]
+(defn- join-views [[lhs-model & lhs-keys] & rhses]
   (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
     ;; view lhs
-    (log2 :info (str " lhs: " lhs-model ", " lhs-key))
+    (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
+    (attach lhs-model (lhs-view indeces 0 lhs-keys))
     ;; view rhses
     (doseq [[model key] rhses]
-	(log2 :info (str " rhs: " model ", " key))
-      (let [i (count @indeces)]	    ; figure out offset for this index
-	(swap! indeces conj {})	    ; add index for this model
-	;; view rhs model
-	(attach 
-	 model
-	 (reify
-	  View
-	  ;; singleton changes
-	  (on-upsert [_ upsertion] (swap! indeces rhs-upsert i key upsertion) nil)
-	  (on-delete [_ deletion]  (swap! indeces rhs-delete i key deletion) nil)
-	  ;; batch changes
-	  (on-upserts [_ upsertions] (swap! indeces rhs-upserts i key upsertions) nil)
-	  (on-deletes [_ deletions]  (swap! indeces rhs-deletes i key deletions) nil)))))
-    (println "INDECES: " indeces)
+	(let [i (count @indeces)]   ; figure out offset for this index
+	  (log2 :info (str " rhs: " model ", " i ", " key))
+	  (swap! indeces conj {})	; add index for this model
+	  ;; view rhs model
+	  (attach model (rhs-view indeces i key))))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
@@ -105,7 +129,7 @@
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
 	ds (versioned-optimistic-map-model (str :ds) :name :version >)
-	join (join-model "join-model" [[as :b][bs :name][ds :name]] join-ace)
+	join (join-model "join-model" [[as :b :d][bs :name][ds :name]] join-ace)
 	view (test-view "test")
 	a (->A :a 0 :b :d)
 	b (->B :b 0 :c)
@@ -120,6 +144,9 @@
 
     (on-upsert ds d)
     (is (= [[{}{}]{:b [b]} {:d [d]}] (data join)))
+
+    (on-upsert as a)
+    (is (= [[{:b [a]}{:d [a]}]{:b [b]} {:d [d]}] (data join)))
 
     ;; (on-delete join james)
     ;; (on-upserts join [john steve])

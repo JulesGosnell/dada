@@ -40,7 +40,7 @@
 		 )]))
 	)))
 
-(defn- group [map key value]
+(defn group [map key value]
   "add [key value] to map as in group-by"
   (assoc map key (conj (if-let [v (key map)] v []) value)))
 
