@@ -35,9 +35,9 @@
 ;;--------------------------------------------------------------------------------
 ;; "a basic DADA2 Model, supporting Views" - add as metadata somehow
 ;; on-upsert-fn: ([[old-state, old-change] change]) -> [new-state new-change]
-(defn- without [coll item] (remove (fn [i] (identical? item i)) coll))
+(defn without [coll item] (remove (fn [i] (identical? item i)) coll))
 
-(defn- log2 [_ message]
+(defn log2 [_ message]
   (println "LOG: " message))
 
 ;; should state and views be stored in the same atom ?
