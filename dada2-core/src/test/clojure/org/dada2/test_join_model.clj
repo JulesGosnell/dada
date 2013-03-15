@@ -21,10 +21,17 @@
 ;;--------------------------------------------------------------------------------
 ;; impl
 
-(defn- lhs-upsert [old-indeces i ks v]
-  (let [old-index (nth old-indeces i)
-	new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
-	new-indeces (assoc old-indeces i new-index)]
+;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
+
+(defn- derive-joins [v rhs-indeces ks join-fn]
+  (map
+   (fn [args] (apply join-fn v args))
+   (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
+
+(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn]
+  (let [new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
+	new-indeces (apply vector new-index rhs-indeces)]
+    (println "JOINS: " (derive-joins v rhs-indeces ks)		;TODO: what should we do with this ?
     new-indeces))
 
 ;;; TODO
@@ -32,15 +39,17 @@
 (defn- lhs-upserts [old-indeces i k vs])
 (defn- lhs-deletes [old-indeces i k vs])
 
-(defn- lhs-view [indeces i keys]
+(defn- lhs-view [indeces i keys join-fn]
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] (swap! indeces lhs-upsert i keys upsertion) nil)
+   (on-upsert [_ upsertion] (swap! indeces lhs-upsert keys upsertion join-fn) nil)
    (on-delete [_ deletion]  (swap! indeces lhs-delete i keys deletion) nil)
    ;; batch changes
    (on-upserts [_ upsertions] (swap! indeces lhs-upserts i keys upsertions) nil)
    (on-deletes [_ deletions]  (swap! indeces lhs-deletes i keys deletions) nil)))
+
+;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
 (defn- rhs-upsert [old-indeces i k v]
   (let [old-index (nth old-indeces i)
@@ -69,11 +78,11 @@
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [[lhs-model & lhs-keys] & rhses]
+(defn- join-views [join-fn [lhs-model & lhs-keys] & rhses]
   (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
-    (attach lhs-model (lhs-view indeces 0 lhs-keys))
+    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn))
     ;; view rhses
     (doseq [[model key] rhses]
 	(let [i (count @indeces)]   ; figure out offset for this index
@@ -93,7 +102,7 @@
   )
 
 (defn join-model [name joins join-fn]
-  (let [state (apply join-views joins)]
+  (let [state (apply join-views join-fn joins)]
     (->JoinModel name state (atom []))))
 
 ;;--------------------------------------------------------------------------------
@@ -124,6 +133,29 @@
 (deftest test-join-ace
   (is (= (->ACE :a 0 :c :e) 
 	 (join-ace (->A :a 0 :b :d)(->B :b 0 :c)(->D :d 0 :e)))))
+
+;;; calculate all permutations for a given list of sets...
+;;; e.g. 
+;;; (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]) ->
+;;; ([:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1])
+
+;;; TODO: should use recurse
+(defn- permute [state [head & tail]]
+  (if (empty? head)
+    state
+    (permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail)))
+
+;;; consider outer joins
+;; (defn- permute2 [inner state [head & tail]]
+;;   (if (empty? tail)
+;;     state
+;;     (if-let [head (if (and (empty? head) inner) nil [nil])]
+;; 	(permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail))))
+
+(deftest test-permute
+  (is (= 
+       [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
+       (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
 
 (deftest test-join-model
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
