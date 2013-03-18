@@ -21,119 +21,6 @@
 ;;--------------------------------------------------------------------------------
 ;; impl
 
-;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
-
-(defn- derive-joins [v rhs-indeces ks join-fn]
-  (map
-   (fn [args] (apply join-fn v args))
-   (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
-
-(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn]
-  (let [new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
-	new-indeces (apply vector new-index rhs-indeces)]
-    (println "JOINS: " (derive-joins v rhs-indeces ks)		;TODO: what should we do with this ?
-    new-indeces))
-
-;;; TODO
-(defn- lhs-delete [old-indeces i k v])
-(defn- lhs-upserts [old-indeces i k vs])
-(defn- lhs-deletes [old-indeces i k vs])
-
-(defn- lhs-view [indeces i keys join-fn]
-  (reify
-   View
-   ;; singleton changes
-   (on-upsert [_ upsertion] (swap! indeces lhs-upsert keys upsertion join-fn) nil)
-   (on-delete [_ deletion]  (swap! indeces lhs-delete i keys deletion) nil)
-   ;; batch changes
-   (on-upserts [_ upsertions] (swap! indeces lhs-upserts i keys upsertions) nil)
-   (on-deletes [_ deletions]  (swap! indeces lhs-deletes i keys deletions) nil)))
-
-;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
-
-(defn- rhs-upsert [old-indeces i k v]
-  (let [old-index (nth old-indeces i)
-	key (k v)
-	old-value (or (old-index key) [])
-	new-value (conj old-value v)
-	new-index (assoc old-index key new-value)
-	new-indeces (assoc old-indeces i new-index)]
-    new-indeces
-    ))
-
-;;; TODO
-(defn- rhs-delete [old-indeces i ks v])
-(defn- rhs-upserts [old-indeces i ks vs])
-(defn- rhs-deletes [old-indeces i ks vs])
-
-(defn- rhs-view [indeces i keys]
-  (reify
-   View
-   ;; singleton changes
-   (on-upsert [_ upsertion] (swap! indeces rhs-upsert i keys upsertion) nil)
-   (on-delete [_ deletion]  (swap! indeces rhs-delete i keys deletion) nil)
-   ;; batch changes
-   (on-upserts [_ upsertions] (swap! indeces rhs-upserts i keys upsertions) nil)
-   (on-deletes [_ deletions]  (swap! indeces rhs-deletes i keys deletions) nil)))
-
-;;; attach lhs to all rhses such that any change to an rhs initiates an
-;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [join-fn [lhs-model & lhs-keys] & rhses]
-  (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
-    ;; view lhs
-    (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
-    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn))
-    ;; view rhses
-    (doseq [[model key] rhses]
-	(let [i (count @indeces)]   ; figure out offset for this index
-	  (log2 :info (str " rhs: " model ", " i ", " key))
-	  (swap! indeces conj {})	; add index for this model
-	  ;; view rhs model
-	  (attach model (rhs-view indeces i key))))
-    indeces))
-
-(deftype JoinModel [^String name ^Atom state ^Atom views]
-  Model
-  (attach [this view] (swap! views conj view) this)
-  (detach [this view] (swap! views without view) this)
-  (data [_] @state)
-  Object
-  (^String toString [this] name)
-  )
-
-(defn join-model [name joins join-fn]
-  (let [state (apply join-views join-fn joins)]
-    (->JoinModel name state (atom []))))
-
-;;--------------------------------------------------------------------------------
-;; tests
-
-(defrecord D [name ^int version e]
-  Object
-  (^String toString [_] (str name)))
-
-(defrecord B [name ^int version c]
-  Object
-  (^String toString [_] (str name)))
-
-(defrecord A [name ^int version ^B b ^D d]
-  Object
-  (^String toString [_] (str name)))
-
-(defrecord ACE [a ^int version c e]
-  Object
-  (^String toString [_] (str a)))
-
-;; an example of an aggressive join-fn
-;; a "lazy" join fn would define the same interface, but hold references to the A,B and C...
-;; a really clever impl might start lazy and become agressive during serialisation..
-(defn- ^ACE join-ace [^A a ^B b ^D d]
-  (->ACE (:name a) (+ (:version a) (:version b) (:version d)) (:c b) (:e d)))
-
-(deftest test-join-ace
-  (is (= (->ACE :a 0 :c :e) 
-	 (join-ace (->A :a 0 :b :d)(->B :b 0 :c)(->D :d 0 :e)))))
-
 ;;; calculate all permutations for a given list of sets...
 ;;; e.g. 
 ;;; (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]) ->
@@ -152,6 +39,132 @@
 ;;     (if-let [head (if (and (empty? head) inner) nil [nil])]
 ;; 	(permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail))))
 
+;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
+
+(defn- derive-joins [v rhs-indeces ks join-fn]
+  (map
+   (fn [args] (apply join-fn v args))
+   (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
+
+(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn]
+  (let [new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
+	new-indeces (apply vector new-index rhs-indeces)]
+    (println "LHS JOINS: " (derive-joins v rhs-indeces ks join-fn)) ;TODO: what should we do with this ?
+    new-indeces))
+
+;;; TODO
+(defn- lhs-delete [old-indeces i ks v join-fn])
+(defn- lhs-upserts [old-indeces i ks vs join-fn])
+(defn- lhs-deletes [old-indeces i ks vs join-fn])
+
+(defn- lhs-view [indeces i keys join-fn]
+  (reify
+   View
+   ;; singleton changes
+   (on-upsert [_ upsertion] (swap! indeces lhs-upsert keys upsertion join-fn) nil)
+   (on-delete [_ deletion]  (swap! indeces lhs-delete keys deletion join-fn) nil)
+   ;; batch changes
+   (on-upserts [_ upsertions] (swap! indeces lhs-upserts keys upsertions join-fn) nil)
+   (on-deletes [_ deletions]  (swap! indeces lhs-deletes keys deletions join-fn) nil)))
+
+;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
+
+(defn- rhs-upsert [old-indeces i lhs-key rhs-ks v join-fn]
+  (println "rhs-upsert: " old-indeces i rhs-ks v join-fn)
+  (let [
+	old-index (nth old-indeces i)
+	key (lhs-key v)
+	old-value (or (old-index key) [])
+	new-value (conj old-value v)
+	new-index (assoc old-index key new-value)
+	new-indeces (assoc old-indeces i new-index)
+	lhs-indeces (first old-indeces)
+	lhs-index (nth lhs-indeces (dec i))
+	lhses (key lhs-index)
+	rhs-indeces (rest new-indeces)
+	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces rhs-ks join-fn)) lhses)
+	]
+    (println "RHS JOINS: " joins)
+    new-indeces
+    ))
+
+;;; TODO
+(defn- rhs-delete [old-indeces i ks v join-fn])
+(defn- rhs-upserts [old-indeces i ks vs join-fn])
+(defn- rhs-deletes [old-indeces i ks vs join-fn])
+
+(defn- rhs-view [indeces i key keys join-fn]
+  (reify
+   View
+   ;; singleton changes
+   (on-upsert [_ upsertion] (swap! indeces rhs-upsert i key keys upsertion join-fn) nil)
+   (on-delete [_ deletion]  (swap! indeces rhs-delete i keys deletion join-fn) nil)
+   ;; batch changes
+   (on-upserts [_ upsertions] (swap! indeces rhs-upserts i keys upsertions join-fn) nil)
+   (on-deletes [_ deletions]  (swap! indeces rhs-deletes i keys deletions join-fn) nil)))
+
+;;; attach lhs to all rhses such that any change to an rhs initiates an
+;;; attempt to [re]join it to the lhs and vice versa.
+(defn- join-views [join-fn [lhs-model & lhs-keys] & rhses]
+  (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
+    ;; view lhs
+    (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
+    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn))
+    ;; view rhses
+    (doseq [[model key] rhses]
+	(let [i (count @indeces)]   ; figure out offset for this index
+	  (log2 :info (str " rhs: " model ", " i ", " key))
+	  (swap! indeces conj {})	; add index for this model
+	  ;; view rhs model
+	  (attach model (rhs-view indeces i key lhs-keys join-fn))))
+    indeces))
+
+(deftype JoinModel [^String name ^Atom state ^Atom views]
+  Model
+  (attach [this view] (swap! views conj view) this)
+  (detach [this view] (swap! views without view) this)
+  (data [_] @state)
+  Object
+  (^String toString [this] name)
+  )
+
+(defn join-model [name joins join-fn]
+  (let [state (apply join-views join-fn joins)]
+    (->JoinModel name state (atom []))))
+
+;;--------------------------------------------------------------------------------
+;; tests
+
+(defrecord A [name ^int version fk-b fk-c]
+  Object
+  (^String toString [_] (str name)))
+
+(defrecord B [name ^int version b data]
+  Object
+  (^String toString [_] (str name)))
+
+(defrecord C [name ^int version c data]
+  Object
+  (^String toString [_] (str name)))
+
+(defrecord ABC [name ^int version b-data c-data]
+  Object
+  (^String toString [_] (str name)))
+
+;; an example of an aggressive join-fn
+;; a "lazy" join fn would define the same interface, but hold references to the A,B and C...
+;; a really clever impl might start lazy and become agressive during serialisation..
+(defn- ^ABC join-abc [^A a ^B b ^C c]
+  (->ABC
+   (keyword (apply str (interpose "-" (list (name (:name a)) (name (:name b)) (name (:name c))))))
+   (+ (* 1000 (:version a)) (* 100 (:version b)) (* 10 (:version c)))
+   (:data b)
+   (:data c)))
+
+(deftest test-join-abc
+  (is (= (->ABC :a1-b1-c1 0 "b-data" "c-data") 
+	 (join-abc (->A :a1 0 :b :c)(->B :b1 0 :b "b-data")(->C :c1 0 :c "c-data")))))
+
 (deftest test-permute
   (is (= 
        [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
@@ -160,28 +173,44 @@
 (deftest test-join-model
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
-	ds (versioned-optimistic-map-model (str :ds) :name :version >)
-	join (join-model "join-model" [[as :b :d][bs :name][ds :name]] join-ace)
+	cs (versioned-optimistic-map-model (str :cs) :name :version >)
+	join (join-model "join-model" [[as :fk-b :fk-c][bs :b][cs :c]] join-abc)
 	view (test-view "test")
-	a (->A :a 0 :b :d)
-	b (->B :b 0 :c)
-	d (->D :d 0 :e)]
+	a1 (->A :a1 0 :b :c)
+	a2 (->A :a2 0 :b :c)
+	b1 (->B :b1 0 :b "b1-data")
+	b2 (->B :b2 0 :b "b2-data")
+	c1 (->C :c1 0 :c "c1-data")
+	c2 (->C :c2 0 :c "c2-data")]
     (is (= [[{}{}]{}{}] (data join)))
 
     (attach join view)
     (is (= nil (data view)))
 
-    (on-upsert bs b)
-    (is (= [[{}{}]{:b [b]} {}] (data join)))
+    ;; initial data
+    (on-upsert bs b1)
+    (is (= [[{}{}]{:b [b1]} {}] (data join)))
 
-    (on-upsert ds d)
-    (is (= [[{}{}]{:b [b]} {:d [d]}] (data join)))
+    (on-upsert cs c1)
+    (is (= [[{}{}]{:b [b1]} {:c [c1]}] (data join)))
 
-    (on-upsert as a)
-    (is (= [[{:b [a]}{:d [a]}]{:b [b]} {:d [d]}] (data join)))
+    ;; join - lhs - a1
+    (on-upsert as a1)
+    (is (= [[{:b [a1]}{:c [a1]}]{:b [b1]} {:c [c1]}] (data join)))
 
-    ;; (on-delete join james)
-    ;; (on-upserts join [john steve])
-    ;; (on-deletes join [john steve])
+    ;; join - new rhs - b2
+    (on-upsert bs b2)
+    (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1]}] (data join)))
+
+    ;; join - new rhs - c2
+    (on-upsert cs c2)
+    (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
+
+    ;; join - new lhs - a2
+    (on-upsert as a2)
+    (is (= [[{:b [a1 a2]}{:c [a1 a2]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
+
+    ;; what about amend-in/out ?
+    ;; what about delete ?
 
     ))
