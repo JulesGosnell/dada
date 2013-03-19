@@ -146,7 +146,7 @@
   Object
   (^String toString [_] (str name)))
 
-(defrecord ABC [name ^int version b-data c-data]
+(defrecord ABC [name version b-data c-data]
   Object
   (^String toString [_] (str name)))
 
@@ -155,13 +155,18 @@
 ;; a really clever impl might start lazy and become agressive during serialisation..
 (defn- ^ABC join-abc [^A a ^B b ^C c]
   (->ABC
-   (keyword (apply str (interpose "-" (list (name (:name a)) (name (:name b)) (name (:name c))))))
-   (+ (* 1000 (:version a)) (* 100 (:version b)) (* 10 (:version c)))
+   [(:name a) (:name b) (:name c)]
+   [ (:version a) (:version b) (:version c)]
    (:data b)
    (:data c)))
 
+(defn- abc-more-recent-than? [[a1 b1 c1][a2 b2 c2]]
+  (or (and (> a1 a2) (>= b1 b2) (>= c1 c2))
+      (and (> b1 b2) (>= a1 a2) (>= c1 c2))
+      (and (> c1 c2) (>= a1 a2) (>= b1 b2))))
+
 (deftest test-join-abc
-  (is (= (->ABC :a1-b1-c1 0 "b-data" "c-data") 
+  (is (= (->ABC [:a1 :b1 :c1] [0 0 0] "b-data" "c-data") 
 	 (join-abc (->A :a1 0 :b :c)(->B :b1 0 :b "b-data")(->C :c1 0 :c "c-data")))))
 
 (deftest test-permute
@@ -173,7 +178,7 @@
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
 	cs (versioned-optimistic-map-model (str :cs) :name :version >)
-	joined-model (versioned-optimistic-map-model (str :joined) :name :version >)
+	joined-model (versioned-optimistic-map-model (str :joined) :name :version abc-more-recent-than?)
 	join (join-model "join-model" [[as [:fk-b :fk-c] joined-model][bs :b][cs :c]] join-abc)
 	view (test-view "test")
 	a1 (->A :a1 0 :b :c)
@@ -200,38 +205,38 @@
     ;; join - lhs - a1
     (on-upsert as a1)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1]} {:c [c1]}] (data join)))
-    (is (= {:a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")} (data joined-model)))
+    (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")} (data joined-model)))
 
     ;; join - new rhs - b2
     (on-upsert bs b2)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1]}] (data join)))
     (is (= {
-	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
-	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")}
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
 	   (data joined-model)))
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
     (is (= {
-	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
-	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")
-	   :a1-b1-c2 (->ABC :a1-b1-c2 0 "b1-data" "c2-data")
-	   :a1-b2-c2 (->ABC :a1-b2-c2 0 "b2-data" "c2-data")
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
 	   }
 	   (data joined-model)))
     ;; join - new lhs - a2
     (on-upsert as a2)
     (is (= [[{:b [a1 a2]}{:c [a1 a2]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
     (is (= {
-	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
-	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")
-	   :a1-b1-c2 (->ABC :a1-b1-c2 0 "b1-data" "c2-data")
-	   :a1-b2-c2 (->ABC :a1-b2-c2 0 "b2-data" "c2-data")
-	   :a2-b1-c1 (->ABC :a2-b1-c1 0 "b1-data" "c1-data")
-	   :a2-b2-c1 (->ABC :a2-b2-c1 0 "b2-data" "c1-data")
-	   :a2-b1-c2 (->ABC :a2-b1-c2 0 "b1-data" "c2-data")
-	   :a2-b2-c2 (->ABC :a2-b2-c2 0 "b2-data" "c2-data")
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+	   [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
 	   }
 	   (data joined-model)))
     ;; what about amend-in/out ?
