@@ -2,6 +2,7 @@
     (:use
      [clojure test]
      [clojure.tools logging]
+     [org.dada2 utils]
      [org.dada2 core]
      [org.dada2 test-core]
      [org.dada2 map-model]
@@ -46,22 +47,22 @@
    (fn [args] (apply join-fn v args))
    (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
 
-(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn]
+(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn joined-model]
   (let [new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
-	new-indeces (apply vector new-index rhs-indeces)]
-    (println "LHS JOINS: " (derive-joins v rhs-indeces ks join-fn)) ;TODO: what should we do with this ?
-    new-indeces))
+	new-indeces (apply vector new-index rhs-indeces)
+	joins (derive-joins v rhs-indeces ks join-fn)]
+    [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
 ;;; TODO
 (defn- lhs-delete [old-indeces i ks v join-fn])
 (defn- lhs-upserts [old-indeces i ks vs join-fn])
 (defn- lhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- lhs-view [indeces i keys join-fn]
+(defn- lhs-view [indeces i keys join-fn joined-model]
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] (swap! indeces lhs-upsert keys upsertion join-fn) nil)
+   (on-upsert [_ upsertion] ((swap*! indeces lhs-upsert keys upsertion join-fn joined-model) []) nil) ;TODO - pass in views to notifier
    (on-delete [_ deletion]  (swap! indeces lhs-delete keys deletion join-fn) nil)
    ;; batch changes
    (on-upserts [_ upsertions] (swap! indeces lhs-upserts keys upsertions join-fn) nil)
@@ -69,8 +70,7 @@
 
 ;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
-(defn- rhs-upsert [old-indeces i lhs-key rhs-ks v join-fn]
-  (println "rhs-upsert: " old-indeces i rhs-ks v join-fn)
+(defn- rhs-upsert [old-indeces i lhs-key rhs-ks v join-fn joined-model]
   (let [
 	old-index (nth old-indeces i)
 	key (lhs-key v)
@@ -84,8 +84,7 @@
 	rhs-indeces (rest new-indeces)
 	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces rhs-ks join-fn)) lhses)
 	]
-    (println "RHS JOINS: " joins)
-    new-indeces
+    [new-indeces (fn [_] (on-upserts joined-model joins))]
     ))
 
 ;;; TODO
@@ -93,11 +92,11 @@
 (defn- rhs-upserts [old-indeces i ks vs join-fn])
 (defn- rhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- rhs-view [indeces i key keys join-fn]
+(defn- rhs-view [indeces i key keys join-fn joined-model]
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] (swap! indeces rhs-upsert i key keys upsertion join-fn) nil)
+   (on-upsert [_ upsertion] ((swap*! indeces rhs-upsert i key keys upsertion join-fn joined-model) []) nil) ;TODO: pass in views to notifier
    (on-delete [_ deletion]  (swap! indeces rhs-delete i keys deletion join-fn) nil)
    ;; batch changes
    (on-upserts [_ upsertions] (swap! indeces rhs-upserts i keys upsertions join-fn) nil)
@@ -105,18 +104,18 @@
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [join-fn [lhs-model & lhs-keys] & rhses]
+(defn- join-views [join-fn [lhs-model lhs-keys joined-model] & rhses]
   (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
-    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn))
+    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn joined-model))
     ;; view rhses
     (doseq [[model key] rhses]
 	(let [i (count @indeces)]   ; figure out offset for this index
 	  (log2 :info (str " rhs: " model ", " i ", " key))
 	  (swap! indeces conj {})	; add index for this model
 	  ;; view rhs model
-	  (attach model (rhs-view indeces i key lhs-keys join-fn))))
+	  (attach model (rhs-view indeces i key lhs-keys join-fn joined-model))))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
@@ -174,7 +173,8 @@
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
 	cs (versioned-optimistic-map-model (str :cs) :name :version >)
-	join (join-model "join-model" [[as :fk-b :fk-c][bs :b][cs :c]] join-abc)
+	joined-model (versioned-optimistic-map-model (str :joined) :name :version >)
+	join (join-model "join-model" [[as [:fk-b :fk-c] joined-model][bs :b][cs :c]] join-abc)
 	view (test-view "test")
 	a1 (->A :a1 0 :b :c)
 	a2 (->A :a2 0 :b :c)
@@ -183,6 +183,7 @@
 	c1 (->C :c1 0 :c "c1-data")
 	c2 (->C :c2 0 :c "c2-data")]
     (is (= [[{}{}]{}{}] (data join)))
+    (is (= {} (data joined-model)))
 
     (attach join view)
     (is (= nil (data view)))
@@ -190,27 +191,51 @@
     ;; initial data
     (on-upsert bs b1)
     (is (= [[{}{}]{:b [b1]} {}] (data join)))
+    (is (= {} (data joined-model)))
 
     (on-upsert cs c1)
     (is (= [[{}{}]{:b [b1]} {:c [c1]}] (data join)))
+    (is (= {} (data joined-model)))
 
     ;; join - lhs - a1
     (on-upsert as a1)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1]} {:c [c1]}] (data join)))
+    (is (= {:a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")} (data joined-model)))
 
     ;; join - new rhs - b2
     (on-upsert bs b2)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1]}] (data join)))
+    (is (= {
+	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
+	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")}
+	   (data joined-model)))
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
     (is (= [[{:b [a1]}{:c [a1]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
-
+    (is (= {
+	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
+	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")
+	   :a1-b1-c2 (->ABC :a1-b1-c2 0 "b1-data" "c2-data")
+	   :a1-b2-c2 (->ABC :a1-b2-c2 0 "b2-data" "c2-data")
+	   }
+	   (data joined-model)))
     ;; join - new lhs - a2
     (on-upsert as a2)
     (is (= [[{:b [a1 a2]}{:c [a1 a2]}]{:b [b1 b2]} {:c [c1 c2]}] (data join)))
-
+    (is (= {
+	   :a1-b1-c1 (->ABC :a1-b1-c1 0 "b1-data" "c1-data")
+	   :a1-b2-c1 (->ABC :a1-b2-c1 0 "b2-data" "c1-data")
+	   :a1-b1-c2 (->ABC :a1-b1-c2 0 "b1-data" "c2-data")
+	   :a1-b2-c2 (->ABC :a1-b2-c2 0 "b2-data" "c2-data")
+	   :a2-b1-c1 (->ABC :a2-b1-c1 0 "b1-data" "c1-data")
+	   :a2-b2-c1 (->ABC :a2-b2-c1 0 "b2-data" "c1-data")
+	   :a2-b1-c2 (->ABC :a2-b1-c2 0 "b1-data" "c2-data")
+	   :a2-b2-c2 (->ABC :a2-b2-c2 0 "b2-data" "c2-data")
+	   }
+	   (data joined-model)))
     ;; what about amend-in/out ?
     ;; what about delete ?
 
+    ;; check outgoing joins
     ))
