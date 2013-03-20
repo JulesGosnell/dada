@@ -62,10 +62,9 @@ join the lhs via corresponding key"
 
 ;;--------------------------------------------------------------------------------
 
-(defn- lhs-upsert [old-indeces ks v join-fn joined-model]
-  (let [new-indeces (lhs-assoc old-indeces ks v)
-	[_ & rhs-indeces] old-indeces
-	joins (derive-joins v rhs-indeces ks join-fn)]
+(defn- lhs-upsert [old-indeces keys lhs join-fn joined-model]
+  (let [new-indeces (lhs-assoc old-indeces keys lhs)
+	joins (derive-joins lhs (rest new-indeces) keys join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
 ;;; TODO
