@@ -26,30 +26,41 @@
 ;;; e.g. 
 ;;; (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]) ->
 ;;; ([:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1])
-
-;;; TODO: should use recurse
+;;; TODO:
+;;;  should use recurse
+;;;  should support both inner and outer joins
 (defn- permute [state [head & tail]]
   (if (empty? head)
     state
     (permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail)))
 
-;;; consider outer joins
-;; (defn- permute2 [inner state [head & tail]]
-;;   (if (empty? tail)
-;;     state
-;;     (if-let [head (if (and (empty? head) inner) nil [nil])]
-;; 	(permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail))))
+;;--------------------------------------------------------------------------------
+;; this layer encapsulates access to lhs index
 
-;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
+(defn- lhs-assoc [old-indeces keys lhs]
+  "associate a new lhs with existing index"
+  (let [[old-lhs-index & rhs-indeces] old-indeces
+	new-lhs-index (mapv (fn [index key] (group index (key lhs) lhs)) old-lhs-index keys)
+	new-indeces (assoc old-indeces 0 new-lhs-index)]
+    new-indeces))
+
+;;--------------------------------------------------------------------------------
+;; this layer encapsulates access to rhs indeces
+
+;;--------------------------------------------------------------------------------
+;; this layer encapsulates access to both lhs and rhs at the same time...
+
 
 (defn- derive-joins [v rhs-indeces ks join-fn]
   (map
    (fn [args] (apply join-fn v args))
    (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
 
-(defn- lhs-upsert [[old-index & rhs-indeces] ks v join-fn joined-model]
-  (let [new-index (mapv (fn [index key] (group index (key v) v)) old-index ks)
-	new-indeces (apply vector new-index rhs-indeces)
+;;--------------------------------------------------------------------------------
+
+(defn- lhs-upsert [old-indeces ks v join-fn joined-model]
+  (let [new-indeces (lhs-assoc old-indeces ks v)
+	[_ & rhs-indeces] old-indeces
 	joins (derive-joins v rhs-indeces ks join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
