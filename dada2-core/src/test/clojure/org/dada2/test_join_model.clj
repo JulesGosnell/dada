@@ -47,14 +47,18 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
 
+(defn- rhses-get [rhs-indeces keys lhs]
+  "return a lazy seq of seqs where each seq contains the rhses which
+join the lhs via corresponding key"
+  (map (fn [index key] (index (key lhs))) rhs-indeces keys))
+
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
 
-
-(defn- derive-joins [v rhs-indeces ks join-fn]
+(defn- derive-joins [lhs rhs-indeces keys join-fn]
   (map
-   (fn [args] (apply join-fn v args))
-   (permute [[]] (map (fn [index key] (index (key v))) rhs-indeces ks))))
+   (fn [args] (apply join-fn lhs args))
+   (permute [[]] (rhses-get rhs-indeces keys lhs))))
 
 ;;--------------------------------------------------------------------------------
 
