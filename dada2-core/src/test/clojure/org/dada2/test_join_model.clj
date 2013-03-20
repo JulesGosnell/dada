@@ -97,13 +97,13 @@
 
 ;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
-(defn- rhs-upsert [old-indeces i lhs-key rhs-ks v join-fn joined-model]
-  (let [key (lhs-key v)
-	new-indeces (rhs-assoc old-indeces i key v)
+(defn- rhs-upsert [old-indeces i rhs-fk-key lhs-fk-keys rhs join-fn joined-model]
+  (let [fk (rhs-fk-key rhs)
+	new-indeces (rhs-assoc old-indeces i fk rhs)
 	lhs-indeces (first old-indeces)
-	lhses (lhses-get lhs-indeces i key)
+	lhses (lhses-get lhs-indeces i fk)
 	rhs-indeces (rest new-indeces)
-	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces rhs-ks join-fn)) lhses)
+	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces lhs-fk-keys join-fn)) lhses)
 	]
     [new-indeces (fn [_] (on-upserts joined-model joins))]
     ))
@@ -113,30 +113,30 @@
 (defn- rhs-upserts [old-indeces i ks vs join-fn])
 (defn- rhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- rhs-view [indeces i key keys join-fn joined-model]
+(defn- rhs-view [indeces i rhs-fk-key lhs-fk-keys join-fn joined-model]
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] ((swap*! indeces rhs-upsert i key keys upsertion join-fn joined-model) []) nil) ;TODO: pass in views to notifier
-   (on-delete [_ deletion]  (swap! indeces rhs-delete i keys deletion join-fn) nil)
+   (on-upsert [_ upsertion] ((swap*! indeces rhs-upsert i rhs-fk-key lhs-fk-keys upsertion join-fn joined-model) []) nil) ;TODO: pass in views to notifier
+   (on-delete [_ deletion]  (swap! indeces rhs-delete i lhs-fk-keys deletion join-fn) nil)
    ;; batch changes
-   (on-upserts [_ upsertions] (swap! indeces rhs-upserts i keys upsertions join-fn) nil)
-   (on-deletes [_ deletions]  (swap! indeces rhs-deletes i keys deletions join-fn) nil)))
+   (on-upserts [_ upsertions] (swap! indeces rhs-upserts i lhs-fk-keys upsertions join-fn) nil)
+   (on-deletes [_ deletions]  (swap! indeces rhs-deletes i lhs-fk-keys deletions join-fn) nil)))
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [join-fn [lhs-model lhs-keys joined-model] & rhses]
+(defn- join-views [join-fn [lhs-model lhs-fk-keys joined-model] & rhses]
   (let [indeces (atom [(apply vector (repeat (count rhses) {}))])]
     ;; view lhs
-    (log2 :info (str " lhs: " lhs-model ", " lhs-keys))
-    (attach lhs-model (lhs-view indeces 0 lhs-keys join-fn joined-model))
+    (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
+    (attach lhs-model (lhs-view indeces 0 lhs-fk-keys join-fn joined-model))
     ;; view rhses
-    (doseq [[model key] rhses]
+    (doseq [[model rhs-fk-key] rhses]
 	(let [i (count @indeces)]   ; figure out offset for this index
-	  (log2 :info (str " rhs: " model ", " i ", " key))
+	  (log2 :info (str " rhs: " model ", " i ", " rhs-fk-key))
 	  (swap! indeces conj {})	; add index for this model
 	  ;; view rhs model
-	  (attach model (rhs-view indeces i key lhs-keys join-fn joined-model))))
+	  (attach model (rhs-view indeces i rhs-fk-key lhs-fk-keys join-fn joined-model))))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
