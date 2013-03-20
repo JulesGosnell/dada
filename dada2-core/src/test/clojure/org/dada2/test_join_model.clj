@@ -47,6 +47,16 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
 
+(defn- rhs-assoc [old-indeces i key rhs]
+  (let [old-index (nth old-indeces i)
+	value (key rhs)
+	old-rhses (or (old-index value) [])
+	new-rhses (conj old-rhses rhs)
+	new-index (assoc old-index value new-rhses)
+	new-indeces (assoc old-indeces i new-index)]
+    new-indeces
+    ))
+
 (defn- rhses-get [rhs-indeces keys lhs]
   "return a lazy seq of seqs where each seq contains the rhses which
 join the lhs via corresponding key"
@@ -85,16 +95,10 @@ join the lhs via corresponding key"
 ;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
 (defn- rhs-upsert [old-indeces i lhs-key rhs-ks v join-fn joined-model]
-  (let [
-	old-index (nth old-indeces i)
-	key (lhs-key v)
-	old-value (or (old-index key) [])
-	new-value (conj old-value v)
-	new-index (assoc old-index key new-value)
-	new-indeces (assoc old-indeces i new-index)
+  (let [new-indeces (rhs-assoc old-indeces i lhs-key v)
 	lhs-indeces (first old-indeces)
 	lhs-index (nth lhs-indeces (dec i))
-	lhses (key lhs-index)
+	lhses ((lhs-key v) lhs-index)
 	rhs-indeces (rest new-indeces)
 	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces rhs-ks join-fn)) lhses)
 	]
