@@ -37,32 +37,33 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to lhs index
 
-(defn- lhses-get [lhs-indeces i key]
-  (key (nth lhs-indeces (dec i))))
+(defn- lhses-get [lhs-indeces i fk]
+  "return seq of lhses indexed by i/fk"
+  ((nth lhs-indeces (dec i)) fk))	;TODO - don't like dec here
 
-(defn- lhs-assoc [old-indeces keys lhs]
+(defn- lhs-assoc [old-indeces fk-keys lhs]
   "associate a new lhs with existing index"
-  (let [[old-lhs-index & rhs-indeces] old-indeces
-	new-lhs-index (mapv (fn [index key] (group index (key lhs) lhs)) old-lhs-index keys)
+  (let [[old-lhs-index & _] old-indeces
+	new-lhs-index (mapv (fn [lhs-index fk-key] (group lhs-index (fk-key lhs) lhs)) old-lhs-index fk-keys)
 	new-indeces (assoc old-indeces 0 new-lhs-index)]
     new-indeces))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
 
-(defn- rhs-assoc [old-indeces i value rhs]
+(defn- rhses-get [rhs-indeces fk-keys lhs]
+  "return a lazy seq of seqs of rhses indexed by their respective fks"
+  (map (fn [rhs-index fk-key] (rhs-index (fk-key lhs))) rhs-indeces fk-keys))
+
+(defn- rhs-assoc [old-indeces i fk rhs]
+  "associate a new rhs with existing index"
   (let [old-index (nth old-indeces i)
-	old-rhses (or (value old-index) [])
+	old-rhses (or (old-index fk) [])
 	new-rhses (conj old-rhses rhs)
-	new-index (assoc old-index value new-rhses)
+	new-index (assoc old-index fk new-rhses)
 	new-indeces (assoc old-indeces i new-index)]
     new-indeces
     ))
-
-(defn- rhses-get [rhs-indeces keys lhs]
-  "return a lazy seq of seqs where each seq contains the rhses which
-join the lhs via corresponding key"
-  (map (fn [index key] (index (key lhs))) rhs-indeces keys))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
