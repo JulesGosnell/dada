@@ -41,19 +41,21 @@
   "return seq of lhses indexed by i/fk"
   ((nth lhs-indeces (dec i)) fk))	;TODO - don't like dec here
 
-(defn- lhs-assoc [old-indeces fk-keys lhs]
+(defn- lhs-assoc [old-indeces lhs-fk-keys lhs]
   "associate a new lhs with existing index"
-  (let [[old-lhs-index & _] old-indeces
-	new-lhs-index (mapv (fn [lhs-index fk-key] (group lhs-index (fk-key lhs) lhs)) old-lhs-index fk-keys)
+  (let [new-lhs-index (mapv
+		       (fn [lhs-index lhs-fk-key] (group lhs-index (lhs-fk-key lhs) lhs))
+		       (first old-indeces)
+		       lhs-fk-keys)
 	new-indeces (assoc old-indeces 0 new-lhs-index)]
     new-indeces))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
 
-(defn- rhses-get [rhs-indeces fk-keys lhs]
+(defn- rhses-get [rhs-indeces lhs-fk-keys lhs]
   "return a lazy seq of seqs of rhses indexed by their respective fks"
-  (map (fn [rhs-index fk-key] (rhs-index (fk-key lhs))) rhs-indeces fk-keys))
+  (map (fn [rhs-index lhs-fk-key] (rhs-index (lhs-fk-key lhs))) rhs-indeces lhs-fk-keys))
 
 (defn- rhs-assoc [old-indeces i fk rhs]
   "associate a new rhs with existing index"
@@ -68,16 +70,16 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
 
-(defn- derive-joins [lhs rhs-indeces keys join-fn]
+(defn- derive-joins [rhs-indeces lhs-fk-keys lhs join-fn]
   (map
    (fn [args] (apply join-fn lhs args))
-   (permute [[]] (rhses-get rhs-indeces keys lhs))))
+   (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
 
 ;;--------------------------------------------------------------------------------
 
-(defn- lhs-upsert [old-indeces keys lhs join-fn joined-model]
-  (let [new-indeces (lhs-assoc old-indeces keys lhs)
-	joins (derive-joins lhs (rest new-indeces) keys join-fn)]
+(defn- lhs-upsert [old-indeces lhs-fk-keys lhs join-fn joined-model]
+  (let [new-indeces (lhs-assoc old-indeces lhs-fk-keys lhs)
+	joins (derive-joins (rest new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
 ;;; TODO
@@ -85,15 +87,15 @@
 (defn- lhs-upserts [old-indeces i ks vs join-fn])
 (defn- lhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- lhs-view [indeces i keys join-fn joined-model]
+(defn- lhs-view [indeces i lhs-fk-keys join-fn joined-model]
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] ((swap*! indeces lhs-upsert keys upsertion join-fn joined-model) []) nil) ;TODO - pass in views to notifier
-   (on-delete [_ deletion]  (swap! indeces lhs-delete keys deletion join-fn) nil)
+   (on-upsert [_ upsertion] ((swap*! indeces lhs-upsert lhs-fk-keys upsertion join-fn joined-model) []) nil) ;TODO - pass in views to notifier
+   (on-delete [_ deletion]  (swap! indeces lhs-delete lhs-fk-keys deletion join-fn) nil)
    ;; batch changes
-   (on-upserts [_ upsertions] (swap! indeces lhs-upserts keys upsertions join-fn) nil)
-   (on-deletes [_ deletions]  (swap! indeces lhs-deletes keys deletions join-fn) nil)))
+   (on-upserts [_ upsertions] (swap! indeces lhs-upserts lhs-fk-keys upsertions join-fn) nil)
+   (on-deletes [_ deletions]  (swap! indeces lhs-deletes lhs-fk-keys deletions join-fn) nil)))
 
 ;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
@@ -103,7 +105,7 @@
 	lhs-indeces (first old-indeces)
 	lhses (lhses-get lhs-indeces i fk)
 	rhs-indeces (rest new-indeces)
-	joins (mapcat (fn [lhs] (derive-joins lhs rhs-indeces lhs-fk-keys join-fn)) lhses)
+	joins (mapcat (fn [lhs] (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	]
     [new-indeces (fn [_] (on-upserts joined-model joins))]
     ))
