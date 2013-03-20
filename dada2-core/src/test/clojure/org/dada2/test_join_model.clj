@@ -133,12 +133,12 @@
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
     (attach lhs-model (lhs-view indeces 0 lhs-fk-keys join-fn joined-model))
     ;; view rhses
-    (doseq [[model rhs-fk-key] rhses]
+    (doseq [[rhs-model rhs-fk-key] rhses]
 	(let [i (count @indeces)]   ; figure out offset for this index
-	  (log2 :info (str " rhs: " model ", " i ", " rhs-fk-key))
-	  (swap! indeces conj {})	; add index for this model
+	  (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
+	  (swap! indeces conj {})	; add index for this rhs-model
 	  ;; view rhs model
-	  (attach model (rhs-view indeces i rhs-fk-key lhs-fk-keys join-fn joined-model))))
+	  (attach rhs-model (rhs-view indeces i rhs-fk-key lhs-fk-keys join-fn joined-model))))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
