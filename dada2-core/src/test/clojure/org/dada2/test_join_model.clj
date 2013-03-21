@@ -61,15 +61,15 @@
   "return a lazy seq of seqs of rhses indexed by their respective fks"
   (map (fn [rhs-index lhs-fk-key] (vals (rhs-index (lhs-fk-key lhs)))) rhs-indeces lhs-fk-keys))
 
-(defn- rhs-assoc [old-indeces i rhs-pk-key fk rhs]
+(defn- rhs-assoc [indeces i rhs-pk-key fk rhs]
   "associate a new rhs with existing index"
-  (let [old-index (nth old-indeces i)
-	old-rhses (or (old-index fk) {})
-	new-rhses (assoc old-rhses (rhs-pk-key rhs) rhs)
-	new-index (assoc old-index fk new-rhses)
-	new-indeces (assoc old-indeces i new-index)]
-    new-indeces
-    ))
+  (assoc-in indeces [i fk (rhs-pk-key rhs)] rhs))
+
+(deftest test-rhs-access
+  (let [before [[] {}]
+	after  [[] {String {3 "xxx"}}]]
+    (is (= after (rhs-assoc before 1 count String "xxx")))
+    (is (= '(("xxx")) (rhses-get (rest after) [first] [String])))))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
@@ -319,6 +319,13 @@
 	   }
 	   (data joined-model)))
 
-    ;; what about amend-in/out ?
-    ;; what about delete ?
+    ;; TODO:
+    ;;  amend in/out
+    ;;  delete
+    ;;  batch operations
+    ;;  test listener receives correct events
+    ;;  test downstream model receives correct events
+    ;;  unjoined models...
+    ;;  move prod code out of this file
+    ;;  refactor and document
     ))
