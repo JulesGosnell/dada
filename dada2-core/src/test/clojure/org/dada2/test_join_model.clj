@@ -34,7 +34,6 @@
     state
     (permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail)))
 
-
 (deftest test-permute
   (is (= 
        [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
@@ -58,11 +57,26 @@
       (first indeces)
       lhs-fk-keys))))
 
+(defn- dissoc-in [seq [k1 k2] _]
+  (assoc seq k1 (dissoc (seq k1) k2)))
+
+(defn- lhs-dissoc [indeces lhs-pk-key lhs-fk-keys lhs]
+  "associate a new lhs with existing index"
+  (assoc
+   indeces
+   0
+   (let [lhs-pk (lhs-pk-key lhs)]
+     (mapv
+      (fn [lhs-index lhs-fk-key] (dissoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs))
+      (first indeces)
+      lhs-fk-keys))))
+
 (deftest test-lhs-access
   (let [before [[{}]]
 	after  [[{String {3 "xxx"}}]]]
     (is (= after (lhs-assoc before count [type] "xxx")))
     (is (= '("xxx") (lhses-get (first after) 0 String)))
+    (is (= [[{String {}}]] (lhs-dissoc after count [type] "xxx")))
     ))
 
 ;;--------------------------------------------------------------------------------
@@ -97,8 +111,12 @@
 	joins (derive-joins (rest new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
+(defn- lhs-delete [old-indeces lhs-pk-key lhs-fk-keys lhs join-fn joined-model]
+  (let [new-indeces (lhs-dissoc old-indeces lhs-pk-key lhs-fk-keys lhs)
+	joins (derive-joins (rest new-indeces) lhs-fk-keys lhs join-fn)]
+    [new-indeces (fn [_] (on-deletes joined-model joins))]))
+
 ;;; TODO
-(defn- lhs-delete [old-indeces i ks v join-fn])
 (defn- lhs-upserts [old-indeces i ks vs join-fn])
 (defn- lhs-deletes [old-indeces i ks vs join-fn])
 
@@ -107,7 +125,7 @@
    View
    ;; singleton changes
    (on-upsert [_ upsertion] ((swap*! indeces lhs-upsert lhs-pk-key lhs-fk-keys upsertion join-fn joined-model) []) nil) ;TODO - pass in views to notifier
-   (on-delete [_ deletion]  (swap! indeces lhs-delete lhs-fk-keys deletion join-fn) nil)
+   (on-delete [_ deletion]  ((swap*! indeces lhs-delete  lhs-pk-key lhs-fk-keys deletion join-fn joined-model) []) nil) ;TODO - pass in views to notifier
    ;; batch changes
    (on-upserts [_ upsertions] (swap! indeces lhs-upserts lhs-fk-keys upsertions join-fn) nil)
    (on-deletes [_ deletions]  (swap! indeces lhs-deletes lhs-fk-keys deletions join-fn) nil)))
@@ -324,6 +342,19 @@
 	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
 	   }
 	   (data joined-model)))
+
+    ;; join - new lhs - a2
+    (on-delete as a2)
+    (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
+	    {:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
+    (is (= {
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+	   }
+	   (data joined-model)))
+
 
     ;; TODO:
     ;;  amend in/out
