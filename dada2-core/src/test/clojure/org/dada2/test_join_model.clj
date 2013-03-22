@@ -34,6 +34,12 @@
     state
     (permute (mapcat (fn [i] (map (fn [j] (conj i j)) head)) state) tail)))
 
+
+(deftest test-permute
+  (is (= 
+       [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
+       (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
+
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to lhs index
 
@@ -51,6 +57,13 @@
       (fn [lhs-index lhs-fk-key] (assoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs))
       (first indeces)
       lhs-fk-keys))))
+
+(deftest test-lhs-access
+  (let [before [[{}]]
+	after  [[{String {3 "xxx"}}]]]
+    (is (= after (lhs-assoc before count [type] "xxx")))
+    (is (= '("xxx") (lhses-get (first after) 0 String)))
+    ))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
@@ -193,11 +206,6 @@
 (deftest test-join-abc
   (is (= (->ABC [:a1 :b1 :c1] [0 0 0] "b-data" "c-data") 
 	 (join-abc (->A :a1 0 :b :c)(->B :b1 0 :b "b-data")(->C :c1 0 :c "c-data")))))
-
-(deftest test-permute
-  (is (= 
-       [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
-       (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
 
 (deftest test-join-model
   (let [as (versioned-optimistic-map-model (str :as) :name :version >)
