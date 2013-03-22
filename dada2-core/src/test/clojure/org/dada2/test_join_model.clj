@@ -39,20 +39,18 @@
 
 (defn- lhses-get [lhs-indeces i fk]
   "return seq of lhses indexed by i/fk"
-  (vals ((nth lhs-indeces (dec i)) fk)))	;TODO - don't like dec here
+  (vals ((nth lhs-indeces i) fk)))
 
-(defn- group [map key pk value]
-  "add [key value] to map as in group-by"
-  (assoc map key (assoc (if-let [v (key map)] v {}) (pk value) value)))
-
-(defn- lhs-assoc [old-indeces lhs-pk-key lhs-fk-keys lhs]
+(defn- lhs-assoc [indeces lhs-pk-key lhs-fk-keys lhs]
   "associate a new lhs with existing index"
-  (let [new-lhs-index (mapv
-		       (fn [lhs-index lhs-fk-key] (group lhs-index (lhs-fk-key lhs) lhs-pk-key lhs))
-		       (first old-indeces)
-		       lhs-fk-keys)
-	new-indeces (assoc old-indeces 0 new-lhs-index)]
-    new-indeces))
+  (assoc
+   indeces
+   0
+   (let [lhs-pk (lhs-pk-key lhs)]
+     (mapv
+      (fn [lhs-index lhs-fk-key] (assoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs))
+      (first indeces)
+      lhs-fk-keys))))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to rhs indeces
@@ -107,7 +105,7 @@
   (let [fk (rhs-fk-key rhs)
 	new-indeces (rhs-assoc old-indeces i rhs-pk-key fk rhs)
 	lhs-indeces (first old-indeces)
-	lhses (lhses-get lhs-indeces i fk)
+	lhses (lhses-get lhs-indeces (dec i) fk)
 	rhs-indeces (rest new-indeces)
 	joins (mapcat (fn [lhs] (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	]
