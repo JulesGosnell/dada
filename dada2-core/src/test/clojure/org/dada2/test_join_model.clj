@@ -92,14 +92,16 @@
 
 (defn- rhs-dissoc [indeces i rhs-pk-key fk rhs]
   "dissociate an rhs from existing index"
-  (update-in indeces [i fk (rhs-pk-key rhs)] (fn [_] nil)))
+  (let [rhs-pk (rhs-pk-key rhs)]
+    (assoc-in indeces [i fk] (dissoc ((indeces i) fk) rhs-pk)))
+  )
 
 (deftest test-rhs-access
   (let [before [[] {}]
 	after  [[] {String {3 "xxx"}}]]
     (is (= after (rhs-assoc before 1 count String "xxx")))
     (is (= '(("xxx")) (rhses-get (rest after) [first] [String])))
-    (is (= [[] {String {3 nil}}] (rhs-dissoc after 1 count String "xxx")))))
+    (is (= [[] {String {}}] (rhs-dissoc after 1 count String "xxx")))))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
@@ -377,7 +379,7 @@
     ;; join - delete rhs - b2
     (on-delete bs b2)
     (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-	    {:b {:b1 b1v1 :b2 nil}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
+	    {:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
@@ -387,7 +389,7 @@
     ;; join - delete rhs - c2
     (on-delete cs c2)
     (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-	    {:b {:b1 b1v1 :b2 nil}} {:c {:c1 c1v1 :c2 nil}}] (data join)))
+	    {:b {:b1 b1v1}} {:c {:c1 c1v1}}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   }
