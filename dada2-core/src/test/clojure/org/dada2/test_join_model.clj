@@ -384,6 +384,15 @@
 	   }
 	   (data joined-model)))
 
+    ;; join - delete rhs - c2
+    (on-delete cs c2)
+    (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
+	    {:b {:b1 b1v1 :b2 nil}} {:c {:c1 c1v1 :c2 nil}}] (data join)))
+    (is (= {
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+	   }
+	   (data joined-model)))
+
     ;; TODO:
     ;;  amend in/out
     ;;  delete
