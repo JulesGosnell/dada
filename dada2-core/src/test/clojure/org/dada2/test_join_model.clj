@@ -88,20 +88,20 @@
 
 (defn- rhs-assoc [indeces i rhs-pk-key fk rhs]
   "associate a new rhs with existing index"
-  (assoc-in indeces [i fk (rhs-pk-key rhs)] rhs))
+  (assoc-in indeces [1 i fk (rhs-pk-key rhs)] rhs))
 
 (defn- rhs-dissoc [indeces i rhs-pk-key fk rhs]
   "dissociate an rhs from existing index"
   (let [rhs-pk (rhs-pk-key rhs)]
-    (assoc-in indeces [i fk] (dissoc ((indeces i) fk) rhs-pk)))
+    (assoc-in indeces [1 i fk] (dissoc (((indeces 1) i) fk) rhs-pk)))
   )
 
 (deftest test-rhs-access
-  (let [before [[] {}]
-	after  [[] {String {3 "xxx"}}]]
-    (is (= after (rhs-assoc before 1 count String "xxx")))
-    (is (= '(("xxx")) (rhses-get (rest after) [first] [String])))
-    (is (= [[] {String {}}] (rhs-dissoc after 1 count String "xxx")))))
+  (let [before [[] [{}] {}]
+	after  [[] [{String {3 "xxx"}}] {}]]
+    (is (= after (rhs-assoc before 0 count String "xxx")))
+    (is (= '(("xxx")) (rhses-get (second after) [first] [String])))
+    (is (= [[] [{String {}}] {}] (rhs-dissoc after 0 count String "xxx")))))
 
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
@@ -115,19 +115,19 @@
 
 (defn- lhs-upsert [old-indeces lhs-pk-key lhs-fk-keys lhs join-fn joined-model]
   (let [new-indeces (lhs-assoc old-indeces lhs-pk-key lhs-fk-keys lhs)
-	joins (derive-joins (rest (rest new-indeces)) lhs-fk-keys lhs join-fn)]
+	joins (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
 (defn- lhs-delete [old-indeces lhs-pk-key lhs-fk-keys lhs join-fn joined-model]
   (let [new-indeces (lhs-dissoc old-indeces lhs-pk-key lhs-fk-keys lhs)
-	joins (derive-joins (rest (rest new-indeces)) lhs-fk-keys lhs join-fn)]
+	joins (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-deletes joined-model joins))]))
 
 ;;; TODO
 (defn- lhs-upserts [old-indeces i ks vs join-fn])
 (defn- lhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- lhs-view [indeces i lhs-pk-key lhs-fk-keys join-fn joined-model]
+(defn- lhs-view [indeces lhs-pk-key lhs-fk-keys join-fn joined-model]
   (reify
    View
    ;; singleton changes
@@ -143,8 +143,8 @@
   (let [fk (rhs-fk-key rhs)
 	new-indeces (rhs-assoc old-indeces i rhs-pk-key fk rhs)
 	lhs-indeces (first old-indeces)
-	lhses (lhses-get lhs-indeces (dec (dec i)) fk)
-	rhs-indeces (rest (rest new-indeces))
+	lhses (lhses-get lhs-indeces i fk)
+	rhs-indeces (second new-indeces)
 	joins (mapcat (fn [lhs] (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	]
     [new-indeces (fn [_] (on-upserts joined-model joins))]
@@ -153,12 +153,12 @@
 ;;; TODO - ugly, slow, ...
 (defn- rhs-delete [old-indeces i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn joined-model]
   (let [fk (rhs-fk-key rhs)
-	old-rhs-indeces (rest (rest old-indeces))
+	old-rhs-indeces (second old-indeces)
 	lhs-indeces (first old-indeces)
-	lhses (lhses-get lhs-indeces (dec (dec i)) fk)
+	lhses (lhses-get lhs-indeces i fk)
 	old-joins (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	new-indeces (rhs-dissoc old-indeces i rhs-pk-key fk rhs)
-	new-rhs-indeces (rest (rest new-indeces))
+	new-rhs-indeces (second new-indeces)
 	new-joins (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	joins (remove (fn [i] (contains? (apply hash-set new-joins) i)) old-joins)
 	]
@@ -182,15 +182,15 @@
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
 (defn- join-views [join-fn [lhs-model lhs-pk-key lhs-fk-keys joined-model] & rhses]
-  (let [indeces (atom [(apply vector (repeat (count rhses) {})) {}])]
+  (let [maps (into [] (repeat (count rhses) {}))
+	indeces (atom [maps maps {}])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
-    (attach lhs-model (lhs-view indeces 0 lhs-pk-key lhs-fk-keys join-fn joined-model))
+    (attach lhs-model (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn joined-model))
     ;; view rhses
-    (doseq [[rhs-model rhs-pk-key rhs-fk-key] rhses]
-	(let [i (count @indeces)]   ; figure out offset for this index
+    (doseq [i (range (count rhses))]
+	(let [[rhs-model rhs-pk-key rhs-fk-key] (nth rhses i)]
 	  (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
-	  (swap! indeces conj {})	; add index for this rhs-model
 	  ;; view rhs model
 	  (attach rhs-model (rhs-view indeces i rhs-pk-key rhs-fk-key lhs-fk-keys join-fn joined-model))))
     indeces))
@@ -262,7 +262,7 @@
 	c1 (->C :c1 0 :c "c1-data")
 	c1v1 (->C :c1 1 :c "c1v1-data")
 	c2 (->C :c2 0 :c "c2-data")]
-    (is (= [[{}{}] {} {}{}] (data join)))
+    (is (= [[{}{}] [{}{}] {}] (data join)))
     (is (= {} (data joined-model)))
 
     (attach join view)
@@ -270,22 +270,22 @@
 
     ;; rhs insertion - no join
     (on-upsert bs b1)
-    (is (= [[{}{}] {} {:b {:b1 b1}} {}] (data join)))
+    (is (= [[{}{}] [{:b {:b1 b1}} {}] {}] (data join)))
     (is (= {} (data joined-model)))
 
     ;; rhs insertion - no join
     (on-upsert cs c1)
-    (is (= [[{}{}] {} {:b {:b1 b1}} {:c {:c1 c1}}] (data join)))
+    (is (= [[{}{}] [{:b {:b1 b1}} {:c {:c1 c1}}] {}] (data join)))
     (is (= {} (data joined-model)))
 
     ;; lhs-insertion - first join
     (on-upsert as a1)
-    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] {} {:b {:b1 b1}} {:c {:c1 c1}}] (data join)))
+    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] [{:b {:b1 b1}} {:c {:c1 c1}}] {}] (data join)))
     (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")} (data joined-model)))
 
     ;; join - new rhs - b2
     (on-upsert bs b2)
-    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] {} {:b {:b1 b1 :b2 b2}} {:c {:c1 c1}}] (data join)))
+    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1}}] {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
@@ -293,7 +293,7 @@
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
-    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] {} {:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] (data join)))
+    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
@@ -304,7 +304,7 @@
 
     ;; join - new lhs - a2
     (on-upsert as a2)
-    (is (= [[{:b {:a1 a1 :a2 a2}}{:c {:a1 a1 :a2 a2}}] {} {:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] (data join)))
+    (is (= [[{:b {:a1 a1 :a2 a2}}{:c {:a1 a1 :a2 a2}}] [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
@@ -319,7 +319,7 @@
 
     ;; lhs update - relevant joins should update
     (on-upsert as a1v1)
-    (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}] {} {:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] (data join)))
+    (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}] [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
@@ -335,8 +335,8 @@
     ;; rhs update - relevant joins should update
     (on-upsert bs b1v1)
     (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
-	    {}
-	    {:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1 :c2 c2}}] (data join)))
+	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
+	    {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
@@ -352,8 +352,8 @@
     ;; rhs update - relevant joins should update
     (on-upsert cs c1v1)
     (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
-	    {}
-	    {:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
+	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}]
+	    {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
@@ -369,8 +369,8 @@
     ;; join - delete lhs - a2
     (on-delete as a2)
     (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-	    {}
-	    {:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
+	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}]
+	    {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
@@ -381,9 +381,9 @@
 
     ;; join - delete rhs - b2
     (on-delete bs b2)
-    (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-	    {}
-	    {:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}] (data join)))
+    (is (= [[{:b {:a1 a1v1}} {:c {:a1 a1v1}}]
+	    [{:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}]
+	    {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
@@ -393,8 +393,8 @@
     ;; join - delete rhs - c2
     (on-delete cs c2)
     (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-	    {}
-	    {:b {:b1 b1v1}} {:c {:c1 c1v1}}] (data join)))
+	    [{:b {:b1 b1v1}} {:c {:c1 c1v1}}]
+	    {}] (data join)))
     (is (= {
 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
 	   }
