@@ -106,23 +106,21 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
 
-(defn- derive-joins [rhs-indeces lhs-fk-keys lhs join-fn join-pk]
+(defn- derive-joins [rhs-indeces lhs-fk-keys lhs join-fn]
   (map
-   (fn [rhses] (let [join (apply join-fn lhs rhses)] [(join-pk join) join])) ;TODO - pass in join-pk
+   (fn [args] (apply join-fn lhs args))
    (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
 
 ;;--------------------------------------------------------------------------------
 
 (defn- lhs-upsert [old-indeces lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-indeces (lhs-assoc old-indeces lhs-pk-key lhs-fk-keys lhs)
-	join-pairs (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn join-pk)
-	joins (vals (reduce conj {} join-pairs))]
+	joins (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-upserts joined-model joins))]))
 
 (defn- lhs-delete [old-indeces lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-indeces (lhs-dissoc old-indeces lhs-pk-key lhs-fk-keys lhs)
-	join-pairs (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn join-pk)
-	joins (vals (reduce conj {} join-pairs))]
+	joins (derive-joins (second new-indeces) lhs-fk-keys lhs join-fn)]
     [new-indeces (fn [_] (on-deletes joined-model joins))]))
 
 ;;; TODO
@@ -147,11 +145,8 @@
 	lhs-indeces (first old-indeces)
 	lhses (lhses-get lhs-indeces i fk)
 	rhs-indeces (second new-indeces)
-	joins (mapcat
-	       (fn [lhs] 
-		   (let [join-pairs (derive-joins rhs-indeces lhs-fk-keys lhs join-fn join-pk)]
-		     (vals (reduce conj {} join-pairs))))
-	       lhses)]
+	joins (mapcat (fn [lhs] (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	]
     [new-indeces (fn [_] (on-upserts joined-model joins))]
     ))
 
@@ -161,14 +156,10 @@
 	old-rhs-indeces (second old-indeces)
 	lhs-indeces (first old-indeces)
 	lhses (lhses-get lhs-indeces i fk)
-	old-joins (mapcat
-		   (fn [lhs] (vals (reduce conj {} (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn join-pk))))
-		   lhses)
+	old-joins (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	new-indeces (rhs-dissoc old-indeces i rhs-pk-key fk rhs)
 	new-rhs-indeces (second new-indeces)
-	new-joins (mapcat
-		   (fn [lhs] (vals (reduce conj {} (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn join-pk))))
-		   lhses)
+	new-joins (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	joins (remove (fn [i] (contains? (apply hash-set new-joins) i)) old-joins)
 	]
     [new-indeces (fn [_] (on-deletes joined-model joins))]
