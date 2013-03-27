@@ -97,22 +97,25 @@
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to both lhs and rhs at the same time...
 
-(defn- derive-joins [rhs-indeces lhs-fk-keys lhs join-fn]
+(defn- lhs-join [rhs-indeces lhs-fk-keys lhs join-fn]
   (map
    (fn [args] (apply join-fn lhs args))
    (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
+
+(defn- rhs-join [rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk]
+  (mapcat (fn [lhs] (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)) (lhses-get lhs-indeces i fk)))
 
 ;;--------------------------------------------------------------------------------
 
 (defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-lhs-indeces (lhs-assoc old-lhs-index lhs-pk-key lhs-fk-keys lhs)
-	joins (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)
+	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
 	new-joins (reduce (fn [old-joins join] (assoc old-joins (join-pk join) join)) old-joins joins)]
     [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]))
 
 (defn- lhs-delete [[old-lhs-indeces rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-lhs-indeces (lhs-dissoc old-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
-	joins (derive-joins rhs-indeces lhs-fk-keys lhs join-fn)
+	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
 	new-joins (reduce (fn [old-joins join] (dissoc old-joins (join-pk join))) old-joins joins)]
     [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]))
 
@@ -135,8 +138,7 @@
 (defn- rhs-upsert [[lhs-indeces old-rhs-indeces old-joins] i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [fk (rhs-fk-key rhs)
 	new-rhs-indeces (rhs-assoc old-rhs-indeces i rhs-pk-key fk rhs)
-	lhses (lhses-get lhs-indeces i fk)
-	joins (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	joins (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
 	new-joins (reduce (fn [old-joins join] (assoc old-joins (join-pk join) join)) old-joins joins)
 	]
     [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]
@@ -146,11 +148,9 @@
 (defn- rhs-delete [[lhs-indeces old-rhs-indeces old-joins]
 		   i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [fk (rhs-fk-key rhs)
-	lhses (lhses-get lhs-indeces i fk)
-	;;old-joins2 (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	old-joins2 (vals old-joins)
 	new-rhs-indeces (rhs-dissoc old-rhs-indeces i rhs-pk-key fk rhs)
-	new-joins2 (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	new-joins2 (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
 	joins (remove (fn [i] (contains? (apply hash-set new-joins2) i)) old-joins2)
 	new-joins (reduce (fn [old-joins join] (dissoc old-joins (join-pk join))) old-joins joins)
 	]
