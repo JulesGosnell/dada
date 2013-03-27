@@ -147,7 +147,8 @@
 		   i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [fk (rhs-fk-key rhs)
 	lhses (lhses-get lhs-indeces i fk)
-	old-joins2 (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	;;old-joins2 (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	old-joins2 (vals old-joins)
 	new-rhs-indeces (rhs-dissoc old-rhs-indeces i rhs-pk-key fk rhs)
 	new-joins2 (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
 	joins (remove (fn [i] (contains? (apply hash-set new-joins2) i)) old-joins2)
