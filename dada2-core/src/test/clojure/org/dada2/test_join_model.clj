@@ -160,18 +160,17 @@
     ))
 
 ;;; TODO - ugly, slow, ...
-(defn- rhs-delete [old-indeces i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
+(defn- rhs-delete [[lhs-indeces old-rhs-indeces old-joins]
+		   i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [fk (rhs-fk-key rhs)
-	old-rhs-indeces (second old-indeces)
-	lhs-indeces (first old-indeces)
 	lhses (lhses-get lhs-indeces i fk)
-	old-joins (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
-	new-indeces (rhs-dissoc old-indeces i rhs-pk-key fk rhs)
-	new-rhs-indeces (second new-indeces)
-	new-joins (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
-	joins (remove (fn [i] (contains? (apply hash-set new-joins) i)) old-joins)
+	old-joins2 (mapcat (fn [lhs] (derive-joins old-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	new-rhs-indeces (rhs-dissoc-2 old-rhs-indeces i rhs-pk-key fk rhs)
+	new-joins2 (mapcat (fn [lhs] (derive-joins new-rhs-indeces lhs-fk-keys lhs join-fn)) lhses)
+	joins (remove (fn [i] (contains? (apply hash-set new-joins2) i)) old-joins2)
+	new-joins (reduce (fn [old-joins join] (dissoc old-joins (join-pk join))) old-joins joins)
 	]
-    [new-indeces (fn [_] (on-deletes joined-model joins))]
+    [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]
     ))
 
 ;;; TODO
@@ -303,30 +302,30 @@
 	  [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
 	  }
 	  ] (data join)))
-      (is (= 
-	   {
-	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	   }
-	   (data joined-model)))
+    (is (= 
+	 {
+	 [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	 }
+	 (data joined-model)))
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
-      (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}]
-	      [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
-	      {
-	      [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	      [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	      [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	      [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	      }] (data join)))
-      (is (= {
-	     [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-    	     [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-    	     [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-    	     [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-    	     }
-    	     (data joined-model)))
+    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}]
+	    [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
+	    {
+	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	    [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+	    [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+	    }] (data join)))
+    (is (= {
+	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+	   }
+	   (data joined-model)))
 
     ;; join - new lhs - a2
     (on-upsert as a2)
@@ -459,26 +458,32 @@
     	   }
     	   (data joined-model)))
 
-    ;; ;; join - delete rhs - b2
-    ;; (on-delete bs b2)
-    ;; (is (= [[{:b {:a1 a1v1}} {:c {:a1 a1v1}}]
-    ;; 	    [{:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}]
-    ;; 	    {}] (data join)))
-    ;; (is (= {
-    ;; 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-    ;; 	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
-    ;; 	   }
-    ;; 	   (data joined-model)))
+    ;; join - delete rhs - b2
+    (on-delete bs b2)
+    (is (= [[{:b {:a1 a1v1}} {:c {:a1 a1v1}}]
+    	    [{:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}]
+    	    {
+	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+	    }
+	    ] (data join)))
+    (is (= {
+    	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+    	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+    	   }
+    	   (data joined-model)))
 
-    ;; ;; join - delete rhs - c2
-    ;; (on-delete cs c2)
-    ;; (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
-    ;; 	    [{:b {:b1 b1v1}} {:c {:c1 c1v1}}]
-    ;; 	    {}] (data join)))
-    ;; (is (= {
-    ;; 	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-    ;; 	   }
-    ;; 	   (data joined-model)))
+    ;; join - delete rhs - c2
+    (on-delete cs c2)
+    (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
+    	    [{:b {:b1 b1v1}} {:c {:c1 c1v1}}]
+    	    {
+	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+	    }] (data join)))
+    (is (= {
+    	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+    	   }
+    	   (data joined-model)))
 
     ;; TODO:
     ;;  amend in/out
