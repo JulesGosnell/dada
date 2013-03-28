@@ -39,6 +39,13 @@
        [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
        (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
 
+(defn- merge-items [merge-fn a-map & items]
+  "merge items into a map, one-by-one using (merge-fn map item) provided"
+  (reduce (fn [reduction item] (merge-fn reduction item)) a-map items))
+
+(deftest test-merge-items
+  (is (= {:a 1 :b 2} (merge-items (fn [m [k v]] (assoc m k v)) {:a 1} [:b 2]))))
+
 ;;--------------------------------------------------------------------------------
 ;; this layer encapsulates access to lhs index
 
@@ -95,28 +102,42 @@
     (is (= [{String {}}] (rhs-dissoc after 0 count String "xxx")))))
 
 ;;--------------------------------------------------------------------------------
-;; this layer encapsulates access to both lhs and rhs at the same time...
+;; use data from both left and right hand sides to create joins...
 
 (defn- lhs-join [rhs-indeces lhs-fk-keys lhs join-fn]
-  (map
-   (fn [args] (apply join-fn lhs args))
-   (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
+  "calculate the set of joins for a newly arriving lhs"
+  (map (fn [args] (apply join-fn lhs args)) (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
 
 (defn- rhs-join [rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk]
+  "calculate the set of joins for a newly arriving rhs"
   (mapcat (fn [lhs] (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)) (lhses-get lhs-indeces i fk)))
+
+(defn- dissoc-joins [old-joins join-pk new-joins]
+  "remove a seq of joins from a join index"
+  (apply merge-items (fn [joins join] (dissoc joins (join-pk join))) old-joins new-joins))
+
+(deftest test-dissoc-joins
+  (is (= {} (dissoc-joins {:a 1} identity '(:a)))))
+
+(defn- assoc-joins [old-joins join-pk new-joins]
+  "add a seq of joins into a join index"
+  (apply merge-items (fn [joins join] (assoc joins (join-pk join) join)) old-joins new-joins))
+
+(deftest test-assoc-joins
+  (is (= {:a "a" :b "b"} (assoc-joins {:a "a"} keyword '("b")))))
 
 ;;--------------------------------------------------------------------------------
 
 (defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-lhs-indeces (lhs-assoc old-lhs-index lhs-pk-key lhs-fk-keys lhs)
 	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
-	new-joins (reduce (fn [old-joins join] (assoc old-joins (join-pk join) join)) old-joins joins)]
+	new-joins (assoc-joins old-joins join-pk joins)]
     [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]))
 
 (defn- lhs-delete [[old-lhs-indeces rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-lhs-indeces (lhs-dissoc old-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
 	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
-	new-joins (reduce (fn [old-joins join] (dissoc old-joins (join-pk join))) old-joins joins)]
+	new-joins (dissoc-joins old-joins join-pk joins)]
     [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]))
 
 ;;; TODO
@@ -139,8 +160,7 @@
   (let [fk (rhs-fk-key rhs)
 	new-rhs-indeces (rhs-assoc old-rhs-indeces i rhs-pk-key fk rhs)
 	joins (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
-	new-joins (reduce (fn [old-joins join] (assoc old-joins (join-pk join) join)) old-joins joins)
-	]
+	new-joins (assoc-joins old-joins join-pk joins)]
     [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]
     ))
 
@@ -152,8 +172,7 @@
 	new-rhs-indeces (rhs-dissoc old-rhs-indeces i rhs-pk-key fk rhs)
 	new-joins2 (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
 	joins (remove (fn [i] (contains? (apply hash-set new-joins2) i)) old-joins2)
-	new-joins (reduce (fn [old-joins join] (dissoc old-joins (join-pk join))) old-joins joins)
-	]
+	new-joins (dissoc-joins old-joins join-pk joins)]
     [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]
     ))
 
