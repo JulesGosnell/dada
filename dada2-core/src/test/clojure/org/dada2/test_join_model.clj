@@ -60,22 +60,22 @@
      lhs-indeces
      lhs-fk-keys)))
 
-(defn- dissoc-in [seq [k1 k2] _]
-  (assoc seq k1 (dissoc (seq k1) k2)))
-
 (defn- lhs-dissoc [lhs-indeces lhs-pk-key lhs-fk-keys lhs]
-   (let [lhs-pk (lhs-pk-key lhs)]
-     (mapv
-      (fn [lhs-index lhs-fk-key] (dissoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs))
-      lhs-indeces
-      lhs-fk-keys)))
+  (let [lhs-pk (lhs-pk-key lhs)]
+    (mapv
+     (fn [lhs-index lhs-fk-key]
+       (let [lhs-fk (lhs-fk-key lhs)
+             tmp (dissoc (lhs-index lhs-fk) lhs-pk)]
+         (if (empty? tmp) (dissoc lhs-index lhs-fk)(assoc lhs-index lhs-fk tmp))))
+     lhs-indeces
+     lhs-fk-keys)))
 
 (deftest test-lhs-access
   (let [before [{}]
 	after  [{String {3 "xxx"}}]]
     (is (= after (lhs-assoc before count [type] "xxx")))
     (is (= '("xxx") (lhses-get after 0 String)))
-    (is (= [{String {}}] (lhs-dissoc after count [type] "xxx")))
+    (is (= [{}] (lhs-dissoc after count [type] "xxx")))
     ))
 
 ;;--------------------------------------------------------------------------------
@@ -91,52 +91,117 @@
 
 (defn- rhs-dissoc [rhs-indeces i rhs-pk-key fk rhs]
   "dissociate an rhs from existing index"
-  (let [rhs-pk (rhs-pk-key rhs)]
-    (assoc-in rhs-indeces [i fk] (dissoc ((rhs-indeces i) fk) rhs-pk))))
+  (let [rhs-pk (rhs-pk-key rhs)
+        rhs-index (rhs-indeces i)
+        tmp (dissoc (rhs-index fk) rhs-pk)]
+    (assoc rhs-indeces i
+           (if (empty? tmp)
+             (dissoc rhs-index fk)
+             (assoc rhs-index fk tmp)))))
 
 (deftest test-rhs-access
   (let [before [{}]
 	after  [{String {3 "xxx"}}]]
     (is (= after (rhs-assoc before 0 count String "xxx")))
     (is (= '(("xxx")) (rhses-get after [first] [String])))
-    (is (= [{String {}}] (rhs-dissoc after 0 count String "xxx")))))
-
-;;--------------------------------------------------------------------------------
-;; use data from both left and right hand sides to create joins...
+    (is (= [{}] (rhs-dissoc after 0 count String "xxx")))))
 
 (defn- lhs-join [rhs-indeces lhs-fk-keys lhs join-fn]
   "calculate the set of joins for a newly arriving lhs"
-  (map (fn [args] (apply join-fn lhs args)) (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))))
+  (let [permutations (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))]
+        (if (= [[]] permutations)
+          nil
+          (map (fn [args] (apply join-fn lhs args)) permutations))))
 
 (defn- rhs-join [rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk]
   "calculate the set of joins for a newly arriving rhs"
   (mapcat (fn [lhs] (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)) (lhses-get lhs-indeces i fk)))
 
+;;--------------------------------------------------------------------------------
+
+;;(map (fn [join] [(join-pk join) join]) new-joins)
+
+;; old-joins: {pk={join-pk=join}} 
+;; join-pairs: seq of pairs of [join-pk join]
+
+(defn- init-join [n]
+  (into [] (repeat n {})))
+
+(defn- dissoc-join [old-joins join-pk]
+  (mapv
+   (fn [key join-map]
+     (let [n (dissoc (key join-map) join-pk)]
+       (if (empty? n)
+         (dissoc join-map key)
+         (assoc join-map key n))))
+   join-pk
+   old-joins))
+
+(defn- assoc-join [old-joins join-pk join]
+  (mapv
+   (fn [key join-map]
+     (assoc join-map key
+            (assoc (key join-map) join-pk join)))
+   join-pk
+   old-joins))
+
+;; get joins ...
+
+(defn- get-lhs-join-map [[lhs-joins & _] key]
+  "return a map (join-pk:join} of all joins in which this lhs is involved."
+  (lhs-joins key))
+
+(defn- get-rhs-join-map [[_ & rhs-joins] i key]
+  "return a map (join-pk:join} of all joins in which this rhs is involved."
+  ((nth rhs-joins i) key))
+
+(deftest test-manage-joins
+  (let [j1 (init-join 3)
+        j2 (assoc-join j1 [:a :b :c] "abc")
+        a (get-lhs-join-map j2 :a)
+        b (get-rhs-join-map j2 0 :b)
+        c (get-rhs-join-map j2 1 :c)
+        j3 (dissoc-join j2 [:a :b :c])] 
+    (is (= [{:a {[:a :b :c] "abc"}} {:b {[:a :b :c] "abc"}} {:c {[:a :b :c] "abc"}}] j2))
+    (is (= {[:a :b :c] "abc"} a))
+    (is (= {[:a :b :c] "abc"} b))
+    (is (= {[:a :b :c] "abc"} c))
+    (is (= [{} {} {}] j3))))
+
+;;--------------------------------------------------------------------------------
+;; use data from both left and right hand sides to create joins...
+
 (defn- dissoc-joins [old-joins join-pk new-joins]
   "remove a seq of joins from a join index"
-  (apply merge-items (fn [joins join] (dissoc joins (join-pk join))) old-joins new-joins))
-
-(deftest test-dissoc-joins
-  (is (= {} (dissoc-joins {:a 1} identity '(:a)))))
+  (reduce (fn [joins join] (dissoc-join joins (join-pk join))) old-joins new-joins))
 
 (defn- assoc-joins [old-joins join-pk new-joins]
   "add a seq of joins into a join index"
-  (apply merge-items (fn [joins join] (assoc joins (join-pk join) join)) old-joins new-joins))
-
-(deftest test-assoc-joins
-  (is (= {:a "a" :b "b"} (assoc-joins {:a "a"} keyword '("b")))))
+  (reduce (fn [joins join] (assoc-join joins (join-pk join) join))  old-joins new-joins))
 
 ;;--------------------------------------------------------------------------------
+(defn- get-old-lhs [old-lhs-index key] 
+  (key (apply merge {} (vals (first old-lhs-index)))))
+
+;;  (first (reduce (fn [r m] (conj r (key (merge (vals m))))) #{} old-lhs-index))) ;; TODO: aargh!)
 
 (defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
-  (let [new-lhs-indeces (lhs-assoc old-lhs-index lhs-pk-key lhs-fk-keys lhs)
-	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
-	new-joins (assoc-joins old-joins join-pk joins)]
-    [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]))
+  (let [key (lhs-pk-key lhs)
+        old-lhs (get-old-lhs old-lhs-index key)
+        tmp-lhs-indeces (if old-lhs (lhs-dissoc old-lhs-index lhs-pk-key lhs-fk-keys old-lhs) old-lhs-index)
+        new-lhs-indeces (lhs-assoc tmp-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
+        d-joins (vals (get-lhs-join-map old-joins key))
+	u-joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
+        tmp-joins (if old-lhs (dissoc-joins old-joins join-pk d-joins) old-joins)
+	new-joins (assoc-joins tmp-joins join-pk u-joins)]
+    [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model d-joins)(on-upserts joined-model u-joins))]))
+
+;; old joins should be e.g. {lhs-pk [lhs-version <joins>]} currently {join-pk join}
 
 (defn- lhs-delete [[old-lhs-indeces rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [new-lhs-indeces (lhs-dissoc old-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
-	joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
+        key (lhs-pk-key lhs)
+        joins (vals (get-lhs-join-map old-joins key))
 	new-joins (dissoc-joins old-joins join-pk joins)]
     [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]))
 
@@ -156,22 +221,29 @@
 
 ;; TODO: return a pair - first is notification fn, second is new-indeces - use swap*! to apply
 
+(defn- get-old-rhs [old-rhs-indeces i key] 
+  (key (apply merge {} (vals (nth old-rhs-indeces i))))) ;TODO: AARGH
+
 (defn- rhs-upsert [[lhs-indeces old-rhs-indeces old-joins] i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
-  (let [fk (rhs-fk-key rhs)
-	new-rhs-indeces (rhs-assoc old-rhs-indeces i rhs-pk-key fk rhs)
-	joins (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
-	new-joins (assoc-joins old-joins join-pk joins)]
-    [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-upserts joined-model joins))]
+  (let [pk (rhs-pk-key rhs)
+        old-rhs (get-old-rhs old-rhs-indeces i pk)
+        tmp-rhs-indeces (if old-rhs (rhs-dissoc old-rhs-indeces i rhs-pk-key (rhs-fk-key old-rhs) old-rhs) old-rhs-indeces)
+        fk (rhs-fk-key rhs)
+	new-rhs-indeces (rhs-assoc tmp-rhs-indeces i rhs-pk-key fk rhs)
+        key (rhs-pk-key rhs)
+        d-joins (vals (get-rhs-join-map old-joins i key))
+	u-joins (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
+	new-joins (assoc-joins (dissoc-joins old-joins join-pk d-joins) join-pk u-joins)]
+    [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-deletes joined-model d-joins)(on-upserts joined-model u-joins))]
     ))
 
 ;;; TODO - ugly, slow, ...
 (defn- rhs-delete [[lhs-indeces old-rhs-indeces old-joins]
 		   i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [fk (rhs-fk-key rhs)
-	old-joins2 (vals old-joins)
 	new-rhs-indeces (rhs-dissoc old-rhs-indeces i rhs-pk-key fk rhs)
-	new-joins2 (rhs-join new-rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk)
-	joins (remove (fn [i] (contains? (apply hash-set new-joins2) i)) old-joins2)
+        key (rhs-pk-key rhs)
+        joins (vals (get-rhs-join-map old-joins i key))
 	new-joins (dissoc-joins old-joins join-pk joins)]
     [[lhs-indeces new-rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]
     ))
@@ -194,7 +266,7 @@
 ;;; attempt to [re]join it to the lhs and vice versa.
 (defn- join-views [join-fn join-pk [lhs-model lhs-pk-key lhs-fk-keys joined-model] & rhses]
   (let [maps (into [] (repeat (count rhses) {}))
-	indeces (atom [maps maps {}])]
+	indeces (atom [maps maps (init-join (inc (count rhses)))])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
     (attach lhs-model (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model))
@@ -266,14 +338,20 @@
 	view (test-view "test")
 	a1 (->A :a1 0 :b :c)
 	a1v1 (->A :a1 1 :b :c)
+	a1v2 (->A :a1 2 :z :c)
+	a1v3 (->A :a1 3 :b :c)
 	a2 (->A :a2 0 :b :c)
 	b1 (->B :b1 0 :b "b1-data")
 	b1v1 (->B :b1 1 :b "b1v1-data")
+	b1v2 (->B :b1 2 :z "b1v2-data")
+	b1v3 (->B :b1 3 :b "b1v3-data")
 	b2 (->B :b2 0 :b "b2-data")
 	c1 (->C :c1 0 :c "c1-data")
 	c1v1 (->C :c1 1 :c "c1v1-data")
+	c1v2 (->C :c1 2 :z "c1v2-data")
+	c1v3 (->C :c1 3 :c "c1v3-data")
 	c2 (->C :c2 0 :c "c2-data")]
-    (is (= [[{}{}] [{}{}] {}] (data join)))
+    (is (= [[{}{}] [{}{}] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
 
     (attach join view)
@@ -281,72 +359,103 @@
 
     ;; rhs insertion - no join
     (on-upsert bs b1)
-    (is (= [[{}{}] [{:b {:b1 b1}} {}] {}] (data join)))
+    (is (= [[{}{}] [{:b {:b1 b1}} {}] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
 
     ;; rhs insertion - no join
     (on-upsert cs c1)
-    (is (= [[{}{}] [{:b {:b1 b1}} {:c {:c1 c1}}] {}] (data join)))
+    (is (= [[{}{}] [{:b {:b1 b1}} {:c {:c1 c1}}] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
 
     ;; lhs-insertion - first join
     (on-upsert as a1)
-    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}] [{:b {:b1 b1}} {:c {:c1 c1}}] {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")}] (data join)))
+    (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}]
+            [{:b {:b1 b1}}{:c {:c1 c1}}]
+            [
+             {:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")}}
+            ]
+            ]
+           (data join)))
     (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")} (data joined-model)))
 
     ;; join - new rhs - b2
     (on-upsert bs b2)
     (is (=
-	 [
-	  [{:b {:a1 a1}}{:c {:a1 a1}}]
-	  [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1}}]
-	  {
-	  [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	  [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	  }
-	  ] (data join)))
+         [
+          [{:b {:a1 a1}}{:c {:a1 a1}}]
+          [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1}}]
+          [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}}
+           {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")}
+            :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}}
+           {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}}]
+          ] (data join)))
     (is (= 
-	 {
-	 [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	 }
-	 (data joined-model)))
+         {
+         [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+         [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+         }
+         (data joined-model)))
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
     (is (= [[{:b {:a1 a1}}{:c {:a1 a1}}]
-	    [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
-	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	    [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	    [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	    }] (data join)))
+            [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
+            [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")}
+              :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
+              :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}]
+            ] (data join)))
     (is (= {
-	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	   }
-	   (data joined-model)))
+           [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+           [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+           [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+           [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+           }
+           (data joined-model)))
 
     ;; join - new lhs - a2
     (on-upsert as a2)
     (is (=
-	 [
-	  [{:b {:a1 a1 :a2 a2}}{:c {:a1 a1 :a2 a2}}]
-	  [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
-	  {
-	  [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	  [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	  [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	  [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	  [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	  [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	  [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	  [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	  }
-	  ] (data join)))
+         [
+          [{:b {:a1 a1 :a2 a2}}{:c {:a1 a1 :a2 a2}}]
+          [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
+          [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")}
+            :a2 {[:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+           {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")}
+            :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+           {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
+            :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}]
+          ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")
     	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
@@ -362,20 +471,34 @@
     ;; lhs update - relevant joins should update
     (on-upsert as a1v1)
     (is (=
-	 [
-	  [{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
-	  [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
-	  {
-	  [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
-	  [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
-	  [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 0 0] "b1-data" "c2-data")
-	  [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
-	  [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
-	  [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	  [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
-	  [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	  }
-	  ] (data join)))
+         [
+          [{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
+          [{:b {:b1 b1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
+          [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                 [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 0 0] "b1-data" "c2-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}
+            :a2 {[:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+           {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
+                 [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 0 0] "b1-data" "c2-data")
+                 [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")}
+            :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+           {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
+                 [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                 [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 0 0] "b1-data" "c1-data")
+                 [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
+            :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 0 0] "b1-data" "c2-data")
+                 [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                 [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 0 0] "b1-data" "c2-data")
+                 [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}]
+          ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 0 0] "b1-data" "c1-data")
     	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
@@ -392,17 +515,31 @@
     (on-upsert bs b1v1)
     (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
     	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1 :c2 c2}}]
-    	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
-	    [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
-	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
-	    [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
-	    [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 0] "b1v1-data" "c1-data")
-	    [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
-	    [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
-	    [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	    }
-	    ] (data join)))
+            [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}
+              :a2 {[:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 0] "b1v1-data" "c1-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 0] "b1v1-data" "c1-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")}
+              :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
+                   [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 0] "b1v1-data" "c1-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 0] "b2-data" "c1-data")}
+              :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}]
+            ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 0] "b1v1-data" "c1-data")
     	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 0] "b2-data" "c1-data")
@@ -419,17 +556,31 @@
     (on-upsert cs c1v1)
     (is (= [[{:b {:a1 a1v1 :a2 a2}}{:c {:a1 a1v1 :a2 a2}}]
     	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}]
-    	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-	    [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
-	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
-	    [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
-	    [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 1] "b1v1-data" "c1v1-data")
-	    [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 1] "b2-data" "c1v1-data")
-	    [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
-	    [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
-	    }
-	    ] (data join)))
+            [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}
+              :a2 {[:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 1] "b1v1-data" "c1v1-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 1] "b2-data" "c1v1-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 1] "b1v1-data" "c1v1-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")}
+              :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 1] "b2-data" "c1v1-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+                   [:a2 :b1 :c1] (->ABC [:a2 :b1 :c1] [0 1 1] "b1v1-data" "c1v1-data")
+                   [:a2 :b2 :c1] (->ABC [:a2 :b2 :c1] [0 0 1] "b2-data" "c1v1-data")}
+              :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
+                   [:a2 :b1 :c2] (->ABC [:a2 :b1 :c2] [0 1 0] "b1v1-data" "c2-data")
+                   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")}}]
+            ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
     	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
@@ -446,13 +597,19 @@
     (on-delete as a2)
     (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
     	    [{:b {:b1 b1v1 :b2 b2}} {:c {:c1 c1v1 :c2 c2}}]
-    	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-	    [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
-	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
-	    [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
-	    }
-	    ] (data join)))
+            [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")}
+              :b2 {[:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")}
+              :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
+                   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")}}]
+            ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
     	   [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [1 0 1] "b2-data" "c1v1-data")
@@ -465,11 +622,13 @@
     (on-delete bs b2)
     (is (= [[{:b {:a1 a1v1}} {:c {:a1 a1v1}}]
     	    [{:b {:b1 b1v1}} {:c {:c1 c1v1 :c2 c2}}]
-    	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-	    [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
-	    }
-	    ] (data join)))
+    	    [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
+                   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")}
+              :c2 {[:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")}}]
+            ] (data join)))
     (is (= {
     	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
     	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
@@ -478,23 +637,89 @@
 
     ;; join - delete rhs - c2
     (on-delete cs c2)
-    (is (= [[{:b {:a1 a1v1}}{:c {:a1 a1v1}}]
+    (is (= [[{:b {:a1 a1v1}} {:c {:a1 a1v1}}]
     	    [{:b {:b1 b1v1}} {:c {:c1 c1v1}}]
-    	    {
-	    [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-	    }] (data join)))
-    (is (= {
-    	   [:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")
-    	   }
+    	    [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")}}]
+            ] (data join)))
+    (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [1 1 1] "b1v1-data" "c1v1-data")}
+    	   (data joined-model)))
+
+    ;; join - amend-out lhs - a1v2
+    (on-upsert as a1v2)
+    (is (= [[{:z {:a1 a1v2}}{:c {:a1 a1v2}}]
+    	    [{:b {:b1 b1v1}}{:c {:c1 c1v1}}]
+    	    [{}{}{}]
+            ] (data join)))
+    (is (= {}
+    	   (data joined-model)))
+
+    ;; join - amend in lhs - a1v3
+    (on-upsert as a1v3)
+    (is (= [[{:b {:a1 a1v3}} {:c {:a1 a1v3}}]
+    	    [{:b {:b1 b1v1}} {:c {:c1 c1v1}}]
+    	    [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 1 1] "b1v1-data" "c1v1-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 1 1] "b1v1-data" "c1v1-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 1 1] "b1v1-data" "c1v1-data")}}]
+            ] (data join)))
+    (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 1 1] "b1v1-data" "c1v1-data")}
+    	   (data joined-model)))
+
+    ;; join - amend-out rhs - b1v2
+    (on-upsert bs b1v2)
+    (is (= [[{:b {:a1 a1v3}}{:c {:a1 a1v3}}]
+    	    [{:z {:b1 b1v2}}{:c {:c1 c1v1}}]
+    	    [{}{}{}]
+            ] (data join)))
+    (is (= {}
+    	   (data joined-model)))
+
+    ;; join - amend-in rhs - b1v3
+    (on-upsert bs b1v3)
+    (is (= [[{:b {:a1 a1v3}} {:c {:a1 a1v3}}]
+    	    [{:b {:b1 b1v3}} {:c {:c1 c1v1}}]
+    	    [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 1] "b1v3-data" "c1v1-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 1] "b1v3-data" "c1v1-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 1] "b1v3-data" "c1v1-data")}}]
+            ] (data join)))
+    (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 1] "b1v3-data" "c1v1-data")}
+    	   (data joined-model)))
+
+    ;; join - amend-out rhs - c1v2
+    (on-upsert cs c1v2)
+    (is (= [[{:b {:a1 a1v3}}{:c {:a1 a1v3}}]
+    	    [{:b {:b1 b1v3}}{:z {:c1 c1v2}}]
+    	    [{}{}{}]
+            ] (data join)))
+    (is (= {}
+    	   (data joined-model)))
+
+    ;; join - amend-in rhs - c1v3
+    (on-upsert cs c1v3)
+    (is (= [[{:b {:a1 a1v3}} {:c {:a1 a1v3}}]
+    	    [{:b {:b1 b1v3}} {:c {:c1 c1v3}}]
+    	    [{:a1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 3] "b1v3-data" "c1v3-data")}}
+             {:b1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 3] "b1v3-data" "c1v3-data")}}
+             {:c1 {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 3] "b1v3-data" "c1v3-data")}}]
+            ] (data join)))
+    (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [3 3 3] "b1v3-data" "c1v3-data")}
     	   (data joined-model)))
 
     ;; TODO:
-    ;;  amend in/out
-    ;;  delete
+    ;;  refactor data model
+    ;;
+    ;;  outer joins
+    ;;  support use of versioned map
+    ;;  support extant / extinct
     ;;  batch operations
     ;;  test listener receives correct events
     ;;  test downstream model receives correct events
     ;;  unjoined models...
     ;;  move prod code out of this file
     ;;  refactor and document
+    ;;  where can I find a persistant navigable map ?
+    ;;   (first (.seqFrom (sorted-map :a 1 :c 3 :d 4) :b true)) => [:c 3]
+    ;;   (first (.seqFrom (sorted-map :a 1 :c 3 :d 4) :b false)) => [:a 1]
+    ;;   is this enough ?
     ))
