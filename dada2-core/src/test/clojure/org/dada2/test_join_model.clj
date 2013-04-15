@@ -19,9 +19,103 @@
 ;; 1x joined model contains the result of calling the join-fn on 1x lhs and Nx rhs for each successful join
 ;; 1+N unjoined models, containing any unjoined members of lhs and rhs sources
 ;; as row becomes involved in a join it is deleted from its unjoined model and upserted into the joined model
-;;--------------------------------------------------------------------------------
-;; impl
 
+;;--------------------------------------------------------------------------------
+;; this layer encapsulates access to lhs index :
+;;  [{lhs-pk = lhs}{fk = {lhs-pk = lhs}}... ]
+
+(defn- lhs-init [n]
+  "return initial representation for lhs-index"
+  (into [] (repeat (inc n) {})))
+
+(defn- lhs-get [[h & _] lhs-pk]
+  "return current lhs for pk"
+  (h lhs-pk))
+
+(defn- lhses-get [[_ & lhs-indeces] i fk]
+  "return seq of lhses indexed by i and fk"
+  (vals ((nth lhs-indeces i) fk)))
+
+(defn- lhs-assoc [[h & lhs-indeces] lhs-pk-key lhs-fk-keys lhs]
+  "associate a lhs with index"
+  (let [lhs-pk (lhs-pk-key lhs)]
+    (apply
+     vector
+     (assoc h lhs-pk lhs)
+     (map
+      (fn [lhs-index lhs-fk-key] (assoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs)) ;TODO - expand
+      lhs-indeces
+      lhs-fk-keys))))
+
+(defn- lhs-dissoc [[h & lhs-indeces] lhs-pk-key lhs-fk-keys lhs]
+  "dissociate an lhs from index"
+  (let [lhs-pk (lhs-pk-key lhs)]
+    (apply
+     vector
+     (dissoc h lhs-pk)
+     (map
+      (fn [lhs-index lhs-fk-key]
+        (let [lhs-fk (lhs-fk-key lhs)
+              tmp (dissoc (lhs-index lhs-fk) lhs-pk)]
+          (if (empty? tmp) (dissoc lhs-index lhs-fk)(assoc lhs-index lhs-fk tmp))))
+      lhs-indeces
+      lhs-fk-keys))))
+
+(deftest test-lhs-access
+  (let [before (lhs-init 1)
+	after  [{3 "xxx"} {String {3 "xxx"}}]]
+    (is (= [{}{}] before))
+    (is (= after (lhs-assoc before count [type] "xxx")))
+    (is (= "xxx" (lhs-get after 3)))
+    (is (= '("xxx") (lhses-get after 0 String)))
+    (is (= [{}{}] (lhs-dissoc after count [type] "xxx")))
+    ))
+
+;;--------------------------------------------------------------------------------
+;; this layer encapsulates access to rhs indeces :
+;;  [[{rhs-pk = rhs}{fk = {rhs-pk = rhs}}]... ]
+ 
+(defn- rhs-init [rhs-count]
+  "return initial representation for rhs-indeces"
+  (into [] (repeat rhs-count [{}{}])))
+
+(defn- rhs-get [old-rhs-indeces i pk]
+  "return current rhs by i and pk"
+  ((first (nth old-rhs-indeces i)) pk))
+
+(defn- rhses-get [rhs-indeces lhs-fk-keys lhs]
+  "return a lazy seq of seqs of rhses for a given seq of fk-key functions"
+  (map (fn [[_ rhs-index] lhs-fk-key] (vals (rhs-index (lhs-fk-key lhs)))) rhs-indeces lhs-fk-keys))
+
+(defn- rhs-assoc [rhs-indeces i rhs-pk-key fk rhs]
+  "associate a new rhs with indeces"
+  (let [[forward rhs-index] (nth rhs-indeces i)
+        rhs-pk (rhs-pk-key rhs)]
+    (assoc rhs-indeces i
+           [(assoc forward rhs-pk rhs)
+            (assoc-in rhs-index [fk rhs-pk] rhs)]))) ;TODO - expand
+
+(defn- rhs-dissoc [rhs-indeces i rhs-pk-key fk rhs]
+  "dissociate an rhs from indeces"
+  (let [rhs-pk (rhs-pk-key rhs)
+        [forward rhs-index] (rhs-indeces i)
+        tmp (dissoc (rhs-index fk) rhs-pk)]
+    (assoc rhs-indeces i
+           [(dissoc forward rhs-pk)
+            (if (empty? tmp)
+              (dissoc rhs-index fk)
+              (assoc rhs-index fk tmp))])))
+
+(deftest test-rhs-access
+  (let [before (rhs-init 1)
+	after  [[{3 "xxx"}{String {3 "xxx"}}]]]
+    (is (= before [[{}{}]]))
+    (is (= after (rhs-assoc before 0 count String "xxx")))
+    (is (= "xxx" (rhs-get after 0 3)))
+    (is (= '(("xxx")) (rhses-get after [first] [String])))
+    (is (= [[{}{}]] (rhs-dissoc after 0 count String "xxx")))))
+
+;;--------------------------------------------------------------------------------
 ;;; calculate all permutations for a given list of sets...
 ;;; e.g. 
 ;;; (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]) ->
@@ -39,100 +133,6 @@
        [[:a1 :b1 :c1] [:a1 :b2 :c1] [:a1 :b3 :c1] [:a2 :b1 :c1] [:a2 :b2 :c1] [:a2 :b3 :c1]]
        (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
 
-(defn- merge-items [merge-fn a-map & items]
-  "merge items into a map, one-by-one using (merge-fn map item) provided"
-  (reduce (fn [reduction item] (merge-fn reduction item)) a-map items))
-
-(deftest test-merge-items
-  (is (= {:a 1 :b 2} (merge-items (fn [m [k v]] (assoc m k v)) {:a 1} [:b 2]))))
-
-;;--------------------------------------------------------------------------------
-;; this layer encapsulates access to lhs index :
-;;  [{fk = {lhs-pk = lhs}}... ]
-
-(defn- lhs-init [n]
-  (into [] (repeat (inc n) {})))
-
-(defn- lhses-get [[_ & lhs-indeces] i fk]
-  "return seq of lhses indexed by i/fk"
-  (vals ((nth lhs-indeces i) fk)))
-
-(defn- lhs-assoc [[h & lhs-indeces] lhs-pk-key lhs-fk-keys lhs]
-  "associate a new lhs with existing index"
-  (let [lhs-pk (lhs-pk-key lhs)]
-    (apply
-     vector
-     (assoc h lhs-pk lhs)
-     (map
-      (fn [lhs-index lhs-fk-key] (assoc-in lhs-index [(lhs-fk-key lhs) lhs-pk] lhs))
-      lhs-indeces
-      lhs-fk-keys))))
-
-(defn- lhs-dissoc [[h & lhs-indeces] lhs-pk-key lhs-fk-keys lhs]
-  "dissociate an lhs from existing index"
-  (let [lhs-pk (lhs-pk-key lhs)]
-    (apply
-     vector
-     (dissoc h lhs-pk)
-     (map
-      (fn [lhs-index lhs-fk-key]
-        (let [lhs-fk (lhs-fk-key lhs)
-              tmp (dissoc (lhs-index lhs-fk) lhs-pk)]
-          (if (empty? tmp) (dissoc lhs-index lhs-fk)(assoc lhs-index lhs-fk tmp))))
-      lhs-indeces
-      lhs-fk-keys))))
-
-(deftest test-lhs-access
-  (let [before [{}{}]
-	after  [{3 "xxx"} {String {3 "xxx"}}]]
-    (is (= after (lhs-assoc before count [type] "xxx")))
-    (is (= '("xxx") (lhses-get after 0 String)))
-    (is (= [{}{}] (lhs-dissoc after count [type] "xxx")))
-    ))
-
-(defn- get-old-lhs [[h & _] key]
-  (h key))
-
-;;--------------------------------------------------------------------------------
-;; this layer encapsulates access to rhs indeces :
-;;  [{fk = {rhs-pk = rhs}}... ]
- 
-(defn- rhs-init [n]
-  (into [] (repeat n [{}{}])))
-
-(defn- rhses-get [rhs-indeces lhs-fk-keys lhs]
-  "return a lazy seq of seqs of rhses indexed by their respective fks"
-  (map (fn [[_ rhs-index] lhs-fk-key] (vals (rhs-index (lhs-fk-key lhs)))) rhs-indeces lhs-fk-keys))
-
-(defn- rhs-assoc [rhs-indeces i rhs-pk-key fk rhs]
-  "associate a new rhs with existing index"
-  (let [[forward rhs-index] (nth rhs-indeces i)
-        rhs-pk (rhs-pk-key rhs)]
-    (assoc rhs-indeces i
-           [(assoc forward rhs-pk rhs)
-            (assoc-in rhs-index [fk rhs-pk] rhs)])))
-
-(defn- rhs-dissoc [rhs-indeces i rhs-pk-key fk rhs]
-  "dissociate an rhs from existing index"
-  (let [rhs-pk (rhs-pk-key rhs)
-        [forward rhs-index] (rhs-indeces i)
-        tmp (dissoc (rhs-index fk) rhs-pk)]
-    (assoc rhs-indeces i
-           [(dissoc forward rhs-pk)
-            (if (empty? tmp)
-              (dissoc rhs-index fk)
-              (assoc rhs-index fk tmp))])))
-
-(deftest test-rhs-access
-  (let [before [[{}{}]]
-	after  [[{3 "xxx"}{String {3 "xxx"}}]]]
-    (is (= after (rhs-assoc before 0 count String "xxx")))
-    (is (= '(("xxx")) (rhses-get after [first] [String])))
-    (is (= [[{}{}]] (rhs-dissoc after 0 count String "xxx")))))
-
-(defn- get-old-rhs [old-rhs-indeces i key] 
-  (key (first (nth old-rhs-indeces i))))
-
 ;;--------------------------------------------------------------------------------
 
 (defn- lhs-join [rhs-indeces lhs-fk-keys lhs join-fn]
@@ -147,11 +147,8 @@
   (mapcat (fn [lhs] (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)) (lhses-get lhs-indeces i fk)))
 
 ;;--------------------------------------------------------------------------------
-
-;;(map (fn [join] [(join-pk join) join]) new-joins)
-
-;; old-joins: {pk={join-pk=join}} 
-;; join-pairs: seq of pairs of [join-pk join]
+;; this layer encapsulates access to joins
+;; {pk={join-pk=join}} 
 
 (defn- join-init [n]
   (into [] (repeat (inc n) {})))
@@ -173,8 +170,6 @@
             (assoc (key join-map) join-pk join)))
    join-pk
    old-joins))
-
-;; get joins ...
 
 (defn- get-lhs-join-map [[lhs-joins & _] key]
   "return a map (join-pk:join} of all joins in which this lhs is involved."
@@ -212,7 +207,7 @@
 
 (defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
   (let [key (lhs-pk-key lhs)
-        old-lhs (get-old-lhs old-lhs-index key)
+        old-lhs (lhs-get old-lhs-index key)
         tmp-lhs-indeces (if old-lhs (lhs-dissoc old-lhs-index lhs-pk-key lhs-fk-keys old-lhs) old-lhs-index)
         new-lhs-indeces (lhs-assoc tmp-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
         d-joins (vals (get-lhs-join-map old-joins key))
@@ -244,7 +239,7 @@
 
 (defn- rhs-upsert [[lhs-indeces old-rhs-indeces old-joins] i rhs-pk-key rhs-fk-key lhs-fk-keys rhs join-fn join-pk joined-model]
   (let [pk (rhs-pk-key rhs)
-        old-rhs (get-old-rhs old-rhs-indeces i pk)
+        old-rhs (rhs-get old-rhs-indeces i pk)
         tmp-rhs-indeces (if old-rhs (rhs-dissoc old-rhs-indeces i rhs-pk-key (rhs-fk-key old-rhs) old-rhs) old-rhs-indeces)
         fk (rhs-fk-key rhs)
 	new-rhs-indeces (rhs-assoc tmp-rhs-indeces i rhs-pk-key fk rhs)
