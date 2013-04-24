@@ -284,11 +284,14 @@
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
     (attach lhs-model (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model))
     ;; view rhses
-    (doseq [i (range (count rhses))]
-	(let [[rhs-model rhs-pk-key rhs-fk-key] (nth rhses i)]
-	  (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
-	  ;; view rhs model
-	  (attach rhs-model (rhs-view indeces i rhs-pk-key rhs-fk-key lhs-fk-keys join-fn join-pk joined-model))))
+    (doall
+     (map
+     (fn [[rhs-model rhs-pk-key rhs-fk-key] i]
+       (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
+       ;; view rhs model
+       (attach rhs-model (rhs-view indeces i rhs-pk-key rhs-fk-key lhs-fk-keys join-fn join-pk joined-model))    )
+     rhses
+     (range)))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
@@ -720,9 +723,10 @@
     	   (data joined-model)))
 
     ;; TODO:
-    ;;; support custom join fns
+    ;;  support custom join/get/lookup fns
+    ;;  support use of custom collection
+    ;;; support use of custom assoc/dissoc fns
     ;;  outer joins
-    ;;  support use of versioned map
     ;;  support extant / extinct
     ;;  batch operations
     ;;  test listener receives correct events
