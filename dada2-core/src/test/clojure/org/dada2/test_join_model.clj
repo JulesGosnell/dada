@@ -720,6 +720,7 @@
     	   (data joined-model)))
 
     ;; TODO:
+    ;;; support custom join fns
     ;;  outer joins
     ;;  support use of versioned map
     ;;  support extant / extinct
@@ -734,3 +735,10 @@
     ;;   (first (.seqFrom (sorted-map :a 1 :c 3 :d 4) :b false)) => [:a 1]
     ;;   is this enough ?
     ))
+
+;; THOUGHTS:
+;; a flatter data model would require less rebuilding each time a change takes place
+;; updates should probably be a pair of [datum, deleted?]
+;; update api should be update[s] and not upsert[s], delete[s]
+;; I should write a reusable versioned-map component
+
