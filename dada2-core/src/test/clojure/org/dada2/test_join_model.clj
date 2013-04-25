@@ -208,7 +208,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
+(defn- lhs-upsert [[old-lhs-index rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model]
   (let [key (lhs-pk-key lhs)
         old-lhs (lhs-get old-lhs-index key)
         tmp-lhs-indeces (if old-lhs (lhs-dissoc old-lhs-index lhs-pk-key lhs-fk-keys old-lhs) old-lhs-index)
@@ -217,29 +217,34 @@
 	u-joins (lhs-join rhs-indeces lhs-fk-keys lhs join-fn)
         tmp-joins (if old-lhs (dissoc-joins old-joins join-pk d-joins) old-joins)
 	new-joins (assoc-joins tmp-joins join-pk u-joins)]
-    [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model d-joins)(on-upserts joined-model u-joins))]))
+    [[new-lhs-indeces rhs-indeces new-joins]
+     (fn [_]
+       (on-deletes joined-model d-joins)
+       (on-upserts joined-model u-joins))]))
 
-(defn- lhs-delete [[old-lhs-indeces rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model]
+(defn- lhs-delete [[old-lhs-indeces rhs-indeces old-joins] lhs-pk-key lhs-fk-keys lhs join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model]
   (let [new-lhs-indeces (lhs-dissoc old-lhs-indeces lhs-pk-key lhs-fk-keys lhs)
         key (lhs-pk-key lhs)
         joins (vals (get-lhs-join-map old-joins key))
 	new-joins (dissoc-joins old-joins join-pk joins)]
-    [[new-lhs-indeces rhs-indeces new-joins] (fn [_] (on-deletes joined-model joins))]))
+    [[new-lhs-indeces rhs-indeces new-joins]
+     (fn [_]
+       (on-deletes joined-model joins))]))
 
 ;;; TODO
 (defn- lhs-upserts [old-indeces i ks vs join-fn])
 (defn- lhs-deletes [old-indeces i ks vs join-fn])
 
-(defn- lhs-view [indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model]
+(defn- lhs-view [indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model]
   (reify
    View
    ;; singleton changes
    (on-upsert [_ upsertion]
      ;;TODO - pass in views to notifier
-     ((swap*! indeces lhs-upsert lhs-pk-key lhs-fk-keys upsertion join-fn join-pk joined-model) []) nil)
+     ((swap*! indeces lhs-upsert lhs-pk-key lhs-fk-keys upsertion join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model) []) nil)
    (on-delete [_ deletion]
      ;;TODO - pass in views to notifier
-     ((swap*! indeces lhs-delete  lhs-pk-key lhs-fk-keys deletion join-fn join-pk joined-model) []) nil)
+     ((swap*! indeces lhs-delete  lhs-pk-key lhs-fk-keys deletion join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model) []) nil)
    ;; batch changes - TODO
    (on-upserts [_ upsertions] (swap! indeces lhs-upserts lhs-fk-keys upsertions join-fn) nil)
    (on-deletes [_ deletions]  (swap! indeces lhs-deletes lhs-fk-keys deletions join-fn) nil)))
@@ -284,7 +289,7 @@
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [join-fn join-pk joined-model [lhs-model lhs-pk-key lhs-fk-keys] & rhses]
+(defn- join-views [join-fn join-pk joined-model [lhs-model lhs-pk-key lhs-fk-keys lhs-joined-model lhs-unjoined-model] & rhses]
   (let [rhs-count (count rhses)
         ;; need 2 pass initialisation
 	indeces (atom [(lhs-init rhs-count) 
@@ -292,7 +297,9 @@
                        (join-init rhs-count)])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
-    (attach lhs-model (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model))
+    (attach
+     lhs-model
+     (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model lhs-joined-model lhs-unjoined-model))
     ;; view rhses
     (doall
      (mapv
@@ -361,7 +368,16 @@
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
 	cs (versioned-optimistic-map-model (str :cs) :name :version >)
 	joined-model (versioned-optimistic-map-model (str :joined) :name :version abc-more-recent-than?)
-	join (join-model "join-model" joined-model [[as :name [:fk-b :fk-c]][bs :name :b][cs :name :c]] join-abc :name)
+	as-joined-model (versioned-optimistic-map-model (str :as-joined) :name :version >)
+	as-unjoined-model (versioned-optimistic-map-model (str :as-unjoined) :name :version >)
+	joined-model (versioned-optimistic-map-model (str :joined) :name :version abc-more-recent-than?)
+	join (join-model
+              "join-model"
+              joined-model
+              [[as :name [:fk-b :fk-c] as-joined-model as-unjoined-model]
+               [bs :name :b]
+               [cs :name :c]]
+              join-abc :name)
 	view (test-view "test")
 	a1 (->A :a1 0 :b :c)
 	a1v1 (->A :a1 1 :b :c)
