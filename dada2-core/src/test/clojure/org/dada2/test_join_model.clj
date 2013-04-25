@@ -85,7 +85,10 @@
 
 (defn- rhses-get [rhs-indeces lhs-fk-keys lhs]
   "return a lazy seq of seqs of rhses for a given seq of fk-key functions"
-  (map (fn [[_ rhs-index] lhs-fk-key] (vals (rhs-index (lhs-fk-key lhs)))) rhs-indeces lhs-fk-keys))
+  (map (fn [[_ rhs-index] lhs-fk-key] (vals 
+                                       ;; TODO - following get should be lookup-fn
+                                       (get rhs-index (lhs-fk-key lhs))
+                                       )) rhs-indeces lhs-fk-keys))
 
 (defn- rhs-assoc [rhs-indeces i rhs-pk-key fk rhs]
   "associate a new rhs with indeces"
@@ -279,19 +282,23 @@
 ;;; attempt to [re]join it to the lhs and vice versa.
 (defn- join-views [join-fn join-pk [lhs-model lhs-pk-key lhs-fk-keys joined-model] & rhses]
   (let [rhs-count (count rhses)
-	indeces (atom [(lhs-init rhs-count) (rhs-init rhs-count) (join-init rhs-count)])]
+        ;; need 2 pass initialisation
+	indeces (atom [(lhs-init rhs-count) 
+                       (mapv (fn [[_ _ _ state]] [{}(or state {})]) rhses) ;; (rhs-init rhs-count)
+                       (join-init rhs-count)])]
     ;; view lhs
     (log2 :info (str " lhs: " lhs-model ", " lhs-fk-keys))
     (attach lhs-model (lhs-view indeces lhs-pk-key lhs-fk-keys join-fn join-pk joined-model))
     ;; view rhses
     (doall
-     (map
-     (fn [[rhs-model rhs-pk-key rhs-fk-key] i]
-       (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
-       ;; view rhs model
-       (attach rhs-model (rhs-view indeces i rhs-pk-key rhs-fk-key lhs-fk-keys join-fn join-pk joined-model))    )
-     rhses
-     (range)))
+     (mapv
+      (fn [[rhs-model rhs-pk-key rhs-fk-key rhs-initial-state] i]
+        (log2 :info (str " rhs: " rhs-model ", " i ", " rhs-fk-key))
+        ;; view rhs model
+        (attach rhs-model (rhs-view indeces i rhs-pk-key rhs-fk-key lhs-fk-keys join-fn join-pk joined-model))
+        [{} (or rhs-initial-state {})])
+      rhses
+      (range)))
     indeces))
 
 (deftype JoinModel [^String name ^Atom state ^Atom views]
