@@ -234,9 +234,13 @@
   (reify
    View
    ;; singleton changes
-   (on-upsert [_ upsertion] ((swap*! indeces lhs-upsert lhs-pk-key lhs-fk-keys upsertion join-fn join-pk joined-model) []) nil) ;TODO - pass in views to notifier
-   (on-delete [_ deletion]  ((swap*! indeces lhs-delete  lhs-pk-key lhs-fk-keys deletion join-fn join-pk joined-model) []) nil) ;TODO - pass in views to notifier
-   ;; batch changes
+   (on-upsert [_ upsertion]
+     ;;TODO - pass in views to notifier
+     ((swap*! indeces lhs-upsert lhs-pk-key lhs-fk-keys upsertion join-fn join-pk joined-model) []) nil)
+   (on-delete [_ deletion]
+     ;;TODO - pass in views to notifier
+     ((swap*! indeces lhs-delete  lhs-pk-key lhs-fk-keys deletion join-fn join-pk joined-model) []) nil)
+   ;; batch changes - TODO
    (on-upserts [_ upsertions] (swap! indeces lhs-upserts lhs-fk-keys upsertions join-fn) nil)
    (on-deletes [_ deletions]  (swap! indeces lhs-deletes lhs-fk-keys deletions join-fn) nil)))
 
@@ -280,7 +284,7 @@
 
 ;;; attach lhs to all rhses such that any change to an rhs initiates an
 ;;; attempt to [re]join it to the lhs and vice versa.
-(defn- join-views [join-fn join-pk [lhs-model lhs-pk-key lhs-fk-keys joined-model] & rhses]
+(defn- join-views [join-fn join-pk joined-model [lhs-model lhs-pk-key lhs-fk-keys] & rhses]
   (let [rhs-count (count rhses)
         ;; need 2 pass initialisation
 	indeces (atom [(lhs-init rhs-count) 
@@ -310,8 +314,8 @@
   (^String toString [this] name)
   )
 
-(defn join-model [name joins join-fn join-pk]
-  (let [state (apply join-views join-fn join-pk joins)]
+(defn join-model [name joined-model joins join-fn join-pk]
+  (let [state (apply join-views join-fn join-pk joined-model joins)]
     (->JoinModel name state (atom []))))
 
 ;;--------------------------------------------------------------------------------
@@ -357,7 +361,7 @@
 	bs (versioned-optimistic-map-model (str :bs) :name :version >)
 	cs (versioned-optimistic-map-model (str :cs) :name :version >)
 	joined-model (versioned-optimistic-map-model (str :joined) :name :version abc-more-recent-than?)
-	join (join-model "join-model" [[as :name [:fk-b :fk-c] joined-model][bs :name :b][cs :name :c]] join-abc :name)
+	join (join-model "join-model" joined-model [[as :name [:fk-b :fk-c]][bs :name :b][cs :name :c]] join-abc :name)
 	view (test-view "test")
 	a1 (->A :a1 0 :b :c)
 	a1v1 (->A :a1 1 :b :c)
