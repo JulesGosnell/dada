@@ -8,11 +8,16 @@
     </context-param>
     <servlet>
         <servlet-name>Vaadin Application Servlet</servlet-name>
-        <servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>
+        <servlet-class>com.vaadin.server.VaadinServlet</servlet-class>
         <init-param>
-            <description>Vaadin application class to start</description>
-            <param-name>application</param-name>
-            <param-value>org.dada.MyVaadinApplication</param-value>
+            <description>Vaadin UI to display</description>
+            <param-name>UI</param-name>
+            <param-value>org.dada.MyVaadinUI</param-value>
+        </init-param>
+                <init-param>
+            <description>Application widgetset</description>
+            <param-name>widgetset</param-name>
+            <param-value>org.dada.AppWidgetSet</param-value>
         </init-param>
     </servlet>
     <servlet-mapping>
