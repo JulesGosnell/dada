@@ -137,13 +137,17 @@
        (permute [[]] [[:a1 :a2][:b1 :b2 :b3][:c1]]))))
 
 ;;--------------------------------------------------------------------------------
+;; TODO: split the calculation of the joins and their transposition...
+
+(defn- transpose [lhs join-fn permutations]
+  (map (fn [permutation] (apply join-fn lhs permutation)) permutations))
 
 (defn- lhs-join [rhs-indeces lhs-fk-keys lhs join-fn]
   "calculate the set of joins for a newly arriving lhs"
   (let [permutations (permute [[]] (rhses-get rhs-indeces lhs-fk-keys lhs))]
         (if (= [[]] permutations)
           nil
-          (map (fn [args] (apply join-fn lhs args)) permutations))))
+          (transpose lhs join-fn permutations))))
 
 (defn- rhs-join [rhs-indeces lhs-fk-keys join-fn lhs-indeces i fk]
   "calculate the set of joins for a newly arriving rhs"
@@ -263,7 +267,21 @@
     [[lhs-indeces new-rhs-indeces new-joins]
      (fn [_]
        (on-deletes joined-model stale-joins)
-       (on-upserts joined-model fresh-joins))]
+       (on-upserts joined-model fresh-joins)
+
+       (println "STALE: " stale-joins)
+       (println "FRESH: " fresh-joins)
+       (let [stale (not (empty? stale-joins))
+             fresh (not (empty? fresh-joins))]
+         (if (not (= stale fresh))
+           (if stale
+             (do
+               (if rhs-joined-model (on-delete rhs-joined-model rhs))
+               (if rhs-unjoined-model (on-upsert rhs-unjoined-model rhs)))
+             (do
+               (if rhs-unjoined-model (on-delete rhs-unjoined-model rhs))
+               (if rhs-joined-model (on-upsert rhs-joined-model rhs)))
+             ))))]
     ))
 
 ;;; TODO - ugly, slow, ...
@@ -403,6 +421,8 @@
 	c2 (->C :c2 0 :c "c2-data")]
     (is (= [[{}{}{}] [[{}{}][{}{}]] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
+    (is (= {} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     (attach join view)
     (is (= nil (data view)))
@@ -411,11 +431,15 @@
     (on-upsert bs b1)
     (is (= [[{}{}{}] [[{:b1 b1}{:b {:b1 b1}}][{}{}]] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
+    (is (= {} (data a-b-joined-model)))
+    ;;(is (= {:b1 b1} (data a-b-unjoined-model)))
 
     ;; rhs insertion - no join
     (on-upsert cs c1)
     (is (= [[{}{}{}] [[{:b1 b1}{:b {:b1 b1}}][{:c1 c1}{:c {:c1 c1}}]] [{}{}{}]] (data join)))
     (is (= {} (data joined-model)))
+    (is (= {} (data a-b-joined-model)))
+    ;;;(is (= {:b1 b1} (data a-b-unjoined-model)))
 
     ;; lhs-insertion - first join
     (on-upsert as a1)
@@ -429,6 +453,8 @@
             ]
            (data join)))
     (is (= {[:a1 :b1 :c1] (->ABC [:a1 :b1 :c1] [0 0 0] "b1-data" "c1-data")} (data joined-model)))
+;;    (is (= {:b1 b1} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; join - new rhs - b2
     (on-upsert bs b2)
@@ -449,6 +475,9 @@
          [:a1 :b2 :c1] (->ABC [:a1 :b2 :c1] [0 0 0] "b2-data" "c1-data")
          }
          (data joined-model)))
+    ;;;(is (= {:b1 b1 :b2 b2} (data a-b-joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; join - new rhs - c2
     (on-upsert cs c2)
@@ -474,7 +503,10 @@
            [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [0 0 0] "b2-data" "c2-data")
            }
            (data joined-model)))
-
+    ;;(is (= {:b1 b1 :b2 b2} (data a-b-joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
+    
     ;; join - new lhs - a2
     (on-upsert as a2)
     (is (=
@@ -517,6 +549,9 @@
     	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
     	   }
     	   (data joined-model)))
+    ;;(is (= {:b1 b1 :b2 b2} (data a-b-joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; lhs update - relevant joins should update
     (on-upsert as a1v1)
@@ -560,6 +595,9 @@
     	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
     	   }
     	   (data joined-model)))
+    ;;;(is (= {:b1 b1 :b2 b2} (data a-b-joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; rhs update - relevant joins should update
     (on-upsert bs b1v1)
@@ -601,6 +639,9 @@
     	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
     	   }
     	   (data joined-model)))
+    ;;(is (= {:b1 b1v1 :b2 b2} (data a-b-joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; rhs update - relevant joins should update
     (on-upsert cs c1v1)
@@ -642,6 +683,8 @@
     	   [:a2 :b2 :c2] (->ABC [:a2 :b2 :c2] [0 0 0] "b2-data" "c2-data")
     	   }
     	   (data joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; join - delete lhs - a2
     (on-delete as a2)
@@ -667,6 +710,8 @@
     	   [:a1 :b2 :c2] (->ABC [:a1 :b2 :c2] [1 0 0] "b2-data" "c2-data")
     	   }
     	   (data joined-model)))
+    (is (= {:b2 b2} (data a-b-joined-model)))
+    (is (= {} (data a-b-unjoined-model)))
 
     ;; join - delete rhs - b2
     (on-delete bs b2)
@@ -684,6 +729,8 @@
     	   [:a1 :b1 :c2] (->ABC [:a1 :b1 :c2] [1 1 0] "b1v1-data" "c2-data")
     	   }
     	   (data joined-model)))
+;;    (is (= {} (data a-b-joined-model)))
+;;;    (is (= {:b2 b2} (data a-b-unjoined-model)))
 
     ;; join - delete rhs - c2
     (on-delete cs c2)
@@ -757,6 +804,13 @@
     	   (data joined-model)))
 
     ;; TODO:
+
+    ;; unjoined models:
+    ;; need  lhs-joined/unjoined, rhs-joined/unjoined models
+    ;; should the joined ones contain singleton or tuple entries ?
+    ;; need to refresh views on connection to models
+    ;; need to split permutation and transposition of joins into two stages so we can populate joined models
+
     ;;  support custom join/get/lookup fns
     ;;  support use of custom collection
     ;;; support use of custom assoc/dissoc fns
@@ -765,7 +819,6 @@
     ;;  batch operations
     ;;  test listener receives correct events
     ;;  test downstream model receives correct events
-    ;;  unjoined models...
     ;;  move prod code out of this file
     ;;  refactor and document
     ;;  where can I find a persistant navigable map ?
