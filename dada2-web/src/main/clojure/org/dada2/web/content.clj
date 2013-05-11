@@ -14,7 +14,10 @@
   [org.dada2.web table-view])
   )
 
+;;; should be e.g. defdatum / defevent
 (defrecord Astronomer [id firstName lastName year])
+;; metadata should be produced by def above
+(def astronomer-metadata [[:id Long] [:firstName String] [:lastName String] [:year Long]])
 
 (def astronomers
   [(Astronomer. 0 "Nicolaus" "Copernicus" 1473)
@@ -49,21 +52,15 @@
         )))))
 
 (defn create-main-layout [^UI ui]
-  (let [layout (VerticalLayout.)
-        table (doto (Table. (:name astronomers-model))
+  (let [table (doto (Table. (:name astronomers-model))
                 (.setColumnReorderingAllowed true)
                 (.setColumnCollapsingAllowed true)
                 (.setPageLength (count astronomers))
-                (.setSortDisabled false))]
-    (.addComponent layout (Label. "DADA Web"))
-    (.addComponent layout table)
-    (attach
-     astronomers-model
-     (record-table-view ui table :id
-                        [[:id Long :id]
-                         [:firstName String :firstName]
-                         [:lastName String :lastName]
-                         [:year Long :year]]))
+                (.setSortDisabled false))
+        layout (doto (VerticalLayout.)
+                 (.addComponent (Label. "DADA Web"))
+                 (.addComponent table))]
+    (attach astronomers-model (table-view ui table :id astronomer-metadata))
     (animate ui)
     layout
     ))

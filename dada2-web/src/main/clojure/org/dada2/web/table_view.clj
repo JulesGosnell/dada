@@ -44,6 +44,6 @@
   (^String toString [this] (.toString table))
   )
 
-(defn record-table-view [^UI ui ^Table table pk-fn metadata]
+(defn table-view [^UI ui ^Table table pk-fn metadata]
   (doseq [[key type] metadata] (.addContainerProperty table (.toString key) Object nil))
   (TableView. ui table pk-fn vals))
