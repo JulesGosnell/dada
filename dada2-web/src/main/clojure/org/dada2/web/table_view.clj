@@ -14,22 +14,16 @@
    [org.dada2 core])
   )
 
-;; metadata - list of tuples: [key type value-fn]
+;; metadata - list of tuples: [key type]
 
 (defn- upsert [^Table table upsertion pk-fn vals-fn]
   (let [pk (pk-fn upsertion)]
     (if-let [^Item item (.getItem table pk)]
-      (doall                            ;TODO - don't use map
-       (map 
-        (fn [id new-value]
-          (let [^Property property (.getItemProperty item id)
-                old-value (.getValue property)]
-            (if (not (= old-value new-value))
-              (.setValue property new-value))
-            ))
-        (.getItemPropertyIds item)
-        (vals-fn upsertion)
-        ))
+      (doseq [[id new-value] (map list (.getItemPropertyIds item) (vals-fn upsertion))]
+        (let [^Property property (.getItemProperty item id)
+              old-value (.getValue property)]
+          (if (not (= old-value new-value))
+            (.setValue property new-value))))
       (.addItem table (into-array Object (vals-fn upsertion)) pk))))
 
 (deftype TableView [^UI ui ^Table table pk-fn vals-fn]

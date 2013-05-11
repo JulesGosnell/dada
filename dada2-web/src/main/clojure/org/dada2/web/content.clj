@@ -64,3 +64,6 @@
     (animate ui)
     layout
     ))
+
+;; TODO
+;; cleaner shutdown - can we register some sort of listener ?
