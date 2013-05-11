@@ -45,5 +45,14 @@
   )
 
 (defn table-view [^UI ui ^Table table pk-fn metadata]
-  (doseq [[key type] metadata] (.addContainerProperty table (.toString key) Object nil))
+  (doseq [[key type] metadata] (.addContainerProperty table (.toString key) type nil))
   (TableView. ui table pk-fn vals))
+
+;; support for deleting rows
+;; flash cells on update
+;; sort columns
+;; is this the best way to get what we want
+;; why are all column headers inn caps
+;; where is the mode name header ?
+;; drill down by row and by cell
+
