@@ -1,20 +1,10 @@
 (ns org.dada2.web.table-view
   (import
-   [com.vaadin.ui
-    UI
-    Label
-    Table
-    ]
-   [com.vaadin.data
-    Item
-    Property
-    ]
-   )
+   [com.vaadin.ui UI Label Table]
+   [com.vaadin.data Item Property])
   (use
    [org.dada2 core])
   )
-
-;; metadata - list of tuples: [key type]
 
 (defn- upsert [^Table table upsertion pk-fn vals-fn]
   (let [pk (pk-fn upsertion)]
@@ -38,15 +28,14 @@
   (^String toString [this] (.toString table))
   )
 
+;; metadata - list of tuples: [key type]
 (defn table-view [^UI ui ^Table table pk-fn metadata]
   (doseq [[key type] metadata] (.addContainerProperty table (.toString key) type nil))
   (TableView. ui table pk-fn vals))
 
 ;; support for deleting rows
 ;; flash cells on update
-;; sort columns
-;; is this the best way to get what we want
-;; why are all column headers inn caps
-;; where is the mode name header ?
+;; is this the best way to get what we want :?
+;; why are all column headers in all-caps
 ;; drill down by row and by cell
 

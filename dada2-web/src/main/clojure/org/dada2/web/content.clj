@@ -1,17 +1,10 @@
 (ns org.dada2.web.content
   (import
-   [com.vaadin.ui
-    UI
-    VerticalLayout
-    Label
-    Table
-    TextArea
-    ])
- (:use
-  [clojure test]
-  [clojure.tools logging]
-  [org.dada2 core map-model]
-  [org.dada2.web table-view])
+   [com.vaadin.ui Table TextArea UI VerticalLayout])
+  (:use
+   [clojure.tools logging]
+   [org.dada2 core map-model]
+   [org.dada2.web table-view])
   )
 
 ;;; should be e.g. defdatum / defevent
@@ -27,7 +20,6 @@
    (Astronomer. 4 "Johannes" "Kepler"     1571)
    (Astronomer. 5 "Isaac"    "Newton"     1643)])
 
-;;(def astronomers-model (simple-hashmap-model :id))
 (def astronomers-model (unversioned-optimistic-map-model "Astronomers" :id))
 
 (defn- animate [^UI ui]
@@ -52,13 +44,12 @@
         )))))
 
 (defn create-main-layout [^UI ui]
-  (let [table (doto (Table. (:name astronomers-model))
+  (let [table (doto (Table. (.name astronomers-model))
                 (.setColumnReorderingAllowed true)
                 (.setColumnCollapsingAllowed true)
                 (.setPageLength (count astronomers))
                 (.setSortDisabled false))
         layout (doto (VerticalLayout.)
-                 (.addComponent (Label. "DADA Web"))
                  (.addComponent table))]
     (attach astronomers-model (table-view ui table :id astronomer-metadata))
     (animate ui)
