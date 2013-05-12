@@ -48,7 +48,9 @@
                 (.setColumnReorderingAllowed true)
                 (.setColumnCollapsingAllowed true)
                 (.setPageLength (count astronomers))
-                (.setSortDisabled false))
+                (.setSortDisabled false)
+                (.setSelectable true)
+                (.setImmediate true))
         layout (doto (VerticalLayout.)
                  (.addComponent table))]
     (attach astronomers-model (table-view ui table :id astronomer-metadata))
@@ -57,4 +59,4 @@
     ))
 
 ;; TODO
-;; cleaner shutdown - can we register some sort of listener ?
+;; cleaner shutdown ? http://dev.vaadin.com/ticket/10251

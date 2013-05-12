@@ -1,7 +1,8 @@
 (ns org.dada2.web.table-view
   (import
    [com.vaadin.ui UI Label Table]
-   [com.vaadin.data Item Property])
+   [com.vaadin.data Item Property Property$ValueChangeListener]
+   [com.vaadin.event ItemClickEvent ItemClickEvent$ItemClickListener])
   (use
    [org.dada2 core])
   )
@@ -30,6 +31,13 @@
 
 ;; metadata - list of tuples: [key type]
 (defn table-view [^UI ui ^Table table pk-fn metadata]
+  (.setNullSelectionAllowed table false)
+  (.addListener table
+                (reify ItemClickEvent$ItemClickListener
+                  (^void itemClick [_ ^ItemClickEvent event] 
+                    (if (.isDoubleClick event)
+                      (println "DOUBLE CLICK: " (.getValue table)))
+                    nil)))
   (doseq [[key type] metadata] (.addContainerProperty table (.toString key) type nil))
   (TableView. ui table pk-fn vals))
 
@@ -37,5 +45,4 @@
 ;; flash cells on update
 ;; is this the best way to get what we want :?
 ;; why are all column headers in all-caps
-;; drill down by row and by cell
 

@@ -11,3 +11,6 @@
 (defn -init [^org.dada2.web.UI ui request]
   (println "ANNOTATIONS: " (.getClass ui) " - " (into [] (.getAnnotations (.getClass ui))))
   (doto ui (.setContent (create-main-layout ui))))
+
+;; TODO
+;;; embed repl
