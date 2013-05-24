@@ -30,7 +30,7 @@
     <jmock.version>2.6.0-RC2</jmock.version>
     <junit.version>3.8.2</junit.version> <!--?no clojure support for annotations?-->
     <java.version>1.6</java.version>
-    <clojure.version>1.5.0</clojure.version>
+    <clojure.version>1.5.1</clojure.version>
     <clojure-maven-plugin.version>1.3.13</clojure-maven-plugin.version>
     <asm.version>3.3.1</asm.version>
     <commons-lang.version>2.6</commons-lang.version>
@@ -105,7 +105,7 @@
       <jdk>[1.6,)</jdk>	<!-- bracket mismatch intentional: see maven doc -->
     </activation>
     <modules>
-      <module>dada-clojure</module>
+      <!-- <module>dada-clojure</module> -->
       <module>dada-slf4j</module>
       <module>dada-core</module>
       <module>dada-jms</module>
@@ -133,7 +133,7 @@
       <os><name>Linux</name></os>
     </activation>
     <modules>
-      <module>dada-swt</module>
+<!--      <module>dada-swt</module> -->
     </modules>
   </profile>
 </profiles>
