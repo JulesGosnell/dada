@@ -10,9 +10,14 @@
 (set! *warn-on-reflection* true)
 
 (defn -init [^org.dada2.web.UI ui request]
+  (defonce nrepl-server-thread
+    (doto (Thread.
+           (fn []
+             (println "Starting REPL on 7888...") 
+             (start-server :port 7888)))
+      (.start)))
   (println "ANNOTATIONS: " (.getClass ui) " - " (into [] (.getAnnotations (.getClass ui))))
   (doto ui (.setContent (create-main-layout ui))))
 
-(defonce nrepl-server (start-server :port 7888))
 
 ;; TODO
