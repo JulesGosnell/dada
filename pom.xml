@@ -105,7 +105,7 @@
       <jdk>[1.6,)</jdk>	<!-- bracket mismatch intentional: see maven doc -->
     </activation>
     <modules>
-      <!-- <module>dada-clojure</module> -->
+      <module>dada-clojure</module>
       <module>dada-slf4j</module>
       <module>dada-core</module>
       <module>dada-jms</module>
