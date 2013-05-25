@@ -25,7 +25,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <activemq.version>5.7.0</activemq.version>
     <cobertura.version>1.9.4.1</cobertura.version>
-    <spring.version>3.2.1.RELEASE</spring.version>
+    <spring.version>3.2.2.RELEASE</spring.version>
     <slf4j.version>1.7.2</slf4j.version>
     <jmock.version>2.6.0-RC2</jmock.version>
     <junit.version>3.8.2</junit.version> <!--?no clojure support for annotations?-->
