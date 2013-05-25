@@ -39,7 +39,7 @@
     <aspectjweaver.version>1.7.0</aspectjweaver.version>
     <jline.version>1.0</jline.version>
     <derby.version>10.9.1.0</derby.version>
-    <joda-time.version>2.1</joda-time.version>
+    <joda-time.version>2.2</joda-time.version>
     <maven.compile.debug>true</maven.compile.debug>
     <surefire.jvm>java</surefire.jvm>
     <surefire.lib.path>-Djava.library.path=/usr/local/lib</surefire.lib.path> <!-- migrate to dada-zmq -->
