@@ -12,10 +12,6 @@ realtime. At the bank at which I currently work, it is being used by
 Treasury to project 6 month cash trade settlement ladders and
 highlight late amendments.
 
-The DADA maven website may be found here: http://ouroboros.dyndns-free.com/ci/job/dada/site/?
-
-DADA is rebuilt on a matrix of platforms by Jenkins on each checkin: http://ouroboros.dyndns-free.com/ci/job/dada-matrix/
-
 ## Build DADA
 <pre>
 git clone https://github.com/JulesGosnell/dada.git
