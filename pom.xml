@@ -133,7 +133,7 @@
       <os><name>Linux</name></os>
     </activation>
     <modules>
-<!--      <module>dada-swt</module> -->
+      <module>dada-swt</module>
     </modules>
   </profile>
 </profiles>
