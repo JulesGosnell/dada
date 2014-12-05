@@ -87,9 +87,9 @@
 ;; There does not seem to be much difference between record attribute
 ;; access via dot notation and array access via index. Perhaps rows
 ;; should be implemented by arrays ?
-(if (not (ibm?))
-  (deftest record-vs-array-access
-    (let [^Value r (Value. 0) ^objects a (into-array Object [0])] (is (faster 1000000000 (.v r) (aget a 0))))))
+;; (if (not (ibm?))
+;;   (deftest record-vs-array-access
+;;     (let [^Value r (Value. 0) ^objects a (into-array Object [0])] (is (faster 1000000000 (.v r) (aget a 0))))))
 
 
 (defrecord Foo [^int a])
